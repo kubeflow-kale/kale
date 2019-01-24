@@ -1,0 +1,68 @@
+import kfp.components as comp
+from kubernetes import client as k8s_client
+
+def mount_volume_in_container_op(container_op, volume_name, host_path, mount_path):
+    """
+    Mount a volume into a container op.
+    Returns same instance of `container_op`.
+    """
+    return container_op.add_volume(k8s_client.V1Volume(
+                                   name=volume_name,
+                                   host_path=k8s_client.V1HostPathVolumeSource(path=host_path)))\
+                        .add_volume_mount(k8s_client.V1VolumeMount(
+                                          mount_path=mount_path,
+                                          name=volume_name))
+
+def mount_volumes_in_container_op(container_op, volume_names, host_paths, mount_paths):
+    for n, hp, mp in zip(volume_names, host_paths, mount_paths):
+        container_op = mount_volume_in_container_op(container_op, n, hp, mp)
+    return container_op
+
+{# PIPELINE FUNCTION BLOCKS #}
+{% for func in block_functions -%}
+{{func}}
+{% endfor -%}
+
+{# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
+{%- for name in block_functions_names -%}
+{{ name }}_op = comp.func_to_container_op({{ name }}, base_image='{{ docker_base_image }}')
+{% endfor -%}
+
+{# DECLARE PIPELINE #}
+import kfp.dsl as dsl
+@dsl.pipeline(
+   name='{{ pipeline_name }}',
+   description='{{ pipeline_description }}'
+)
+def {{ pipeline_name }}():
+    {% for name in block_functions_names -%}
+    {{ name }}_task = mount_volumes_in_container_op(
+        container_op={{ name }}_op({{ block_function_args[ name ]|join(', ') }}),
+        volume_names=['{{ name }}-task-volume'],
+        host_paths=['{{ mount_host_path }}'],
+        mount_paths=['{{ mount_container_path }}'])
+    {% endfor -%}
+
+{# DEPLOY PIPELINE #}
+pipeline_func = {{ pipeline_name }}
+pipeline_filename = pipeline_func.__name__ + '.pipeline.tar.gz'
+import kfp.compiler as compiler
+compiler.Compiler().compile(pipeline_func, pipeline_filename)
+
+# Get or create an experiment and submit a pipeline run
+import kfp
+client = kfp.Client()
+list_experiments_response = client.list_experiments()
+experiments = list_experiments_response.experiments
+
+print(experiments)
+
+if not experiments:
+    # The user does not have any experiments available. Creating a new one
+    experiment = client.create_experiment(pipeline_func.__name__ + ' experiment')
+else:
+    experiment = experiments[-1] # Using the last experiment
+
+# Submit a pipeline run
+run_name = pipeline_func.__name__ + ' run'
+run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})

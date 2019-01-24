@@ -1,0 +1,57 @@
+def {{ function_name }}({{ function_args|join(', ') }}):
+
+    import os
+    import shutil
+    from mpba_sdk.converter.odo import resource_save as _odo_resource_save
+    from odo import resource as _odo_resource_load
+
+    _odo_data_directory = "/data/{{ pipeline_name }}/_odo_data/"
+    _input_data_folder = "/data/{{ pipeline_name }}/"
+
+    # -----------------------DATA LOADING START--------------------------------
+{%- if in_variables|length > 0 %}
+    {# Check directory exists #}
+    if not os.path.isdir(_odo_data_directory):
+        raise ValueError(_odo_data_directory + " directory does not exist")
+
+    _odo_directory_file_names = [
+        os.path.splitext(f)[0]
+        for f in os.listdir(_odo_data_directory)
+        if os.path.isfile(_odo_data_directory + f)
+    ]
+{%- endif %}
+
+{%- for in_var in in_variables %}
+    {# First check that the variable exists in the path #}
+    if "{{ in_var }}" not in _odo_directory_file_names:
+        raise ValueError("{{ in_var }}" + " does not exists in directory")
+
+    {# Load variable -#}
+    _odo_load_file_name = [
+        f
+        for f in os.listdir(_odo_data_directory)
+        if os.path.isfile(_odo_data_directory + f) and
+           os.path.splitext(f)[0] == "{{ in_var }}"
+    ]
+    if len(_odo_load_file_name) > 1:
+        raise ValueError("Found multiple files with name " + "{{ in_var }}" + ": " + str(_odo_load_file_name))
+    _odo_load_file_name = _odo_load_file_name[0]
+    {{ in_var }} = _odo_resource_load(_odo_data_directory + _odo_load_file_name)
+{%- endfor %}
+    # -----------------------DATA LOADING END----------------------------------
+
+
+{% for block in function_blocks %}
+{{block|indent(4, True)}}
+{% endfor %}
+    # -----------------------DATA SAVING START---------------------------------
+{%- if out_variables|length > 0 %}
+    if not os.path.isdir(_odo_data_directory):
+        os.makedirs(_odo_data_directory, exist_ok=True)
+{%- endif %}
+
+{%- for out_var in out_variables -%}
+    {#  `_odo_resource_save` will automatically add the correct extension #}
+    _odo_resource_save({{ out_var }}, _odo_data_directory + "{{ out_var }}")
+{%- endfor %}
+    # -----------------------DATA SAVING END-----------------------------------
