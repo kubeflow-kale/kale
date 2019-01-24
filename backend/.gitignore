@@ -1,0 +1,10 @@
+__pycache__/
+data/
+base_notebooks/
+
+todos.md
+
+.ipynb_checkpoints/
+.idea/
+
+pipeline_code.py
