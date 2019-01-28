@@ -10,6 +10,8 @@ from pathlib import Path
 from graphviz import Source
 from jinja2 import Environment, PackageLoader
 
+from .inspector import CodeInspector
+
 
 class dotdict(dict):
     """
@@ -56,7 +58,8 @@ class PipelinesNotebookConverter:
         # create internal representation of notebook pipeline
         self.parse_notebook_cells()
         # self.plot_pipeline()
-        self.print_pipeline_state()
+        # self.print_pipeline_state()
+        self.variables_detection()
         self.create_pipeline_code()
 
     def plot_pipeline(self):
@@ -66,6 +69,14 @@ class PipelinesNotebookConverter:
 
     @staticmethod
     def parse_metadata(metadata: dict):
+        """
+
+        Args:
+            metadata:
+
+        Returns:
+
+        """
         parsed_tags = dotdict()
 
         # block_names is a list because a cell block might be assigned to more
@@ -105,6 +116,14 @@ class PipelinesNotebookConverter:
         return parsed_tags
 
     def validate_tags(self, tags):
+        """
+
+        Args:
+            tags:
+
+        Returns:
+
+        """
         if 'previous_blocks' in tags:
             for p in tags.previous_blocks:
                 if p not in self.pipeline.nodes:
@@ -168,6 +187,35 @@ class PipelinesNotebookConverter:
                         source_code += "\n" + c.source
                         # update pipeline block source code
                         nx.set_node_attributes(self.pipeline, {block_name: {'source': source_code, 'tags': existing_tags}})
+
+    def variables_detection(self):
+        """
+
+        Returns:
+
+        """
+        code_inspector = CodeInspector()
+        # Go through pipeline DAG and parse variable names
+        # Start first with global block (`import` and `functions`)
+        global_block_names = ['imports', 'functions']
+        blocks = self.pipeline.nodes(data=True)
+        code_inspector.register_global_names(
+            [blocks[g]['source'] for g in global_block_names if g in blocks]
+        )
+        for block_name in nx.topological_sort(self.pipeline):
+            if block_name in global_block_names:
+                continue
+
+            ins, assigned = code_inspector.inspect_code(
+                code=self.pipeline.nodes(data=True)[block_name]['source']
+            )
+            print(f"Block {block_name}")
+            print(f"Ins")
+            # print(f"\t{ins}")
+            pprint.pprint(ins, width=1)
+            # print("Assigned")
+            # print(f"\t{assigned}")
+            # pprint.pprint(assigned, width=1)
 
     def create_pipeline_code(self):
         # order the pipeline topologically to cycle through the DAG
