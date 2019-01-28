@@ -50,8 +50,11 @@ def {{ function_name }}({{ function_args|join(', ') }}):
         os.makedirs(_odo_data_directory, exist_ok=True)
 {%- endif %}
 
-{%- for out_var in out_variables -%}
-    {#  `_odo_resource_save` will automatically add the correct extension #}
-    _odo_resource_save({{ out_var }}, _odo_data_directory + "{{ out_var }}")
+{%- for out_var in out_variables %}
+    if "{{ out_var }}" in locals():
+        {#-  `_odo_resource_save` will automatically add the correct extension #}
+        _odo_resource_save({{ out_var }}, _odo_data_directory + "{{ out_var }}")
+    else:
+        print("_odo_resource_save: `{{ out_var }}` not found.")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------

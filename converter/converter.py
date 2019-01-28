@@ -23,6 +23,7 @@ class dotdict(dict):
 
 
 class PipelinesNotebookConverter:
+    __GLOBAL_BLOCKS = ['imports', 'functions']
 
     def __init__(self, source_notebook_path: str, notebook_version=4, pipelines_url=None, auto_deploy=False):
         self.source_path = source_notebook_path
@@ -58,8 +59,9 @@ class PipelinesNotebookConverter:
         # create internal representation of notebook pipeline
         self.parse_notebook_cells()
         # self.plot_pipeline()
-        # self.print_pipeline_state()
-        self.variables_detection()
+        self.in_variables_detection()
+        self.out_variable_detection()
+        self.print_pipeline_state()
         self.create_pipeline_code()
 
     def plot_pipeline(self):
@@ -169,7 +171,11 @@ class PipelinesNotebookConverter:
                     if block_name not in self.pipeline.nodes:
                         _tags = self._copy_tags(tags)
                         _tags.block_name = block_name
-                        self.pipeline.add_node(block_name, tags=_tags, source=c.source)
+                        self.pipeline.add_node(block_name,
+                                               tags=_tags,
+                                               source=c.source,
+                                               ins=set(),
+                                               outs=set())
                         if tags.previous_blocks:
                             for block in tags.previous_blocks:
                                 self.pipeline.add_edge(block, block_name)
@@ -186,9 +192,12 @@ class PipelinesNotebookConverter:
                             existing_tags['out'] = list(set(existing_tags['out']))
                         source_code += "\n" + c.source
                         # update pipeline block source code
-                        nx.set_node_attributes(self.pipeline, {block_name: {'source': source_code, 'tags': existing_tags}})
+                        nx.set_node_attributes(self.pipeline, {block_name: {'source': source_code,
+                                                                            'tags': existing_tags,
+                                                                            'ins': set(),
+                                                                            'outs': set()}})
 
-    def variables_detection(self):
+    def in_variables_detection(self):
         """
 
         Returns:
@@ -196,48 +205,76 @@ class PipelinesNotebookConverter:
         """
         code_inspector = CodeInspector()
         # Go through pipeline DAG and parse variable names
-        # Start first with global block (`import` and `functions`)
-        global_block_names = ['imports', 'functions']
+        # Start first with __GLOBAL_BLOCKS: code blocks that are injected in every pipeline block
         blocks = self.pipeline.nodes(data=True)
         code_inspector.register_global_names(
-            [blocks[g]['source'] for g in global_block_names if g in blocks]
+            [blocks[g]['source'] for g in self.__GLOBAL_BLOCKS if g in blocks]
         )
         for block_name in nx.topological_sort(self.pipeline):
-            if block_name in global_block_names:
+            if block_name in self.__GLOBAL_BLOCKS:
                 continue
 
             ins, assigned = code_inspector.inspect_code(
                 code=self.pipeline.nodes(data=True)[block_name]['source']
             )
-            print(f"Block {block_name}")
-            print(f"Ins")
-            # print(f"\t{ins}")
-            pprint.pprint(ins, width=1)
-            # print("Assigned")
-            # print(f"\t{assigned}")
-            # pprint.pprint(assigned, width=1)
+
+            # now merge the user defined (using tags) `in` variables
+            block_data = self.pipeline.nodes(data=True)[block_name]['tags']
+            if 'in' in block_data:
+                ins.update(block_data['in'])
+
+            nx.set_node_attributes(self.pipeline, {block_name: {'ins': ins}})
+            nx.set_node_attributes(self.pipeline, {block_name: {'assigned': assigned}})
+
+    def out_variable_detection(self):
+        """
+        Create the `outs` set of variables to be written at the end of each block.
+        To get the `outs` of each block, the function uses the topological order of
+        the pipelines and cycles through all the ancestors of each block.
+        Since we know what are the `ins` of the current block, we can get the blocks were
+        those `ins` where created. If an ancestor matches the `ins` entry, then it will have
+        a matching `outs`.
+        """
+        for block_name in reversed(list(nx.topological_sort(self.pipeline))):
+            # global blocks are injected at the beginning of every code block
+            if block_name in self.__GLOBAL_BLOCKS:
+                continue
+            ins = self.pipeline.nodes(data=True)[block_name]['ins']
+            # TODO: assume for now that we are just passing data from father to children.
+            #   In case we wanted to use deeper dependencies, use nx.ancestors()
+            for _a in self.pipeline.predecessors(block_name):
+                # A heuristic to know if the ancestor block needs to print out the variable
+                # is to intersect the current var name with the `ins` and `assigned` of that block.
+                # Any match might be worth saving.
+                father_data = self.pipeline.nodes(data=True)[_a]
+                outs = set()
+                # this maybe could be avoided. Checking the `assigned` should be enough for most sequential pipelines
+                # outs.update(ins.intersection(father_data['ins']))
+                outs.update(ins.intersection(father_data['assigned']))
+
+                # now merge the new outs for the father node with the outers it already has
+                outs.update(father_data['outs'])
+                # add to father the new `outs` variables
+                nx.set_node_attributes(self.pipeline, {_a: {'outs': outs}})
+
+        # now merge the user defined (using tags) `out` variables
+        for block_name in self.pipeline.nodes:
+            block_data = self.pipeline.nodes(data=True)[block_name]
+            if 'out' in block_data:
+                outs = block_data['outs']
+                outs.update(block_data['tags']['out'])
+                nx.set_node_attributes(self.pipeline, {block_name: {'outs': outs}})
 
     def create_pipeline_code(self):
-        # order the pipeline topologically to cycle through the DAG
-        import_block = None
-        if 'imports' in self.pipeline.nodes:
-            import_block = self.pipeline.nodes(data=True)['imports']
-            # 'hide' the node to avoid processing in following steps
-            nx.set_node_attributes(self.pipeline, {'imports': {'hidden': True}})
-
-        # block with self defined functions
-        functions_block = {"source": ""}
-        if 'functions' in self.pipeline.nodes:
-            functions_block = self.pipeline.nodes(data=True)['functions']
-            nx.set_node_attributes(self.pipeline, {'functions': {'hidden': True}})
-
         # collect function blocks
         function_blocks = list()
         function_names = list()
         function_args = dict()
 
+        # order the pipeline topologically to cycle through the DAG
         for block_name in nx.topological_sort(self.pipeline):
-            if 'hidden' in self.pipeline.nodes(data=True)[block_name]:
+            # no need of processing step in global blocks
+            if block_name in self.__GLOBAL_BLOCKS:
                 continue
             # first create the function
             function_template = self.template_env.get_template('function_template.txt')
@@ -251,17 +288,21 @@ class PipelinesNotebookConverter:
                     args.append(f"{a}_task.output")
             function_args[block_name] = args
 
+            # list of code blocks to inject into the function
+            _code_blocks = list()
+            for g in self.__GLOBAL_BLOCKS:
+                if g in self.pipeline.nodes:
+                    _code_blocks.append(self.pipeline.nodes(data=True)[g]['source'])
+            _code_blocks.append(block_data['source'])
+
             function_blocks.append(function_template.render(
                 pipeline_name=self.pipeline_name,
                 function_name=block_name,
-                function_blocks=[import_block['source'],
-                                 functions_block['source'],
-                                 block_data['source']
-                                 ],
+                function_blocks=_code_blocks,
                 function_args=[f"arg{i}" for i in range(0, len(args))],
-                in_variables=block_data['tags']['in'],
-                out_variables=block_data['tags']['out'])
-            )
+                in_variables=block_data['ins'],
+                out_variables=block_data['outs']
+            ))
             function_names.append(block_name)
 
         pipeline_template = self.template_env.get_template('pipeline_template.txt')
@@ -283,14 +324,21 @@ class PipelinesNotebookConverter:
         """
         for block_name in nx.topological_sort(self.pipeline):
             block_data = self.pipeline.nodes(data=True)[block_name]
-            # sort `in` and `out` array for better readability
-            block_data['tags']['in'] = sorted(block_data['tags']['in'])
-            block_data['tags']['out'] = sorted(block_data['tags']['out'])
 
             print(f"Block: {block_name}")
-            print("Tags:")
-            pprint.pprint(block_data['tags'], width=1)
+            print("Previous Blocks:")
+            if 'previous_blocks' in block_data['tags']:
+                pprint.pprint(block_data['tags']['previous_blocks'], width=1)
+            print("Ins")
+            if 'ins' in block_data:
+                pprint.pprint(sorted(block_data['ins']), width=1)
+            print("Outs")
+            if 'outs' in block_data:
+                pprint.pprint(sorted(block_data['outs']), width=1)
             print()
+            print("-------------------------------")
+            print()
+
 
     def save_pipeline(self):
         with open("pipeline_code.py", "w") as f:
