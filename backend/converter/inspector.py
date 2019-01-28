@@ -125,11 +125,12 @@ class CodeInspector:
 
         """
         # TODO: In general I should find a way to keep the context of conditions, loops and functions
-        # What I need is a way to know that I am inside a (example: loop) and forget about assignments
-        # once I get out of the loop. This could be done by calling a separate `walk` on each
-        # context block and stop from advancing the outer `walk`. Or, since `walk` is an iterator,
-        # I can call it in different parts of the code with a different logic. But I need to `walk` with a queue intialized
-        # only the context root node (e.g. For) so that when the context is exited the queue is empty
+        #   What I need is a way to know that I am inside a (example: loop) and forget about assignments
+        #   once I get out of the loop. This could be done by calling a separate `walk` on each
+        #   context block and stop from advancing the outer `walk`. Or, since `walk` is an iterator,
+        #   I can call it in different parts of the code with a different logic. But I need to `walk`
+        #   with a queue intialized only the context root node (e.g. For) so that when the context is
+        #   exited the queue is empty
 
         # variables that have been found on the left side of an assignment
         assigned = set()
@@ -161,9 +162,9 @@ class CodeInspector:
                             assigned.add(_w.optional_vars.id)
 
                 # TODO: Now I am not registering the for loop context. So I register the variable
-                # assigned in the loop but I do not check if the variable is overwriting an outer
-                # context. So if the block uses the same name to reference a previous block variable
-                # then I loose the reference
+                #   assigned in the loop but I do not check if the variable is overwriting an outer
+                #   context. So if the block uses the same name to reference a previous block variable
+                #   then I loose the reference
                 if isinstance(node, (ast.For, )):
                     if isinstance(node.target, (ast.Name, )):
                         assigned.add(node.target.id)
