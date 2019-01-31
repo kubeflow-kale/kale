@@ -1,10 +1,12 @@
 __pycache__/
+.ipynb_checkpoints/
+.pytest_cache/
+.idea/
+
 data/
 base_notebooks/
 
 todos.md
 
-.ipynb_checkpoints/
-.idea/
 
 pipeline_code.py

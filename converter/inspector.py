@@ -95,6 +95,12 @@ class CodeInspector:
         Returns:
 
         """
+        if not isinstance(code_blocks, list):
+            if isinstance(code_blocks, str):
+                code_blocks = [code_blocks]
+            else:
+                raise ValueError("register_global_names: code_blocks arg must be either `list` or `str`")
+
         skip_nodes = (ast.FunctionDef, ast.ClassDef)
         for code in code_blocks:
             tree = ast.parse(code)
