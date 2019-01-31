@@ -10,7 +10,6 @@ from pathlib import Path
 from graphviz import Source
 from jinja2 import Environment, PackageLoader
 
-from .inspector import CodeInspector
 from .linter import CodeInspectorLinter
 
 
@@ -61,7 +60,7 @@ class PipelinesNotebookConverter:
         self.parse_notebook_cells()
         # self.plot_pipeline()
         self.in_variables_detection()
-        self.out_variable_detection()
+        # self.out_variable_detection()
         self.print_pipeline_state()
         self.create_pipeline_code()
 
@@ -204,7 +203,7 @@ class PipelinesNotebookConverter:
         Returns:
 
         """
-        code_inspector = CodeInspector()
+        code_inspector = CodeInspectorLinter()
         # Go through pipeline DAG and parse variable names
         # Start first with __GLOBAL_BLOCKS: code blocks that are injected in every pipeline block
         blocks = self.pipeline.nodes(data=True)
@@ -215,17 +214,16 @@ class PipelinesNotebookConverter:
             if block_name in self.__GLOBAL_BLOCKS:
                 continue
 
-            ins, assigned = code_inspector.inspect_code(
+            ins = code_inspector.inspect_code(
                 code=self.pipeline.nodes(data=True)[block_name]['source']
             )
 
             # now merge the user defined (using tags) `in` variables
-            block_data = self.pipeline.nodes(data=True)[block_name]['tags']
-            if 'in' in block_data:
-                ins.update(block_data['in'])
+            # block_data = self.pipeline.nodes(data=True)[block_name]['tags']
+            # if 'in' in block_data:
+            #     ins.update(block_data['in'])
 
             nx.set_node_attributes(self.pipeline, {block_name: {'ins': ins}})
-            nx.set_node_attributes(self.pipeline, {block_name: {'assigned': assigned}})
 
     def out_variable_detection(self):
         """
