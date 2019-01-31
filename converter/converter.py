@@ -11,6 +11,7 @@ from graphviz import Source
 from jinja2 import Environment, PackageLoader
 
 from .inspector import CodeInspector
+from .linter import CodeInspectorLinter
 
 
 class dotdict(dict):
