@@ -135,7 +135,7 @@ class CodeInspector:
         #   once I get out of the loop. This could be done by calling a separate `walk` on each
         #   context block and stop from advancing the outer `walk`. Or, since `walk` is an iterator,
         #   I can call it in different parts of the code with a different logic. But I need to `walk`
-        #   with a queue intialized only the context root node (e.g. For) so that when the context is
+        #   with a queue initialised only the context root node (e.g. For) so that when the context is
         #   exited the queue is empty
 
         # variables that have been found on the left side of an assignment
@@ -187,3 +187,41 @@ class CodeInspector:
                        _id not in self.__BUILT_INS:
                         ins.add(_id)
         return ins, assigned
+
+    def get_all_names(self, code):
+        names = set()
+        tree = ast.parse(code)
+        for block in tree.body:
+            for node in self.__walk(block):
+                if isinstance(node, (ast.Name,)):
+                    names.add(node.id)
+                if isinstance(node, (ast.FunctionDef, ast.ClassDef,)):
+                    names.add(node.name)
+                if isinstance(node, (ast.Import, ast.ImportFrom,)):
+                    for _n in node.names:
+                        if _n.asname is None:
+                            names.add(_n.name)
+                        else:
+                            names.add(_n.asname)
+                if isinstance(node, (ast.Tuple,)):
+                    names.update(self.__get_tuple_names(node))
+        return names
+
+    def get_function_and_class_names(self, code):
+        """
+        Inspects the code walking through its AST and returns all
+        the functions and classes names
+
+        Args:
+            code: Multiline string representing Python code
+
+        Returns: List of string names
+
+        """
+        names = set()
+        tree = ast.parse(code)
+        for block in tree.body:
+            for node in self.__walk(block):
+                if isinstance(node, (ast.FunctionDef, ast.ClassDef,)):
+                    names.add(node.name)
+        return names

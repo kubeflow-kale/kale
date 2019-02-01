@@ -69,4 +69,4 @@ class CodeInspectorLinter:
             var_search = re.search(p, l)
             undef_vars.add(var_search.group(1))
 
-        return list(undef_vars)
+        return set(undef_vars)
