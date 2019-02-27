@@ -42,6 +42,9 @@ class PipelinesNotebookConverter:
         config = configparser.ConfigParser()
         config.read('config.ini')
 
+        self.kfp_url = config['kfp']['url']
+        self.deploy_pipeline = config.getboolean('kfp', 'deploy')
+
         self.pipeline_name = config['pipeline_confs']['pipeline_name']
         self.pipeline_description = config['pipeline_confs']['pipeline_description']
         self.docker_base_image = config['pipeline_confs']['docker_base_image']
@@ -66,6 +69,9 @@ class PipelinesNotebookConverter:
         self.automatic_variable_detection()
         self.print_pipeline_state()
         self.create_pipeline_code()
+
+        if self.deploy_pipeline:
+            self.deploy_pipeline_to_kfp()
 
     def plot_pipeline(self):
         nx.drawing.nx_pydot.write_dot(self.pipeline, 'test.dot')
@@ -329,9 +335,39 @@ class PipelinesNotebookConverter:
             pipeline_description=self.pipeline_description,
             docker_base_image=self.docker_base_image,
             mount_host_path=self.mount_host_path,
-            mount_container_path=self.mount_container_path
+            mount_container_path=self.mount_container_path,
+            deploy_pipeline=self.deploy_pipeline
         )
         self.save_pipeline()
+
+    def deploy_pipeline_to_kfp(self):
+        import kfp.compiler as compiler
+        import kfp
+
+        # import the generated pipeline code
+        from pipeline_code import auto_generated_pipeline
+
+        pipeline_filename = self.pipeline_name + '.pipeline.tar.gz'
+        compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
+
+        # Get or create an experiment and submit a pipeline run
+        client = kfp.Client(host=self.kfp_url)
+        list_experiments_response = client.list_experiments()
+        experiments = list_experiments_response.experiments
+
+        print(experiments)
+
+        if not experiments:
+            # The user does not have any experiments available. Creating a new one
+            experiment = client.create_experiment(self.pipeline_name + ' experiment')
+        else:
+            experiment = experiments[-1]  # Using the last experiment
+
+        # Submit a pipeline run
+        run_name = self.pipeline_name + ' run'
+        run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+
+        print(run_result)
 
     def print_pipeline_state(self):
         """
@@ -353,7 +389,6 @@ class PipelinesNotebookConverter:
             print()
             print("-------------------------------")
             print()
-
 
     def save_pipeline(self):
         with open("pipeline_code.py", "w") as f:
