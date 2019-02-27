@@ -13,9 +13,22 @@ def mount_volume_in_container_op(container_op, volume_name, host_path, mount_pat
                                           mount_path=mount_path,
                                           name=volume_name))
 
-def mount_volumes_in_container_op(container_op, volume_names, host_paths, mount_paths):
-    for n, hp, mp in zip(volume_names, host_paths, mount_paths):
-        container_op = mount_volume_in_container_op(container_op, n, hp, mp)
+
+def mount_pvc_in_container_op(container_op, volume_name, pvc_name, mount_path):
+    return container_op.add_volume(k8s_client.V1Volume(
+                                        name=volume_name,
+                                        persistent_volume_claim=k8s_client.V1PersistentVolumeClaimVolumeSource(
+                                                                    claim_name=pvc_name)))\
+                        .add_volume_mount(k8s_client.V1VolumeMount(mount_path=mount_path, name=volume_name))
+
+
+def mount_volumes_in_container_op(container_op, volume_names, host_paths=None, mount_paths=None, pvc=False, pvc_names=None):
+    if pvc:
+        for n, pvc_n, mp in zip(volume_names, pvc_names, mount_paths):
+            container_op = mount_pvc_in_container_op(container_op, n, pvc_n, mp)
+    else:
+        for n, hp, mp in zip(volume_names, host_paths, mount_paths):
+            container_op = mount_volume_in_container_op(container_op, n, hp, mp)
     return container_op
 
 {# PIPELINE FUNCTION BLOCKS #}
@@ -34,16 +47,28 @@ import kfp.dsl as dsl
    name='{{ pipeline_name }}',
    description='{{ pipeline_description }}'
 )
+{% if not deploy_pipeline %}
 def {{ pipeline_name }}():
+{% else %}
+def auto_generated_pipeline():
+{% endif %}
     {% for name in block_functions_names -%}
+{#    {{ name }}_task = mount_volumes_in_container_op(#}
+{#        container_op={{ name }}_op({{ block_function_args[ name ]|join(', ') }}),#}
+{#        volume_names=['{{ name }}-task-volume'],#}
+{#        host_paths=['{{ mount_host_path }}'],#}
+{#        mount_paths=['{{ mount_container_path }}'])#}
+
     {{ name }}_task = mount_volumes_in_container_op(
         container_op={{ name }}_op({{ block_function_args[ name ]|join(', ') }}),
         volume_names=['{{ name }}-task-volume'],
-        host_paths=['{{ mount_host_path }}'],
+        pvc=True,
+        pvc_names=['pipelines-persistence-volume-claim'],
         mount_paths=['{{ mount_container_path }}'])
     {% endfor -%}
 
 {# DEPLOY PIPELINE #}
+{% if not deploy_pipeline %}
 pipeline_func = {{ pipeline_name }}
 pipeline_filename = pipeline_func.__name__ + '.pipeline.tar.gz'
 import kfp.compiler as compiler
@@ -66,3 +91,4 @@ else:
 # Submit a pipeline run
 run_name = pipeline_func.__name__ + ' run'
 run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+{% endif %}

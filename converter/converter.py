@@ -10,6 +10,7 @@ from pathlib import Path
 from graphviz import Source
 from jinja2 import Environment, PackageLoader
 
+from .linter import CodeInspectorLinter
 from .inspector import CodeInspector
 
 
@@ -23,7 +24,10 @@ class dotdict(dict):
 
 
 class PipelinesNotebookConverter:
+    # Code blocks that are injected at the beginning of each pipelines block
     __GLOBAL_BLOCKS = ['imports', 'functions']
+    # Variables that inserted at the beginning of pipeline blocks by templates
+    __HARDCODED_VARIABLES = ['_input_data_folder']
 
     def __init__(self, source_notebook_path: str, notebook_version=4, pipelines_url=None, auto_deploy=False):
         self.source_path = source_notebook_path
@@ -37,6 +41,9 @@ class PipelinesNotebookConverter:
         # read config file
         config = configparser.ConfigParser()
         config.read('config.ini')
+
+        self.kfp_url = config['kfp']['url']
+        self.deploy_pipeline = config.getboolean('kfp', 'deploy')
 
         self.pipeline_name = config['pipeline_confs']['pipeline_name']
         self.pipeline_description = config['pipeline_confs']['pipeline_description']
@@ -59,10 +66,12 @@ class PipelinesNotebookConverter:
         # create internal representation of notebook pipeline
         self.parse_notebook_cells()
         # self.plot_pipeline()
-        self.in_variables_detection()
-        self.out_variable_detection()
+        self.automatic_variable_detection()
         self.print_pipeline_state()
         self.create_pipeline_code()
+
+        if self.deploy_pipeline:
+            self.deploy_pipeline_to_kfp()
 
     def plot_pipeline(self):
         nx.drawing.nx_pydot.write_dot(self.pipeline, 'test.dot')
@@ -197,34 +206,50 @@ class PipelinesNotebookConverter:
                                                                             'ins': set(),
                                                                             'outs': set()}})
 
+    def automatic_variable_detection(self):
+        # First get all the names of each code block
+        inspector = CodeInspector()
+        for block in self.pipeline.nodes:
+            block_data = self.pipeline.nodes(data=True)[block]
+            all_names = inspector.get_all_names(block_data['source'])
+            nx.set_node_attributes(self.pipeline, {block: {'all_names': all_names}})
+
+        # Merge together all the code blocks to detect all functions and class names
+        _code_blocks = list()
+        for block in self.pipeline.nodes:
+            _code_blocks.append(self.pipeline.nodes(data=True)[block]['source'])
+        complete_block = '\n'.join(_code_blocks)
+        inspector.get_function_and_class_names(complete_block)
+
+        # get all the missing names in each block
+        self.in_variables_detection()
+        self.out_variable_detection()
+
     def in_variables_detection(self):
         """
 
         Returns:
 
         """
-        code_inspector = CodeInspector()
+        code_inspector = CodeInspectorLinter()
         # Go through pipeline DAG and parse variable names
         # Start first with __GLOBAL_BLOCKS: code blocks that are injected in every pipeline block
-        blocks = self.pipeline.nodes(data=True)
-        code_inspector.register_global_names(
-            [blocks[g]['source'] for g in self.__GLOBAL_BLOCKS if g in blocks]
-        )
-        for block_name in nx.topological_sort(self.pipeline):
-            if block_name in self.__GLOBAL_BLOCKS:
+        block_names = self.pipeline.nodes()
+        for block in block_names:
+            if block in self.__GLOBAL_BLOCKS:
                 continue
 
-            ins, assigned = code_inspector.inspect_code(
-                code=self.pipeline.nodes(data=True)[block_name]['source']
-            )
+            _code_blocks = list()
+            for g in self.__GLOBAL_BLOCKS:
+                if g in self.pipeline.nodes:
+                    _code_blocks.append(self.pipeline.nodes(data=True)[g]['source'])
+            _code_blocks.append(self.pipeline.nodes(data=True)[block]['source'])
+            complete_block = '\n'.join(_code_blocks)
+            ins = code_inspector.inspect_code(code=complete_block)
 
-            # now merge the user defined (using tags) `in` variables
-            block_data = self.pipeline.nodes(data=True)[block_name]['tags']
-            if 'in' in block_data:
-                ins.update(block_data['in'])
-
-            nx.set_node_attributes(self.pipeline, {block_name: {'ins': ins}})
-            nx.set_node_attributes(self.pipeline, {block_name: {'assigned': assigned}})
+            # remove from the list the variables that will be injected by template code
+            ins.difference_update(set(PipelinesNotebookConverter.__HARDCODED_VARIABLES))
+            nx.set_node_attributes(self.pipeline, {block: {'ins': ins}})
 
     def out_variable_detection(self):
         """
@@ -243,16 +268,12 @@ class PipelinesNotebookConverter:
             # TODO: assume for now that we are just passing data from father to children.
             #   In case we wanted to use deeper dependencies, use nx.ancestors()
             for _a in self.pipeline.predecessors(block_name):
-                # A heuristic to know if the ancestor block needs to print out the variable
-                # is to intersect the current var name with the `ins` and `assigned` of that block.
-                # Any match might be worth saving.
                 father_data = self.pipeline.nodes(data=True)[_a]
-                outs = set()
-                # this maybe could be avoided. Checking the `assigned` should be enough for most sequential pipelines
-                # outs.update(ins.intersection(father_data['ins']))
-                outs.update(ins.intersection(father_data['assigned']))
-
-                # now merge the new outs for the father node with the outers it already has
+                # Intersect the missing names of this father child with all
+                # the father's names. The intersection is the list of variables
+                # that the father need to serialize
+                outs = ins.intersection(father_data['all_names'])
+                # include previous `outs` in case this father has multiple children steps
                 outs.update(father_data['outs'])
                 # add to father the new `outs` variables
                 nx.set_node_attributes(self.pipeline, {_a: {'outs': outs}})
@@ -314,9 +335,39 @@ class PipelinesNotebookConverter:
             pipeline_description=self.pipeline_description,
             docker_base_image=self.docker_base_image,
             mount_host_path=self.mount_host_path,
-            mount_container_path=self.mount_container_path
+            mount_container_path=self.mount_container_path,
+            deploy_pipeline=self.deploy_pipeline
         )
         self.save_pipeline()
+
+    def deploy_pipeline_to_kfp(self):
+        import kfp.compiler as compiler
+        import kfp
+
+        # import the generated pipeline code
+        from pipeline_code import auto_generated_pipeline
+
+        pipeline_filename = self.pipeline_name + '.pipeline.tar.gz'
+        compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
+
+        # Get or create an experiment and submit a pipeline run
+        client = kfp.Client(host=self.kfp_url)
+        list_experiments_response = client.list_experiments()
+        experiments = list_experiments_response.experiments
+
+        print(experiments)
+
+        if not experiments:
+            # The user does not have any experiments available. Creating a new one
+            experiment = client.create_experiment(self.pipeline_name + ' experiment')
+        else:
+            experiment = experiments[-1]  # Using the last experiment
+
+        # Submit a pipeline run
+        run_name = self.pipeline_name + ' run'
+        run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+
+        print(run_result)
 
     def print_pipeline_state(self):
         """
@@ -338,7 +389,6 @@ class PipelinesNotebookConverter:
             print()
             print("-------------------------------")
             print()
-
 
     def save_pipeline(self):
         with open("pipeline_code.py", "w") as f:
