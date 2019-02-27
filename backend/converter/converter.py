@@ -1,7 +1,9 @@
 import re
+import sys
 import copy
 import pprint
-import configparser
+import tempfile
+import importlib
 
 import nbformat as nb
 import networkx as nx
@@ -29,28 +31,35 @@ class PipelinesNotebookConverter:
     # Variables that inserted at the beginning of pipeline blocks by templates
     __HARDCODED_VARIABLES = ['_input_data_folder']
 
-    def __init__(self, source_notebook_path: str, notebook_version=4, pipelines_url=None, auto_deploy=False):
+    def __init__(self,
+                 source_notebook_path: str,
+                 pipeline_name,
+                 pipeline_descr,
+                 docker_image,
+                 notebook_version=4,
+                 auto_deploy=False,
+                 kfp_port=8080,
+                 ):
+        print(__file__)
         self.source_path = source_notebook_path
         self.nbformat_version = notebook_version
-        self.deployment_url = pipelines_url
-        self.auto_deploy = auto_deploy
+
+        self.kfp_url = f"localhost:{kfp_port}/pipeline"
+        self.deploy_pipeline = auto_deploy
+
+        self.pipeline_name = pipeline_name
+        self.pipeline_description = pipeline_descr
+        self.docker_base_image = docker_image
 
         self.pipeline = nx.DiGraph()
         self.pipeline_code = ""
 
-        # read config file
-        config = configparser.ConfigParser()
-        config.read('config.ini')
+        # path to Minikube folder where to store data
+        self.mount_host_path = '/home/docker/data'
+        # path to container folder where `mount_host_path` is mapped
+        self.mount_container_path = '/data'
 
-        self.kfp_url = config['kfp']['url']
-        self.deploy_pipeline = config.getboolean('kfp', 'deploy')
-
-        self.pipeline_name = config['pipeline_confs']['pipeline_name']
-        self.pipeline_description = config['pipeline_confs']['pipeline_description']
-        self.docker_base_image = config['pipeline_confs']['docker_base_image']
-
-        self.mount_host_path = config['mount_paths']['mount_host_path']
-        self.mount_container_path = config['mount_paths']['mount_container_path']
+        self.temp_dirdirpath = tempfile.mkdtemp()
 
         # initialize templating environment
         self.template_env = Environment(loader=PackageLoader('converter', 'templates'))
@@ -345,6 +354,8 @@ class PipelinesNotebookConverter:
         import kfp
 
         # import the generated pipeline code
+        # add temp folder to PYTHONPATH
+        sys.path.append(self.temp_dirdirpath)
         from pipeline_code import auto_generated_pipeline
 
         pipeline_filename = self.pipeline_name + '.pipeline.tar.gz'
@@ -391,8 +402,15 @@ class PipelinesNotebookConverter:
             print()
 
     def save_pipeline(self):
-        with open("pipeline_code.py", "w") as f:
+        # save pipeline code to temp directory
+        with open(self.temp_dirdirpath + "/pipeline_code.py", "w") as f:
             f.write(self.pipeline_code)
+        print(f"Pipelines code saved at {self.temp_dirdirpath + '/pipeline_code.py'}")
+
+        if not self.deploy_pipeline:
+            # save pipeline code also at execution path
+            with open("pipeline_code.py", "w") as f:
+                f.write(self.pipeline_code)
 
     @staticmethod
     def _copy_tags(tags):
