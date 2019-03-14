@@ -7,15 +7,15 @@ def readme():
 
 
 setup(
-    name='pipelines-converter',
+    name='kale',
     version='0.1',
-    description='A deployment tool from vanilla JupyterNotebooks to KFP pipelines',
+    description='Deploy JupyterNotebooks to KFP pipelines',
     longdescription=readme(),
     url='https://github.com/StefanoFioravanzo/pipelines_converter',
     author='Stefano Fioravanzo',
     author_email='fioravanzo@fbk.eu',
     license='MIT',
-    packages=['converter'],
+    packages=['kale'],
     install_requires=[
       'nbformat',
       'networkx',
@@ -25,7 +25,7 @@ setup(
     ],
     dependency_links=['https://storage.googleapis.com/ml-pipeline/release/0.1.7/kfp.tar.gz'],
     entry_points={
-        'console_scripts': ['kfp_deploy=converter.command_line:main'],
+        'console_scripts': ['kale=kale.command_line:main'],
     },
     include_package_data=True,
     zip_safe=False

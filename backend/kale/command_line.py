@@ -1,6 +1,6 @@
 import argparse
 
-from .converter import PipelinesNotebookConverter
+from .converter import KaleCore
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
 
     args = parser.parse_args()
 
-    pipelines_converter = PipelinesNotebookConverter(
+    kale_core = KaleCore(
         source_notebook_path=args.nb,
         pipeline_name=args.pipeline_name,
         pipeline_descr=args.pipeline_descr,
