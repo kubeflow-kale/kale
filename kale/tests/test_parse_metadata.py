@@ -2,7 +2,7 @@ import pytest
 
 import nbformat as nb
 
-from converter.converter import PipelinesNotebookConverter
+from kale.converter import KaleCore
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def test_metadata_generation(tag_parsing_notebook):
         if c.cell_type != "code":
             continue
 
-        tags = PipelinesNotebookConverter.parse_metadata(c.metadata)
+        tags = KaleCore.parse_metadata(c.metadata)
         parsed_tags.append(tags)
     pairs = zip(result, parsed_tags)
     assert all(x == y for x, y in pairs)
@@ -48,7 +48,7 @@ def test_empty_tag():
     tag =  {'metadata': {}}
     target = {'block_names': [], 'in': [], 'out': []}
 
-    res = PipelinesNotebookConverter.parse_metadata(tag['metadata'])
+    res = KaleCore.parse_metadata(tag['metadata'])
     assert target == res
 
 
@@ -58,7 +58,7 @@ def test_tag_skip():
     }}
     target = None
 
-    res = PipelinesNotebookConverter.parse_metadata(tag['metadata'])
+    res = KaleCore.parse_metadata(tag['metadata'])
     assert target == res
 
 
@@ -68,7 +68,7 @@ def test_tag_block():
     }}
     target = {'block_names': ["processing"], 'in': [], 'out': []}
 
-    res = PipelinesNotebookConverter.parse_metadata(tag['metadata'])
+    res = KaleCore.parse_metadata(tag['metadata'])
     assert target == res
 
 
@@ -78,6 +78,6 @@ def test_tag_block_error():
     }}
 
     with pytest.raises(ValueError):
-        PipelinesNotebookConverter.parse_metadata(tag['metadata'])
+        KaleCore.parse_metadata(tag['metadata'])
 
 

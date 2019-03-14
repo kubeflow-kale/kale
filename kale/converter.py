@@ -25,7 +25,7 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
 
-class PipelinesNotebookConverter:
+class KaleCore:
     # Code blocks that are injected at the beginning of each pipelines block
     __GLOBAL_BLOCKS = ['imports', 'functions']
     # Variables that inserted at the beginning of pipeline blocks by templates
@@ -257,7 +257,7 @@ class PipelinesNotebookConverter:
             ins = code_inspector.inspect_code(code=complete_block)
 
             # remove from the list the variables that will be injected by template code
-            ins.difference_update(set(PipelinesNotebookConverter.__HARDCODED_VARIABLES))
+            ins.difference_update(set(KaleCore.__HARDCODED_VARIABLES))
             nx.set_node_attributes(self.pipeline, {block: {'ins': ins}})
 
     def out_variable_detection(self):

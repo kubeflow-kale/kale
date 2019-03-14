@@ -1,6 +1,6 @@
 import pytest
 
-from converter.inspector import  CodeInspector
+from kale.inspector import  CodeInspector
 
 
 def __open_snippet(snippet_path):
