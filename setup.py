@@ -21,7 +21,8 @@ setup(
       'networkx',
       'jinja2',
       'graphviz',
-      'pyflakes'
+      'pyflakes',
+      'papermill'
     ],
     dependency_links=['https://storage.googleapis.com/ml-pipeline/release/0.1.7/kfp.tar.gz'],
     entry_points={
