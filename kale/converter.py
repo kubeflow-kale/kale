@@ -12,8 +12,8 @@ from pathlib import Path
 from graphviz import Source
 from jinja2 import Environment, PackageLoader
 
-from .linter import CodeInspectorLinter
-from .inspector import CodeInspector
+from kale.linter import CodeInspectorLinter
+from kale.inspector import CodeInspector
 
 
 class dotdict(dict):
@@ -108,6 +108,12 @@ class KaleCore:
 
         if 'tags' not in metadata:
             return parsed_tags
+
+        # in case use are using Papermill to generate multiple notebooks
+        # the parameters at the beginning of the notebook must be added
+        # to every step of the pipeline.
+        if 'parameters' in metadata['tags'] or 'injected-parameters' in metadata['tags']:
+            metadata['tags'] = ["block:imports"]
 
         for t in metadata['tags']:
             if t == "skip":
@@ -402,15 +408,16 @@ class KaleCore:
             print()
 
     def save_pipeline(self):
+        filename = f"kfp_{self.pipeline_name}.py"
         # save pipeline code to temp directory
-        with open(self.temp_dirdirpath + "/pipeline_code.py", "w") as f:
+        with open(self.temp_dirdirpath + f"/{filename}", "w") as f:
             f.write(self.pipeline_code)
-        print(f"Pipelines code saved at {self.temp_dirdirpath + '/pipeline_code.py'}")
+        print(f"Pipelines code saved at {self.temp_dirdirpath}/{filename}")
 
-        if not self.deploy_pipeline:
-            # save pipeline code also at execution path
-            with open("pipeline_code.py", "w") as f:
-                f.write(self.pipeline_code)
+        # if not self.deploy_pipeline:
+        #     # save pipeline code also at execution path
+        #     with open(filename, "w") as f:
+        #         f.write(self.pipeline_code)
 
     @staticmethod
     def _copy_tags(tags):

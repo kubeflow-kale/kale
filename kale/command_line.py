@@ -1,7 +1,7 @@
 import argparse
 
-from .converter import KaleCore
-from .notebook_hp import generate_notebooks_from_yml
+from kale.converter import KaleCore
+from kale.notebook_hp import generate_notebooks_from_yml
 
 
 def main():
@@ -18,20 +18,20 @@ def main():
 
     # if jupyter_args is set, generate first a set of temporary notebooks
     # based on the input yml parameters (via Papermill)
-    if "jupyter_args" in args:
+    if args.jupyter_args is not None:
         generated_notebooks = generate_notebooks_from_yml(input_nb_path=args.nb,
                                                           yml_parameters_path=args.jupyter_args)
 
         # # Run KaleCore over each generated notebook
-        # for n, params in generated_notebooks:
-        #     KaleCore(
-        #         source_notebook_path=n,
-        #         pipeline_name=args.pipeline_name + params,
-        #         pipeline_descr=args.pipeline_descr + " params" + params,
-        #         docker_image=args.docker_image,
-        #         auto_deploy=args.deploy,
-        #         kfp_port=args.kfp_port
-        #     )
+        for n, params in generated_notebooks:
+            KaleCore(
+                source_notebook_path=n,
+                pipeline_name=args.pipeline_name + params,
+                pipeline_descr=args.pipeline_descr + " params" + params,
+                docker_image=args.docker_image,
+                auto_deploy=args.deploy,
+                kfp_port=args.kfp_port
+            )
     else:
         KaleCore(
             source_notebook_path=args.nb,
@@ -41,3 +41,7 @@ def main():
             auto_deploy=args.deploy,
             kfp_port=args.kfp_port
         )
+
+
+if __name__ == "__main__":
+    main()
