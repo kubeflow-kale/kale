@@ -4,8 +4,6 @@ from static_analysis.inspector import CodeInspector
 from static_analysis.linter import CodeInspectorLinter
 
 
-# Code blocks that are injected at the beginning of each pipelines block
-__GLOBAL_BLOCKS = ['imports', 'functions']
 # Variables that inserted at the beginning of pipeline blocks by templates
 __HARDCODED_VARIABLES = ['_input_data_folder']
 
@@ -21,16 +19,8 @@ def in_variables_detection(nb_graph):
     # Start first with __GLOBAL_BLOCKS: code blocks that are injected in every pipeline block
     block_names = nb_graph.nodes()
     for block in block_names:
-        if block in __GLOBAL_BLOCKS:
-            continue
-
-        _code_blocks = list()
-        for g in __GLOBAL_BLOCKS:
-            if g in nb_graph.nodes:
-                _code_blocks.append(nb_graph.nodes(data=True)[g]['source'])
-        _code_blocks.append(nb_graph.nodes(data=True)[block]['source'])
-        complete_block = '\n'.join(_code_blocks)
-        ins = code_inspector.inspect_code(code=complete_block)
+        source_code = nb_graph.nodes(data=True)[block]['source']
+        ins = code_inspector.inspect_code(code=source_code)
 
         # remove from the list the variables that will be injected by template code
         ins.difference_update(set(__HARDCODED_VARIABLES))
@@ -47,9 +37,6 @@ def out_variable_detection(nb_graph):
     a matching `outs`.
     """
     for block_name in reversed(list(nx.topological_sort(nb_graph))):
-        # global blocks are injected at the beginning of every code block
-        if block_name in __GLOBAL_BLOCKS:
-            continue
         ins = nb_graph.nodes(data=True)[block_name]['ins']
         # TODO: assume for now that we are just passing data from father to children.
         #   In case we wanted to use deeper dependencies, use nx.ancestors()

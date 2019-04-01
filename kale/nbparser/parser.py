@@ -8,6 +8,26 @@ import networkx as nx
 
 from graphviz import Source
 
+# Kale custom tagging language
+GLOBAL_BLOCKS = ['imports',
+                 'functions',
+                 # in case use are using Papermill to generate multiple notebooks
+                 # the parameters at the beginning of the notebook must be added
+                 # to every step of the pipeline.
+                 'parameters',
+                 'injected-parameters'
+                 ]
+
+TAGS_LANGUAGE = [r'^imports$',
+                 r'^functions$',
+                 r'^parameters$',
+                 r'^injected-parameters$',
+                 r'^skip$'
+                 r'^in$',
+                 r'^out$',
+                 r'^block:[a-z0-9]+(;[a-z0-9]+)*$',
+                 r'^prev:[a-z0-9]+(;[a-z0-9]+)*$']
+
 
 class _dotdict(dict):
     """
@@ -26,19 +46,6 @@ def _copy_tags(tags):
         else:
             new_tags[k] = copy.deepcopy(tags[k])
     return new_tags
-
-
-def _k8s_validate_name(n):
-    """
-
-    Args:
-        n:
-
-    Returns:
-
-    """
-    if re.match(r'^[a-z0-9]*$', n) is None:
-        raise ValueError(f"Wrong name {n}: label must only consist of lower case alphanumeric characters")
 
 
 def plot_pipeline(graph, dot_path=None):
@@ -77,47 +84,47 @@ def parse_metadata(metadata: dict):
     parsed_tags = _dotdict()
 
     # block_names is a list because a cell block might be assigned to more
-    # than one pipeline block. It can happen with DL DataLoaders that are assigned to a specific device
-    # and are used for multiple models
+    # than one pipeline block.
     parsed_tags['block_names'] = list()
     parsed_tags['previous_blocks'] = list()
     parsed_tags['in'] = list()
     parsed_tags['out'] = list()
 
-    if 'tags' not in metadata:
+    # the cell was not tagged
+    if 'tags' not in metadata or len(metadata['tags']) == 0:
         return parsed_tags
 
-    # in case use are using Papermill to generate multiple notebooks
-    # the parameters at the beginning of the notebook must be added
-    # to every step of the pipeline.
-    if 'parameters' in metadata['tags'] or 'injected-parameters' in metadata['tags']:
-        metadata['tags'] = ["block:imports"]
-
     for t in metadata['tags']:
+
+        # Check that the tag is defined by the language
+        if any(re.match(_t, t) for _t in TAGS_LANGUAGE) is False:
+            raise ValueError(f"Unrecognized tag: {t}")
+
         if t == "skip":
             return None
 
+        if t in GLOBAL_BLOCKS:
+            parsed_tags['block_names'] = ['global']
+            return parsed_tags
+
         elems = t.split(':')
+        radix = elems[0]
+        value = elems[1]
+        # in the future we could define tags that have optional arguments
+        args = elems[2:] if len(elems) > 2 else None
+
         # name of the current pipeline step
-        if elems[0] == "block":
-            if len(elems) != 2:
-                raise ValueError(f"Wrong block `block` tag: {t}")
-            _k8s_validate_name(elems[1])
-            parsed_tags['block_names'].append(elems[1])
+        if radix == "block":
+            parsed_tags['block_names'].extend(value.split(';'))
         # names of the [possible] previous [dependencies] steps
-        if elems[0] == "prev":
-            # skip first
-            parsed_tags['previous_blocks'] = elems[1:]
+        if radix == "prev":
+            parsed_tags['previous_blocks'].extend(value.split(';'))
         # variables to be read from previous step
-        if elems[0] == "in":
-            if len(elems) != 2:
-                raise ValueError(f"Wrong `in` tag: {t}")
-            parsed_tags['in'].append(elems[1])
+        if radix == "in":
+            parsed_tags['in'].append(value)
         # variables to be saved for later steps
-        if elems[0] == "out":
-            if len(elems) != 2:
-                raise ValueError(f"Wrong `out` tag: {t}")
-            parsed_tags['out'].append(elems[1])
+        if radix == "out":
+            parsed_tags['out'].append(value)
     return parsed_tags
 
 
@@ -125,7 +132,7 @@ def merge_code(nb_graph, dst, tags, code):
     """
 
     Args:
-        graph: nx.DiGraph
+        nb_graph: nx.DiGraph
                 The graph defined by the notebook's tags
         dst: string
                 Name id of the destination node
@@ -184,6 +191,10 @@ def parse_notebook(nb_path, nb_format_version):
     #   to use for merge)
     multiple_parent_blocks = False
 
+    # All the code blocks that are to be pre-prended to every light-weight function (imports, functions, ...)
+    # are merged together in this variable and then pre-pended.
+    global_block = ""
+
     # iterate over the notebook cells, from first to last
     for c in source_nb.cells:
         # parse only source code cells
@@ -194,7 +205,12 @@ def parse_notebook(nb_path, nb_format_version):
         if tags is None:
             continue
 
-        # check that the previous block already exist in the graph
+        # This cell is to be appended to every code block
+        if 'global' in tags['block_names']:
+            global_block += '\n' + c.source
+            continue
+
+        # check that the previous block already exists in the graph if the prev tag is used
         for p in tags.previous_blocks:
             if p not in nb_graph.nodes:
                 raise ValueError(
@@ -220,5 +236,10 @@ def parse_notebook(nb_path, nb_format_version):
                 else:
                     nb_graph = merge_code(nb_graph, block_name, tags, c.source)
 
-    # TODO: Prepend the global code blocks before every other block
+    # Prepend all global code blocks before every other one
+    if global_block != "":
+        for block in nb_graph:
+            block_data = nb_graph.nodes(data=True)[block]
+            nx.set_node_attributes(nb_graph, {block: {'source': global_block + '\n\n' + block_data['source']}})
+
     return nb_graph
