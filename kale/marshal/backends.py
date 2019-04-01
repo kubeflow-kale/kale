@@ -3,11 +3,11 @@ import torch
 import numpy as np
 import pandas as pd
 
-from odo.resource import resource
+from .resource_load import resource_load
 from .resource_save import resource_save
 
 
-@resource.register('.*\.npy')  # match anything ending in .npy
+@resource_load.register('.*\.npy')  # match anything ending in .npy
 def resource_numpy_load(uri, **kwargs):
     print("Loading numpy obj")
     return np.load(uri)
@@ -19,7 +19,7 @@ def resource_numpy_save(obj, path, **kwargs):
     return np.save(path+".npy", obj)
 
 
-@resource.register('.*\.pdpkl')
+@resource_load.register('.*\.pdpkl')
 def resource_pandas_load(uri, **kwargs):
     print("Loading pandas obj")
     return pd.read_pickle(uri)
@@ -31,7 +31,7 @@ def resource_pandas_save(obj, path, **kwargs):
     return obj.to_pickle(path+'.pdpkl')
 
 
-@resource.register('.*\.pt')
+@resource_load.register('.*\.pt')
 def resource_torch_load(uri, **kwargs):
     print("Loading PyTorch model")
     obj_torch = torch.load(uri, pickle_module=dill)

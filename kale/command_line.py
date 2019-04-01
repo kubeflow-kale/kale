@@ -1,6 +1,6 @@
 import argparse
 
-from kale.converter import KaleCore
+from kale.core import Kale
 from kale.notebook_hp import generate_notebooks_from_yml
 
 
@@ -24,7 +24,7 @@ def main():
 
         # # Run KaleCore over each generated notebook
         for n, params in generated_notebooks:
-            KaleCore(
+            Kale(
                 source_notebook_path=n,
                 pipeline_name=args.pipeline_name + params,
                 pipeline_descr=args.pipeline_descr + " params" + params,
@@ -33,7 +33,7 @@ def main():
                 kfp_port=args.kfp_port
             )
     else:
-        KaleCore(
+        Kale(
             source_notebook_path=args.nb,
             pipeline_name=args.pipeline_name,
             pipeline_descr=args.pipeline_descr,
