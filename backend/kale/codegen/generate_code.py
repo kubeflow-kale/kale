@@ -3,8 +3,6 @@ import networkx as nx
 from jinja2 import Environment, PackageLoader
 
 
-# Code blocks that are injected at the beginning of each pipelines block
-__GLOBAL_BLOCKS = ['imports', 'functions']
 # Variables that inserted at the beginning of pipeline blocks by templates
 __HARDCODED_VARIABLES = ['_input_data_folder']
 
@@ -63,9 +61,6 @@ def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_imag
 
     # order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
-        # no need of processing step in global blocks
-        if block_name in __GLOBAL_BLOCKS:
-            continue
         # first create the function
         function_template = template_env.get_template('function_template.txt')
         block_data = nb_graph.nodes(data=True)[block_name]
@@ -78,17 +73,10 @@ def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_imag
                 args.append(f"{a}_task.output")
         function_args[block_name] = args
 
-        # list of code blocks to inject into the function
-        _code_blocks = list()
-        for g in __GLOBAL_BLOCKS:
-            if g in nb_graph.nodes:
-                _code_blocks.append(nb_graph.nodes(data=True)[g]['source'])
-        _code_blocks.append(block_data['source'])
-
         function_blocks.append(function_template.render(
             pipeline_name=pipeline_name,
             function_name=block_name,
-            function_blocks=_code_blocks,
+            function_blocks=[block_data['source']],
             function_args=[f"arg{i}" for i in range(0, len(args))],
             in_variables=block_data['ins'],
             out_variables=block_data['outs']
