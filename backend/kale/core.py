@@ -12,6 +12,7 @@ from codegen import generate_code
 
 
 class Kale:
+    # TODO: Define default and parameters in config file?
     def __init__(self,
                  source_notebook_path: str,
                  pipeline_name,
@@ -65,7 +66,9 @@ class Kale:
         self.save_pipeline(kfp_code)
 
         # deploy pipeline
+        # TODO: Add auto-deploy call
 
+    # TODO: Fix autodeploy procedure
     def deploy_pipeline_to_kfp(self):
         import kfp.compiler as compiler
         import kfp
@@ -118,6 +121,7 @@ class Kale:
             print("-------------------------------")
             print()
 
+    # TODO Improve pipeline code saving
     def save_pipeline(self, pipeline_code):
         filename = f"kfp_{self.pipeline_name}.py"
         # save pipeline code to temp directory
