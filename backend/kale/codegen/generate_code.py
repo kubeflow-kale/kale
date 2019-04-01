@@ -3,34 +3,9 @@ import networkx as nx
 from jinja2 import Environment, PackageLoader
 
 
-# Variables that inserted at the beginning of pipeline blocks by templates
-__HARDCODED_VARIABLES = ['_input_data_folder']
-
-
-def gen_lightweight_component(node):
-    """
-    Generates the KFP DSL code for a lightweight component
-    from a graph node
-
-    Args:
-        node: NetworkX graph node
-                The node of the nx graph representing a component of the pipeline
-
-    Returns: string
-                Generated Python Code
-
-    """
-    pass
-
-
-def gen_pipeline_definition():
-    pass
-
-
-def gen_deploy():
-    pass
-
-
+# TODO: Define most of this function parameters in a config file?
+#   Or extent the tagging language and provide defaults.
+#   Need to implement tag arguments first.
 def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_image, mount_host_path,
                  mount_container_path, deploy_pipeline):
     """
@@ -54,12 +29,14 @@ def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_imag
     # initialize templating environment
     template_env = Environment(loader=PackageLoader('converter', 'templates'))
 
-    # collect function blocks
+    # List of light-weight components generated code
     function_blocks = list()
+    # List of names of components
     function_names = list()
+    # Arguments to be passed to the light-weight component
     function_args = dict()
 
-    # order the pipeline topologically to cycle through the DAG
+    # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
         # first create the function
         function_template = template_env.get_template('function_template.txt')

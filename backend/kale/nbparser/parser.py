@@ -15,6 +15,7 @@ GLOBAL_BLOCKS = ['imports',
                  # the parameters at the beginning of the notebook must be added
                  # to every step of the pipeline.
                  'parameters',
+                 # TODO: remove `parameters` code block if `injected-parameters` is found
                  'injected-parameters'
                  ]
 
@@ -71,7 +72,6 @@ def plot_pipeline(graph, dot_path=None):
         os.remove(dot_path)
 
 
-# TODO: Need to better generalize the tagging language
 def parse_metadata(metadata: dict):
     """
 
