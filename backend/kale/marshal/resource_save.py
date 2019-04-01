@@ -1,10 +1,10 @@
-from .dispatcher import RegexDispatcherSave
+from .dispatcher import TypeDispatcher
 
 
 __all__ = 'resource_save'
 
 
-resource_save = RegexDispatcherSave('resource_save')
+resource_save = TypeDispatcher('resource_save')
 
 
 @resource_save.register('.*', priority=1)
