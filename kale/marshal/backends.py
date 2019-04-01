@@ -7,6 +7,8 @@ from .resource_load import resource_load
 from .resource_save import resource_save
 
 
+# TODO Add more backend for common data types
+
 @resource_load.register('.*\.npy')  # match anything ending in .npy
 def resource_numpy_load(uri, **kwargs):
     print("Loading numpy obj")
