@@ -3,7 +3,7 @@ import networkx as nx
 from static_analysis.inspector import CodeInspector
 from static_analysis.linter import CodeInspectorLinter
 
-
+# TODO: Remove this hardcoded dependency
 # Variables that inserted at the beginning of pipeline blocks by templates
 __HARDCODED_VARIABLES = ['_input_data_folder']
 
