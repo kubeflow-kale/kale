@@ -1,7 +1,7 @@
 import argparse
 
 from kale.core import Kale
-from kale.notebook_hp import generate_notebooks_from_yml
+from kale.notebook_gen import generate_notebooks_from_yml
 
 
 def main():

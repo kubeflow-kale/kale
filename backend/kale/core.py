@@ -1,3 +1,4 @@
+import os
 import sys
 import pprint
 import tempfile
@@ -5,6 +6,7 @@ import tempfile
 import networkx as nx
 
 from pathlib import Path
+from shutil import copyfile
 
 from nbparser import parser
 from static_analysis import dep_analysis
@@ -23,6 +25,7 @@ class Kale:
                  kfp_port=8080,
                  ):
         self.source_path = Path(source_notebook_path)
+        self.output_path = f"{os.path.dirname(self.source_path)}/kfp_{pipeline_name}.py"
         if not self.source_path.exists():
             raise ValueError(f"Path {self.source_path} does not exist")
         self.nbformat_version = notebook_version
@@ -39,8 +42,6 @@ class Kale:
         # path to container folder where `mount_host_path` is mapped
         self.mount_container_path = '/data'
 
-        self.temp_dirdirpath = tempfile.mkdtemp()
-
         self.run()
 
     def run(self):
@@ -49,9 +50,6 @@ class Kale:
 
         # run static analysis over the source code
         dep_analysis.variables_dependencies_detection(pipeline_graph)
-
-        # generate lightweight components with marshal injection
-        # TODO: Refactor gen module to generate first the light-weight components
 
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
@@ -65,40 +63,56 @@ class Kale:
         # save kfp generated code
         self.save_pipeline(kfp_code)
 
-        # deploy pipeline
-        # TODO: Add auto-deploy call
+        # deploy pipeline to KFP instance
+        if self.deploy_pipeline:
+            self.deploy_pipeline_to_kfp(self.output_path)
 
-    # TODO: Fix autodeploy procedure
-    def deploy_pipeline_to_kfp(self):
+    def deploy_pipeline_to_kfp(self, pipeline_source):
+        """
+        Import the generated kfp pipeline definition and deploy it
+        to a running KFP instance
+        """
         import kfp.compiler as compiler
         import kfp
 
-        # import the generated pipeline code
+        # create a tmp folder
+        tmp_dir = tempfile.mkdtemp()
+        # copy generated script to temp dir
+        copyfile(pipeline_source, tmp_dir + '/' + "pipeline_code.py")
         # add temp folder to PYTHONPATH
-        sys.path.append(self.temp_dirdirpath)
+        sys.path.append(tmp_dir)
+
+        # import the generated pipeline
         from pipeline_code import auto_generated_pipeline
 
         pipeline_filename = self.pipeline_name + '.pipeline.tar.gz'
         compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
 
-        # Get or create an experiment and submit a pipeline run
-        client = kfp.Client(host=self.kfp_url)
-        list_experiments_response = client.list_experiments()
-        experiments = list_experiments_response.experiments
+        try:
 
-        print(experiments)
+            # Get or create an experiment and submit a pipeline run
+            client = kfp.Client(host=self.kfp_url)
+            list_experiments_response = client.list_experiments()
+            experiments = list_experiments_response.experiments
 
-        if not experiments:
-            # The user does not have any experiments available. Creating a new one
-            experiment = client.create_experiment(self.pipeline_name + ' experiment')
-        else:
-            experiment = experiments[-1]  # Using the last experiment
+            print(experiments)
 
-        # Submit a pipeline run
-        run_name = self.pipeline_name + ' run'
-        run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+            if not experiments:
+                # The user does not have any experiments available. Creating a new one
+                experiment = client.create_experiment(self.pipeline_name + ' experiment')
+            else:
+                experiment = experiments[-1]  # Using the last experiment
 
-        print(run_result)
+            # Submit a pipeline run
+            run_name = self.pipeline_name + ' run'
+            run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+
+            print(run_result)
+        except Exception as e:
+            # remove auto-generated tar package (used for deploy)
+            os.remove(self.pipeline_name + '.pipeline.tar.gz')
+
+            print(f"Kale deployment failed with exception: {e}")
 
     def print_pipeline(self, pipeline_graph):
         """
@@ -121,15 +135,14 @@ class Kale:
             print("-------------------------------")
             print()
 
-    # TODO Improve pipeline code saving
     def save_pipeline(self, pipeline_code):
-        filename = f"kfp_{self.pipeline_name}.py"
         # save pipeline code to temp directory
-        with open(self.temp_dirdirpath + f"/{filename}", "w") as f:
-            f.write(pipeline_code)
-        print(f"Pipelines code saved at {self.temp_dirdirpath}/{filename}")
+        # tmp_dir = tempfile.mkdtemp()
+        # with open(tmp_dir + f"/{filename}", "w") as f:
+        #     f.write(pipeline_code)
+        # print(f"Pipeline code saved at {tmp_dir}/{filename}")
 
-        # if not self.deploy_pipeline:
-        #     # save pipeline code also at execution path
-        #     with open(filename, "w") as f:
-        #         f.write(self.pipeline_code)
+        # Save pipeline code in the notebook source directory
+        with open(self.output_path, "w") as f:
+            f.write(pipeline_code)
+        print(f"Pipeline code saved at {self.output_path}")

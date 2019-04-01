@@ -67,28 +67,27 @@ def auto_generated_pipeline():
         mount_paths=['{{ mount_container_path }}'])
     {% endfor -%}
 
-{# DEPLOY PIPELINE #}
-{% if not deploy_pipeline %}
-pipeline_func = {{ pipeline_name }}
-pipeline_filename = pipeline_func.__name__ + '.pipeline.tar.gz'
-import kfp.compiler as compiler
-compiler.Compiler().compile(pipeline_func, pipeline_filename)
+{# The script will deploy the pipeline if run manually #}
+if __name__ == "__main__":
+    pipeline_func = {{ pipeline_name }}
+    pipeline_filename = pipeline_func.__name__ + '.pipeline.tar.gz'
+    import kfp.compiler as compiler
+    compiler.Compiler().compile(pipeline_func, pipeline_filename)
 
-# Get or create an experiment and submit a pipeline run
-import kfp
-client = kfp.Client()
-list_experiments_response = client.list_experiments()
-experiments = list_experiments_response.experiments
+    # Get or create an experiment and submit a pipeline run
+    import kfp
+    client = kfp.Client()
+    list_experiments_response = client.list_experiments()
+    experiments = list_experiments_response.experiments
 
-print(experiments)
+    print(experiments)
 
-if not experiments:
-    # The user does not have any experiments available. Creating a new one
-    experiment = client.create_experiment(pipeline_func.__name__ + ' experiment')
-else:
-    experiment = experiments[-1] # Using the last experiment
+    if not experiments:
+        # The user does not have any experiments available. Creating a new one
+        experiment = client.create_experiment(pipeline_func.__name__ + ' experiment')
+    else:
+        experiment = experiments[-1] # Using the last experiment
 
-# Submit a pipeline run
-run_name = pipeline_func.__name__ + ' run'
-run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
-{% endif %}
+    # Submit a pipeline run
+    run_name = pipeline_func.__name__ + ' run'
+    run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
