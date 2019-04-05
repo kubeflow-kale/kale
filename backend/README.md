@@ -6,7 +6,7 @@ Kale is a Python package that aims at automatically deploy a general purpose Jup
 
 The general idea of kale is to automatically arrange the cells included in a notebook, and transform them into a unified KFP-compliant pipeline. To do so, the user is only required to decide which cells correspond to which pipeline step, by the use of tags. In this way, a researcher can better focus on building and testing its code locally, and then scale it in a simple, organized and controlled way.
 
-#### Tagging language
+## Tagging language
 
 Jupyter provides a tagging feature out-of-the-box, that lets you associate each cells with custom defined tags. The feature is available also in JupyterLab via the [jupyterlab-celltags](https://github.com/jupyterlab/jupyterlab-celltags) extension.
 
@@ -23,9 +23,9 @@ This is a list of tags recognized by Kale:
 
 Where `<block_name>` is matched against the regex: `[a-z0-9]([-a-z0-9]*[a-z0-9])?`. So any string containing only digits, lowercase characters and `-`.
 
-#### Installation
+## Installation
 
-Kale is provided as a Python package. Just clone the repository to your local machine e install the package in a virtual environment. 
+Kale is provided as a Python package. Just clone the repository to your local machine and install the package in a virtual environment. 
 
 ```bash
 # Clone the repo to your local environment
@@ -35,12 +35,14 @@ cd kale
 python setup.py
 ```
 
-#### Getting Started
+## Getting Started
 
 First you need to have a running Kubeflow instance (Kubeflow [getting started guide](https://www.kubeflow.org/docs/started/getting-started/)).
 
 
 Kale provides a CLI command. Run `kale --help` for a detailed description of the execution parameters.
+
+Example:
 
 ```bash
 kale --nb kale/examples/base_example_numpy.ipynb \
@@ -49,11 +51,13 @@ kale --nb kale/examples/base_example_numpy.ipynb \
 	--docker_image stefanofioravanzo/pipelines-container:1.3
 ```
 
-
 See the notebooks under the examples folder to start experimenting with Kale.
 
-#### Development
+If run with the `--deploy` flag, Kale will deploy the generated to a running KFP instance (see `--help` for more flags to define the KFP endpoint). If run without `--deploy`, Kale will generate a standalone Python script that can be run inside a KFP Jupyter Notebook to spawn the pipeline.
+
+## Development
 
 
-#### Release and Contributing
+
+## Contributing
 
