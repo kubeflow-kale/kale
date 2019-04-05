@@ -22,3 +22,6 @@ build/
 *.egg-info
 
 _private/
+
+# do not track auto generated kfp code
+*.kfp.py

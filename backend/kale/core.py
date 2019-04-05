@@ -25,7 +25,7 @@ class Kale:
                  kfp_port=8080,
                  ):
         self.source_path = Path(source_notebook_path)
-        self.output_path = f"{os.path.dirname(self.source_path)}/kfp_{pipeline_name}.py"
+        self.output_path = f"{os.path.dirname(self.source_path)}/kfp_{pipeline_name}.kfp.py"
         if not self.source_path.exists():
             raise ValueError(f"Path {self.source_path} does not exist")
         self.nbformat_version = notebook_version
