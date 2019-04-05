@@ -16,11 +16,11 @@ The tags are used to tell Kale how to convert the notebook's code cells into an 
 
 This is a list of tags recognized by Kale:
 
-| Tag | Description | Example |
-| :---: | :---: | :---: | :--: |
-| `^block:<block_name>(;<block_name>)*$` | Assign the current cell to a (multiple) pipeline step | `block:train-model`<br>`block:processing-A;processing-B`
+| Tag | Description | Example |  
+| :---: | :---: | :---: | :--: |  
+| `^block:<block_name>(;<block_name>)*$` | Assign the current cell to a (multiple) pipeline step | `block:train-model`<br>`block:processing-A;processing-B`|  
 | `^prev:<block_name>(;<block_name>)*$` | Define an execution dependency of the current cell to `n` other pipeline steps | `prev:load-dataset`
-| `imports|functions` | Tell Kale to add this code block at the beginning of every pipeline code block. Useful to add imports/function to every pipeline step | - |
+| `imports|functions` | Tell Kale to add this code block at the beginning of every pipeline code block. Useful to add imports/function to every pipeline step | - |  
 | `skip` | 'Hide' the current cell from Kale. | - |
 
 
