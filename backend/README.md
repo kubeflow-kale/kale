@@ -19,8 +19,8 @@ This is a list of tags recognized by Kale:
 | Tag | Description | Example |
 | :---: | :---: | :---: |
 | `^block:<block_name>(;<block_name>)*$` | Assign the current cell to a (multiple) pipeline step | `block:train-model`<br>`block:processing-A;processing-B`|  
-| `^prev:<block_name>(;<block_name>)*$` | Define an execution dependency of the current cell to `n` other pipeline steps | `prev:load-dataset`
-| `imports|functions` | Tell Kale to add this code block at the beginning of every pipeline code block. Useful to add imports/function to every pipeline step | - |  
+| `^prev:<block_name>(;<block_name>)*$` | Define an execution dependency of the current cell to `n` other pipeline steps | `prev:load-dataset
+| <code>imports&#124;functions</code> | Tell Kale to add this code block at the beginning of every pipeline code block. Useful to add imports/function to every pipeline step | - |  
 | `skip` | 'Hide' the current cell from Kale. | - |
 
 Where `<block_name>` is matched against the regex: `[a-z0-9]([-a-z0-9]*[a-z0-9])?`. So any string containing only digits, lowercase characters and `-`.
