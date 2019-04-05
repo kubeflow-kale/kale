@@ -15,7 +15,7 @@ setup(
     author='Stefano Fioravanzo',
     author_email='fioravanzo@fbk.eu',
     license='MIT',
-    packages=['kale'],
+    packages=['kale', 'kale.nbparser', 'kale.static_analysis', 'kale.marshal', 'kale.codegen'],
     install_requires=[
       'nbformat',
       'networkx',
