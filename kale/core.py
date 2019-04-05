@@ -8,9 +8,9 @@ import networkx as nx
 from pathlib import Path
 from shutil import copyfile
 
-from nbparser import parser
-from static_analysis import dep_analysis
-from codegen import generate_code
+from kale.nbparser import parser
+from kale.static_analysis import dep_analysis
+from kale.codegen import generate_code
 
 
 class Kale:
