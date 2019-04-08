@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description='MAP-Elites')
     parser.add_argument('--nb', type=str, help='Path to source JupyterNotebook', required=True)
     parser.add_argument('--deploy', action='store_true')
-    parser.add_argument('--kfp_port', type=int, default=8000, help='Local port map to remote KFP instance. KFP assumed to be at localhost:<port>/pipeline')
+    parser.add_argument('--kfp_port', type=int, default=8080, help='Local port map to remote KFP instance. KFP assumed to be at localhost:<port>/pipeline')
     parser.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
     parser.add_argument('--pipeline_descr', type=str, help='Description of the deployed pipeline')
     parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')

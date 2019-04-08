@@ -89,7 +89,6 @@ class Kale:
         compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
 
         try:
-
             # Get or create an experiment and submit a pipeline run
             client = kfp.Client(host=self.kfp_url)
             list_experiments_response = client.list_experiments()
@@ -105,13 +104,14 @@ class Kale:
 
             # Submit a pipeline run
             run_name = self.pipeline_name + ' run'
+            # TODO: run_pipeline will print a Jupyter HTML widget. Find a way to print the redirect url to console
             run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
 
-            print(run_result)
+            # TODO: Save pipeline json spec?
+            # print(run_result)
         except Exception as e:
             # remove auto-generated tar package (used for deploy)
             os.remove(self.pipeline_name + '.pipeline.tar.gz')
-
             print(f"Kale deployment failed with exception: {e}")
 
     def print_pipeline(self, pipeline_graph):

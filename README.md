@@ -55,9 +55,3 @@ See the notebooks under the examples folder to start experimenting with Kale.
 
 If run with the `--deploy` flag, Kale will deploy the generated to a running KFP instance (see `--help` for more flags to define the KFP endpoint). If run without `--deploy`, Kale will generate a standalone Python script that can be run inside a KFP Jupyter Notebook to spawn the pipeline.
 
-## Development
-
-
-
-## Contributing
-
