@@ -48,7 +48,7 @@ Example:
 kale --nb kale/examples/base_example_numpy.ipynb \
 	--pipeline_name numpy_example \
 	--pipeline_descr "Numpy Example" \
-	--docker_image stefanofioravanzo/pipelines-container:1.3
+	--docker_image stefanofioravanzo/kale-kfp-examples:0.1
 ```
 
 See the notebooks under the examples folder to start experimenting with Kale.
