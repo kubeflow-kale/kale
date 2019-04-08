@@ -24,14 +24,9 @@ COPY ./docker/requirements.txt /build/requirements.txt
 
 RUN pip install -r /build/requirements.txt
 
-# add our custom SDK
-# ADD ./mpba_sdk /mpba_sdk
-# RUN pip install /mpba_sdk/.
-
-# ADD pipeline specific code
-# ADD ./pipeline_blocks /phenology_pipeline
-# WORKDIR ./phenology_pipeline
-
-ADD ./converter/odo /mpba_sdk/converter/odo
+# Install Kale to use the marshal moduel
+ADD . /kale
+WORKDIR /kale
+RUN python setup.py install
 
 ENTRYPOINT ["python"]

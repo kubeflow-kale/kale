@@ -54,6 +54,7 @@ terminado==0.8.1
 testpath==0.4.2
 toolz==0.9.0
 torch==1.0.0
+torchvision
 tornado==5.1.1
 tqdm==4.29.1
 traitlets==4.3.2
