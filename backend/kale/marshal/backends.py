@@ -47,5 +47,3 @@ def resource_torch_load(uri, **kwargs):
 def resource_torch_save(obj, path, **kwargs):
     print("Saving PyTorch model")
     return torch.save(obj, path + ".pt", pickle_module=dill)
-
-

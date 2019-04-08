@@ -115,14 +115,12 @@ class TypeDispatcher(RegexDispatcher):
         # type of base class
         _type_base = re.sub(r"'>$", "",
                             re.sub(r"^<class '", "",
-                                   str(type(obj.__class__.__bases__[0]))
+                                   str(obj.__class__.__bases__[0])
                                    )
                             )
-        funcs = (func for r, func in self.funcs.items() if r.match(_type))
+        funcs = [func for r, func in list(self.funcs.items()) if r.match(_type)]
         # try to match a parent class of the object in case this was a custom extended class
         if len(list(funcs)) == 1:
-            funcs = (func for r, func in self.funcs.items() if r.match(_type_base))
-        else:
-            funcs = iter(funcs)
+            funcs = [func for r, func in list(self.funcs.items()) if r.match(_type_base)]
 
-        return max(funcs, key=self.priorities.get)
+        return max(iter(funcs), key=self.priorities.get)

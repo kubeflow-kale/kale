@@ -40,7 +40,8 @@ def out_variable_detection(nb_graph):
         ins = nb_graph.nodes(data=True)[block_name]['ins']
         # TODO: assume for now that we are just passing data from father to children.
         #   In case we wanted to use deeper dependencies, use nx.ancestors()
-        for _a in nb_graph.predecessors(block_name):
+        # for _a in nb_graph.predecessors(block_name):
+        for _a in nx.ancestors(nb_graph, block_name):
             father_data = nb_graph.nodes(data=True)[_a]
             # Intersect the missing names of this father child with all
             # the father's names. The intersection is the list of variables

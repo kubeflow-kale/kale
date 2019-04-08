@@ -27,7 +27,7 @@ def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_imag
 
     """
     # initialize templating environment
-    template_env = Environment(loader=PackageLoader('converter', 'templates'))
+    template_env = Environment(loader=PackageLoader('kale', 'templates'))
 
     # List of light-weight components generated code
     function_blocks = list()

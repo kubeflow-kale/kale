@@ -19,11 +19,14 @@ GLOBAL_BLOCKS = ['imports',
                  'injected-parameters'
                  ]
 
+# The block names can be just digits and numbers because those strings will be used both
+# for generated Python function names (that do not allow for '-') characters and
+# for pipeline steps names, that allow just for digits, alphabetic characters and '-'
 TAGS_LANGUAGE = [r'^imports$',
                  r'^functions$',
                  r'^parameters$',
                  r'^injected-parameters$',
-                 r'^skip$'
+                 r'^skip$',
                  r'^in$',
                  r'^out$',
                  r'^block:[a-z0-9]+(;[a-z0-9]+)*$',

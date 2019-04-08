@@ -1,7 +1,7 @@
 from .dispatcher import RegexDispatcher
 
 
-__all__ = 'resource'
+__all__ = 'resource_load'
 
 
 resource_load = RegexDispatcher('resource_load')
