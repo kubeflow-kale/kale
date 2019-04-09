@@ -1,4 +1,4 @@
-from .dispatcher import TypeDispatcher
+from .dispatchers import TypeDispatcher
 
 
 __all__ = 'resource_save'
