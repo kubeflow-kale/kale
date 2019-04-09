@@ -22,7 +22,7 @@ def main():
         generated_notebooks = generate_notebooks_from_yml(input_nb_path=args.nb,
                                                           yml_parameters_path=args.jupyter_args)
 
-        # # Run KaleCore over each generated notebook
+        # Run KaleCore over each generated notebook
         for n, params in generated_notebooks:
             Kale(
                 source_notebook_path=n,

@@ -1,4 +1,4 @@
-from .dispatcher import PatternDispatcher
+from .dispatchers import PatternDispatcher
 
 
 __all__ = 'resource_load'
