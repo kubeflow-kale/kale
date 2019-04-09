@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # Get or create an experiment and submit a pipeline run
     import kfp
-    client = kfp.Client()
+    client = kfp.Client('http://localhost:8080')
     list_experiments_response = client.list_experiments()
     experiments = list_experiments_response.experiments
 
