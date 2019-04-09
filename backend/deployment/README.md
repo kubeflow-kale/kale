@@ -55,7 +55,7 @@ ${KUBEFLOW_SRC}/scripts/kfctl.sh generate k8s
 ${KUBEFLOW_SRC}/scripts/kfctl.sh apply k8s
 ```
 
-After that run `kubectl get all --namespace=kubeflow` to monitor the newly created resources.
+After that run `kubectl get all --namespace=kubeflow` to monitor the newly created resources and `kubectl config set-context $(kubectl config current-context) --namespace=kubeflow` to switch to the Kubeflow namespace permanently.
 
 #### Kubeflow dashboard
 
@@ -86,16 +86,18 @@ export AZURE_STORAGE_ACCOUNT_NAME_BASE64=$(echo -n ${STORAGE_ACCOUNT_NAME} | bas
 export AZURE_STORAGE_ACCOUNT_KEY_BASE64=$(az storage account keys list --account-name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP} -o tsv  | head -n 1 | awk '{print $3}' | tr -d '\n' | base64)
 ```
 
-Create the FileShare from the dashboard.
+**NOTE:** Use these (base64) account name and account key in the `secret.yml` file.
 
-Create the storage class
+Create the FileShare from the Azure portal.
 
-`kubectl create -f path/to/storage_class.yml` (reference storage account name)
+Create the storage class, pv, secret and pvc using kubectl. The pvc is used by the generated pipeline steps to share data between them
 
-Create persistent volume, the secret and then the pvc. 
-
-
-Test with a pod that it works?
+```bash
+kubectl create -f path/to/storage_class.yml  # (reference storage account name)
+kubectl create -f pv.yml
+kubectl create -f secret.yml
+kubectl create -f pvc.yml
+```
 
 
 
