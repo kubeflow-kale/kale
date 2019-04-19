@@ -99,5 +99,20 @@ kubectl create -f secret.yml
 kubectl create -f pvc.yml
 ```
 
+###### Local single-node cluster ([ref article][1])
 
+When deploying to a local single-node cluster (e.g. MiniKube, MiniFK) and you want to mount a PersistentVolume with some data in a pipeline step, you need to:
+
+- copy the data into the VM running the Kubernetes node
+- create a local PersistentVolume and PersistentVolumeClaim pointing to the folder *in the VM*
+- mount the PVC as usual
+
+The specs to create a *local* PV and PVC can be found under the `local` directory. The only thing you need to do is to change the local dir path in `pv.yml`.
+
+**NOTE1**: Remember to create all the resources in the same namespace where the KFP pods are deployed (`kubeflow`).
+
+**NOTE2**: In the case of local PV, no `secret` is needed.
+
+
+[1]: https://vocon-it.com/2018/12/20/kubernetes-local-persistent-volumes/
 
