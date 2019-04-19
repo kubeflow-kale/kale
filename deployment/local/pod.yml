@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: static-persistence-volume-deployment
+spec:  
+  template:
+    metadata:
+      labels:
+        app: storagedemo
+    spec:
+      containers:
+      - name: storagedemo
+        image: stefanofioravanzo/ubuntu-tail
+        volumeMounts:
+        - name: local-persistent-storage
+        mountPath: /data
+      volumes:
+      - name: local-persistent-storage
+        persistentVolumeClaim:
+          claimName: pipelines-persistence-volume-claim 
