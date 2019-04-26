@@ -17,12 +17,13 @@ setup(
     license='MIT',
     packages=['kale', 'kale.nbparser', 'kale.static_analysis', 'kale.marshal', 'kale.codegen'],
     install_requires=[
-      'nbformat',
-      'networkx',
-      'jinja2',
-      'graphviz',
-      'pyflakes',
-      'papermill'
+        'autopep8',
+        'nbformat',
+        'networkx',
+        'jinja2',
+        'graphviz',
+        'pyflakes',
+        'papermill',
     ],
     dependency_links=['https://storage.googleapis.com/ml-pipeline/release/0.1.7/kfp.tar.gz'],
     entry_points={

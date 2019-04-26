@@ -1,3 +1,5 @@
+import autopep8
+
 import networkx as nx
 
 from jinja2 import Environment, PackageLoader
@@ -72,4 +74,9 @@ def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_imag
         mount_container_path=mount_container_path,
         deploy_pipeline=deploy_pipeline
     )
+
+    # fix code style using pep8 guidelines
+    pipeline_code = autopep8.fix_code(pipeline_code)
     return pipeline_code
+
+
