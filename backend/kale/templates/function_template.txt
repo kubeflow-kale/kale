@@ -1,4 +1,4 @@
-def {{ function_name }}({{ function_args|join(', ') }}):
+def {{ function_name }}({{ function_args|join(', ') }}) -> str:
 
     import os
     import shutil
