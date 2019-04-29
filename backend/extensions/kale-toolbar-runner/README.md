@@ -1,6 +1,6 @@
 # kale-toolbar-runner
 
-A JupyterLab extension.
+JupyterLab extension that created a new menu button to deploy the notebook to Kale.
 
 
 ## Prerequisites
@@ -13,20 +13,17 @@ A JupyterLab extension.
 jupyter labextension install kale-toolbar-runner
 ```
 
+or
+
+```bash
+jupyter labextension install . --no-build
+```
+
 ## Development
 
-For a development install (requires npm version 4 or later), do the following in the repository directory:
+To reinstall continuously the new changes while developing, run `jlpm run watch`. To install the entire package run `jlpm install` while inside the extension's directory.
 
-```bash
-npm install
-npm run build
-jupyter labextension link .
-```
+## Kale svg icon
 
-To rebuild the package and the JupyterLab app:
-
-```bash
-npm run build
-jupyter lab build
-```
-
+- [SVGOMG](https://jakearchibald.github.io/svgomg/): Simplify SVG path structure to be easily embedded into CSS
+- [SVG URL Encoder](https://yoksel.github.io/url-encoder/): Convert standard SVG paths to CSS url
