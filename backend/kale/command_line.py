@@ -5,7 +5,7 @@ from kale.notebook_gen import generate_notebooks_from_yml
 
 
 def main():
-    parser = argparse.ArgumentParser(description='MAP-Elites')
+    parser = argparse.ArgumentParser(description='KALE: Kubeflow Automated pipeLines Engine')
     parser.add_argument('--nb', type=str, help='Path to source JupyterNotebook', required=True)
     parser.add_argument('--deploy', action='store_true')
     parser.add_argument('--kfp_port', type=int, default=8080, help='Local port map to remote KFP instance. KFP assumed to be at localhost:<port>/pipeline')
