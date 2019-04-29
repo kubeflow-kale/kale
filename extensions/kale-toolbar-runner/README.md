@@ -9,6 +9,20 @@ JupyterLab extension that created a new menu button to deploy the notebook to Ka
 
 ## Installation
 
+To build the extension, first install the dependencies:
+
+```bash
+jlpm add @jupyterlab/notebook @jupyterlab/application @jupyterlab/apputils @jupyterlab/docregistry @phosphor/disposable
+```
+
+Then build the extension
+
+```bash
+jlpm install
+```
+
+And then add the extension to JupyterLab
+
 ```bash
 jupyter labextension install kale-toolbar-runner
 ```
