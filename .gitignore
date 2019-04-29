@@ -25,3 +25,8 @@ _private/
 
 # do not track auto generated kfp code
 *.kfp.py
+
+# for jupyter lab extension
+*.bundle.*
+lib/
+node_modules/
