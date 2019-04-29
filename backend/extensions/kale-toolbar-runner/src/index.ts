@@ -1,3 +1,5 @@
+///<reference path="../node_modules/@types/node/index.d.ts"/>
+
 import {
     IDisposable, DisposableDelegate
 } from '@phosphor/disposable';
@@ -15,9 +17,10 @@ import {
 } from '@jupyterlab/docregistry';
 
 import {
-    NotebookActions, NotebookPanel, INotebookModel
+    NotebookPanel, INotebookModel
 } from '@jupyterlab/notebook';
 
+import { request } from 'http';
 
 import '../style/index.css';
 
@@ -41,7 +44,33 @@ class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel
      */
     createNew(panel: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>): IDisposable {
         let callback = () => {
-            NotebookActions.runAll(panel.content, context.session);
+            console.log(context.model.toJSON());
+
+            // prepare request
+            const req = request(
+                {
+                    host: 'localhost',
+                    port: '5000',
+                    path: '/kale',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                },
+                response => {
+                    console.log(response.statusCode); // 200
+                }
+            );
+
+            req.write(JSON.stringify({
+                deploy: 'False',
+                pipeline_name: 'JPExtension',
+                pipeline_descr: 'JPExtension Description'
+            }));
+
+            req.end();
+
+
         };
         let button = new ToolbarButton({
             className: 'myButton',
