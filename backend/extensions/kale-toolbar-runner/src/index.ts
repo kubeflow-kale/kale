@@ -82,10 +82,10 @@ class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel
             // form.pipe(req);
             req.end();
 
-
         };
+
         let button = new ToolbarButton({
-            className: 'myButton',
+            className: 'kfp-deploy-button',
             iconClassName: 'fa jp-kale-logo',
             label: "Deploy to KFP",
             iconLabel: "Deploy to KKP",
