@@ -3,7 +3,11 @@
 }
 
 .kfp-deploy-button:hover {
-  background: rgb(63, 90, 180) !important;
+  background: rgb(63, 108, 197) !important;
+}
+
+.kfp-deploy-button:active {
+  background: rgb(61, 84, 167) !important;
 }
 
 .kfp-deploy-button span {
