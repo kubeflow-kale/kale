@@ -44,7 +44,17 @@ class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel
      */
     createNew(panel: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>): IDisposable {
         let callback = () => {
-            console.log(context.model.toJSON());
+            const nb_json_repr = context.model.toJSON();
+            const nb_str_repr = JSON.stringify(nb_json_repr);
+
+            // create stream
+            // const s = new Readable();
+            // s._read = () => {}; // this must be provided
+            // s.push(JSON.stringify(nb_json_repr));
+            // s.push(null);
+
+            // const form = new FormData();
+            // form.append('photo', nb_str_repr);
 
             // prepare request
             const req = request(
@@ -58,16 +68,18 @@ class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel
                     }
                 },
                 response => {
-                    console.log(response.statusCode); // 200
+                    console.log(response); // 200
                 }
             );
 
             req.write(JSON.stringify({
                 deploy: 'False',
                 pipeline_name: 'JPExtension',
-                pipeline_descr: 'JPExtension Description'
+                pipeline_descr: 'JPExtension Description',
+                nb: nb_str_repr
             }));
 
+            // form.pipe(req);
             req.end();
 
 
