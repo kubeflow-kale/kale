@@ -2,6 +2,10 @@
   background: rgb(65, 121, 244)!important;
 }
 
+.kfp-deploy-button:hover {
+  background: rgb(63, 90, 180) !important;
+}
+
 .kfp-deploy-button span {
   color: #FFF!important;
 }
