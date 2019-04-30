@@ -9,9 +9,9 @@ api = Api(app)
 
 
 class sumNumbers(Resource):
-    def get(self):
+    def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument('nb', type=int, help='Rate to charge for this resource')
+        parser.add_argument('nb', type=str, help='Rate to charge for this resource')
         parser.add_argument('deploy', type=bool, help='True to deploy the pipeline to a running KFP instance')
         parser.add_argument('kfp_port', type=int, default=8080,
                             help='Local port map to remote KFP instance. KFP assumed to be at localhost:<port>/pipeline')
@@ -24,11 +24,14 @@ class sumNumbers(Resource):
 
         args = parser.parse_args()
 
-        f = request.files['notebook_file']
-        f.save('./api/build/nb.ipynb')
+        # f = request.files['notebook_file']
+        # f.save('./api/build/nb.ipynb')
+        # TODO: make sure build directory exists
+        with open('./api/build/nb.ipynb', 'w+') as f:
+            f.write(args['nb'])
 
         Kale(
-            source_notebook_path='./api/nb.ipynb',
+            source_notebook_path='./api/build/nb.ipynb',
             pipeline_name=args['pipeline_name'],
             pipeline_descr=args['pipeline_descr'],
             docker_image=args['docker_image'],
