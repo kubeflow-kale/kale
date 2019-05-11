@@ -7,7 +7,7 @@ def readme():
 
 
 setup(
-    name='kale',
+    name='kfp-kale',
     version='0.1',
     description='Convert JupyterNotebooks to Kubeflow Pipelines deployments',
     longdescription=readme(),
