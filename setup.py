@@ -9,14 +9,15 @@ def readme():
 setup(
     name='kale',
     version='0.1',
-    description='Deploy JupyterNotebooks to KFP pipelines',
+    description='Convert JupyterNotebooks to Kubeflow Pipelines deployments',
     longdescription=readme(),
-    url='https://github.com/StefanoFioravanzo/pipelines_converter',
+    url='https://github.com/StefanoFioravanzo/kale',
     author='Stefano Fioravanzo',
     author_email='fioravanzo@fbk.eu',
     license='MIT',
     packages=['kale', 'kale.nbparser', 'kale.static_analysis', 'kale.marshal', 'kale.codegen'],
     install_requires=[
+        'kfp',
         'autopep8',
         'nbformat',
         'networkx',
@@ -24,8 +25,9 @@ setup(
         'graphviz',
         'pyflakes',
         'papermill',
+        'flask',
+        'flask_restful'
     ],
-    dependency_links=['https://storage.googleapis.com/ml-pipeline/release/0.1.7/kfp.tar.gz'],
     entry_points={
         'console_scripts': ['kale=kale.command_line:main'],
     },
