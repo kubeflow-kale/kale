@@ -1,4 +1,4 @@
-![Kale Logo](docs/imgs/kale_logo.png)
+![Kale Logo](https://raw.githubusercontent.com/StefanoFioravanzo/kale/master/docs/imgs/kale_logo.png)
 
 ---------------------------------------------------------------------
 
