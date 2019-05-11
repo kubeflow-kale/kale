@@ -17,7 +17,13 @@ setup(
     author='Stefano Fioravanzo',
     author_email='fioravanzo@fbk.eu',
     license='MIT',
-    packages=['kale', 'kale.nbparser', 'kale.static_analysis', 'kale.marshal', 'kale.codegen'],
+    packages=['kale',
+              'kale.nbparser',
+              'kale.static_analysis',
+              'kale.marshal',
+              'kale.codegen',
+              'kale.api'
+              ],
     install_requires=[
         'kfp',
         'autopep8',
@@ -27,11 +33,11 @@ setup(
         'graphviz',
         'pyflakes',
         'papermill',
-        'flask',
+        'Flask',
         'flask_restful'
     ],
     entry_points={
-        'console_scripts': ['kale=kale.command_line:main'],
+        'console_scripts': ['kale=kale.command_line:main', 'kale_server=kale.command_line:server'],
     },
     include_package_data=True,
     zip_safe=False
