@@ -2,6 +2,11 @@ import argparse
 
 from kale.core import Kale
 from kale.notebook_gen import generate_notebooks_from_yml
+from kale.api.app import app
+
+
+def server():
+    app.run()
 
 
 def main():

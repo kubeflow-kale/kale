@@ -1,5 +1,6 @@
 import string
 import random
+import tempfile
 
 from flask import Flask, request
 from flask_restful import Resource, Api
@@ -34,16 +35,19 @@ class sumNumbers(Resource):
 
         args = parser.parse_args()
 
-        # TODO: make sure build directory exists
+        # create a tmp folder
+        tmp_dir = tempfile.mkdtemp()
+        tmp_notebook_path = f"{tmp_dir}/kale_generated_notebook.ipynb"
+
         if args['nb'] is None:
             f = request.files['notebook_file']
-            f.save('./api/build/nb.ipynb')
+            f.save(tmp_notebook_path)
         else:
-            with open('./api/build/nb.ipynb', 'w+') as f:
+            with open(tmp_notebook_path, 'w+') as f:
                 f.write(args['nb'])
 
         Kale(
-            source_notebook_path='./api/build/nb.ipynb',
+            source_notebook_path=tmp_notebook_path,
             pipeline_name=args['pipeline_name'] + "-" + self.random_string(4),
             pipeline_descr=args['pipeline_descr'],
             docker_image=args['docker_image'],
