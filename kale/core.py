@@ -96,11 +96,12 @@ class Kale:
 
             print(experiments)
 
-            if not experiments:
+            # create new experiment anyway
+            # if not experiments:
                 # The user does not have any experiments available. Creating a new one
-                experiment = client.create_experiment(self.pipeline_name + ' experiment')
-            else:
-                experiment = experiments[-1]  # Using the last experiment
+            experiment = client.create_experiment(self.pipeline_name + ' experiment')
+            # else:
+            #     experiment = experiments[-1]  # Using the last experiment
 
             # Submit a pipeline run
             run_name = self.pipeline_name + ' run'
