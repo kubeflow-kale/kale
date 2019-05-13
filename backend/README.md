@@ -98,3 +98,21 @@ Common backends to support multiple data types are registered in `marshal/backen
 #### 4. codegen
 
 This module provides a single function `gen_kfp_code` that exploits the Jinja2 templating engine to generate a fully functional python script. The templates used are under the `templates/` folder.
+
+## Flask Server
+
+The package provides the `kale_server` CLI command that runs a Flask server. The Flask server accepts requests at `localhost:5000/kale`. The API accepts POST requests containing a Jupyter Notebook in raw format (JSON) and will call the main Kale module to deploy the notebook to a KFP instance.
+
+`kale/` API available parameters:
+
+- `nb`: Raw JSON Jupyter Notebook
+- `deploy`: Boolean Flag. `True` to deploy the Notebook automatically
+- `kfp_port`: Port of the running KFP instance
+- `pipeline_name`: Name of the resulting KFP pipeline
+- `pipeline_descr`: Description of the resulting KFP pipeline
+- `docker_image`: Docker image to use for the pipeline steps
+
+## JupyterLab Extension
+
+Under `extensions/kale-toolbar-runner` you can find the code of a JupyterLab extension that adds a new Button in the Notebook toolbar. The related action will call the `localhost:5000/kale` API sending the currently active Notebook. This way one can easily deploy a Notebook to KFP without leaving the JupyterLab UI.
+
