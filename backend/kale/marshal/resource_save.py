@@ -1,3 +1,5 @@
+import dill
+
 from .dispatchers import TypeDispatcher
 
 
@@ -8,6 +10,7 @@ resource_save = TypeDispatcher('resource_save')
 
 
 @resource_save.register('.*', priority=1)
-def resource_all(o, *args, **kwargs):
-    t = str(type(o))
-    raise NotImplementedError("Unable to serialize object type: " + t)
+def resource_all(o, path, *args, **kwargs):
+    # save any type of object in a general way
+    with open(path + ".dillpkl", "wb") as f:
+        dill.dump(o, f)
