@@ -1,3 +1,5 @@
+import dill
+
 from .dispatchers import PatternDispatcher
 
 
@@ -9,7 +11,8 @@ resource_load = PatternDispatcher('resource_load')
 
 @resource_load.register('.*', priority=1)
 def resource_all(uri, *args, **kwargs):
-    raise NotImplementedError("Unable to parse uri to data resource: " + uri)
+    print(f"Loading general object: {uri}")
+    return dill.load(open(uri, "rb"))
 
 
 @resource_load.register('.+::.+', priority=15)
