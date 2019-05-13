@@ -33,8 +33,8 @@ setup(
         'graphviz',
         'pyflakes',
         'papermill',
-        'Flask',
-        'flask_restful'
+        'flask_restful',
+        'flask',
     ],
     entry_points={
         'console_scripts': ['kale=kale.command_line:main', 'kale_server=kale.command_line:server'],
