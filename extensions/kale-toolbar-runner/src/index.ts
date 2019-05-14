@@ -74,8 +74,8 @@ class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel
 
             req.write(JSON.stringify({
                 deploy: 'True',
-                pipeline_name: 'TestPipelineJP',
-                pipeline_descr: 'Pipeline auto-generate from Jupyter Notebook Kale extension',
+                pipeline_name: 'test_pipeline',
+                pipeline_descr: 'Auto-generated pipeline from the Jupyter Notebook Kale extension',
                 nb: nb_str_repr
             }));
 

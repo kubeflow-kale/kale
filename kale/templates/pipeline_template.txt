@@ -77,17 +77,8 @@ if __name__ == "__main__":
     # Get or create an experiment and submit a pipeline run
     import kfp
     client = kfp.Client('http://localhost:8080')
-    list_experiments_response = client.list_experiments()
-    experiments = list_experiments_response.experiments
-
-    print(experiments)
-
-    if not experiments:
-        # The user does not have any experiments available. Creating a new one
-        experiment = client.create_experiment(pipeline_func.__name__ + ' experiment')
-    else:
-        experiment = experiments[-1] # Using the last experiment
+    experiment = client.create_experiment('{{ pipeline_name }}')
 
     # Submit a pipeline run
-    run_name = pipeline_func.__name__ + ' run'
+    run_name = '{{ pipeline_name }}_run'
     run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})

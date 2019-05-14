@@ -74,46 +74,34 @@ class Kale:
         """
         import kfp.compiler as compiler
         import kfp
+        import importlib.util
 
         # create a tmp folder
         tmp_dir = tempfile.mkdtemp()
         # copy generated script to temp dir
         copyfile(pipeline_source, tmp_dir + '/' + "pipeline_code.py")
-        # add temp folder to PYTHONPATH
-        sys.path.append(tmp_dir)
-
-        # import the generated pipeline
-        from pipeline_code import auto_generated_pipeline
+        
+        spec = importlib.util.spec_from_file_location(tmp_dir.split('/')[-1], tmp_dir + '/' + 'pipeline_code.py')
+        foo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(foo)
 
         pipeline_filename = self.pipeline_name + '.pipeline.tar.gz'
-        compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
+        compiler.Compiler().compile(foo.auto_generated_pipeline, pipeline_filename)
 
         try:
             # Get or create an experiment and submit a pipeline run
             client = kfp.Client(host=self.kfp_url)
-            list_experiments_response = client.list_experiments()
-            experiments = list_experiments_response.experiments
-
-            print(experiments)
-
-            # create new experiment anyway
-            # if not experiments:
-                # The user does not have any experiments available. Creating a new one
-            experiment = client.create_experiment(self.pipeline_name + ' experiment')
-            # else:
-            #     experiment = experiments[-1]  # Using the last experiment
+            experiment = client.create_experiment(self.pipeline_name)
 
             # Submit a pipeline run
-            run_name = self.pipeline_name + ' run'
-            # TODO: run_pipeline will print a Jupyter HTML widget. Find a way to print the redirect url to console
-            run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
-
-            # TODO: Save pipeline json spec?
-            # print(run_result)
+            run_name = self.pipeline_name + '_run'
+            client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
         except Exception as e:
             # remove auto-generated tar package (used for deploy)
             os.remove(self.pipeline_name + '.pipeline.tar.gz')
             print(f"Kale deployment failed with exception: {e}")
+
+        # sys.path.remove(tmp_dir)
 
     def print_pipeline(self, pipeline_graph):
         """
