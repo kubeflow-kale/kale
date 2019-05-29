@@ -5,7 +5,7 @@ def {{ function_name }}({{ function_args|join(', ') }}) -> str:
     from kale.marshal import resource_save as _kale_resource_save
     from kale.marshal import resource_load as _kale_resource_load
 
-    _kale_data_directory = "/data/{{ pipeline_name }}/_kale_data/"
+    _kale_data_directory = "/marshal/{{ pipeline_name }}/"
     _input_data_folder = "/data/{{ pipeline_name }}/"
 
     # -----------------------DATA LOADING START--------------------------------
