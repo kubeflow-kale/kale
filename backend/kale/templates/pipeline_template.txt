@@ -1,40 +1,6 @@
 import kfp.components as comp
 from kubernetes import client as k8s_client
 
-def mount_volume_in_container_op(container_op, volume_name=None, host_path=None, mount_path=None):
-    """
-    Mount a volume into a container op.
-    Returns same instance of `container_op`.
-    """
-    if volume_name is not None:
-        return container_op.add_volume(k8s_client.V1Volume(
-                                       name=volume_name,
-                                       host_path=k8s_client.V1HostPathVolumeSource(path=host_path)))\
-                            .add_volume_mount(k8s_client.V1VolumeMount(
-                                              mount_path=mount_path,
-                                              name=volume_name))
-    return container_op
-
-
-def mount_pvc_in_container_op(container_op, volume_name=None, pvc_name=None, mount_path=None):
-    if volume_name is not None:
-        return container_op.add_volume(k8s_client.V1Volume(
-                                            name=volume_name,
-                                            persistent_volume_claim=k8s_client.V1PersistentVolumeClaimVolumeSource(
-                                                                        claim_name=pvc_name)))\
-                            .add_volume_mount(k8s_client.V1VolumeMount(mount_path=mount_path, name=volume_name))
-    return container_op
-
-
-def mount_volumes_in_container_op(container_op, volume_names, host_paths=None, mount_paths=None, pvc=False, pvc_names=None):
-    if pvc:
-        for n, pvc_n, mp in zip(volume_names, pvc_names, mount_paths):
-            container_op = mount_pvc_in_container_op(container_op, n, pvc_n, mp)
-    else:
-        for n, hp, mp in zip(volume_names, host_paths, mount_paths):
-            container_op = mount_volume_in_container_op(container_op, n, hp, mp)
-    return container_op
-
 {# PIPELINE FUNCTION BLOCKS #}
 {% for func in block_functions -%}
 {{func}}
@@ -56,26 +22,55 @@ def {{ pipeline_name }}():
 {% else %}
 def auto_generated_pipeline():
 {% endif %}
-    {% for name in block_functions_names -%}
-{#    {{ name }}_task = mount_volumes_in_container_op(#}
-{#        container_op={{ name }}_op({{ block_function_args[ name ]|join(', ') }}),#}
-{#        volume_names=['{{ name }}-task-volume'],#}
-{#        host_paths=['{{ mount_host_path }}'],#}
-{#        mount_paths=['{{ mount_container_path }}'])#}
 
-    {{ name }}_task = mount_volumes_in_container_op(
-        container_op=mount_volume_in_container_op(
-            container_op={{ name }}_op({{ block_function_args[ name ]|join(', ') }}),
-            volume_name='{{ name }}-task-marshal-volume',
-            host_path='/tmp/kale_marshal',
-            mount_path='/marshal'
-        ),
-        volume_names=['{{ name }}-task-volume'],
-        pvc=True,
-        pvc_names=['pipelines-persistence-volume-claim'],
-        mount_paths=['{{ mount_container_path }}']
+    marshal_vop = dsl.VolumeOp(
+        name="kale_marshal_volume",
+        resource_name="kale-marshal-pvc",
+        modes=dsl.VOLUME_MODE_RWM,
+        size="1Gi"
     )
+
+    {% for name in block_functions_names -%}
+
+    pvolumes_dict = {'/marshal': marshal_vop.volume}
+
+    {% for pvc in pvcs -%}
+
+    pvc{{ loop.index }} = k8s_client.V1PersistentVolumeClaim(
+                              api_version="v1",
+                              spec=k8s_client.V1PersistentVolumeClaimSpec(
+                                  volume_name="{{ pvc[ pv_name ] }}"
+                              )
+                          )
+    vop{{ loop.index }} = dsl.VolumeOp(
+        name="pvc-data{{ loop.index }}",
+        k8s_resource=pvc{{ loop.index }}
+    )
+    pvolumes_dict['/data{{ loop.index }}'] = vop{{ loop.index }}
+
     {% endfor -%}
+
+    {{ name }}_task = {{ name }}_op({{ block_function_args[ name ]|join(', ') }})\
+                            .add_pvolumes({'/marshal': marshal_vop.volume})\
+                            {% for pvc in pvcs -%}
+                            .add_pvolumes({'/data{{ loop.index }}': vop{{ loop.index }}.volume})\
+                            {% endfor -%}
+
+    {% endfor -%}
+
+    vol_dict = {
+        "apiVersion": "v1",
+        "kind": "PersistentVolumeClaim",
+        "metadata": {
+            "name": marshal_vop.outputs['name']
+        }
+    }
+
+    delete_vol = dsl.ResourceOp(
+        name="delete_kale_marshal_volume",
+        action="delete",
+        k8s_resource=vol_dict
+    ).after({{ leaf_steps|join(', ') }})  # Depend on the last executing steps
 
 {# The script will deploy the pipeline if run manually #}
 if __name__ == "__main__":
