@@ -16,60 +16,68 @@ import {ReactWidget} from "@jupyterlab/apputils";
 import {Token} from "@phosphor/coreutils";
 import {Widget} from "@phosphor/widgets";
 import * as React from "react";
-import {style} from "typestyle";
-
 import {request} from 'http';
 
 import '../style/index.css';
 
-const buttonClassName = style({
-    color: "#2196F3",
-    borderRadius: 2,
-    background: "#FFFFFF",i
-    fontSize: 10,
-    borderWidth: 0,
-    marginRight: 12, // 2 + 10 spacer between
-    padding: "2px 4px",
-    $nest: {
-        "&:active": {
-            background: "#BDBDBD"
-        },
-        "&:active:hover": {
-            background: "#BDBDBD"
-        },
-        "&:hover": {
-            background: "#E0E0E0"
-        }
-    }
-});
 
-function Button({onClick, text}: { onClick: () => void; text: string }) {
-    return (
-        <button
-            className={buttonClassName}
-            onClick={e => {
-                e.stopPropagation();
-                onClick();
-            }}
-        >
-            {text}
-        </button>
-    );
+class InputText extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string}, any> {
+    render() {
+        return (
+            <div className="input-container">
+                <div className="input-wrapper">
+                    <input placeholder={this.props.placeholder}
+                           value={this.props.value}
+                           onChange={evt => this.props.updateValue((evt.target as HTMLInputElement).value)}
+                    />
+                </div>
+            </div>
+        )
+    }
+}
+
+class DeployButton extends React.Component<{callback: Function}, any> {
+    render() {
+        return (
+            <div className="deploy-button">
+                <button onClick={() => { this.props.callback()} }>
+                    <span>Deploy to Kubeflow Pipelines</span>
+                </button>
+            </div>
+        )
+    }
 }
 
 
-class KubeflowDeploymentUI extends React.Component<{
-    tracker: INotebookTracker;
-},
-    { search: string }> {
-    state: {
-        search: string
-    } = {
-        search: ""
+class KubeflowDeploymentUI extends React.Component<
+    { tracker: INotebookTracker },
+    { pipeline_name: string, pipeline_description: string }
+> {
+    state = {
+        pipeline_name: '',
+        pipeline_description: ''
     };
 
-    deployToKFP = (notebook: String) => {
+    updatePipelineName = (name: string) => this.setState({pipeline_name: name});
+    updatePipelineDescription = (desc: string) => this.setState({pipeline_description: desc});
 
+    activeNotebookToJSON = () => {
+        console.log(this.state.pipeline_name);
+        let nb = this.props.tracker.currentWidget;
+        if (nb !== null) {
+            return nb.content.model.toJSON();
+        } else {
+            console.log("No Notebook active")
+        }
+        return null
+    };
+
+    deployToKFP = () => {
+        const notebook = this.activeNotebookToJSON();
+        if (notebook === null) {
+            console.log("Could not complete deployment operation");
+            return
+        }
         // prepare request
         const req = request(
             {
@@ -97,6 +105,21 @@ class KubeflowDeploymentUI extends React.Component<{
     };
 
     render() {
+        const pipeline_name_input = <InputText
+            label={"Pipeline Name"}
+            placeholder={"Pipeline Name"}
+            updateValue={this.updatePipelineName}
+            value={this.state.pipeline_name}
+        />;
+
+        const pipeline_desc_input = <InputText
+            label={"Pipeline Description"}
+            placeholder={"Pipeline Description"}
+            updateValue={this.updatePipelineDescription}
+            value={this.state.pipeline_description}
+        />;
+        // const myin = inputComponent("Pipeline Name", "Pipeline Name");
+        console.log(this.state.pipeline_name);
         return (
             <div
                 style={{
@@ -110,22 +133,16 @@ class KubeflowDeploymentUI extends React.Component<{
             >
 
                 <div style={{overflow: "auto"}}>
-                    <p>Kubeflow Pipelines Deployment</p>
+                    <p className="p-CommandPalette-header">Kubeflow Pipelines Deployment</p>
                 </div>
-                <Button
-                    onClick={() => {
-                        let nb = this.props.tracker.currentWidget;
-                        if (nb !== null) {
-                            const nb_json = nb.content.model.toJSON();
-                            console.log(nb_json);
-                            this.deployToKFP(JSON.stringify(nb_json))
-                        } else {
-                            console.log("No Notebook active")
-                        }
 
-                    }}
-                    text="Deploy to KFP"
-                />
+
+                {pipeline_name_input}
+
+                {pipeline_desc_input}
+
+                <DeployButton callback={this.deployToKFP} />
+
             </div>
         );
     }
