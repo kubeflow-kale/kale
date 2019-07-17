@@ -1,0 +1,56 @@
+{
+  "name": "kubeflow-kale",
+  "version": "0.0.1",
+  "description": "Deployment interface for Kubeflow Pipelines.",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension"
+  ],
+  "homepage": "https://github.com/kubeflow-kale/kale",
+  "bugs": {
+    "url": "https://github.com/kubeflow-kale/kale/issues"
+  },
+  "license": "BSD-3-Clause",
+  "author": "Project Jupyter",
+  "files": [
+    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "directories": {
+    "lib": "lib/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kubeflow-kale/kale.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf lib",
+    "prepublishOnly": "npm run build",
+    "watch": "tsc -w --listEmittedFiles"
+  },
+  "dependencies": {
+    "@jupyterlab/application": "~1.0.0",
+    "@jupyterlab/apputils": "~1.0.0",
+    "@jupyterlab/coreutils": "~3.0.0",
+    "@jupyterlab/notebook": "^1.0.0-alpha.6",
+    "@phosphor/widgets": "^1.8.0",
+    "react": "16.8.4",
+    "@types/node": "^11.13.8",
+    "http": "0.0.0",
+    "http-module": "0.0.5"
+  },
+  "devDependencies": {
+    "rimraf": "~2.6.2",
+    "typescript": "3.5.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "jupyterlab": {
+    "extension": true
+  }
+}
