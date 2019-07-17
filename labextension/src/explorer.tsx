@@ -16,7 +16,11 @@ import {ReactWidget} from "@jupyterlab/apputils";
 import {Token} from "@phosphor/coreutils";
 import {Widget} from "@phosphor/widgets";
 import * as React from "react";
-import {request} from 'http';
+// import {request} from 'http';
+import axios from 'axios';
+
+import { faSyncAlt } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import '../style/index.css';
 
@@ -36,12 +40,16 @@ class InputText extends React.Component<{ label: string, placeholder: string, up
     }
 }
 
-class DeployButton extends React.Component<{callback: Function}, any> {
+class DeployButton extends React.Component<{callback: Function, deployment: boolean}, any> {
+
     render() {
+        const buttonText = this.props.deployment ? "Running Deployment..." : "Deploy to Kubeflow Pipelines";
+
         return (
             <div className="deploy-button">
                 <button onClick={() => { this.props.callback()} }>
-                    <span>Deploy to Kubeflow Pipelines</span>
+                    { this.props.deployment ?  <FontAwesomeIcon icon={faSyncAlt} spin style={{marginRight: "5px"}}/>: null }
+                    <span>{buttonText}</span>
                 </button>
             </div>
         )
@@ -51,11 +59,16 @@ class DeployButton extends React.Component<{callback: Function}, any> {
 
 class KubeflowDeploymentUI extends React.Component<
     { tracker: INotebookTracker },
-    { pipeline_name: string, pipeline_description: string }
+    {
+        pipeline_name: string,
+        pipeline_description: string,
+        running_deployment: boolean
+    }
 > {
     state = {
         pipeline_name: '',
-        pipeline_description: ''
+        pipeline_description: '',
+        running_deployment: false
     };
 
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
@@ -73,35 +86,27 @@ class KubeflowDeploymentUI extends React.Component<
     };
 
     deployToKFP = () => {
-        const notebook = this.activeNotebookToJSON();
+        this.setState({running_deployment: true});
+
+        const notebook = JSON.stringify(this.activeNotebookToJSON());
         if (notebook === null) {
             console.log("Could not complete deployment operation");
             return
         }
-        // prepare request
-        const req = request(
-            {
-                host: 'localhost',
-                port: '5000',
-                path: '/kale',
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            },
-            response => {
-                console.log(response); // 200
-            }
-        );
 
-        req.write(JSON.stringify({
-            deploy: 'True',
-            pipeline_name: 'test_pipeline',
-            pipeline_descr: 'Auto-generated pipeline from the Jupyter Notebook Kale extension',
+        // send request
+        axios.post('http://localhost:5000/kale', {
+            deploy: true,
+            pipeline_name: this.state.pipeline_name,
+            pipeline_descr: this.state.pipeline_description,
             nb: notebook
-        }));
-        req.end();
-
+        }).then((res) => {
+            console.log(`statusCode: ${res.status}`);
+            console.log(`data: ${res.data}`);
+            console.log(res)
+        }).catch((error) => {
+            console.error(error)
+        })
     };
 
     render() {
@@ -141,7 +146,7 @@ class KubeflowDeploymentUI extends React.Component<
 
                 {pipeline_desc_input}
 
-                <DeployButton callback={this.deployToKFP} />
+                <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP} />
 
             </div>
         );
@@ -175,14 +180,13 @@ function activate(
     restorer: ILayoutRestorer,
     tracker: INotebookTracker
 ): IKubeflowKale {
-    // Create a dataset with this URL
     const widget = ReactWidget.create(
         <KubeflowDeploymentUI
             tracker={tracker}
         />
     );
     widget.id = "kubeflow-kale/kubeflowDeployment";
-    widget.title.iconClass = "jp-kubeflow-logo jp-SideBar-tabIcon";  // old icon: jp-SpreadsheetIcon
+    widget.title.iconClass = "jp-kubeflow-logo jp-SideBar-tabIcon";
     widget.title.caption = "Kubeflow Pipelines Deployment Panel";
 
     restorer.add(widget, widget.id);
