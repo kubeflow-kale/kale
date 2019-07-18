@@ -56,7 +56,7 @@
   overflow: overlay;
   padding: 0 9px;
   background-color: var(--jp-input-active-background);
-  height: 30px;
+  /*height: 30px;*/
   box-shadow: inset 0 0 0 var(--jp-border-width) var(--jp-input-border-color);
 }
 
@@ -65,7 +65,7 @@
     inset 0 0 0 3px var(--jp-input-active-box-shadow-color);
 }
 
-.input-wrapper input {
+.input-wrapper input, textarea{
   background: transparent;
   width: calc(100% - 18px);
   float: left;

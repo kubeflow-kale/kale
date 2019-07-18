@@ -40,6 +40,19 @@ class InputText extends React.Component<{ label: string, placeholder: string, up
     }
 }
 
+class InputArea extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string}, any> {
+    render() {
+        return (
+            <div className="input-container">
+                <div className="input-wrapper">
+                    <textarea rows={4} cols={50} placeholder={this.props.placeholder} value={this.props.value}
+                           onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}/>
+                </div>
+            </div>
+        )
+    }
+}
+
 class DeployButton extends React.Component<{callback: Function, deployment: boolean}, any> {
 
     render() {
@@ -56,7 +69,6 @@ class DeployButton extends React.Component<{callback: Function, deployment: bool
     }
 }
 
-
 class KubeflowDeploymentUI extends React.Component<
     { tracker: INotebookTracker },
     {
@@ -64,7 +76,8 @@ class KubeflowDeploymentUI extends React.Component<
         pipeline_description: string,
         running_deployment: boolean,
         deployment_status: string,
-        deployment_run_link: string
+        deployment_run_link: string,
+        volumes: string
     }
 > {
     state = {
@@ -72,11 +85,13 @@ class KubeflowDeploymentUI extends React.Component<
         pipeline_description: '',
         running_deployment: false,
         deployment_status: 'No active deployment.',
-        deployment_run_link: ''
+        deployment_run_link: '',
+        volumes: ''
     };
 
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
     updatePipelineDescription = (desc: string) => this.setState({pipeline_description: desc});
+    updateVolumes = (vols: string) => this.setState({volumes: vols});
 
     activeNotebookToJSON = () => {
         console.log(this.state.pipeline_name);
@@ -109,7 +124,8 @@ class KubeflowDeploymentUI extends React.Component<
             deploy: true,
             pipeline_name: this.state.pipeline_name,
             pipeline_descr: this.state.pipeline_description,
-            nb: notebook
+            nb: notebook,
+            volumes: this.state.volumes.split('\n')
         }).then((res) => {
             console.log(res);
             if ('run' in res.data) {
@@ -139,7 +155,14 @@ class KubeflowDeploymentUI extends React.Component<
             updateValue={this.updatePipelineDescription}
             value={this.state.pipeline_description}
         />;
-        // const myin = inputComponent("Pipeline Name", "Pipeline Name");
+
+        const volumes = <InputArea
+            label={"Volumes"}
+            placeholder={"Volumes"}
+            updateValue={this.updateVolumes}
+            value={this.state.volumes}
+        />;
+
         let run_link = null;
         if (this.state.deployment_run_link !== '') {
             run_link = <p>Pipeline run at <a style={{color: "#106ba3"}}
@@ -178,9 +201,14 @@ class KubeflowDeploymentUI extends React.Component<
 
                 {pipeline_desc_input}
 
-                 <div style={{overflow: "auto"}}>
-                    <p className="p-CommandPalette-header">Deployment Status</p>
+                <div style={{overflow: "auto"}}>
+                    <p className="p-CommandPalette-header">Volumes</p>
                 </div>
+                {volumes}
+
+                <div style={{overflow: "auto"}}>
+                     <p className="p-CommandPalette-header">Deployment Status</p>
+                 </div>
                 <div style={{margin: "6px 10px"}}>
                     {this.state.deployment_status}
                     {run_link}
