@@ -2,7 +2,7 @@ import string
 import random
 import tempfile
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_restful import Resource, Api
 from flask_restful import reqparse
 from flask_restful import inputs
@@ -13,7 +13,7 @@ app = Flask(__name__)
 api = Api(app)
 
 
-class sumNumbers(Resource):
+class deploy(Resource):
 
     def random_string(self, string_length=10):
         """Generate a random string of fixed length """
@@ -22,7 +22,7 @@ class sumNumbers(Resource):
 
     def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument('nb', type=str, help='Rate to charge for this resource')
+        parser.add_argument('nb', type=str, help='Stringified JSON Notebook')
         parser.add_argument('deploy', type=inputs.boolean, help='True to deploy the pipeline to a running KFP instance')
         parser.add_argument('kfp_port', type=int, default=1234,
                             help='Local port map to remote KFP instance. KFP assumed to be at localhost:<port>/pipeline')
@@ -46,19 +46,32 @@ class sumNumbers(Resource):
             with open(tmp_notebook_path, 'w+') as f:
                 f.write(args['nb'])
 
-        Kale(
-            source_notebook_path=tmp_notebook_path,
-            pipeline_name=args['pipeline_name'] + "_" + self.random_string(4),
-            pipeline_descr=args['pipeline_descr'],
-            docker_image=args['docker_image'],
-            auto_deploy=args['deploy'],
-            kfp_port=args['kfp_port']
-        )
+        try:
+            result = Kale(
+                source_notebook_path=tmp_notebook_path,
+                pipeline_name=args['pipeline_name'] + "_" + self.random_string(4),
+                pipeline_descr=args['pipeline_descr'],
+                docker_image=args['docker_image'],
+                auto_deploy=args['deploy'],
+                kfp_port=args['kfp_port']
+            ).run()
+            if 'run' in result:
+                result['status'] = 200
+            else:
+                result['status'] = 400
+            resp = jsonify(result)
+        except Exception as e:
+            resp_data = {"status": 500, "message": str(e)}
+            resp = jsonify(resp_data)
 
-        return {'data': args['nb']}
+        # need to always have a 200 response ito parse the data message
+        resp.status_code = 200
+        return resp
 
 
-api.add_resource(sumNumbers, '/kale')
+
+
+api.add_resource(deploy, '/kale')
 
 
 if __name__ == '__main__':

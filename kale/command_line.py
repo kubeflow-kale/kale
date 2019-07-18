@@ -36,7 +36,7 @@ def main():
                 docker_image=args.docker_image,
                 auto_deploy=args.deploy,
                 kfp_port=args.kfp_port
-            )
+            ).run()
     else:
         Kale(
             source_notebook_path=args.nb,
@@ -45,7 +45,7 @@ def main():
             docker_image=args.docker_image,
             auto_deploy=args.deploy,
             kfp_port=args.kfp_port
-        )
+        ).run()
 
 
 if __name__ == "__main__":

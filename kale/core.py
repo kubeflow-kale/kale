@@ -1,6 +1,6 @@
 import os
-import sys
 import pprint
+import logging
 import tempfile
 
 import networkx as nx
@@ -22,6 +22,7 @@ class Kale:
                  docker_image,
                  notebook_version=4,
                  auto_deploy=False,
+                 kfp_address='localhost',
                  kfp_port=8080,
                  ):
         self.source_path = Path(source_notebook_path)
@@ -30,7 +31,8 @@ class Kale:
             raise ValueError(f"Path {self.source_path} does not exist")
         self.nbformat_version = notebook_version
 
-        self.kfp_url = f"localhost:{kfp_port}/pipeline"
+        self.kfp_url = f"http://{kfp_address}:{kfp_port}/pipeline"
+
         self.deploy_pipeline = auto_deploy
 
         self.pipeline_name = pipeline_name
@@ -42,11 +44,26 @@ class Kale:
         # path to container folder where `mount_host_path` is mapped
         self.mount_container_path = '/data'
 
-        self.run()
+        # Setup logging
+        self.log_dir_path = Path(".")
+        # set up logging to file
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M',
+                            )
+        self.logger = logging.getLogger('kubeflow-kale')
+        self.logger.setLevel(logging.DEBUG)
+        # create file handler which logs even debug messages
+        fh = logging.FileHandler(self.log_dir_path / 'log.log', mode='w')
+        fh.setLevel(logging.DEBUG)
+        self.logger.addHandler(fh)
 
     def run(self):
         # convert notebook to nx graph
-        pipeline_graph = parser.parse_notebook(self.source_path, self.nbformat_version)
+        try:
+            pipeline_graph = parser.parse_notebook(self.source_path, self.nbformat_version)
+        except ValueError as e:
+            return {"result": str(e)}
 
         # run static analysis over the source code
         dep_analysis.variables_dependencies_detection(pipeline_graph)
@@ -65,7 +82,7 @@ class Kale:
 
         # deploy pipeline to KFP instance
         if self.deploy_pipeline:
-            self.deploy_pipeline_to_kfp(self.output_path)
+            return self.deploy_pipeline_to_kfp(self.output_path)
 
     def deploy_pipeline_to_kfp(self, pipeline_source):
         """
@@ -95,11 +112,15 @@ class Kale:
 
             # Submit a pipeline run
             run_name = self.pipeline_name + '_run'
-            client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+            run = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+            run_link = f"{self.kfp_url}/#/runs/details/{run.id}"
+            self.logger.info(f"Pipeline run at {run_link}")
+            return {"result": "Deployment successful.", "run": run_link}
         except Exception as e:
             # remove auto-generated tar package (used for deploy)
             os.remove(self.pipeline_name + '.pipeline.tar.gz')
-            print(f"Kale deployment failed with exception: {e}")
+            self.logger.info(f"Kale deployment failed with exception: {e}")
+            return {"result": "Deployment Failed - no connection with Kubeflow Pipelines Endpoint"}
 
         # sys.path.remove(tmp_dir)
 
@@ -134,4 +155,4 @@ class Kale:
         # Save pipeline code in the notebook source directory
         with open(self.output_path, "w") as f:
             f.write(pipeline_code)
-        print(f"Pipeline code saved at {self.output_path}")
+        self.logger.info(f"Pipeline code saved at {self.output_path}")
