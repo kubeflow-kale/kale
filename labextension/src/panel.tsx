@@ -62,13 +62,15 @@ class KubeflowDeploymentUI extends React.Component<
     {
         pipeline_name: string,
         pipeline_description: string,
-        running_deployment: boolean
+        running_deployment: boolean,
+        deployment_status: string
     }
 > {
     state = {
         pipeline_name: '',
         pipeline_description: '',
-        running_deployment: false
+        running_deployment: false,
+        deployment_status: 'No active deployment.'
     };
 
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
@@ -103,9 +105,14 @@ class KubeflowDeploymentUI extends React.Component<
         }).then((res) => {
             console.log(`statusCode: ${res.status}`);
             console.log(`data: ${res.data}`);
-            console.log(res)
+            console.log(res);
+            this.setState({deployment_status: res.data['message']})
         }).catch((error) => {
-            console.error(error)
+            console.error(error);
+            this.setState({deployment_status: "An error occurred during deployment."})
+        }).then(() => {
+            // always executed
+            this.setState({running_deployment: false});
         })
     };
 
@@ -129,11 +136,15 @@ class KubeflowDeploymentUI extends React.Component<
             <div
                 style={{
                     background: "var(--jp-layout-color1)",
-                    color: "#000000",
+                    color: "var(--jp-ui-font-color1)",
                     fontFamily: "Helvetica",
+                    /* This is needed so that all font sizing of children done in ems is
+                    * relative to this base size */
+                    fontSize: "var(--jp-ui-font-size1)",
                     height: "100%",
                     display: "flex",
-                    flexDirection: "column"
+                    flexDirection: "column",
+                    minWidth: "var(--jp-sidebar-min-width)",
                 }}
             >
 
@@ -141,10 +152,16 @@ class KubeflowDeploymentUI extends React.Component<
                     <p className="p-CommandPalette-header">Kubeflow Pipelines Deployment</p>
                 </div>
 
-
                 {pipeline_name_input}
 
                 {pipeline_desc_input}
+
+                 <div style={{overflow: "auto"}}>
+                    <p className="p-CommandPalette-header">Deployment Status</p>
+                </div>
+                <div style={{margin: "6px 10px"}}>
+                    {this.state.deployment_status}
+                </div>
 
                 <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP} />
 
