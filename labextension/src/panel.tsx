@@ -43,7 +43,7 @@ class InputText extends React.Component<{ label: string, placeholder: string, up
 class DeployButton extends React.Component<{callback: Function, deployment: boolean}, any> {
 
     render() {
-        const buttonText = this.props.deployment ? "Running Deployment..." : "Deploy to Kubeflow Pipelines";
+        const buttonText = this.props.deployment ? "Running Deployment..." : "Deploy Notebook to Kubeflow Pipelines";
 
         return (
             <div className="deploy-button">
@@ -63,14 +63,16 @@ class KubeflowDeploymentUI extends React.Component<
         pipeline_name: string,
         pipeline_description: string,
         running_deployment: boolean,
-        deployment_status: string
+        deployment_status: string,
+        deployment_run_link: string
     }
 > {
     state = {
         pipeline_name: '',
         pipeline_description: '',
         running_deployment: false,
-        deployment_status: 'No active deployment.'
+        deployment_status: 'No active deployment.',
+        deployment_run_link: ''
     };
 
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
@@ -88,11 +90,17 @@ class KubeflowDeploymentUI extends React.Component<
     };
 
     deployToKFP = () => {
-        this.setState({running_deployment: true});
+        this.setState({
+            running_deployment: true,
+            deployment_status: 'No active deployment.',
+            deployment_run_link: ''});
 
         const notebook = JSON.stringify(this.activeNotebookToJSON());
         if (notebook === null) {
             console.log("Could not complete deployment operation");
+            this.setState({
+                deployment_status: 'Could not complete deployment operation',
+                running_deployment: false});
             return
         }
 
@@ -103,10 +111,11 @@ class KubeflowDeploymentUI extends React.Component<
             pipeline_descr: this.state.pipeline_description,
             nb: notebook
         }).then((res) => {
-            console.log(`statusCode: ${res.status}`);
-            console.log(`data: ${res.data}`);
             console.log(res);
-            this.setState({deployment_status: res.data['message']})
+            if ('run' in res.data) {
+                this.setState({deployment_run_link: res.data['run']})
+            }
+            this.setState({deployment_status: res.data['result']})
         }).catch((error) => {
             console.error(error);
             this.setState({deployment_status: "An error occurred during deployment."})
@@ -131,7 +140,13 @@ class KubeflowDeploymentUI extends React.Component<
             value={this.state.pipeline_description}
         />;
         // const myin = inputComponent("Pipeline Name", "Pipeline Name");
-        console.log(this.state.pipeline_name);
+        let run_link = null;
+        if (this.state.deployment_run_link !== '') {
+            run_link = <p>Pipeline run at <a style={{color: "#106ba3"}}
+                                             href={this.state.deployment_run_link}
+                                             target="_blank">this</a> link.</p>;
+        }
+
         return (
             <div
                 style={{
@@ -149,7 +164,14 @@ class KubeflowDeploymentUI extends React.Component<
             >
 
                 <div style={{overflow: "auto"}}>
-                    <p className="p-CommandPalette-header">Kubeflow Pipelines Deployment</p>
+                    <p style={{fontSize: "var(--jp-ui-font-size1)"}}
+                       className="p-CommandPalette-header">
+                        Kubeflow Pipelines Control Panel
+                    </p>
+                </div>
+
+                <div style={{overflow: "auto"}}>
+                    <p className="p-CommandPalette-header">Pipeline Metadata</p>
                 </div>
 
                 {pipeline_name_input}
@@ -161,6 +183,7 @@ class KubeflowDeploymentUI extends React.Component<
                 </div>
                 <div style={{margin: "6px 10px"}}>
                     {this.state.deployment_status}
+                    {run_link}
                 </div>
 
                 <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP} />
