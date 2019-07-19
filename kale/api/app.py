@@ -30,6 +30,7 @@ class deploy(Resource):
         parser.add_argument('pipeline_descr', required=True, type=str, help='Description of the deployed pipeline')
         parser.add_argument('docker_image', default='stefanofioravanzo/kale-kfp-examples:0.1', type=str,
                             help='Docker base image used to build the pipeline steps')
+        parser.add_argument('volumes', required=False, action='append', type=str, help='Name of PVCs to be mounted on pipeline steps')
         parser.add_argument('jupyter_args', type=str,
                             help='YAML file with Jupyter parameters as defined by Papermill')
 
@@ -53,7 +54,8 @@ class deploy(Resource):
                 pipeline_descr=args['pipeline_descr'],
                 docker_image=args['docker_image'],
                 auto_deploy=args['deploy'],
-                kfp_port=args['kfp_port']
+                kfp_port=args['kfp_port'],
+                pvcs=(args['volumes'] if args['volumes'] != [''] else None)
             ).run()
             if 'run' in result:
                 result['status'] = 200

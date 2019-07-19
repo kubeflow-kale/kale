@@ -14,12 +14,12 @@ from kale.codegen import generate_code
 
 
 class Kale:
-    # TODO: Define default and parameters in config file?
     def __init__(self,
                  source_notebook_path: str,
                  pipeline_name,
                  pipeline_descr,
                  docker_image,
+                 pvcs=None,
                  notebook_version=4,
                  auto_deploy=False,
                  kfp_address='localhost',
@@ -38,9 +38,8 @@ class Kale:
         self.pipeline_name = pipeline_name
         self.pipeline_description = pipeline_descr
         self.docker_base_image = docker_image
+        self.pvcs = pvcs
 
-        # path to Minikube folder where to store data
-        self.mount_host_path = '/home/docker/data'
         # path to container folder where `mount_host_path` is mapped
         self.mount_container_path = '/data'
 
@@ -73,7 +72,7 @@ class Kale:
                                               pipeline_name=self.pipeline_name,
                                               pipeline_description=self.pipeline_description,
                                               docker_base_image=self.docker_base_image,
-                                              mount_host_path=self.mount_host_path,
+                                              pvcs=self.pvcs,
                                               mount_container_path=self.mount_container_path,
                                               deploy_pipeline=self.deploy_pipeline)
 
