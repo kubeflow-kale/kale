@@ -30,33 +30,34 @@ def auto_generated_pipeline():
         size="1Gi"
     )
 
-    {% for name in block_functions_names -%}
-
     pvolumes_dict = {'/marshal': marshal_vop.volume}
 
     {% for pvc in pvcs -%}
 
-    pvc{{ loop.index }} = k8s_client.V1PersistentVolumeClaim(
-                              api_version="v1",
-                              spec=k8s_client.V1PersistentVolumeClaimSpec(
-                                  volume_name="{{ pvc[ pv_name ] }}"
-                              )
-                          )
+    pvc{{ loop.index }} = k8s_client.V1Volume(
+                                            name="volume{{ loop.index }}",
+                                            persistent_volume_claim=k8s_client.V1PersistentVolumeClaimVolumeSource(
+                                                                        claim_name="{{ pvc }}"))
+{#    pvc{{ loop.index }} = k8s_client.V1PersistentVolumeClaim(#}
+{#                              api_version="v1",#}
+{#                              spec=k8s_client.V1PersistentVolumeClaimSpec(#}
+{#                                  volume_name="{{ pvc[ pv_name ] }}"#}
+{#                              )#}
+{#                          )#}
     vop{{ loop.index }} = dsl.VolumeOp(
         name="pvc-data{{ loop.index }}",
         k8s_resource=pvc{{ loop.index }}
     )
-    pvolumes_dict['/data{{ loop.index }}'] = vop{{ loop.index }}
+    pvolumes_dict['/data{{ loop.index }}'] = vop{{ loop.index }}.volume
 
-    {% endfor -%}
+    {% endfor %}
+
+    {% for name in block_functions_names %}
 
     {{ name }}_task = {{ name }}_op({{ block_function_args[ name ]|join(', ') }})\
-                            .add_pvolumes({'/marshal': marshal_vop.volume})\
-                            {% for pvc in pvcs -%}
-                            .add_pvolumes({'/data{{ loop.index }}': vop{{ loop.index }}.volume})\
-                            {% endfor -%}
+                            .add_pvolumes(pvolumes_dict)
 
-    {% endfor -%}
+    {% endfor %}
 
     vol_dict = {
         "apiVersion": "v1",
