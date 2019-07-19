@@ -59,19 +59,19 @@ def auto_generated_pipeline():
 
     {% endfor %}
 
-    vol_dict = {
-        "apiVersion": "v1",
-        "kind": "PersistentVolumeClaim",
-        "metadata": {
-            "name": marshal_vop.outputs['name']
-        }
-    }
-
-    delete_vol = dsl.ResourceOp(
-        name="delete_kale_marshal_volume",
-        action="delete",
-        k8s_resource=vol_dict
-    ).after({{ leaf_steps|join(', ') }})  # Depend on the last executing steps
+{#    vol_dict = {#}
+{#        "apiVersion": "v1",#}
+{#        "kind": "PersistentVolumeClaim",#}
+{#        "metadata": {#}
+{#            "name": marshal_vop.outputs['name']#}
+{#        }#}
+{#    }#}
+{##}
+{#    delete_vol = dsl.ResourceOp(#}
+{#        name="delete_kale_marshal_volume",#}
+{#        action="delete",#}
+{#        k8s_resource=vol_dict#}
+{#    ).after({{ leaf_steps|join(', ') }})  # Depend on the last executing steps#}
 
 {# The script will deploy the pipeline if run manually #}
 if __name__ == "__main__":
