@@ -19,13 +19,13 @@ import * as React from "react";
 // import {request} from 'http';
 import axios from 'axios';
 
-import { faSyncAlt } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {faSyncAlt} from '@fortawesome/free-solid-svg-icons'
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 import '../style/index.css';
 
 
-class InputText extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string}, any> {
+class InputText extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string }, any> {
     render() {
         return (
             <div className="input-container">
@@ -40,28 +40,31 @@ class InputText extends React.Component<{ label: string, placeholder: string, up
     }
 }
 
-class InputArea extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string}, any> {
+class InputArea extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string }, any> {
     render() {
         return (
             <div className="input-container">
                 <div className="input-wrapper">
                     <textarea rows={4} cols={50} placeholder={this.props.placeholder} value={this.props.value}
-                           onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}/>
+                              onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}/>
                 </div>
             </div>
         )
     }
 }
 
-class DeployButton extends React.Component<{callback: Function, deployment: boolean}, any> {
+class DeployButton extends React.Component<{ callback: Function, deployment: boolean }, any> {
 
     render() {
         const buttonText = this.props.deployment ? "Running Deployment..." : "Deploy Notebook to Kubeflow Pipelines";
 
         return (
             <div className="deploy-button">
-                <button onClick={() => { this.props.callback()} }>
-                    { this.props.deployment ?  <FontAwesomeIcon icon={faSyncAlt} spin style={{marginRight: "5px"}}/>: null }
+                <button onClick={() => {
+                    this.props.callback()
+                }}>
+                    {this.props.deployment ?
+                        <FontAwesomeIcon icon={faSyncAlt} spin style={{marginRight: "5px"}}/> : null}
                     <span>{buttonText}</span>
                 </button>
             </div>
@@ -69,8 +72,7 @@ class DeployButton extends React.Component<{callback: Function, deployment: bool
     }
 }
 
-class KubeflowDeploymentUI extends React.Component<
-    { tracker: INotebookTracker },
+class KubeflowDeploymentUI extends React.Component<{ tracker: INotebookTracker },
     {
         pipeline_name: string,
         pipeline_description: string,
@@ -78,8 +80,7 @@ class KubeflowDeploymentUI extends React.Component<
         deployment_status: string,
         deployment_run_link: string,
         volumes: string
-    }
-> {
+    }> {
     state = {
         pipeline_name: '',
         pipeline_description: '',
@@ -108,14 +109,16 @@ class KubeflowDeploymentUI extends React.Component<
         this.setState({
             running_deployment: true,
             deployment_status: 'No active deployment.',
-            deployment_run_link: ''});
+            deployment_run_link: ''
+        });
 
         const notebook = JSON.stringify(this.activeNotebookToJSON());
         if (notebook === null) {
             console.log("Could not complete deployment operation");
             this.setState({
                 deployment_status: 'Could not complete deployment operation',
-                running_deployment: false});
+                running_deployment: false
+            });
             return
         }
 
@@ -128,10 +131,20 @@ class KubeflowDeploymentUI extends React.Component<
             volumes: this.state.volumes.split('\n')
         }).then((res) => {
             console.log(res);
-            if ('run' in res.data) {
-                this.setState({deployment_run_link: res.data['run']})
+            if ('status' in res.data) {
+                const st = res.data['status'];
+                if (st == 200 || st == 400) {
+                    if ('run' in res.data) {
+                        this.setState({deployment_run_link: res.data['run']})
+                    }
+                    this.setState({deployment_status: res.data['result']})
+                } else if (st == 500) {
+                    this.setState({deployment_status: "Server error occurred during deployment: " + res.data['message']})
+                } else {
+                    this.setState({deployment_status: "Unhandled response status."})
+                }
             }
-            this.setState({deployment_status: res.data['result']})
+
         }).catch((error) => {
             console.error(error);
             this.setState({deployment_status: "An error occurred during deployment."})
@@ -207,14 +220,14 @@ class KubeflowDeploymentUI extends React.Component<
                 {volumes}
 
                 <div style={{overflow: "auto"}}>
-                     <p className="p-CommandPalette-header">Deployment Status</p>
-                 </div>
+                    <p className="p-CommandPalette-header">Deployment Status</p>
+                </div>
                 <div style={{margin: "6px 10px"}}>
                     {this.state.deployment_status}
                     {run_link}
                 </div>
 
-                <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP} />
+                <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP}/>
 
             </div>
         );
