@@ -34,16 +34,22 @@ def auto_generated_pipeline():
 
     {% for pvc in pvcs -%}
 
-    pvc{{ loop.index }} = k8s_client.V1Volume(
-                                            name="volume{{ loop.index }}",
-                                            persistent_volume_claim=k8s_client.V1PersistentVolumeClaimVolumeSource(
-                                                                        claim_name="{{ pvc }}"))
-{#    pvc{{ loop.index }} = k8s_client.V1PersistentVolumeClaim(#}
-{#                              api_version="v1",#}
-{#                              spec=k8s_client.V1PersistentVolumeClaimSpec(#}
-{#                                  volume_name="{{ pvc[ pv_name ] }}"#}
-{#                              )#}
-{#                          )#}
+    pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata=k8s_client.V1ObjectMeta(
+            name="{{ pvc }}-claim-{{ pipeline_name }}"
+        ),
+        spec=k8s_client.V1PersistentVolumeClaimSpec(
+            volume_name="{{ pvc }}",
+            storage_class_name="local-storage",
+            access_modes=['ReadWriteOnce'],
+            resources=k8s_client.V1ResourceRequirements(
+                requests={"storage": "1Gi"}
+            )
+        )
+    )                                                              
+
     vop{{ loop.index }} = dsl.VolumeOp(
         name="pvc-data{{ loop.index }}",
         k8s_resource=pvc{{ loop.index }}

@@ -50,7 +50,7 @@ class deploy(Resource):
         try:
             result = Kale(
                 source_notebook_path=tmp_notebook_path,
-                pipeline_name=args['pipeline_name'] + "_" + self.random_string(4),
+                pipeline_name=args['pipeline_name'] + "-" + self.random_string(4),
                 pipeline_descr=args['pipeline_descr'],
                 docker_image=args['docker_image'],
                 auto_deploy=args['deploy'],
