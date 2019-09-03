@@ -112,7 +112,3 @@ The package provides the `kale_server` CLI command that runs a Flask server. The
 - `pipeline_descr`: Description of the resulting KFP pipeline
 - `docker_image`: Docker image to use for the pipeline steps
 
-## JupyterLab Extension
-
-Under `extensions/kale-toolbar-runner` you can find the code of a JupyterLab extension that adds a new Button in the Notebook toolbar. The related action will call the `localhost:5000/kale` API sending the currently active Notebook. This way one can easily deploy a Notebook to KFP without leaving the JupyterLab UI.
-
