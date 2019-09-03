@@ -1,18 +1,18 @@
 {
-  "name": "kubeflow-kale",
-  "version": "0.0.1",
+  "name": "kubeflow-kale-launcher",
+  "version": "1.0.1",
   "description": "Deployment interface for Kubeflow Pipelines.",
   "keywords": [
     "jupyter",
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/kubeflow-kale/kale",
+  "homepage": "https://github.com/kubeflow-kale/jupyterlab-kubeflow-kale",
   "bugs": {
-    "url": "https://github.com/kubeflow-kale/kale/issues"
+    "url": "https://github.com/kubeflow-kale/jupyterlab-kubeflow-kale/issues"
   },
   "license": "BSD-3-Clause",
-  "author": "Project Jupyter",
+  "author": "Stefano Fioravanzo <stefano.fioravanzo@gmail.com>",
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
     "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
@@ -33,9 +33,9 @@
     "watch": "tsc -w --listEmittedFiles"
   },
   "dependencies": {
-    "@jupyterlab/application": "~1.0.0",
-    "@jupyterlab/apputils": "~1.0.0",
-    "@jupyterlab/coreutils": "~3.0.0",
+    "@jupyterlab/application": ">=1.1.0 <1.2.0",
+    "@jupyterlab/apputils": ">=1.1.0 <1.2.0",
+    "@jupyterlab/coreutils": ">=3.1.0 <3.2.0",
     "@jupyterlab/notebook": "^1.0.0-alpha.6",
     "@phosphor/widgets": "^1.8.0",
     "react": "16.8.4",

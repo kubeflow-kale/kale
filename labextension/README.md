@@ -1,10 +1,29 @@
-## Kubeflow-Kale JupyterLab Extension
+## Kubeflow-Kale-Launcher JupyterLab Extension
 
-JupyterLab extension that provides a Kubeflow specific left area used to deploy a Notebook via Kale. The extension provides the means to deploy e single Jupyter Notebook via Kale using a simple to use interface. The use can specify pipeline metadata and volume mounts and with a click of a button deploy to Kubeflow Pipelines.
+JupyterLab extension that provides a Kubeflow specific left area that can be used to deploy a Notebook to Kubeflow Pipelines. This panel provides several inputs to customize pipeline metadata (name, description, parameters), volume mount points, ...
+
+When hitting the deploy button, the active Kubeflow-Kale REST endpoint will be called, sending the active notebook with its tags. Kubeflow-Kale will then manage the actual deployment to Kubeflow Pipelines, to have a more in depth look at how this works check out the [Kubeflow-Kale repository](http://github.com/kubeflow-kale/kale).
 
 ![JPKaleScreen Logo](https://raw.githubusercontent.com/kubeflow-kale/jupyterlab-kubeflow-kale/master/docs/imgs/jp-kale.png)
 
 ## Installation
+
+The extension currently supports JupyterLab `v1.1.1`:
+
+```bash
+pip install jupyterlab==1.1.1
+
+# add the extension
+jupyter labextension install kubeflow-kale-launcher
+
+# verify extension status
+jupyter labextension list
+
+# run
+jupyter lab
+```
+
+## Development
 
 To build the extension
 
@@ -18,13 +37,5 @@ And then add the extension to JupyterLab
 jupyter labextension install .
 ```
 
-## Development
 
 To reinstall continuously the new changes while developing, run `jlpm run watch`. To install the entire package run `jlpm install` while inside the extension's directory. Then run JuptyerLab with `jupyter lab --watch` to watch for changes in the extension.
-
-## svg icon
-
-Useful tools to create the CSS svg icon:
-
-- [SVGOMG](https://jakearchibald.github.io/svgomg/): Simplify SVG path structure to be easily embedded into CSS
-- [SVG URL Encoder](https://yoksel.github.io/url-encoder/): Convert standard SVG paths to CSS url
