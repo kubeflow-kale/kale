@@ -29,7 +29,7 @@ Kale is provided as a Python package. Just clone the repository to your local ma
 
 ```bash
 # Clone the repo to your local environment
-git clone https://github.com/StefanoFioravanzo/kale.git
+git clone https://github.com/kubeflow-kale/kale
 cd kale
 # Install the package in your virtualenv
 python setup.py install
