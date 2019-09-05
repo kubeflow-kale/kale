@@ -2,7 +2,7 @@ decorator==4.3.2
 graphviz==0.10.1
 ipython-genutils==0.2.0
 Jinja2>=2.10.1
-jsonschema==2.6.0
+jsonschema==3.0.2
 jupyter-core==4.4.0
 MarkupSafe==1.1.0
 nbformat==4.4.0
@@ -11,3 +11,9 @@ notebook>=5.7.8
 pyflakes==2.1.0
 six==1.12.0
 traitlets==4.3.2
+kfp==0.1.27
+autopep8==1.4.4
+pyflakes==2.1.0
+papermill==1.1.0
+Flask==1.1.1
+Flask-RESTful==0.3.7
