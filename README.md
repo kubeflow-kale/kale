@@ -52,7 +52,7 @@ kale --nb examples/base_example_numpy.ipynb \
 ```
 This will produce a python script `examples/kfp_numpy_examples.kfp.py` containing all the definitions of the KFP stand-alone functions and the necessary code to define and deploy a pipeline. If run with the `--deploy` flag, Kale will try to automatically deploy the generated pipeline (default KFP url is `localhost:8080`, see `kale` CLI parameters for customization).
 
-Have a look at the notebooks under the examples folder to start experimenting with Kale.
+Some example Notebooks can be found in the [examples](https://github.com/kubeflow-kale/examples) repository.
 
 ## Architecture
 
