@@ -96,7 +96,7 @@ class Kale:
         tmp_dir = tempfile.mkdtemp()
         # copy generated script to temp dir
         copyfile(pipeline_source, tmp_dir + '/' + "pipeline_code.py")
-        
+
         spec = importlib.util.spec_from_file_location(tmp_dir.split('/')[-1], tmp_dir + '/' + 'pipeline_code.py')
         foo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(foo)
