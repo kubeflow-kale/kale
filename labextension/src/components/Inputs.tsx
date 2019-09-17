@@ -48,3 +48,19 @@ export class DeployButton extends React.Component<{ callback: Function, deployme
         )
     }
 }
+
+export class SelectBox extends React.Component<{ label: string, updateValue: Function, values: string[] }, any> {
+    render() {
+        return (
+            <div className="input-container">
+                <div className="input-wrapper">
+                    <select
+                           value={this.props.values[0]}
+                           onChange={evt => this.props.updateValue((evt.target as HTMLSelectElement).value)}>
+                        { this.props.values.map(value => <option key={value} value={value} />) }
+                    </select>
+                </div>
+            </div>
+        )
+    }
+}

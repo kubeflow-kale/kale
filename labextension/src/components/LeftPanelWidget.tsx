@@ -8,7 +8,8 @@ import NotebookUtils from "../utils/NotebookUtils";
 import {
     InputText,
     InputArea,
-    DeployButton
+    DeployButton,
+    SelectBox
 } from "./Inputs";
 
 export class KubeflowKaleLeftPanel extends React.Component<
@@ -25,7 +26,8 @@ export class KubeflowKaleLeftPanel extends React.Component<
         deployment_status: string,
         deployment_run_link: string,
         volumes: string,
-        active_notebook: NotebookPanel
+        active_notebook: NotebookPanel,
+        selectval: string
     }>
 {
     // init state default values
@@ -36,7 +38,8 @@ export class KubeflowKaleLeftPanel extends React.Component<
         deployment_status: 'No active deployment.',
         deployment_run_link: '',
         volumes: '',
-        active_notebook: this.props.notebook
+        active_notebook: this.props.notebook,
+        selectval: ''
     };
 
     componentDidMount = () => {
@@ -84,6 +87,7 @@ export class KubeflowKaleLeftPanel extends React.Component<
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
     updatePipelineDescription = (desc: string) => this.setState({pipeline_description: desc});
     updateVolumes = (vols: string) => this.setState({volumes: vols});
+    updateSelectValue = (val: string) => this.setState({selectval: val})
 
     activeNotebookToJSON = () => {
         console.log(this.state.pipeline_name);
@@ -140,6 +144,8 @@ export class KubeflowKaleLeftPanel extends React.Component<
             value={this.state.volumes}
         />;
 
+        const selectbox = <SelectBox label={"select"} updateValue={this.updateSelectValue} values={['A', 'B', 'C']} />;
+
         let run_link = null;
         if (this.state.deployment_run_link !== '') {
             run_link = <p>Pipeline run at <a style={{color: "#106ba3"}}
@@ -189,6 +195,12 @@ export class KubeflowKaleLeftPanel extends React.Component<
                 <div style={{margin: "6px 10px"}}>
                     {this.state.deployment_status}
                     {run_link}
+                </div>
+
+                <div style={{overflow: "auto"}}>new div</div>
+
+                <div style={{overflow: "auto"}}>
+                {selectbox}
                 </div>
 
                 <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP}/>
