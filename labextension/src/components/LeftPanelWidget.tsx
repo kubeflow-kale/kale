@@ -9,8 +9,9 @@ import {
     InputText,
     InputArea,
     DeployButton,
-    SelectBox
-} from "./Inputs";
+    SelectBox,
+    CollapsablePanel
+} from "./Components";
 
 export class KubeflowKaleLeftPanel extends React.Component<
     // props
@@ -87,7 +88,7 @@ export class KubeflowKaleLeftPanel extends React.Component<
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
     updatePipelineDescription = (desc: string) => this.setState({pipeline_description: desc});
     updateVolumes = (vols: string) => this.setState({volumes: vols});
-    updateSelectValue = (val: string) => this.setState({selectval: val})
+    updateSelectValue = (val: string) => this.setState({selectval: val});
 
     activeNotebookToJSON = () => {
         console.log(this.state.pipeline_name);
@@ -144,7 +145,7 @@ export class KubeflowKaleLeftPanel extends React.Component<
             value={this.state.volumes}
         />;
 
-        const selectbox = <SelectBox label={"select"} updateValue={this.updateSelectValue} values={['A', 'B', 'C']} />;
+        const selectbox = <SelectBox label={"Select previous block"} updateValue={this.updateSelectValue} value={this.state.selectval} values={['A', 'B', 'C']} />;
 
         let run_link = null;
         if (this.state.deployment_run_link !== '') {
@@ -154,20 +155,7 @@ export class KubeflowKaleLeftPanel extends React.Component<
         }
 
         return (
-            <div
-                style={{
-                    background: "var(--jp-layout-color1)",
-                    color: "var(--jp-ui-font-color1)",
-                    fontFamily: "Helvetica",
-                    /* This is needed so that all font sizing of children done in ems is
-                    * relative to this base size */
-                    fontSize: "var(--jp-ui-font-size1)",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: "var(--jp-sidebar-min-width)",
-                }}
-            >
+            <div className={"kubeflow-widget"}>
 
                 <div style={{overflow: "auto"}}>
                     <p style={{fontSize: "var(--jp-ui-font-size1)"}}
@@ -197,11 +185,12 @@ export class KubeflowKaleLeftPanel extends React.Component<
                     {run_link}
                 </div>
 
-                <div style={{overflow: "auto"}}>new div</div>
 
                 <div style={{overflow: "auto"}}>
-                {selectbox}
+                    {selectbox}
                 </div>
+
+                <CollapsablePanel title={"Advanced Settings"}/>
 
                 <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP}/>
 
