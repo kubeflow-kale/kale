@@ -1,11 +1,7 @@
-// Dependencies
 import { Dialog, showDialog } from "@jupyterlab/apputils";
 import { NotebookPanel } from "@jupyterlab/notebook";
 import { KernelMessage } from "@jupyterlab/services";
 import { CommandRegistry } from "@phosphor/commands";
-
-// Project Components
-const OUTPUT_RESULT_NAME = "_private_vcdat_output";
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
 export default class NotebookUtilities {
@@ -92,35 +88,11 @@ export default class NotebookUtilities {
 
   /**
    * @description Gets the value of a key from specified notebook's metadata.
-   * This asynchronous version checks the notebook session is ready before getting metadata.
-   * If the notebook is null, an error will occur.
-   * @param notebookPanel The notebook to get meta data from.
-   * @param key The key of the value.
-   * @returns Promise<any> - The value of the metadata. Returns null if the key doesn't exist.
-   */
-  public static async getMetaData(
-    notebookPanel: NotebookPanel,
-    key: string
-  ): Promise<any> {
-    if (!notebookPanel) {
-      throw new Error(
-        "The notebook is null or undefined. No meta data available."
-      );
-    }
-    await notebookPanel.session.ready; // Wait for session to load in notebook
-    if (notebookPanel.model && notebookPanel.model.metadata.has(key)) {
-      return notebookPanel.model.metadata.get(key);
-    }
-    return null;
-  }
-
-  /**
-   * @description Gets the value of a key from specified notebook's metadata.
    * @param notebookPanel The notebook to get meta data from.
    * @param key The key of the value.
    * @returns any -The value of the metadata. Returns null if the key doesn't exist.
    */
-  public static getMetaDataNow(notebookPanel: NotebookPanel, key: string): any {
+  public static getMetaData(notebookPanel: NotebookPanel, key: string): any {
     if (!notebookPanel) {
       throw new Error(
         "The notebook is null or undefined. No meta data available."
@@ -130,34 +102,6 @@ export default class NotebookUtilities {
       return notebookPanel.model.metadata.get(key);
     }
     return null;
-  }
-
-  /**
-   * @description Sets the key value pair in the notebook's metadata. If the key doesn't exists it will add one.
-   * This asynchronous version checks the notebook session is ready before setting the metadata.
-   * @param notebookPanel The notebook to set meta data in.
-   * @param key The key of the value to create.
-   * @param value The value to set.
-   * @param save Default is false. Whether the notebook should be saved after the meta data is set.
-   * @returns The old value for the key, or undefined if it did not exist.
-   */
-  public static async setMetaData(
-    notebookPanel: NotebookPanel,
-    key: string,
-    value: any,
-    save: boolean = false
-  ): Promise<any> {
-    if (!notebookPanel) {
-      throw new Error(
-        "The notebook is null or undefined. No meta data available."
-      );
-    }
-    await notebookPanel.session.ready;
-    const oldVal: any = notebookPanel.model.metadata.set(key, value);
-    if (save) {
-      this.saveNotebook(notebookPanel);
-    }
-    return oldVal;
   }
 
   /**
@@ -170,7 +114,7 @@ export default class NotebookUtilities {
    * Note: This function will not wait for the save to complete, it only sends a save request.
    * @returns The old value for the key, or undefined if it did not exist.
    */
-  public static setMetaDataNow(
+  public static setMetaData(
     notebookPanel: NotebookPanel,
     key: string,
     value: any,
@@ -186,48 +130,6 @@ export default class NotebookUtilities {
       this.saveNotebook(notebookPanel);
     }
     return oldVal;
-  }
-
-  /**
-   * @description This function runs code directly in the notebook's kernel and then evaluates the
-   * result and returns it as a promise.
-   * @param notebookPanel The notebook to run the code in
-   * @param code The code to run in the kernel, this code needs to evaluate to a variable named 'output'
-   * Examples of valid code:
-   *  Single line: "output=123+456"
-   *  Multilines: "a = [1,2,3]\nb = [4,5,6]\nfor idx, val in enumerate(a):\n\tb[idx]+=val\noutput = b"
-   * @param storeHistory Default is false. If true, the code executed will be stored in the kernel's history
-   * and the counter which is shown in the cells will be incremented to reflect code was run.
-   * @returns Promise<string> - A promise containing the execution results of the code as a string.
-   * Or an empty string if there were no results.
-   */
-  public static async sendSimpleKernelRequest(
-    notebookPanel: NotebookPanel,
-    code: string,
-    storeHistory: boolean = false
-  ): Promise<string> {
-    // Send request to kernel with pre-filled parameters
-    const result: any = await NotebookUtilities.sendKernelRequest(
-      notebookPanel,
-      code,
-      { result: OUTPUT_RESULT_NAME },
-      false,
-      storeHistory,
-      false,
-      false
-    );
-
-    // Get results from the request for validation
-    const output: any = result.result;
-
-    if (!output || output.data === undefined) {
-      // Output was empty
-      return "";
-    }
-
-    // Output has data, return it
-    const execResult: string = output.data["text/plain"];
-    return execResult;
   }
 
   /**
@@ -293,22 +195,23 @@ export default class NotebookUtilities {
     ).done;
 
     const content: any = message.content;
+    return content;
 
-    if (content.status !== "ok") {
-      // If cdat is requesting user input, return nothing
-      if (
-        content.status === "error" &&
-        content.ename === "StdinNotImplementedError"
-      ) {
-        return "";
-      }
-
-      // If response is not 'ok', throw contents as error, log code
-      const msg: string = `Code caused an error:\n${runCode}`;
-      console.error(msg);
-      throw content;
-    }
-    // Return user_expressions of the content
-    return content.user_expressions;
+    // if (content.status !== "ok") {
+    //   // If cdat is requesting user input, return nothing
+    //   if (
+    //     content.status === "error" &&
+    //     content.ename === "StdinNotImplementedError"
+    //   ) {
+    //     return "";
+    //   }
+    //
+    //   // If response is not 'ok', throw contents as error, log code
+    //   const msg: string = `Code caused an error:\n${runCode}`;
+    //   console.error(msg);
+    //   throw content;
+    // }
+    // // Return user_expressions of the content
+    // return content.user_expressions;
   }
 }

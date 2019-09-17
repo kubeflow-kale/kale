@@ -317,10 +317,11 @@ export default class CellUtilities {
         index,
         code
       );
-      const output: string = await NotebookUtilities.sendSimpleKernelRequest(
+      const output: string = await NotebookUtilities.sendKernelRequest(
         notebookPanel,
         code,
-        false
+          {output:"output"},
+          false
       );
       return [insertionIndex, output];
     } catch (error) {

@@ -1,5 +1,8 @@
 import * as React from "react";
-import {INotebookTracker} from "@jupyterlab/notebook";
+import {
+    INotebookTracker,
+    NotebookPanel
+} from "@jupyterlab/notebook";
 import NotebookUtils from "../utils/NotebookUtils";
 
 import {
@@ -8,22 +11,74 @@ import {
     DeployButton
 } from "./Inputs";
 
-export class KubeflowKaleLeftPanel extends React.Component<{ tracker: INotebookTracker },
+export class KubeflowKaleLeftPanel extends React.Component<
+    // props
+    {
+        tracker: INotebookTracker,
+        notebook: NotebookPanel
+    },
+    // state
     {
         pipeline_name: string,
         pipeline_description: string,
         running_deployment: boolean,
         deployment_status: string,
         deployment_run_link: string,
-        volumes: string
-    }> {
+        volumes: string,
+        active_notebook: NotebookPanel
+    }>
+{
+    // init state default values
     state = {
         pipeline_name: '',
         pipeline_description: '',
         running_deployment: false,
         deployment_status: 'No active deployment.',
         deployment_run_link: '',
-        volumes: ''
+        volumes: '',
+        active_notebook: this.props.notebook
+    };
+
+    componentDidMount = () => {
+        // Notebook tracker will signal when a notebook is changed
+        this.props.tracker.currentChanged.connect(this.handleNotebookChanged, this);
+
+        // Set notebook widget if one is open
+        if (this.props.tracker.currentWidget instanceof  NotebookPanel) {
+            this.setNotebookPanel(this.props.tracker.currentWidget);
+        } else {
+            this.setNotebookPanel(null);
+        }
+    };
+
+    /**
+    * This handles when a notebook is switched to another notebook.
+    * The parameters are automatically passed from the signal when a switch occurs.
+    */
+    handleNotebookChanged = (tracker: INotebookTracker, notebook: NotebookPanel) => {
+        // Set the current notebook and wait for the session to be ready
+        if (notebook) {
+            this.setNotebookPanel(notebook);
+        } else {
+            this.setNotebookPanel(null);
+        }
+    };
+
+    /**
+     * Read new notebook and assign its metadata to the state.
+     * @param notebook active NotebookPanel
+     */
+    setNotebookPanel = (notebook: NotebookPanel) => {
+        this.setState({active_notebook: notebook});
+        // make sure this is a notebook (no empty page)
+        if (notebook) {
+            // get notebook metadata
+            const kubeflow_mt = NotebookUtils.getMetaData(
+                notebook,
+                'kubeflow'
+            );
+
+        }
     };
 
     updatePipelineName = (name: string) => this.setState({pipeline_name: name});
@@ -49,19 +104,18 @@ export class KubeflowKaleLeftPanel extends React.Component<{ tracker: INotebookT
             deployment_run_link: ''
         });
 
-        let active_notebook = this.props.tracker.currentWidget;
-        const code = "a=123\nb=456\nsum=a+b";
-        const expr = {sum: "sum",prod: "a*b",args:"[a,b,sum]"};
+        console.log(this.state.active_notebook.context.path);
 
-        const cli_code = "output=!ls";
-        const cli_expr = {output: "output"};
-        const output = await NotebookUtils.sendKernelRequest(active_notebook, cli_code, cli_expr, false);
-        console.log(output);
-
-        console.log('test')
-
-
-
+        // let active_notebook = this.props.tracker.currentWidget;
+        // const code = "a=123\nb=456\nsum=a+b";
+        // const expr = {sum: "sum",prod: "a*b",args:"[a,b,sum]"};
+        //
+        // const cli_code = "output=!ls";
+        // const cli_expr = {output: "output"};
+        // const output = await NotebookUtils.sendKernelRequest(active_notebook, cli_code, cli_expr, false);
+        // console.log(output);
+        //
+        // console.log('test')
     };
 
     render() {

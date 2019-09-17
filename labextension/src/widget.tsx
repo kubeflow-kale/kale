@@ -52,6 +52,7 @@ function activate(
     const widget = ReactWidget.create(
         <KubeflowKaleLeftPanel
             tracker={tracker}
+            notebook={tracker.currentWidget}
         />
     );
     widget.id = "kubeflow-kale/kubeflowDeployment";
