@@ -9,7 +9,7 @@
     "declaration": true,
     "noImplicitAny": true,
     "noEmitOnError": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "esModuleInterop": true,
     "preserveWatchOutput": true,
     "module": "commonjs",
@@ -17,7 +17,8 @@
     "resolveJsonModule": true,
     "target": "es2015",
     "lib": ["dom", "es2015"],
-    "jsx": "react"
+    "jsx": "react",
+    "strictNullChecks": false
   },
-  "include": ["src/*"]
+  "include": ["src/*", "src/utils/*", "src/components/*"]
 }
