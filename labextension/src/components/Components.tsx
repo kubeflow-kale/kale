@@ -2,14 +2,21 @@ import * as React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
 
-export class InputText extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string }, any> {
+export class InputText extends React.Component<
+    { label: string, placeholder: string, updateValue: Function, value: string }, { focus: boolean }> {
+    state = {
+        focus: false
+    };
     render() {
+        const onFocusClass = (this.state.focus) ? 'input-focus' : '';
         return (
-            <div className="input-container">
-                <div className="input-wrapper">
+            <div className="p-Widget input-container">
+                <div className={"input-wrapper " + onFocusClass}>
                     <input placeholder={this.props.placeholder}
                            value={this.props.value}
                            onChange={evt => this.props.updateValue((evt.target as HTMLInputElement).value)}
+                           onFocus={_ => this.setState({focus: !this.state.focus})}
+                           onBlur={_ => this.setState({focus: !this.state.focus})}
                     />
                 </div>
             </div>
@@ -17,13 +24,21 @@ export class InputText extends React.Component<{ label: string, placeholder: str
     }
 }
 
-export class InputArea extends React.Component<{ label: string, placeholder: string, updateValue: Function, value: string }, any> {
+export class InputArea extends React.Component<
+    { label: string, placeholder: string, updateValue: Function, value: string }, { focus: boolean }> {
+     state = {
+        focus: false
+    };
     render() {
+        const onFocusClass = (this.state.focus) ? 'input-focus' : '';
         return (
-            <div className="input-container">
-                <div className="input-wrapper">
+            <div className="p-Widget input-container">
+                <div className={"input-wrapper " + onFocusClass}>
                     <textarea rows={4} cols={50} placeholder={this.props.placeholder} value={this.props.value}
-                              onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}/>
+                              onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}
+                              onFocus={_ => this.setState({focus: !this.state.focus})}
+                              onBlur={_ => this.setState({focus: !this.state.focus})}
+                    />
                 </div>
             </div>
         )
@@ -49,14 +64,14 @@ export class DeployButton extends React.Component<{ callback: Function, deployme
     }
 }
 
-export class SelectBox extends React.Component<{ label: string, updateValue: Function, value: string, values: string[] }, any> {
+export class SelectBox extends React.Component<{ label: string, updateValue: Function, value: string[], values: string[] }, any> {
     render() {
         return (
             <div className='p-Widget jp-KeySelector'>
             <label>
                 { this.props.label }
                 <div className="jp-select-wrapper">
-                    <select
+                    <select multiple={true}
                            className="jp-mod-styled"
                            value={this.props.value}
                            onChange={evt => this.props.updateValue((evt.target as HTMLSelectElement).value)}>
@@ -83,8 +98,11 @@ export class CollapsablePanel extends React.Component<{ title: string}, {collaps
             content_class = '';
         }
         return (
-            <div className={'p-Widget jp-Collapse' + wrapper_class} onClick={_ => this.setState({collapsed: !this.state.collapsed})}>
-                <div className='p-Widget jp-Collapse-header'>{this.props.title}</div>
+            <div className={'p-Widget jp-Collapse' + wrapper_class}>
+                <div
+                    className='p-Widget jp-Collapse-header'
+                    onClick={_ => this.setState({collapsed: !this.state.collapsed})}
+                >{this.props.title}</div>
                 <div className={'p-Widget p-Panel jp-Collapse-contents ' + content_class}>
                     <InputText label={"Docker image"} placeholder={"Image name"} updateValue={() => {}} value={""}/>
                 </div>

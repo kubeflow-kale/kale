@@ -1,6 +1,6 @@
 import * as React from "react";
 import {
-    INotebookTracker,
+    INotebookTracker, Notebook,
     NotebookPanel
 } from "@jupyterlab/notebook";
 import NotebookUtils from "../utils/NotebookUtils";
@@ -9,12 +9,13 @@ import {
     InputText,
     InputArea,
     DeployButton,
-    SelectBox,
     CollapsablePanel
 } from "./Components";
+import {CellTags} from "./CellTags";
+import {Cell} from "@jupyterlab/cells";
 
 
-const KUBEFLOW_METADATA_KEY = 'kubeflow';
+const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok';
 
 interface IProps {
     tracker: INotebookTracker;
@@ -22,47 +23,55 @@ interface IProps {
 }
 
 interface IState {
-    metadata: IKubeflowMetadata;
-    running_deployment: boolean;
-    deployment_status: string;
-    deployment_run_link: string;
-    active_notebook?: NotebookPanel;
-    selectval: string
+    metadata: IKaleNotebookMetadata;
+    runningDeployment: boolean;
+    deploymentStatus: string;
+    deploymentRunLink: string;
+    selectVal: string;
+    activeNotebook?: NotebookPanel;
+    activeCell?: Cell;
+    activeCellIndex?: number;
 }
 
-interface IKubeflowMetadata {
-    experiment_name: string,
-    run_name: string,
-    pipeline_name: string,
-    pipeline_description: string,
-    docker_image: string,
-    volumes: string,
+interface IKaleNotebookMetadata {
+    experimentName: string;
+    runName: string;
+    pipelineName: string;
+    pipelineDescription: string;
+    dockerImage: string;
+    volumes: string
 }
 
 const DefaultState: IState = {
         metadata: {
-            experiment_name: '',
-            run_name: '',
-            pipeline_name: '',
-            pipeline_description: '',
-            docker_image: '',
+            experimentName: '',
+            runName: '',
+            pipelineName: '',
+            pipelineDescription: '',
+            dockerImage: '',
             volumes: ''
         },
-        running_deployment: false,
-        deployment_status: 'No active deployment.',
-        deployment_run_link: '',
-        active_notebook: null,
-        selectval: ''
-    };
+        runningDeployment: false,
+        deploymentStatus: 'No active deployment.',
+        deploymentRunLink: '',
+        selectVal: '',
+        activeNotebook: null,
+};
+
+const options = [
+  { value: 'chocolate', label: 'Chocolate' },
+  { value: 'strawberry', label: 'Strawberry' },
+  { value: 'vanilla', label: 'Vanilla' },
+];
 
 export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
 
-    updateSelectValue = (val: string) => this.setState({selectval: val});
+    updateSelectValue = (val: string) => this.setState({selectVal: val});
     // update metadata state values: use destructure operator to update nested dict
-    updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipeline_name: name}});
-    updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipeline_description: desc}});
+    updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipelineName: name}});
+    updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipelineDescription: desc}});
     updateVolumes = (vols: string) => this.setState({metadata: {...this.state.metadata, volumes: vols}});
     // restore state to default values
     resetState = () => this.setState({...DefaultState, ...DefaultState.metadata});
@@ -82,11 +91,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // fast comparison of Metadata objects.
         // warning: this method does not work if keys change order.
         if (JSON.stringify(prevState.metadata) !== JSON.stringify(this.state.metadata)
-            && this.state.active_notebook) {
+            && this.state.activeNotebook) {
             // Write new metadata to the notebook and save
             NotebookUtils.setMetaData(
-                this.state.active_notebook,
-                KUBEFLOW_METADATA_KEY,
+                this.state.activeNotebook,
+                KALE_NOTEBOOK_METADATA_KEY,
                 this.state.metadata,
                 true)
         }
@@ -99,10 +108,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     handleNotebookChanged = async (tracker: INotebookTracker, notebook: NotebookPanel) => {
         // Set the current notebook and wait for the session to be ready
         if (notebook) {
-            this.setState({active_notebook: notebook});
+            this.setState({activeNotebook: notebook});
             await this.setNotebookPanel(notebook)
         } else {
-            this.setState({active_notebook: null});
+            this.setState({activeNotebook: null});
             await this.setNotebookPanel(null)
         }
     };
@@ -111,6 +120,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         notebookPanel.disposed.disconnect(this.handleNotebookDisposed);
         // reset widget to default state
         this.resetState()
+    };
+
+    handleActiveCellChanged = async (notebook: Notebook, activeCell: Cell) => {
+        this.setState({activeCell: activeCell, activeCellIndex: notebook.activeCellIndex});
     };
 
     /**
@@ -123,23 +136,24 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             // wait for the session to be ready before reading metadata
             await notebook.session.ready;
             notebook.disposed.connect(this.handleNotebookDisposed);
+            notebook.content.activeCellChanged.connect(this.handleActiveCellChanged);
 
             // get notebook metadata
-            const kubeflow_metadata = NotebookUtils.getMetaData(
+            const notebookMetadata = NotebookUtils.getMetaData(
                 notebook,
-                KUBEFLOW_METADATA_KEY
+                KALE_NOTEBOOK_METADATA_KEY
             );
             console.log("Kubeflow metadata:");
-            console.log(kubeflow_metadata);
+            console.log(notebookMetadata);
             // if the key exists in the notebook's metadata
-            if (kubeflow_metadata) {
-                let metadata: IKubeflowMetadata = {
-                    experiment_name: kubeflow_metadata['experiment_name'] || '',
-                    run_name: kubeflow_metadata['run_name'] || '',
-                    pipeline_name: kubeflow_metadata['pipeline_name'] || '',
-                    pipeline_description: kubeflow_metadata['pipeline_description'] || '',
-                    docker_image: kubeflow_metadata['docker_image'] || '',
-                    volumes: kubeflow_metadata['volumes'] || '',
+            if (notebookMetadata) {
+                let metadata: IKaleNotebookMetadata = {
+                    experimentName: notebookMetadata['experimentName'] || '',
+                    runName: notebookMetadata['runName'] || '',
+                    pipelineName: notebookMetadata['pipelineName'] || '',
+                    pipelineDescription: notebookMetadata['pipelineDescription'] || '',
+                    dockerImage: notebookMetadata['dockerImage'] || '',
+                    volumes: notebookMetadata['volumes'] || '',
                 };
                 this.setState({metadata: metadata})
             }
@@ -149,31 +163,32 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     deployToKFP = async () => {
         this.setState({
             // make deploy button wheel spin
-            running_deployment: true,
-            deployment_status: 'No active deployment.',
-            deployment_run_link: ''
+            runningDeployment: true,
+            deploymentStatus: 'No active deployment.',
+            deploymentRunLink: ''
         });
 
-        const nb_path = this.state.active_notebook.context.path;
-        const main_command = "output=!kale " + nb_path;
+        const nbPath = this.state.activeNotebook.context.path;
+        const mainCommand = "output=!kale " + nbPath;
         const expr = {output: "output"};
-        const output = await NotebookUtils.sendKernelRequest(this.state.active_notebook, main_command, expr, false);
+        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
         console.log(output);
     };
+
 
     render() {
         const pipeline_name_input = <InputText
             label={"Pipeline Name"}
             placeholder={"Pipeline Name"}
             updateValue={this.updatePipelineName}
-            value={this.state.metadata.pipeline_name}
+            value={this.state.metadata.pipelineName}
         />;
 
         const pipeline_desc_input = <InputText
             label={"Pipeline Description"}
             placeholder={"Pipeline Description"}
             updateValue={this.updatePipelineDescription}
-            value={this.state.metadata.pipeline_description}
+            value={this.state.metadata.pipelineDescription}
         />;
 
         const volumes = <InputArea
@@ -183,12 +198,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             value={this.state.metadata.volumes}
         />;
 
-        const selectbox = <SelectBox label={"Select previous block"} updateValue={this.updateSelectValue} value={this.state.selectval} values={['A', 'B', 'C']} />;
-
         let run_link = null;
-        if (this.state.deployment_run_link !== '') {
+        if (this.state.deploymentRunLink !== '') {
             run_link = <p>Pipeline run at <a style={{color: "#106ba3"}}
-                                             href={this.state.deployment_run_link}
+                                             href={this.state.deploymentRunLink}
                                              target="_blank">this</a> link.</p>;
         }
 
@@ -215,22 +228,25 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 </div>
                 {volumes}
 
+                {/*  CELLTAGS PANEL  */}
+                <CellTags
+                    notebook={this.state.activeNotebook}
+                    activeCellIndex={this.state.activeCellIndex}
+                    activeCell={this.state.activeCell}
+                />
+                {/*  --------------  */}
+
                 <div style={{overflow: "auto"}}>
                     <p className="p-CommandPalette-header">Deployment Status</p>
                 </div>
                 <div style={{margin: "6px 10px"}}>
-                    {this.state.deployment_status}
+                    {this.state.deploymentStatus}
                     {run_link}
-                </div>
-
-
-                <div style={{overflow: "auto"}}>
-                    {selectbox}
                 </div>
 
                 <CollapsablePanel title={"Advanced Settings"}/>
 
-                <DeployButton deployment={this.state.running_deployment} callback={this.deployToKFP}/>
+                <DeployButton deployment={this.state.runningDeployment} callback={this.deployToKFP}/>
 
             </div>
         );

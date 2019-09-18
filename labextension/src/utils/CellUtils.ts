@@ -76,6 +76,7 @@ export default class CellUtilities {
    * @description Sets the key value pair in the notebook's metadata.
    * If the key doesn't exists it will add one.
    * @param notebookPanel The notebook to set meta data in.
+   * @param index: The cell index to read metadata from
    * @param key The key of the value to create.
    * @param value The value to set.
    * @param save Default is false. Whether the notebook should be saved after the meta data is set.
