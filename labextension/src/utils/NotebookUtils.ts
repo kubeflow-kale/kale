@@ -87,6 +87,19 @@ export default class NotebookUtilities {
   }
 
   /**
+   * Convert the notebook contents to JSON
+   * @param notebookPanel The notebook panel containing the notebook to serialize
+   */
+  public static notebookToJSON(
+      notebookPanel: NotebookPanel
+  ): any {
+    if (notebookPanel) {
+      return notebookPanel.content.model.toJSON()
+    }
+    return null
+  }
+
+  /**
    * @description Gets the value of a key from specified notebook's metadata.
    * @param notebookPanel The notebook to get meta data from.
    * @param key The key of the value.
