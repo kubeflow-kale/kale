@@ -11,8 +11,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
 
     render() {
         let vols =
-                <div className="jp-Widget jp-Toolbar toolbar">
-                    <div className="p-Widget jp-Toolbar-item">
+                <div className="jp-Widget jp-Toolbar toolbar" style={{padding: 0, marginLeft: "10px"}}>
+                    <div className="p-Widget jp-Toolbar-item"  style={{fontSize: 'var(--jp-ui-font-size0)'}}>
                         No volumes mounts defined
                     </div>
                 </div>;
@@ -23,8 +23,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 this.props.volumes.map((v, idx) =>
                 <div className="jp-Widget jp-Toolbar toolbar">
                     <div className="p-Widget jp-Toolbar-item">
-                        <div className="p-Widget input-container">
-                            <div className="input-wrapper">
+                        <div className="p-Widget input-container" style={{padding: 0}}>
+                            <div className="input-wrapper" style={{margin: 0}}>
                                 <input
                                     placeholder="pvcName;mountPoint"
                                     value={(v !== '') ? v : null}

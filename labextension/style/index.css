@@ -63,12 +63,17 @@
 
 
 .input-container {
-  padding: 4px 12px 0;
+  padding: 10px 12px 0;
   background-color: var(--jp-layout-color1);
   z-index: 2;
 }
 
+.input-container label {
+  margin-bottom: 5px;
+}
+
 .input-wrapper {
+  margin-top: 5px;
   overflow: overlay;
   padding: 0 9px;
   background-color: var(--jp-input-active-background);
@@ -99,15 +104,9 @@
   font-size: var(--jp-ui-font-size1);
 }
 
-.justified {
-  justify-content: space-evenly
-}
-
-
 .toolbar {
   justify-content: space-between;
   border-bottom: none;
   height: auto;
-  margin: var(--jp-toolbar-header-margin);
   box-shadow: none;
 }

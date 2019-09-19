@@ -7,7 +7,6 @@ import NotebookUtils from "../utils/NotebookUtils";
 
 import {
     InputText,
-    InputArea,
     DeployButton,
     CollapsablePanel
 } from "./Components";
@@ -207,9 +206,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
         let run_link = null;
         if (this.state.deploymentRunLink !== '') {
-            run_link = <p>Pipeline run at <a style={{color: "#106ba3"}}
-                                             href={this.state.deploymentRunLink}
-                                             target="_blank">this</a> link.</p>;
+            run_link = <p>
+                Pipeline run at
+                <a style={{color: "#106ba3"}}
+                     href={this.state.deploymentRunLink}
+                     target="_blank">this
+                </a> link.</p>;
         }
 
         return (
@@ -218,7 +220,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 <div style={{overflow: "auto"}}>
                     <p style={{fontSize: "var(--jp-ui-font-size1)"}}
                        className="p-CommandPalette-header">
-                        Kubeflow Pipelines Control Panel
+                        Kale Control Panel
                     </p>
                 </div>
 
@@ -227,13 +229,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 </div>
 
                 {pipeline_name_input}
-
                 {pipeline_desc_input}
-
-                <div style={{overflow: "auto"}}>
-                    <p className="p-CommandPalette-header">Volumes</p>
-                </div>
-
                 {volsPanel}
 
                 {/*  CELLTAGS PANEL  */}
@@ -247,7 +243,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 <div style={{overflow: "auto"}}>
                     <p className="p-CommandPalette-header">Deployment Status</p>
                 </div>
-                <div style={{margin: "6px 10px"}}>
+                <div className='p-Widget jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
                     {this.state.deploymentStatus}
                     {run_link}
                 </div>

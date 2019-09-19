@@ -4,7 +4,7 @@ import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
 
 export class InputText extends React.Component<
     {
-        label: string,
+        label?: string,
         placeholder: string,
         updateValue: Function,
         value: string
@@ -18,8 +18,14 @@ export class InputText extends React.Component<
     };
     render() {
         const onFocusClass = (this.state.focus) ? 'input-focus' : '';
+        let lbl = null;
+        if (this.props.label) {
+            lbl = <label>{this.props.label}</label>
+        }
+
         return (
             <div className="p-Widget input-container">
+                {lbl}
                 <div className={"input-wrapper " + onFocusClass}>
                     <input placeholder={this.props.placeholder}
                            value={this.props.value}
@@ -88,34 +94,6 @@ export class DeployButton extends React.Component<
     }
 }
 
-export class SelectBox extends React.Component<
-    {
-        label: string,
-        updateValue: Function,
-        value: string[],
-        values: string[]
-    },
-    any>
-{
-    render() {
-        return (
-            <div className='p-Widget jp-KeySelector'>
-            <label>
-                { this.props.label }
-                <div className="jp-select-wrapper">
-                    <select multiple={true}
-                           className="jp-mod-styled"
-                           value={this.props.value}
-                           onChange={evt => this.props.updateValue((evt.target as HTMLSelectElement).value)}>
-                        { this.props.values.map(value => <option key={value} value={value}>{value}</option>) }
-                    </select>
-                </div>
-            </label>
-            </div>
-        )
-    }
-}
-
 export class CollapsablePanel extends React.Component<
     {
         title: string
@@ -137,12 +115,12 @@ export class CollapsablePanel extends React.Component<
             content_class = '';
         }
         return (
-            <div className={'p-Widget jp-Collapse' + wrapper_class}>
+            <div className={'p-Widget jp-Collapse ' + wrapper_class}>
                 <div
                     className='p-Widget jp-Collapse-header'
                     onClick={_ => this.setState({collapsed: !this.state.collapsed})}
                 >{this.props.title}</div>
-                <div className={'p-Widget p-Panel jp-Collapse-contents ' + content_class}>
+                <div className={'p-Widget p-Panel jp-Collapse-contents ' + content_class} style={{padding: "0 0 10px 0"}}>
                     <InputText label={"Docker image"} placeholder={"Image name"} updateValue={() => {}} value={""}/>
                 </div>
             </div>

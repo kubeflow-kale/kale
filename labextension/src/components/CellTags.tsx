@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Notebook, NotebookPanel} from "@jupyterlab/notebook";
-import {InputText, SelectBox} from "./Components";
+import {InputText} from "./Components";
 import CellUtils from "../utils/CellUtils";
 import {ICellModel, Cell, isCodeCellModel} from "@jupyterlab/cells";
 import Select from "react-select";
@@ -156,14 +156,6 @@ export class CellTags extends React.Component<IProps, IState> {
                     updateValue={this.updateCurrentBlockName}
                     value={this.state.currentActiveCellMetadata.blockName}
                 />
-
-                <div style={{overflow: "auto"}}>
-                    <SelectBox
-                        label={"Select previous block"}
-                        updateValue={this.updatePrevBlocksNames}
-                        value={this.state.currentActiveCellMetadata.prevBlockNames}
-                        values={this.state.allBlocks}/>
-                </div>
 
                 <label>Select previous blocks</label>
                  <Select
