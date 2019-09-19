@@ -3,7 +3,16 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
 
 export class InputText extends React.Component<
-    { label: string, placeholder: string, updateValue: Function, value: string }, { focus: boolean }> {
+    {
+        label: string,
+        placeholder: string,
+        updateValue: Function,
+        value: string
+    },
+    {
+        focus: boolean
+    }>
+{
     state = {
         focus: false
     };
@@ -25,7 +34,16 @@ export class InputText extends React.Component<
 }
 
 export class InputArea extends React.Component<
-    { label: string, placeholder: string, updateValue: Function, value: string }, { focus: boolean }> {
+    {
+        label: string,
+        placeholder: string,
+        updateValue: Function,
+        value: string
+    },
+    {
+        focus: boolean
+    }>
+{
      state = {
         focus: false
     };
@@ -45,7 +63,13 @@ export class InputArea extends React.Component<
     }
 }
 
-export class DeployButton extends React.Component<{ callback: Function, deployment: boolean }, any> {
+export class DeployButton extends React.Component<
+    {
+        callback: Function,
+        deployment: boolean
+    },
+    any>
+{
 
     render() {
         const buttonText = this.props.deployment ? "Running Deployment..." : "Deploy Notebook to Kubeflow Pipelines";
@@ -64,7 +88,15 @@ export class DeployButton extends React.Component<{ callback: Function, deployme
     }
 }
 
-export class SelectBox extends React.Component<{ label: string, updateValue: Function, value: string[], values: string[] }, any> {
+export class SelectBox extends React.Component<
+    {
+        label: string,
+        updateValue: Function,
+        value: string[],
+        values: string[]
+    },
+    any>
+{
     render() {
         return (
             <div className='p-Widget jp-KeySelector'>
@@ -84,7 +116,14 @@ export class SelectBox extends React.Component<{ label: string, updateValue: Fun
     }
 }
 
-export class CollapsablePanel extends React.Component<{ title: string}, {collapsed: boolean}> {
+export class CollapsablePanel extends React.Component<
+    {
+        title: string
+    },
+    {
+        collapsed: boolean
+    }>
+{
     state = {
         collapsed: true
     };

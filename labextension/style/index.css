@@ -98,3 +98,16 @@
   color: var(--jp-ui-font-color3);
   font-size: var(--jp-ui-font-size1);
 }
+
+.justified {
+  justify-content: space-evenly
+}
+
+
+.toolbar {
+  justify-content: space-between;
+  border-bottom: none;
+  height: auto;
+  margin: var(--jp-toolbar-header-margin);
+  box-shadow: none;
+}

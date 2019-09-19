@@ -13,6 +13,7 @@ import {
 } from "./Components";
 import {CellTags} from "./CellTags";
 import {Cell} from "@jupyterlab/cells";
+import {VolumesPanel} from "./VolumesPanel";
 
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok';
@@ -39,7 +40,7 @@ interface IKaleNotebookMetadata {
     pipelineName: string;
     pipelineDescription: string;
     dockerImage: string;
-    volumes: string
+    volumes: string[]
 }
 
 const DefaultState: IState = {
@@ -49,7 +50,7 @@ const DefaultState: IState = {
             pipelineName: '',
             pipelineDescription: '',
             dockerImage: '',
-            volumes: ''
+            volumes: []
         },
         runningDeployment: false,
         deploymentStatus: 'No active deployment.',
@@ -68,11 +69,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
 
+    removeIdxFromArray = (index: number, arr: Array<any>): Array<any> => {return arr.slice(0, index).concat(arr.slice(index + 1, arr.length))};
+
     updateSelectValue = (val: string) => this.setState({selectVal: val});
     // update metadata state values: use destructure operator to update nested dict
     updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipelineName: name}});
     updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipelineDescription: desc}});
-    updateVolumes = (vols: string) => this.setState({metadata: {...this.state.metadata, volumes: vols}});
+    // deleteVolumeI = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.slice(0, idx).concat(this.state.metadata.volumes.slice(idx + 1, this.state.metadata.volumes.length))}});
+    deleteVolume = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}});
+    addVolume = (v: string) => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, v]}});
+    updateVolume = (idx: number, vol: string) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => { return (key === idx) ? vol : item })}});
+
     // restore state to default values
     resetState = () => this.setState({...DefaultState, ...DefaultState.metadata});
 
@@ -191,11 +198,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             value={this.state.metadata.pipelineDescription}
         />;
 
-        const volumes = <InputArea
-            label={"Volumes"}
-            placeholder={"Volumes"}
-            updateValue={this.updateVolumes}
-            value={this.state.metadata.volumes}
+        const volsPanel = <VolumesPanel
+            volumes={this.state.metadata.volumes}
+            addVolume={this.addVolume}
+            updateVolume={this.updateVolume}
+            deleteVolume={this.deleteVolume}
         />;
 
         let run_link = null;
@@ -226,7 +233,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 <div style={{overflow: "auto"}}>
                     <p className="p-CommandPalette-header">Volumes</p>
                 </div>
-                {volumes}
+
+                {volsPanel}
 
                 {/*  CELLTAGS PANEL  */}
                 <CellTags
