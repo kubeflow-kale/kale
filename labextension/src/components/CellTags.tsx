@@ -147,7 +147,7 @@ export class CellTags extends React.Component<IProps, IState> {
         return (
             <div>
                 <div style={{overflow: "auto"}}>
-                    <p className="p-CommandPalette-header">Cell Tags</p>
+                    <p className="p-CommandPalette-header kale-headers">Cell Tags</p>
                 </div>
 
                 <InputText
