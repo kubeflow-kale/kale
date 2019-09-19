@@ -11,8 +11,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
 
     render() {
         let vols =
-                <div className="jp-Widget jp-Toolbar toolbar" style={{padding: 0, marginLeft: "10px"}}>
-                    <div className="p-Widget jp-Toolbar-item"  style={{fontSize: 'var(--jp-ui-font-size0)'}}>
+                <div className="jp-Toolbar toolbar" style={{padding: 0, marginLeft: "10px"}}>
+                    <div className="jp-Toolbar-item"  style={{fontSize: 'var(--jp-ui-font-size0)'}}>
                         No volumes mounts defined
                     </div>
                 </div>;
@@ -21,9 +21,9 @@ export class VolumesPanel extends React.Component<IProps, any> {
 
                 <div> {
                 this.props.volumes.map((v, idx) =>
-                <div className="jp-Widget jp-Toolbar toolbar">
-                    <div className="p-Widget jp-Toolbar-item">
-                        <div className="p-Widget input-container" style={{padding: 0}}>
+                <div className="jp-Toolbar toolbar">
+                    <div className="jp-Toolbar-item">
+                        <div className="input-container" style={{padding: 0}}>
                             <div className="input-wrapper" style={{margin: 0}}>
                                 <input
                                     placeholder="pvcName;mountPoint"
@@ -34,7 +34,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
                         </div>
                     </div>
 
-                    <div className="p-Widget jp-ToolbarButton jp-Toolbar-item">
+                    <div className="jp-ToolbarButton jp-Toolbar-item">
                         <button type="button"
                                 className="bp3-button bp3-minimal jp-ToolbarButtonComponent minimal jp-Button"
                                 title="Add Volume"
@@ -53,10 +53,10 @@ export class VolumesPanel extends React.Component<IProps, any> {
         }
 
         return (
-            <div className="p-Widget jp-KeySelector">
-                <div className="jp-Widget jp-Toolbar toolbar">
-                    <div className="p-Widget jp-Toolbar-item">Volumes</div>
-                    <div className="p-Widget jp-ToolbarButton jp-Toolbar-item">
+            <div className="jp-KeySelector">
+                <div className="jp-Toolbar toolbar">
+                    <div className="jp-Toolbar-item">Volumes</div>
+                    <div className="jp-ToolbarButton jp-Toolbar-item">
                         <button type="button"
                                 className="bp3-button bp3-minimal jp-ToolbarButtonComponent minimal jp-Button"
                                 title="Add Volume"

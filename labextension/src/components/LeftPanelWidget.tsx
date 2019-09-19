@@ -217,14 +217,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         return (
             <div className={"kubeflow-widget"}>
 
-                <div style={{overflow: "auto"}}>
+                <div>
                     <p style={{fontSize: "var(--jp-ui-font-size1)"}}
                        className="p-CommandPalette-header">
                         Kale Control Panel
                     </p>
                 </div>
 
-                <div style={{overflow: "auto"}}>
+                <div>
                     <p className="p-CommandPalette-header">Pipeline Metadata</p>
                 </div>
 
@@ -240,10 +240,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 />
                 {/*  --------------  */}
 
-                <div style={{overflow: "auto"}}>
+                <div>
                     <p className="p-CommandPalette-header">Deployment Status</p>
                 </div>
-                <div className='p-Widget jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
+                <div className='jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
                     {this.state.deploymentStatus}
                     {run_link}
                 </div>

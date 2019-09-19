@@ -34,6 +34,7 @@
   width: 100%;
   margin: auto;
   text-align: center;
+  z-index: 10;
 }
 
 .deploy-button button {
@@ -66,10 +67,6 @@
   padding: 10px 12px 0;
   background-color: var(--jp-layout-color1);
   z-index: 2;
-}
-
-.input-container label {
-  margin-bottom: 5px;
 }
 
 .input-wrapper {
@@ -109,4 +106,22 @@
   border-bottom: none;
   height: auto;
   box-shadow: none;
+}
+
+.react-select-container {
+  position: relative;
+  box-sizing: border-box;
+  margin-top: 5px;
+}
+
+.react-select__indicator {
+  padding: 0 !important;
+}
+
+.react-select__control {
+  min-height: 0 !important;
+}
+
+.p-mod-hidden {
+  display: none;
 }

@@ -24,7 +24,7 @@ export class InputText extends React.Component<
         }
 
         return (
-            <div className="p-Widget input-container">
+            <div className="input-container">
                 {lbl}
                 <div className={"input-wrapper " + onFocusClass}>
                     <input placeholder={this.props.placeholder}
@@ -56,7 +56,7 @@ export class InputArea extends React.Component<
     render() {
         const onFocusClass = (this.state.focus) ? 'input-focus' : '';
         return (
-            <div className="p-Widget input-container">
+            <div className="input-container">
                 <div className={"input-wrapper " + onFocusClass}>
                     <textarea rows={4} cols={50} placeholder={this.props.placeholder} value={this.props.value}
                               onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}
@@ -115,12 +115,12 @@ export class CollapsablePanel extends React.Component<
             content_class = '';
         }
         return (
-            <div className={'p-Widget jp-Collapse ' + wrapper_class}>
+            <div className={'jp-Collapse ' + wrapper_class}>
                 <div
-                    className='p-Widget jp-Collapse-header'
+                    className='jp-Collapse-header'
                     onClick={_ => this.setState({collapsed: !this.state.collapsed})}
                 >{this.props.title}</div>
-                <div className={'p-Widget p-Panel jp-Collapse-contents ' + content_class} style={{padding: "0 0 10px 0"}}>
+                <div className={'p-Panel jp-Collapse-contents ' + content_class} style={{padding: "0 0 10px 0"}}>
                     <InputText label={"Docker image"} placeholder={"Image name"} updateValue={() => {}} value={""}/>
                 </div>
             </div>

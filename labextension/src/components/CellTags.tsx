@@ -157,27 +157,31 @@ export class CellTags extends React.Component<IProps, IState> {
                     value={this.state.currentActiveCellMetadata.blockName}
                 />
 
-                <label>Select previous blocks</label>
-                 <Select
-                    isMulti
-                    value={this.state.currentActiveCellMetadata.prevBlockNames}
-                    onChange={this.updatePrevBlocksNames}
-                    options={this.state.allBlocks}
-                    theme={theme => ({
-                        ...theme,
-                        borderRadius: 0,
-                        colors: {
-                            ...theme.colors,
-                            neutral0: 'var(--jp-input-active-background)',
-                            neutral10: 'var(--md-red-100)',
-                            neutral20: 'var(--jp-input-border-color)',
-                            primary: 'var(--jp-input-active-border-color)',
-                            primary25: 'var(--jp-layout-color3)',
-                            neutral80: 'var(--jp-ui-font-color0)'
+                <div className='input-container'>
+                    <label>Select previous blocks</label>
+                     <Select
+                        isMulti
+                        className='react-select-container'
+                        classNamePrefix='react-select'
+                        value={this.state.currentActiveCellMetadata.prevBlockNames}
+                        onChange={this.updatePrevBlocksNames}
+                        options={this.state.allBlocks}
+                        theme={theme => ({
+                            ...theme,
+                            borderRadius: 0,
+                            colors: {
+                                ...theme.colors,
+                                neutral0: 'var(--jp-input-active-background)',
+                                neutral10: 'var(--md-red-100)',
+                                neutral20: 'var(--jp-input-border-color)',
+                                primary: 'var(--jp-input-active-border-color)',
+                                primary25: 'var(--jp-layout-color3)',
+                                neutral80: 'var(--jp-ui-font-color0)'
 
-                        },
-                    })}
-                />
+                            },
+                        })}
+                    />
+                </div>
 
             </div>
         )
