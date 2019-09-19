@@ -58,12 +58,6 @@ const DefaultState: IState = {
         activeNotebook: null,
 };
 
-const options = [
-  { value: 'chocolate', label: 'Chocolate' },
-  { value: 'strawberry', label: 'Strawberry' },
-  { value: 'vanilla', label: 'Vanilla' },
-];
-
 export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
