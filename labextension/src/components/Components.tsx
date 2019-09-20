@@ -69,6 +69,26 @@ export class InputArea extends React.Component<
     }
 }
 
+export class Checkbox extends React.Component<{ isChecked: boolean, label: string, handleChange: Function }, any> {
+  render() {
+    return (
+      <div className="input-container">
+        <label>
+          <input
+            type="checkbox"
+            value={this.props.label}
+            checked={this.props.isChecked}
+            onClick={evt => this.props.handleChange}
+          />
+
+          {this.props.label}
+        </label>
+      </div>
+    );
+  }
+}
+
+
 export class DeployButton extends React.Component<
     {
         callback: Function,
@@ -96,7 +116,11 @@ export class DeployButton extends React.Component<
 
 export class CollapsablePanel extends React.Component<
     {
-        title: string
+        title: string,
+        dockerImageValue: string,
+        dockerChange: Function,
+        deployChecked: boolean,
+        deployChange: Function
     },
     {
         collapsed: boolean
@@ -121,7 +145,16 @@ export class CollapsablePanel extends React.Component<
                     onClick={_ => this.setState({collapsed: !this.state.collapsed})}
                 >{this.props.title}</div>
                 <div className={'p-Panel jp-Collapse-contents ' + content_class} style={{padding: "0 0 10px 0"}}>
-                    <InputText label={"Docker image"} placeholder={"Image name"} updateValue={() => {}} value={""}/>
+                    <InputText
+                        label={"Docker image"}
+                        placeholder={"Image name"}
+                        updateValue={this.props.dockerChange}
+                        value={this.props.dockerImageValue}/>
+                    <Checkbox
+                        label={"Deploy pipeline to KFP"}
+                        isChecked={this.props.deployChecked}
+                        handleChange={this.props.deployChange}
+                    />
                 </div>
             </div>
         )

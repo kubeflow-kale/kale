@@ -33,23 +33,27 @@ interface IState {
     activeCellIndex?: number;
 }
 
+// keep names with Python notation because they will be read
+// in python by Kale.
 interface IKaleNotebookMetadata {
-    experimentName: string;
-    runName: string;
-    pipelineName: string;
-    pipelineDescription: string;
-    dockerImage: string;
-    volumes: string[]
+    experiment_name: string;
+    run_name: string;
+    pipeline_name: string;
+    pipeline_description: string;
+    docker_image: string;
+    volumes: string[];
+    deploy: boolean
 }
 
 const DefaultState: IState = {
         metadata: {
-            experimentName: '',
-            runName: '',
-            pipelineName: '',
-            pipelineDescription: '',
-            dockerImage: '',
-            volumes: []
+            experiment_name: '',
+            run_name: '',
+            pipeline_name: '',
+            pipeline_description: '',
+            docker_image: '',
+            volumes: [],
+            deploy: false
         },
         runningDeployment: false,
         deploymentStatus: 'No active deployment.',
@@ -66,12 +70,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     updateSelectValue = (val: string) => this.setState({selectVal: val});
     // update metadata state values: use destructure operator to update nested dict
-    updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipelineName: name}});
-    updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipelineDescription: desc}});
+    updateExperimentName = (name: string) => this.setState({metadata: {...this.state.metadata, experiment_name: name}});
+    updateRunName = (name: string) => this.setState({metadata: {...this.state.metadata, run_name: name}});
+    updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipeline_name: name}});
+    updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipeline_description: desc}});
     // deleteVolumeI = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.slice(0, idx).concat(this.state.metadata.volumes.slice(idx + 1, this.state.metadata.volumes.length))}});
     deleteVolume = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}});
     addVolume = (v: string) => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, v]}});
     updateVolume = (idx: number, vol: string) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => { return (key === idx) ? vol : item })}});
+    updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
+    updateDeploy = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
 
     // restore state to default values
     resetState = () => this.setState({...DefaultState, ...DefaultState.metadata});
@@ -148,12 +156,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             // if the key exists in the notebook's metadata
             if (notebookMetadata) {
                 let metadata: IKaleNotebookMetadata = {
-                    experimentName: notebookMetadata['experimentName'] || '',
-                    runName: notebookMetadata['runName'] || '',
-                    pipelineName: notebookMetadata['pipelineName'] || '',
-                    pipelineDescription: notebookMetadata['pipelineDescription'] || '',
-                    dockerImage: notebookMetadata['dockerImage'] || '',
-                    volumes: notebookMetadata['volumes'] || '',
+                    experiment_name: notebookMetadata['experiment_name'] || '',
+                    run_name: notebookMetadata['run_name'] || '',
+                    pipeline_name: notebookMetadata['pipeline_name'] || '',
+                    pipeline_description: notebookMetadata['pipeline_description'] || '',
+                    docker_image: notebookMetadata['docker_image'] || '',
+                    volumes: notebookMetadata['volumes'] || [],
+                    deploy: notebookMetadata['deploy'] || true
                 };
                 this.setState({metadata: metadata})
             }
@@ -177,18 +186,33 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
 
     render() {
+
+        const experiment_name_input = <InputText
+            label={"Experiment Name"}
+            placeholder={"Experiment Name"}
+            updateValue={this.updateExperimentName}
+            value={this.state.metadata.experiment_name}
+        />;
+
+        const run_name_input = <InputText
+            label={"Run Name"}
+            placeholder={"Run Name"}
+            updateValue={this.updateRunName}
+            value={this.state.metadata.run_name}
+        />;
+
         const pipeline_name_input = <InputText
             label={"Pipeline Name"}
             placeholder={"Pipeline Name"}
             updateValue={this.updatePipelineName}
-            value={this.state.metadata.pipelineName}
+            value={this.state.metadata.pipeline_name}
         />;
 
         const pipeline_desc_input = <InputText
             label={"Pipeline Description"}
             placeholder={"Pipeline Description"}
             updateValue={this.updatePipelineDescription}
-            value={this.state.metadata.pipelineDescription}
+            value={this.state.metadata.pipeline_description}
         />;
 
         const volsPanel = <VolumesPanel
@@ -210,41 +234,51 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
         return (
             <div className={"kubeflow-widget"}>
+                <div className={"kubeflow-widget-content"}>
 
-                <div>
-                    <p style={{fontSize: "var(--jp-ui-font-size1)"}}
-                       className="p-CommandPalette-header kale-headers">
-                        Kale deployment launchpad
-                    </p>
+                    <div>
+                        <p style={{fontSize: "var(--jp-ui-font-size1)"}}
+                           className="p-CommandPalette-header kale-headers">
+                            Kale deployment launchpad
+                        </p>
+                    </div>
+
+                    <div>
+                        <p className="p-CommandPalette-header kale-headers">Pipeline Metadata</p>
+                    </div>
+
+                    {experiment_name_input}
+                    {run_name_input}
+                    {pipeline_name_input}
+                    {pipeline_desc_input}
+                    {volsPanel}
+
+                    {/*  CELLTAGS PANEL  */}
+                    <CellTags
+                        notebook={this.state.activeNotebook}
+                        activeCellIndex={this.state.activeCellIndex}
+                        activeCell={this.state.activeCell}
+                    />
+                    {/*  --------------  */}
+
+                    <div>
+                        <p className="p-CommandPalette-header kale-headers">Deployment Status</p>
+                    </div>
+                    <div className='jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
+                        {this.state.deploymentStatus}
+                        {run_link}
+                    </div>
+
+                    <CollapsablePanel
+                        title={"Advanced Settings"}
+                        dockerImageValue={this.state.metadata.docker_image}
+                        dockerChange={this.updateDockerImage}
+                        deployChecked={this.state.metadata.deploy}
+                        deployChange={this.updateDeploy}
+                    />
+
+                    <DeployButton deployment={this.state.runningDeployment} callback={this.deployToKFP}/>
                 </div>
-
-                <div>
-                    <p className="p-CommandPalette-header kale-headers">Pipeline Metadata</p>
-                </div>
-
-                {pipeline_name_input}
-                {pipeline_desc_input}
-                {volsPanel}
-
-                {/*  CELLTAGS PANEL  */}
-                <CellTags
-                    notebook={this.state.activeNotebook}
-                    activeCellIndex={this.state.activeCellIndex}
-                    activeCell={this.state.activeCell}
-                />
-                {/*  --------------  */}
-
-                <div>
-                    <p className="p-CommandPalette-header kale-headers">Deployment Status</p>
-                </div>
-                <div className='jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
-                    {this.state.deploymentStatus}
-                    {run_link}
-                </div>
-
-                <CollapsablePanel title={"Advanced Settings"}/>
-
-                <DeployButton deployment={this.state.runningDeployment} callback={this.deployToKFP}/>
 
             </div>
         );

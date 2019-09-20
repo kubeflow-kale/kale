@@ -34,6 +34,13 @@
   height: 100%;
 }
 
+.kubeflow-widget-content {
+  min-width: var(--jp-sidebar-min-width);
+  height: calc(100% - 42px);
+  overflow: auto;
+  border-bottom: 1px solid var(--jp-border-color2);
+}
+
 /*-----------------------------------------------------------------------------
 | Deploy Button
 |----------------------------------------------------------------------------*/
@@ -74,7 +81,6 @@
 
 .input-container {
   padding: 10px 12px 0;
-  background-color: var(--jp-layout-color1);
   z-index: 2;
 }
 
