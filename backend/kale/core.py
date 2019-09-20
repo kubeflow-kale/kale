@@ -16,10 +16,12 @@ from kale.codegen import generate_code
 class Kale:
     def __init__(self,
                  source_notebook_path: str,
+                 experiment_name,
+                 run_name,
                  pipeline_name,
                  pipeline_descr,
                  docker_image,
-                 pvcs=None,
+                 volumes,
                  notebook_version=4,
                  auto_deploy=False,
                  kfp_address='localhost',
@@ -35,10 +37,12 @@ class Kale:
 
         self.deploy_pipeline = auto_deploy
 
+        self.experiment_name = experiment_name
+        self.run_name = run_name
         self.pipeline_name = pipeline_name
         self.pipeline_description = pipeline_descr
         self.docker_base_image = docker_image
-        self.pvcs = pvcs
+        self.volumes = volumes
 
         # path to container folder where `mount_host_path` is mapped
         self.mount_container_path = '/data'
@@ -72,7 +76,7 @@ class Kale:
                                               pipeline_name=self.pipeline_name,
                                               pipeline_description=self.pipeline_description,
                                               docker_base_image=self.docker_base_image,
-                                              pvcs=self.pvcs,
+                                              volumes=self.volumes,
                                               mount_container_path=self.mount_container_path,
                                               deploy_pipeline=self.deploy_pipeline)
 
