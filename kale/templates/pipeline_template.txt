@@ -32,16 +32,17 @@ def auto_generated_pipeline():
 
     pvolumes_dict = {'/marshal': marshal_vop.volume}
 
-    {% for pvc in pvcs -%}
+    {% for vol in volumes -%}
+    {% set name, mountpoint = vol.split(';') %}
 
     pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata=k8s_client.V1ObjectMeta(
-            name="{{ pvc }}-claim-{{ pipeline_name }}"
+            name="{{ name }}-claim-{{ pipeline_name }}"
         ),
         spec=k8s_client.V1PersistentVolumeClaimSpec(
-            volume_name="{{ pvc }}",
+            volume_name="{{ name }}",
             storage_class_name="local-storage",
             access_modes=['ReadWriteOnce'],
             resources=k8s_client.V1ResourceRequirements(
@@ -54,7 +55,7 @@ def auto_generated_pipeline():
         name="pvc-data{{ loop.index }}",
         k8s_resource=pvc{{ loop.index }}
     )
-    pvolumes_dict['/data{{ loop.index }}'] = vop{{ loop.index }}.volume
+    pvolumes_dict['{{ mountpoint }}'] = vop{{ loop.index }}.volume
 
     {% endfor %}
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
     # Get or create an experiment and submit a pipeline run
     import kfp
-    client = kfp.Client('http://localhost:8080')
+    client = kfp.Client()
     experiment = client.create_experiment('{{ pipeline_name }}')
 
     # Submit a pipeline run

@@ -188,6 +188,9 @@ def parse_notebook(nb_path, nb_format_version):
     # Used in case there some consecutive code block of the same pipeline block
     # and only the first block is tagged with the block name
     current_block = None
+    # if the current block is either imports or functions
+    current_block_global = False
+
     # TODO: Add flag to know when the previous cell references multiple block names
     #   In this way, if the next block has no block_name tag, kale can throuw an error
     #   and say that in this case a block_name must be specified (cannot know which one of the previous
@@ -211,6 +214,7 @@ def parse_notebook(nb_path, nb_format_version):
         # This cell is to be appended to every code block
         if 'global' in tags['block_names']:
             global_block += '\n' + c.source
+            current_block_global = True
             continue
 
         # check that the previous block already exists in the graph if the prev tag is used
@@ -222,9 +226,13 @@ def parse_notebook(nb_path, nb_format_version):
         # if the block was not tagged with a name,
         # add the source code to the block defined by the previous(es) cell(s)
         if len(tags.block_names) == 0:
-            assert current_block is not None
-            nb_graph = merge_code(nb_graph, current_block, tags, c.source)
+            if current_block_global:
+                global_block += '\n' + c.source
+            else:
+                assert current_block is not None
+                nb_graph = merge_code(nb_graph, current_block, tags, c.source)
         else:
+            current_block_global = False
             # TODO: Taking by default first block name tag. Need specific behavior
             current_block = tags.block_names[0]
             for block_name in tags.block_names:
