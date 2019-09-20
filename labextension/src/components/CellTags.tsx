@@ -71,7 +71,7 @@ export class CellTags extends React.Component<IProps, IState> {
 
     readAndShowMetadata = () => {
         // 1. Read metadata from the active cell
-        const cellMetadata = CellUtils.getCellMetaData(
+        const cellMetadata = this.getKaleCellTags(
             this.props.notebook.content,
             this.props.activeCellIndex,
             KUBEFLOW_CELL_METADATA_KEY);
@@ -104,38 +104,94 @@ export class CellTags extends React.Component<IProps, IState> {
         console.log(model)
     };
 
+    // TODO: This is executing at every render.
     getAllBlocks = (notebook: Notebook): string[] => {
         let blocks = new Set<string>();
         for (const idx of Array(notebook.model.cells.length).keys()) {
-            let mt = CellUtils.getCellMetaData(notebook, idx, KUBEFLOW_CELL_METADATA_KEY);
-            if (mt && mt.BlockName && mt.BlockName !== '') {
-                blocks.add(mt.BlockName);
+            let mt = this.getKaleCellTags(notebook, idx, KUBEFLOW_CELL_METADATA_KEY);
+            if (mt && mt.blockName && mt.blockName !== '') {
+                blocks.add(mt.blockName);
             }
         }
         return Array.from(blocks)
     };
 
     updateCurrentBlockName = (value: string) => {
-        console.log("BlockName " + value);
-        this.setState({currentActiveCellMetadata: {...this.state.currentActiveCellMetadata, blockName: value}});
-        CellUtils.setCellMetaData(
+        let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: value};
+        this.setState({currentActiveCellMetadata: currentCellMetadata});
+        this.setKaleCellTags(
             this.props.notebook,
             this.props.activeCellIndex,
             KUBEFLOW_CELL_METADATA_KEY,
-            this.state.currentActiveCellMetadata,
+            currentCellMetadata,
             true
         )
     };
 
-    updatePrevBlocksNames = (value: any) => {
-        console.log("PrevBlocks " + value);
-        this.setState({currentActiveCellMetadata: {...this.state.currentActiveCellMetadata, prevBlockNames: value}});
-        CellUtils.setCellMetaData(
+    updatePrevBlocksNames = (newvaule: any) => {
+        let prevNames = [];
+        if (newvaule) {
+            prevNames = newvaule.map((v: any) => v.label);
+        }
+        let currentCellMetadata = {...this.state.currentActiveCellMetadata, prevBlockNames: prevNames};
+        this.setState({currentActiveCellMetadata: currentCellMetadata});
+        this.setKaleCellTags(
             this.props.notebook,
             this.props.activeCellIndex,
             KUBEFLOW_CELL_METADATA_KEY,
-            this.state.currentActiveCellMetadata,
+            currentCellMetadata,
             true
+        )
+    };
+
+    getKaleCellTags = (
+        notebook: Notebook,
+        index: number,
+        key: string) => {
+        const tags: string[] = CellUtils.getCellMetaData(
+            notebook,
+            index,
+            'tags'
+        );
+        if (tags) {
+            let b_names = tags.map(v => {
+                if (v === 'functions' || v === 'imports') {
+                    return v
+                }
+                if (v.startsWith('block:')) {
+                    return v.replace("block:", "")
+                }
+            });
+
+            let prevs = tags.filter(v => {return v.startsWith('prev:')})
+                .map(v => {return v.replace("prev:", '')});
+            return {
+                blockName: b_names[0],
+                prevBlockNames: prevs
+            }
+        }
+        return null;
+    };
+
+    setKaleCellTags = (
+        notebookPanel: NotebookPanel,
+        index: number,
+        key: string,
+        value: IKaleCellMetadata,
+        save: boolean) => {
+        // make the dict to save to tags
+        let nb = value.blockName;
+        if (value.blockName !== 'imports' && value.blockName !== 'functions') {
+            nb = 'block:' + nb
+        }
+        const tags = [nb].concat(value.prevBlockNames.map(v => 'prev:' + v));
+        console.log(tags);
+        CellUtils.setCellMetaData(
+            notebookPanel,
+            index,
+            'tags',
+            tags,
+            save
         )
     };
 
@@ -144,6 +200,9 @@ export class CellTags extends React.Component<IProps, IState> {
         if (!this.state.show) {
             return null
         }
+
+        const selectOptions: any = this.state.allBlocks.map((v, key) => {return {label: v, value: v}});
+        const values: any = this.state.currentActiveCellMetadata.prevBlockNames.map((v, key) => {return {label: v, value: v}});
         return (
             <div>
                 <div style={{overflow: "auto"}}>
@@ -163,16 +222,16 @@ export class CellTags extends React.Component<IProps, IState> {
                         isMulti
                         className='react-select-container'
                         classNamePrefix='react-select'
-                        value={this.state.currentActiveCellMetadata.prevBlockNames}
+                        value={values}
                         onChange={this.updatePrevBlocksNames}
-                        options={this.state.allBlocks}
+                        options={selectOptions}
                         theme={theme => ({
                             ...theme,
                             borderRadius: 0,
                             colors: {
                                 ...theme.colors,
                                 neutral0: 'var(--jp-input-active-background)',
-                                neutral10: 'var(--md-red-100)',
+                                neutral10: 'var(--md-indigo-300)',
                                 neutral20: 'var(--jp-input-border-color)',
                                 primary: 'var(--jp-input-active-border-color)',
                                 primary25: 'var(--jp-layout-color3)',

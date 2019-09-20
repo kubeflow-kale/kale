@@ -77,8 +77,8 @@ export class Checkbox extends React.Component<{ isChecked: boolean, label: strin
           <input
             type="checkbox"
             value={this.props.label}
-            checked={this.props.isChecked}
-            onClick={evt => this.props.handleChange}
+            defaultChecked={this.props.isChecked}
+            onChange={evt => this.props.handleChange}
           />
 
           {this.props.label}
