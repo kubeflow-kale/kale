@@ -45,23 +45,25 @@ def main():
     parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
     parser.add_argument('--volumes', type=str, nargs='*',
                         help='Volume (PVC) mount points. Write as `<pvc_name>;<path_to_mount_point>`')
-    parser.add_argument('--deploy', action='store_true')
+    # important to have default=None, otherwise it would default to False and would always override notebook_metadata
+    parser.add_argument('--deploy', action='store_true', default=None)
     # TODO: Remove port arg?
-    parser.add_argument('--kfp_port', type=int, default=8080,
-                        help='Local port map to remote KFP instance. KFP assumed to be at localhost:<port>/pipeline')
+    parser.add_argument('--kfp_dns', type=str,
+                        help='DNS to KFP service. Provide address as <host>:<port>. `/pipeline` will be appended automatically')
     parser.add_argument('--jupyter_args', type=str, help='YAML file with Jupyter parameters as defined by Papermill')
 
     args = parser.parse_args()
 
     notebook_metadata = nb.read(args.nb, as_version=nb.NO_CONVERT).metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict())
-    metadata_arguments = {**notebook_metadata, **vars(args)}
+    # convert args to dict removing all None elements, and overwrite keys into notebook_metadata
+    metadata_arguments = {**notebook_metadata, **{k: v for k, v in vars(args).items() if v is not None}}
     for r in REQUIRED_ARGUMENTS:
         if r not in metadata_arguments:
             raise ValueError(f"Required argument not found: {r}")
 
     # if jupyter_args is set, generate first a set of temporary notebooks
     # based on the input yml parameters (via Papermill)
-    if metadata_arguments['jupyter_args'] is not None:
+    if 'jupyter_args' in metadata_arguments:
         generated_notebooks = generate_notebooks_from_yml(input_nb_path=args.nb,
                                                           yml_parameters_path=metadata_arguments['jupyter_args'])
 
@@ -75,11 +77,10 @@ def main():
                 pipeline_descr=metadata_arguments['pipeline_description'] + " params" + params,
                 docker_image=metadata_arguments['docker_image'],
                 auto_deploy=metadata_arguments['deploy'],
-                kfp_port=metadata_arguments['kfp_port'],
                 volumes=metadata_arguments['volumes']
             ).run()
     else:
-        Kale(
+        res = Kale(
             source_notebook_path=args.nb,
             experiment_name=metadata_arguments['experiment_name'],
             run_name=metadata_arguments['run_name'],
@@ -87,9 +88,10 @@ def main():
             pipeline_descr=metadata_arguments['pipeline_description'],
             docker_image=metadata_arguments['docker_image'],
             auto_deploy=metadata_arguments['deploy'],
-            kfp_port=metadata_arguments['kfp_port'],
             volumes=metadata_arguments['volumes']
         ).run()
+        if res is not None:
+            print(res)
 
 
 if __name__ == "__main__":
