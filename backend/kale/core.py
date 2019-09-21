@@ -24,8 +24,7 @@ class Kale:
                  volumes,
                  notebook_version=4,
                  auto_deploy=False,
-                 kfp_address='localhost',
-                 kfp_port=8080,
+                 kfp_dns=None,
                  ):
         self.source_path = Path(source_notebook_path)
         self.output_path = os.path.join(os.path.dirname(self.source_path), f"kfp_{pipeline_name}.kfp.py")
@@ -33,7 +32,7 @@ class Kale:
             raise ValueError(f"Path {self.source_path} does not exist")
         self.nbformat_version = notebook_version
 
-        self.kfp_url = f"http://{kfp_address}:{kfp_port}/pipeline"
+        self.kfp_dns = f"http://{kfp_dns}/pipeline" if kfp_dns is not None else None
 
         self.deploy_pipeline = auto_deploy
 
@@ -95,6 +94,9 @@ class Kale:
         import kfp.compiler as compiler
         import kfp
         import importlib.util
+        import logging
+
+        logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
         # create a tmp folder
         tmp_dir = tempfile.mkdtemp()
@@ -110,13 +112,14 @@ class Kale:
 
         try:
             # Get or create an experiment and submit a pipeline run
-            client = kfp.Client(host=self.kfp_url)
+            # client = kfp.Client(host=self.kfp_url)
+            client = kfp.Client()
             experiment = client.create_experiment(self.pipeline_name)
 
             # Submit a pipeline run
             run_name = self.pipeline_name + '_run'
             run = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
-            run_link = f"{self.kfp_url}/#/runs/details/{run.id}"
+            run_link = f"{self.kfp_dns}/#/runs/details/{run.id}"
             self.logger.info(f"Pipeline run at {run_link}")
             return {"result": "Deployment successful.", "run": run_link}
         except Exception as e:
