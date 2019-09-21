@@ -24,7 +24,7 @@ interface IProps {
 
 interface IState {
     metadata: IKaleNotebookMetadata;
-    runningDeployment: boolean;
+    runDeployment: boolean;
     deploymentStatus: string;
     deploymentRunLink: string;
     selectVal: string;
@@ -55,7 +55,7 @@ const DefaultState: IState = {
             volumes: [],
             deploy: false
         },
-        runningDeployment: false,
+        runDeployment: false,
         deploymentStatus: 'No active deployment.',
         deploymentRunLink: '',
         selectVal: '',
@@ -79,7 +79,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     addVolume = (v: string) => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, v]}});
     updateVolume = (idx: number, vol: string) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => { return (key === idx) ? vol : item })}});
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
-    updateDeploy = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
+    updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
+
+    activateRunDeployState = () => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentRunLink: ''})
+
 
     // restore state to default values
     resetState = () => this.setState({...DefaultState, ...DefaultState.metadata});
@@ -106,6 +109,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 KALE_NOTEBOOK_METADATA_KEY,
                 this.state.metadata,
                 true)
+        }
+
+        // deployment button has been pressed
+        if (prevState.runDeployment !== this.state.runDeployment && this.state.runDeployment) {
+            this.runDeploymentCommand()
         }
     };
 
@@ -162,26 +170,25 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     pipeline_description: notebookMetadata['pipeline_description'] || '',
                     docker_image: notebookMetadata['docker_image'] || '',
                     volumes: notebookMetadata['volumes'] || [],
-                    deploy: notebookMetadata['deploy'] || true
+                    deploy: ('deploy' in notebookMetadata)? notebookMetadata['deploy'] : true
                 };
                 this.setState({metadata: metadata})
             }
         }
     };
 
-    deployToKFP = async () => {
-        this.setState({
-            // make deploy button wheel spin
-            runningDeployment: true,
-            deploymentStatus: 'No active deployment.',
-            deploymentRunLink: ''
-        });
+    runDeploymentCommand = async () => {
+        const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
 
-        const nbPath = this.state.activeNotebook.context.path;
-        const mainCommand = "output=!kale " + nbPath;
+        const mainCommand = "output=!kale --nb " + nbFileName;
+        console.log("Executing command: " + mainCommand);
         const expr = {output: "output"};
         const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
+        this.setState({runDeployment: false});
+
         console.log(output);
+        console.log(output.user_expressions.output.data['text/plain']);
+        NotebookUtils.showMessage("Deployment result", output.user_expressions.output.data['text/plain']);
     };
 
 
@@ -274,10 +281,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         dockerImageValue={this.state.metadata.docker_image}
                         dockerChange={this.updateDockerImage}
                         deployChecked={this.state.metadata.deploy}
-                        deployChange={this.updateDeploy}
+                        deployClick={this.updateDeployCheckbox}
                     />
 
-                    <DeployButton deployment={this.state.runningDeployment} callback={this.deployToKFP}/>
+                    <DeployButton deployment={this.state.runDeployment} callback={this.activateRunDeployState}/>
                 </div>
 
             </div>

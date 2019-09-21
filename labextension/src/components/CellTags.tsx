@@ -155,7 +155,7 @@ export class CellTags extends React.Component<IProps, IState> {
         );
         if (tags) {
             let b_names = tags.map(v => {
-                if (v === 'functions' || v === 'imports') {
+                if (v === 'functions' || v === 'imports' || v === 'skip') {
                     return v
                 }
                 if (v.startsWith('block:')) {
@@ -181,7 +181,7 @@ export class CellTags extends React.Component<IProps, IState> {
         save: boolean) => {
         // make the dict to save to tags
         let nb = value.blockName;
-        if (value.blockName !== 'imports' && value.blockName !== 'functions') {
+        if (value.blockName !== 'imports' && value.blockName !== 'functions' && value.blockName !== 'skip') {
             nb = 'block:' + nb
         }
         const tags = [nb].concat(value.prevBlockNames.map(v => 'prev:' + v));
@@ -198,7 +198,19 @@ export class CellTags extends React.Component<IProps, IState> {
     render() {
         // if the active cell is not of type `code`
         if (!this.state.show) {
-            return null
+            return (<div>
+                <div style={{overflow: "auto"}}>
+                    <p className="p-CommandPalette-header kale-headers">Cell Tags</p>
+                </div>
+
+                <div className="jp-KeySelector">
+                <div className="jp-Toolbar toolbar" style={{padding: 0, marginLeft: "10px"}}>
+                    <div className="jp-Toolbar-item"  style={{fontSize: 'var(--jp-ui-font-size0)'}}>
+                        No active code cell
+                    </div>
+                </div>
+                </div>
+            </div>)
         }
 
         const selectOptions: any = this.state.allBlocks.map((v, key) => {return {label: v, value: v}});

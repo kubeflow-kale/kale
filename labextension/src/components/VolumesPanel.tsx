@@ -27,7 +27,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             <div className="input-wrapper" style={{margin: 0}}>
                                 <input
                                     placeholder="pvcName;mountPoint"
-                                    value={(v !== '') ? v : null}
+                                    value={v}
                                     onChange={evt => this.props.updateVolume(idx, (evt.target as HTMLInputElement).value)}
                                 />
                             </div>
