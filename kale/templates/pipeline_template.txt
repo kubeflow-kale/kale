@@ -90,7 +90,7 @@ if __name__ == "__main__":
     # Get or create an experiment and submit a pipeline run
     import kfp
     client = kfp.Client()
-    experiment = client.create_experiment('{{ pipeline_name }}')
+    experiment = client.create_experiment('{{ experiment_name }}')
 
     # Submit a pipeline run
     run_name = '{{ pipeline_name }}_run'

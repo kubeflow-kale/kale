@@ -39,7 +39,6 @@ def main():
     parser = argparse.ArgumentParser(description=ARGS_DESC, formatter_class=RawTextHelpFormatter)
     parser.add_argument('--nb', type=str, help='Path to source JupyterNotebook', required=True)
     parser.add_argument('--experiment_name', type=str, help='Name of the created experiment')
-    parser.add_argument('--run_name', type=str, help='Name of the new run')
     parser.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
     parser.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
     parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
@@ -72,7 +71,6 @@ def main():
             Kale(
                 source_notebook_path=n,
                 experiment_name=metadata_arguments['experiment_name'] + params,
-                run_name=metadata_arguments['run_name'] + params,
                 pipeline_name=metadata_arguments['pipeline_name'] + params,
                 pipeline_descr=metadata_arguments['pipeline_description'] + " params" + params,
                 docker_image=metadata_arguments['docker_image'],
@@ -83,7 +81,6 @@ def main():
         res = Kale(
             source_notebook_path=args.nb,
             experiment_name=metadata_arguments['experiment_name'],
-            run_name=metadata_arguments['run_name'],
             pipeline_name=metadata_arguments['pipeline_name'],
             pipeline_descr=metadata_arguments['pipeline_description'],
             docker_image=metadata_arguments['docker_image'],
