@@ -32,7 +32,7 @@ will take precedence.\n
 """
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok'
-REQUIRED_ARGUMENTS = ['experiment_name', 'run_name', 'pipeline_name', 'docker_image']
+REQUIRED_ARGUMENTS = ['experiment_name', 'pipeline_name', 'docker_image']
 
 
 def main():
