@@ -37,7 +37,6 @@ interface IState {
 // in python by Kale.
 interface IKaleNotebookMetadata {
     experiment_name: string;
-    run_name: string;
     pipeline_name: string;
     pipeline_description: string;
     docker_image: string;
@@ -48,7 +47,6 @@ interface IKaleNotebookMetadata {
 const DefaultState: IState = {
         metadata: {
             experiment_name: '',
-            run_name: '',
             pipeline_name: '',
             pipeline_description: '',
             docker_image: '',
@@ -71,7 +69,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateSelectValue = (val: string) => this.setState({selectVal: val});
     // update metadata state values: use destructure operator to update nested dict
     updateExperimentName = (name: string) => this.setState({metadata: {...this.state.metadata, experiment_name: name}});
-    updateRunName = (name: string) => this.setState({metadata: {...this.state.metadata, run_name: name}});
     updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipeline_name: name}});
     updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipeline_description: desc}});
     // deleteVolumeI = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.slice(0, idx).concat(this.state.metadata.volumes.slice(idx + 1, this.state.metadata.volumes.length))}});
@@ -165,7 +162,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             if (notebookMetadata) {
                 let metadata: IKaleNotebookMetadata = {
                     experiment_name: notebookMetadata['experiment_name'] || '',
-                    run_name: notebookMetadata['run_name'] || '',
                     pipeline_name: notebookMetadata['pipeline_name'] || '',
                     pipeline_description: notebookMetadata['pipeline_description'] || '',
                     docker_image: notebookMetadata['docker_image'] || '',
@@ -199,13 +195,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             placeholder={"Experiment Name"}
             updateValue={this.updateExperimentName}
             value={this.state.metadata.experiment_name}
-        />;
-
-        const run_name_input = <InputText
-            label={"Run Name"}
-            placeholder={"Run Name"}
-            updateValue={this.updateRunName}
-            value={this.state.metadata.run_name}
         />;
 
         const pipeline_name_input = <InputText
@@ -255,7 +244,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     </div>
 
                     {experiment_name_input}
-                    {run_name_input}
                     {pipeline_name_input}
                     {pipeline_desc_input}
                     {volsPanel}
