@@ -9,7 +9,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='kubeflow-kale',
-    version='0.1.1',
+    version='0.2.0',
     description='Convert JupyterNotebooks to Kubeflow Pipelines deployments',
     long_description=long_description,
     long_description_content_type='text/markdown',
