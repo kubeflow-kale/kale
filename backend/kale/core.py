@@ -17,7 +17,6 @@ class Kale:
     def __init__(self,
                  source_notebook_path: str,
                  experiment_name,
-                 run_name,
                  pipeline_name,
                  pipeline_descr,
                  docker_image,
@@ -37,7 +36,6 @@ class Kale:
         self.deploy_pipeline = auto_deploy
 
         self.experiment_name = experiment_name
-        self.run_name = run_name
         self.pipeline_name = pipeline_name
         self.pipeline_description = pipeline_descr
         self.docker_base_image = docker_image
@@ -72,6 +70,7 @@ class Kale:
 
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
+                                              experiment_name=self.experiment_name,
                                               pipeline_name=self.pipeline_name,
                                               pipeline_description=self.pipeline_description,
                                               docker_base_image=self.docker_base_image,

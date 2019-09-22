@@ -8,7 +8,7 @@ from jinja2 import Environment, PackageLoader
 # TODO: Define most of this function parameters in a config file?
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
-def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_image, volumes,
+def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description, docker_base_image, volumes,
                  mount_container_path, deploy_pipeline):
     """
     Takes a NetworkX workflow graph with the following properties
@@ -72,6 +72,7 @@ def gen_kfp_code(nb_graph, pipeline_name, pipeline_description, docker_base_imag
         block_functions=function_blocks,
         block_functions_names=function_names,
         block_function_args=function_args,
+        experiment_name=experiment_name,
         pipeline_name=pipeline_name,
         pipeline_description=pipeline_description,
         docker_base_image=docker_base_image,
