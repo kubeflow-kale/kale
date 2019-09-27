@@ -17,12 +17,19 @@
 .kale-header {
   color: #477EF0;
   letter-spacing: .5px;
-  margin-top: 8px;
-  padding: 8px 0 8px 12px;
-  font-size: var(--jp-ui-font-size0);
+  /*margin-top: 8px;*/
+  padding: 20px 0 5px 12px;
+  font-size: var(--jp-ui-font-size1);
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: solid var(--jp-border-width) var(--jp-border-color2);
+  /*border-bottom: solid var(--jp-border-width) var(--jp-border-color2);*/
+}
+
+.kale-header-switch {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .kale-header:first-child {
@@ -163,5 +170,28 @@
   color: var(--jp-info-color0);
   padding: 5px 22px 0;
   font-size: var(--jp-ui-font-size0);
+  line-height: normal;
+}
+
+.skip-switch-container {
+  margin: auto 5px auto 0;
+  display: table;
+}
+
+.skip-switch-container span {
+  font-size: var( --jp-ui-font-size0);
+  color: var(--jp-ui-font-color0);
+  margin-right: 10px;
+}
+
+.skip-switch-label {
+  display: table-cell;
+  vertical-align: middle;
+  padding-right: 10px;
+}
+
+.skip-cell-info-text {
+  padding: 0 10px 5px 10px;
+  font-size: var( --jp-ui-font-size0);
   line-height: normal;
 }

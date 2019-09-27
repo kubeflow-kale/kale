@@ -4,6 +4,7 @@ import {InputText} from "./Components";
 import CellUtils from "../utils/CellUtils";
 import {ICellModel, Cell, isCodeCellModel} from "@jupyterlab/cells";
 import Select from "react-select";
+import Switch from "react-switch";
 
 const KUBEFLOW_CELL_METADATA_KEY = 'kubeflow_cell';
 
@@ -15,10 +16,11 @@ interface IProps {
 }
  
 interface IState {
-    show: boolean
+    show: boolean;
     currentActiveCellMetadata: IKaleCellMetadata;
     allBlocks?: string[];
-    prevBlockName?: string
+    prevBlockName?: string;
+    skipCell: boolean
 }
 
 interface IKaleCellMetadata {
@@ -35,7 +37,8 @@ const DefaultState: IState = {
     show: false,
     allBlocks: [],
     currentActiveCellMetadata: DefaultCellMetadata,
-    prevBlockName: null
+    prevBlockName: null,
+    skipCell: true
 };
 
 export class CellTags extends React.Component<IProps, IState> {
@@ -47,6 +50,8 @@ export class CellTags extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
 
+    handleChangeSkipCell = () => {this.setState({ skipCell: !this.state.skipCell})};
+
     componentDidMount = () => {
         if (this.props.activeCell) {
             if (isCodeCellModel(this.props.activeCell.model)) {
@@ -55,7 +60,7 @@ export class CellTags extends React.Component<IProps, IState> {
         }
     };
 
-    componentDidUpdate = (prevProps: Readonly<IProps>, prevState: Readonly<IState>) => {
+    componentDidUpdate = async (prevProps: Readonly<IProps>, prevState: Readonly<IState>) => {
         if (prevProps.activeCellIndex !== this.props.activeCellIndex) {
             // listen to cell type changes
             if (prevProps.activeCell) {
@@ -70,6 +75,25 @@ export class CellTags extends React.Component<IProps, IState> {
             }
             this.readAndShowMetadata();
         }
+
+        if (prevState.skipCell !== this.state.skipCell) {
+            if (this.state.skipCell) {
+                // set the currentBlockName and the list of PrevBlocksNames to `skip` and []
+                const prevs: string[] = [];
+                let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: 'skip', prevBlockNames: prevs};
+                this.setState({currentActiveCellMetadata: currentCellMetadata});
+                this.setKaleCellTags(
+                    this.props.notebook,
+                    this.props.activeCellIndex,
+                    KUBEFLOW_CELL_METADATA_KEY,
+                    currentCellMetadata,
+                    true
+                )
+            } else {
+                await this.updateCurrentBlockName('');
+                this.readAndShowMetadata()
+            }
+        }
     };
 
     readAndShowMetadata = () => {
@@ -83,14 +107,15 @@ export class CellTags extends React.Component<IProps, IState> {
         // TODO: This could be run on parent component when new notebook is opened and passed as property.
         //  Then kept updated as metadata change
         const allBlocks = this.getAllBlocks(this.props.notebook.content);
-
         const prevBlockName = this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex);
 
         if (cellMetadata) {
+            let skip = !!(cellMetadata.blockName && cellMetadata.blockName === 'skip');
             this.setState({
                 show: true,
                 allBlocks: allBlocks,
                 prevBlockName: prevBlockName,
+                skipCell: skip,
                 currentActiveCellMetadata: {
                     blockName: cellMetadata.blockName || '',
                     prevBlockNames: cellMetadata.prevBlockNames || []
@@ -101,6 +126,7 @@ export class CellTags extends React.Component<IProps, IState> {
                 show: true,
                 allBlocks: allBlocks,
                 prevBlockName: prevBlockName,
+                skipCell: false,
                 currentActiveCellMetadata: DefaultCellMetadata,
             })
         }
@@ -133,9 +159,9 @@ export class CellTags extends React.Component<IProps, IState> {
         return Array.from(blocks)
     };
 
-    updateCurrentBlockName = (value: string) => {
+    updateCurrentBlockName = async (value: string) => {
         let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: value};
-        this.setState({currentActiveCellMetadata: currentCellMetadata});
+        await this.setState({currentActiveCellMetadata: currentCellMetadata});
         this.setKaleCellTags(
             this.props.notebook,
             this.props.activeCellIndex,
@@ -145,13 +171,13 @@ export class CellTags extends React.Component<IProps, IState> {
         )
     };
 
-    updatePrevBlocksNames = (newvaule: any) => {
+    updatePrevBlocksNames = async (newvaule: any) => {
         let prevNames = [];
         if (newvaule) {
             prevNames = newvaule.map((v: any) => v.label);
         }
         let currentCellMetadata = {...this.state.currentActiveCellMetadata, prevBlockNames: prevNames};
-        this.setState({currentActiveCellMetadata: currentCellMetadata});
+        await this.setState({currentActiveCellMetadata: currentCellMetadata});
         this.setKaleCellTags(
             this.props.notebook,
             this.props.activeCellIndex,
@@ -201,7 +227,10 @@ export class CellTags extends React.Component<IProps, IState> {
         if (value.blockName !== 'imports' && value.blockName !== 'functions' && value.blockName !== 'skip') {
             nb = 'block:' + nb
         }
+        console.log('set kale cell tags');
+        console.log(nb);
         const tags = [nb].concat(value.prevBlockNames.map(v => 'prev:' + v));
+        console.log(tags);
         CellUtils.setCellMetaData(
             notebookPanel,
             index,
@@ -212,11 +241,13 @@ export class CellTags extends React.Component<IProps, IState> {
     };
 
     render() {
+        const headerName = 'Cell Tags';
+
         // if the active cell is not of type `code`
         if (!this.state.show) {
             return (<div>
-                <div style={{overflow: "auto"}}>
-                    <p className="kale-headers">Cell Tags</p>
+                <div>
+                    <p className="kale-header">{headerName}</p>
                 </div>
 
                 <div className="jp-KeySelector">
@@ -229,6 +260,44 @@ export class CellTags extends React.Component<IProps, IState> {
             </div>)
         }
 
+        const switchHeader =
+            <div className={"kale-header-switch"} style={{paddingTop: "20px"}}>
+                    <div className="kale-header" style={{paddingTop: "0"}}>
+                        {headerName}
+                    </div>
+                    <div className={"skip-switch-container"}>
+                        <label className={"skip-switch-label"}>Hide cell</label>
+                        <Switch
+                            checked={this.state.skipCell}
+                            onChange={this.handleChangeSkipCell}
+                            onColor="#599EF0"
+                            onHandleColor="#477EF0"
+                            handleDiameter={18}
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+                            activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
+                            height={10}
+                            width={20}
+                            className="skip-switch"
+                            id="skip-switch"
+                        />
+                    </div>
+                </div>;
+
+        if (this.state.skipCell) {
+            return (
+                <div>
+                    {switchHeader}
+                    <div className="input-container">
+                        <div className="skip-cell-info-text">
+                            This cell will be skipped and excluded from pipeline steps
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
         const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
             ? <div className={"prev-blockname-container"}>Leave block name empty to merge code to block <em>{this.state.prevBlockName}</em></div>
             : null;
@@ -236,9 +305,7 @@ export class CellTags extends React.Component<IProps, IState> {
         const values: any = this.state.currentActiveCellMetadata.prevBlockNames.map((v, key) => {return {label: v, value: v}});
         return (
             <div>
-                <div style={{overflow: "auto"}}>
-                    <p className="p-CommandPalette-header kale-headers">Cell Tags</p>
-                </div>
+                {switchHeader}
 
                 <InputText
                     label={"Block Name"}
@@ -272,7 +339,6 @@ export class CellTags extends React.Component<IProps, IState> {
                                 primary: 'var(--jp-input-active-border-color)',
                                 primary25: 'var(--jp-layout-color3)',
                                 neutral80: 'var(--jp-ui-font-color0)'
-
                             },
                         })}
                     />

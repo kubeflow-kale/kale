@@ -249,7 +249,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 <div className={"kubeflow-widget-content"}>
 
                     <div>
-                        <p style={{fontSize: "var(--jp-ui-font-size1)"}}
+                        <p style={{fontSize: "var(--jp-ui-font-size2)" }}
                            className="kale-header">
                             Kale deployment launchpad
                         </p>
