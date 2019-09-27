@@ -216,7 +216,7 @@ export class CellTags extends React.Component<IProps, IState> {
         if (!this.state.show) {
             return (<div>
                 <div style={{overflow: "auto"}}>
-                    <p className="p-CommandPalette-header kale-headers">Cell Tags</p>
+                    <p className="kale-headers">Cell Tags</p>
                 </div>
 
                 <div className="jp-KeySelector">
