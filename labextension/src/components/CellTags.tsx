@@ -11,6 +11,7 @@ interface IProps {
     notebook: NotebookPanel;
     activeCell: Cell;
     activeCellIndex: number;
+    valid: Function;
 }
  
 interface IState {
@@ -100,8 +101,8 @@ export class CellTags extends React.Component<IProps, IState> {
     };
 
     listenCellContentChanged = (model: ICellModel) => {
-        console.log("listenCellContentChanged activated");
-        console.log(model)
+        // console.log("listenCellContentChanged activated");
+        // console.log(model)
     };
 
     // TODO: This is executing at every render.
@@ -185,7 +186,6 @@ export class CellTags extends React.Component<IProps, IState> {
             nb = 'block:' + nb
         }
         const tags = [nb].concat(value.prevBlockNames.map(v => 'prev:' + v));
-        console.log(tags);
         CellUtils.setCellMetaData(
             notebookPanel,
             index,
@@ -226,6 +226,9 @@ export class CellTags extends React.Component<IProps, IState> {
                     placeholder={"Block Name"}
                     updateValue={this.updateCurrentBlockName}
                     value={this.state.currentActiveCellMetadata.blockName}
+                    regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
+                    regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                    valid={this.props.valid}
                 />
 
                 <div className='input-container'>

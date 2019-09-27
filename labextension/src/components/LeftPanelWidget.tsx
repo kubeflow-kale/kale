@@ -269,6 +269,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         notebook={this.state.activeNotebook}
                         activeCellIndex={this.state.activeCellIndex}
                         activeCell={this.state.activeCell}
+                        valid={this.updateValidFlag}
                     />
                     {/*  --------------  */}
 
