@@ -14,9 +14,19 @@
 | Components
 |----------------------------------------------------------------------------*/
 
-.kale-headers {
+.kale-header {
   color: #477EF0;
   letter-spacing: .5px;
+  margin-top: 8px;
+  padding: 8px 0 8px 12px;
+  font-size: var(--jp-ui-font-size0);
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: solid var(--jp-border-width) var(--jp-border-color2);
+}
+
+.kale-header:first-child {
+  margin-top: 0;
 }
 
 /*-----------------------------------------------------------------------------

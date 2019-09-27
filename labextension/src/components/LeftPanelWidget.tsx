@@ -250,13 +250,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
                     <div>
                         <p style={{fontSize: "var(--jp-ui-font-size1)"}}
-                           className="p-CommandPalette-header kale-headers">
+                           className="kale-header">
                             Kale deployment launchpad
                         </p>
                     </div>
 
                     <div>
-                        <p className="p-CommandPalette-header kale-headers">Pipeline Metadata</p>
+                        <p className="kale-header">Pipeline Metadata</p>
                     </div>
 
                     {experiment_name_input}
@@ -273,7 +273,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     {/*  --------------  */}
 
                     <div>
-                        <p className="p-CommandPalette-header kale-headers">Deployment Status</p>
+                        <p className="kale-header">Deployment Status</p>
                     </div>
                     <div className='jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
                         {this.state.deploymentStatus}
