@@ -169,6 +169,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     deploy: ('deploy' in notebookMetadata)? notebookMetadata['deploy'] : true
                 };
                 this.setState({metadata: metadata})
+            } else {
+                this.setState({metadata: DefaultState.metadata})
             }
         }
     };
