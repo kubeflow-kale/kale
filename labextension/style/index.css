@@ -16,11 +16,11 @@
 
 .kale-header {
   color: #477EF0;
-  letter-spacing: .5px;
+  letter-spacing: .4px;
   /*margin-top: 8px;*/
   padding: 20px 0 5px 12px;
   font-size: var(--jp-ui-font-size1);
-  font-weight: 600;
+  font-weight: 800;
   text-transform: uppercase;
   /*border-bottom: solid var(--jp-border-width) var(--jp-border-color2);*/
 }

@@ -52,7 +52,7 @@ const DefaultState: IState = {
         pipeline_description: '',
         docker_image: '',
         volumes: [],
-        deploy: false
+        deploy: true
     },
     // true if all inputs are valid so deployment can run
     validInputs: true,
@@ -251,7 +251,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     <div>
                         <p style={{fontSize: "var(--jp-ui-font-size2)" }}
                            className="kale-header">
-                            Kale deployment launchpad
+                            Kale  Deployment  Panel
                         </p>
                     </div>
 
@@ -289,7 +289,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         deployClick={this.updateDeployCheckbox}
                     />
 
-                    <DeployButton deployment={this.state.runDeployment} callback={this.activateRunDeployState}/>
+                    <DeployButton
+                        deploy={this.state.metadata.deploy}
+                        deployment={this.state.runDeployment}
+                        callback={this.activateRunDeployState}/>
                 </div>
 
             </div>

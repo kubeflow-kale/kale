@@ -1,6 +1,7 @@
 import * as React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
+import Switch from "react-switch";
 
 export class InputText extends React.Component<
     {
@@ -68,13 +69,17 @@ export class InputText extends React.Component<
 export class DeployButton extends React.Component<
     {
         callback: Function,
-        deployment: boolean
+        deployment: boolean,
+        // weather deployment to kfp is active or not
+        deploy: boolean
     },
     any>
 {
 
     render() {
-        const buttonText = this.props.deployment ? "Running Deployment..." : "Deploy Notebook to Kubeflow Pipelines";
+        const buttonText = (this.props.deploy)?
+            this.props.deployment ? "Running Deployment..." : "Deploy Notebook to KFP" :
+            this.props.deployment ? "Running Conversion..." : "Generate KFP Pipeline";
 
         return (
             <div className="deploy-button">
@@ -103,7 +108,7 @@ export class CollapsablePanel extends React.Component<
     }>
 {
     state = {
-        collapsed: true
+        collapsed: false
     };
 
     render() {
@@ -127,18 +132,25 @@ export class CollapsablePanel extends React.Component<
                         updateValue={this.props.dockerChange}
                         value={this.props.dockerImageValue}/>
 
-                    <div className="input-container">
-                        <label>
-                          <input
-                            type="checkbox"
-                            value={"deploy"}
+                    <div className={'kale-header-switch input-container'}>
+                        <label className={"skip-switch-label"}>Deploy pipeline to KFP</label>
+                        <Switch
                             checked={this.props.deployChecked}
                             onChange={_ => this.props.deployClick()}
-                          />
+                            onColor="#599EF0"
+                            onHandleColor="#477EF0"
+                            handleDiameter={18}
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+                            activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
+                            height={10}
+                            width={20}
+                            className="skip-switch"
+                            id="skip-switch"
+                        />
+                    </div>
 
-                          {"Deploy pipeline to KFP"}
-                        </label>
-                      </div>
                 </div>
             </div>
         )
