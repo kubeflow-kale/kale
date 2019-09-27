@@ -18,6 +18,7 @@ interface IState {
     show: boolean
     currentActiveCellMetadata: IKaleCellMetadata;
     allBlocks?: string[];
+    prevBlockName?: string
 }
 
 interface IKaleCellMetadata {
@@ -33,7 +34,8 @@ const DefaultCellMetadata: IKaleCellMetadata = {
 const DefaultState: IState = {
     show: false,
     allBlocks: [],
-    currentActiveCellMetadata: DefaultCellMetadata
+    currentActiveCellMetadata: DefaultCellMetadata,
+    prevBlockName: null
 };
 
 export class CellTags extends React.Component<IProps, IState> {
@@ -55,13 +57,13 @@ export class CellTags extends React.Component<IProps, IState> {
 
     componentDidUpdate = (prevProps: Readonly<IProps>, prevState: Readonly<IState>) => {
         if (prevProps.activeCellIndex !== this.props.activeCellIndex) {
-            // if the active cell is not of type `code`, then hide panel
             // listen to cell type changes
             if (prevProps.activeCell) {
                 prevProps.activeCell.model.contentChanged.disconnect(this.listenCellContentChanged)
             }
             this.props.activeCell.model.contentChanged.connect(this.listenCellContentChanged);
 
+            // if the active cell is not of type `code`, then hide panel
             if (!isCodeCellModel(this.props.activeCell.model)) {
                 this.setState({show: false});
                 return
@@ -82,10 +84,13 @@ export class CellTags extends React.Component<IProps, IState> {
         //  Then kept updated as metadata change
         const allBlocks = this.getAllBlocks(this.props.notebook.content);
 
+        const prevBlockName = this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex);
+
         if (cellMetadata) {
             this.setState({
                 show: true,
                 allBlocks: allBlocks,
+                prevBlockName: prevBlockName,
                 currentActiveCellMetadata: {
                     blockName: cellMetadata.blockName || '',
                     prevBlockNames: cellMetadata.prevBlockNames || []
@@ -95,6 +100,7 @@ export class CellTags extends React.Component<IProps, IState> {
             this.setState({
                 show: true,
                 allBlocks: allBlocks,
+                prevBlockName: prevBlockName,
                 currentActiveCellMetadata: DefaultCellMetadata,
             })
         }
@@ -103,6 +109,16 @@ export class CellTags extends React.Component<IProps, IState> {
     listenCellContentChanged = (model: ICellModel) => {
         // console.log("listenCellContentChanged activated");
         // console.log(model)
+    };
+
+    getPreviousBlock = (notebook: Notebook, current: number): string => {
+        for (let i = current - 1; i >= 0; i--) {
+            let mt = this.getKaleCellTags(notebook, i, KUBEFLOW_CELL_METADATA_KEY);
+            if (mt && mt.blockName && mt.blockName !== 'skip' && mt.blockName !== "") {
+                return mt.blockName
+            }
+        }
+        return null
     };
 
     // TODO: This is executing at every render.
@@ -213,6 +229,9 @@ export class CellTags extends React.Component<IProps, IState> {
             </div>)
         }
 
+        const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
+            ? <div className={"prev-blockname-container"}>Leave block name empty to merge code to block <em>{this.state.prevBlockName}</em></div>
+            : null;
         const selectOptions: any = this.state.allBlocks.map((v, key) => {return {label: v, value: v}});
         const values: any = this.state.currentActiveCellMetadata.prevBlockNames.map((v, key) => {return {label: v, value: v}});
         return (
@@ -230,6 +249,8 @@ export class CellTags extends React.Component<IProps, IState> {
                     regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
                     valid={this.props.valid}
                 />
+
+                {prevBlockNotice}
 
                 <div className='input-container'>
                     <label>Select previous blocks</label>

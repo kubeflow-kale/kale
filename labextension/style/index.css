@@ -157,3 +157,11 @@
 .p-mod-hidden {
   display: none;
 }
+
+.prev-blockname-container {
+  z-index: 2;
+  color: var(--jp-info-color0);
+  padding: 5px 22px 0;
+  font-size: var(--jp-ui-font-size0);
+  line-height: normal;
+}
