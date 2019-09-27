@@ -7,85 +7,61 @@ export class InputText extends React.Component<
         label?: string,
         placeholder: string,
         updateValue: Function,
-        value: string
+        value: string,
+        regex?: string,
+        regexErrorMsg?: string,
+        valid?: Function,
+        inputIndex?: number,
+        tight?: boolean,
     },
     {
-        focus: boolean
+        focus: boolean,
+        error: boolean,
     }>
 {
     state = {
-        focus: false
+        focus: false,
+        error: false,
     };
+
+    onChange = (value: string, index: number) => {
+        // if the input domain is restricted by a regex
+        if (this.props.regex) {
+            let re = new RegExp(this.props.regex);
+            if (!re.test(value)) {
+                this.setState({error: true});
+                this.props.valid(false);
+            } else {
+                this.setState({error: false});
+                this.props.valid(true)
+            }
+        }
+        this.props.updateValue(value, index)
+    };
+
     render() {
         const onFocusClass = (this.state.focus) ? 'input-focus' : '';
-        let lbl = null;
-        if (this.props.label) {
-            lbl = <label>{this.props.label}</label>
-        }
+        const lbl = (this.props.label) ? <label>{this.props.label}</label>: null;
+        const lbl_error = (this.state.error) ? <div className="input-error-label">{this.props.regexErrorMsg}</div> : null;
+
+        const containerStyle = (this.props.tight) ? {padding: 0, minWidth: "100%"}: null;
+        const inputStyle = (this.props.tight) ? {margin: 0}: null;
 
         return (
-            <div className="input-container">
+            <div className="input-container" style={containerStyle}>
                 {lbl}
-                <div className={"input-wrapper " + onFocusClass}>
+                <div className={"input-wrapper " + onFocusClass} style={inputStyle}>
                     <input placeholder={this.props.placeholder}
                            value={this.props.value}
-                           onChange={evt => this.props.updateValue((evt.target as HTMLInputElement).value)}
+                           onChange={evt => this.onChange((evt.target as HTMLInputElement).value, this.props.inputIndex)}
                            onFocus={_ => this.setState({focus: !this.state.focus})}
                            onBlur={_ => this.setState({focus: !this.state.focus})}
                     />
                 </div>
+                { lbl_error }
             </div>
         )
     }
-}
-
-export class InputArea extends React.Component<
-    {
-        label: string,
-        placeholder: string,
-        updateValue: Function,
-        value: string
-    },
-    {
-        focus: boolean
-    }>
-{
-     state = {
-        focus: false
-    };
-    render() {
-        const onFocusClass = (this.state.focus) ? 'input-focus' : '';
-        return (
-            <div className="input-container">
-                <div className={"input-wrapper " + onFocusClass}>
-                    <textarea rows={4} cols={50} placeholder={this.props.placeholder} value={this.props.value}
-                              onChange={evt => this.props.updateValue((evt.target as HTMLTextAreaElement).value)}
-                              onFocus={_ => this.setState({focus: !this.state.focus})}
-                              onBlur={_ => this.setState({focus: !this.state.focus})}
-                    />
-                </div>
-            </div>
-        )
-    }
-}
-
-export class Checkbox extends React.Component<{ isChecked: boolean, label: string, handleChange: Function, handleClick: Function }, any> {
-  render() {
-    return (
-      <div className="input-container">
-        <label>
-          <input
-            type="checkbox"
-            value={this.props.label}
-            defaultChecked={this.props.isChecked}
-            onChange={evt => this.props.handleChange}
-          />
-
-          {this.props.label}
-        </label>
-      </div>
-    );
-  }
 }
 
 

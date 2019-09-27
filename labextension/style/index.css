@@ -116,6 +116,13 @@
   font-size: var(--jp-ui-font-size1);
 }
 
+.input-error-label {
+  color: var(--jp-error-color0);
+  padding: 5px 10px 0;
+  font-size: var( --jp-ui-font-size0);
+  line-height: normal;
+}
+
 .toolbar {
   justify-content: space-between;
   border-bottom: none;

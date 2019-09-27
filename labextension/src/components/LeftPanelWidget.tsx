@@ -24,6 +24,7 @@ interface IProps {
 
 interface IState {
     metadata: IKaleNotebookMetadata;
+    validInputs: boolean;
     runDeployment: boolean;
     deploymentStatus: string;
     deploymentRunLink: string;
@@ -45,19 +46,21 @@ interface IKaleNotebookMetadata {
 }
 
 const DefaultState: IState = {
-        metadata: {
-            experiment_name: '',
-            pipeline_name: '',
-            pipeline_description: '',
-            docker_image: '',
-            volumes: [],
-            deploy: false
-        },
-        runDeployment: false,
-        deploymentStatus: 'No active deployment.',
-        deploymentRunLink: '',
-        selectVal: '',
-        activeNotebook: null,
+    metadata: {
+        experiment_name: '',
+        pipeline_name: '',
+        pipeline_description: '',
+        docker_image: '',
+        volumes: [],
+        deploy: false
+    },
+    // true if all inputs are valid so deployment can run
+    validInputs: true,
+    runDeployment: false,
+    deploymentStatus: 'No active deployment.',
+    deploymentRunLink: '',
+    selectVal: '',
+    activeNotebook: null,
 };
 
 export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
@@ -74,11 +77,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // deleteVolumeI = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.slice(0, idx).concat(this.state.metadata.volumes.slice(idx + 1, this.state.metadata.volumes.length))}});
     deleteVolume = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}});
     addVolume = (v: string) => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, v]}});
-    updateVolume = (idx: number, vol: string) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => { return (key === idx) ? vol : item })}});
+    updateVolume = (vol: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => { return (key === idx) ? vol : item })}});
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
     updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
 
-    activateRunDeployState = () => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentRunLink: ''})
+    updateValidFlag = (val: boolean) => this.setState({validInputs: val});
+
+    activateRunDeployState = () => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentRunLink: ''});
 
 
     // restore state to default values
@@ -176,17 +181,22 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     };
 
     runDeploymentCommand = async () => {
-        const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+        if (this.state.validInputs) {
+            const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
 
-        const mainCommand = "output=!kale --nb " + nbFileName;
-        console.log("Executing command: " + mainCommand);
-        const expr = {output: "output"};
-        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
-        this.setState({runDeployment: false});
+            const mainCommand = "output=!kale --nb " + nbFileName;
+            console.log("Executing command: " + mainCommand);
+            const expr = {output: "output"};
+            const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
+            this.setState({runDeployment: false});
 
-        console.log(output);
-        console.log(output.user_expressions.output.data['text/plain']);
-        NotebookUtils.showMessage("Deployment result", output.user_expressions.output.data['text/plain']);
+            console.log(output);
+            console.log(output.user_expressions.output.data['text/plain']);
+            NotebookUtils.showMessage("Deployment result", output.user_expressions.output.data['text/plain']);
+        } else {
+            this.setState({runDeployment: false});
+            NotebookUtils.showMessage("Deployment Failed", "Can not run deployment: some of your inputs are invalid");
+        }
     };
 
 
@@ -204,6 +214,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             placeholder={"Pipeline Name"}
             updateValue={this.updatePipelineName}
             value={this.state.metadata.pipeline_name}
+            regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
+            regexErrorMsg={"Pipeline name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+            valid={this.updateValidFlag}
         />;
 
         const pipeline_desc_input = <InputText
@@ -218,6 +231,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             addVolume={this.addVolume}
             updateVolume={this.updateVolume}
             deleteVolume={this.deleteVolume}
+            valid={this.updateValidFlag}
         />;
 
         let run_link = null;

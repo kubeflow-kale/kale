@@ -1,10 +1,12 @@
 import * as React from "react";
+import {InputText} from "./Components";
 
 interface IProps {
     volumes: string[],
     addVolume: Function,
     updateVolume: Function,
-    deleteVolume: Function
+    deleteVolume: Function,
+    valid?: Function
 }
 
 export class VolumesPanel extends React.Component<IProps, any> {
@@ -22,16 +24,27 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 <div> {
                 this.props.volumes.map((v, idx) =>
                 <div className="jp-Toolbar toolbar">
-                    <div className="jp-Toolbar-item">
-                        <div className="input-container" style={{padding: 0}}>
-                            <div className="input-wrapper" style={{margin: 0}}>
-                                <input
-                                    placeholder="pvcName;mountPoint"
-                                    value={v}
-                                    onChange={evt => this.props.updateVolume(idx, (evt.target as HTMLInputElement).value)}
-                                />
-                            </div>
-                        </div>
+                    <div className="jp-Toolbar-item" style={{width: "80%"}}>
+                        {/*<div className="input-container" style={{padding: 0}}>*/}
+                        {/*    <div className="input-wrapper" style={{margin: 0}}>*/}
+                        {/*        <input*/}
+                        {/*            placeholder="pvcName;mountPoint"*/}
+                        {/*            value={v}*/}
+                        {/*            onChange={evt => this.props.updateVolume(idx, (evt.target as HTMLInputElement).value)}*/}
+                        {/*        />*/}
+                        {/*    </div>*/}
+                        {/*</div>*/}
+                        <InputText
+                            key={idx}
+                            tight
+                            inputIndex={idx}
+                            placeholder={"pvc-name;mount-point"}
+                            updateValue={this.props.updateVolume}
+                            value={v}
+                            regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?;[^\\0\\s][^\\0]*$"}
+                            regexErrorMsg={"Volume spec must consist of `pvc-name`;`unix-path` where PVC name consists of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                            valid={this.props.valid}
+                        />
                     </div>
 
                     <div className="jp-ToolbarButton jp-Toolbar-item">
