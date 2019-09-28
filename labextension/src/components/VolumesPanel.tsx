@@ -18,7 +18,7 @@ interface IProps {
 
 const selectValues = [
     {label: "Existing PVC", value: 'pvc'},
-    {label: "Existing PV", value: 'pvc'},
+    {label: "Existing PV", value: 'pv'},
     {label: "Rok Resource", value: 'rok'}
 ];
 
@@ -36,10 +36,10 @@ export class VolumesPanel extends React.Component<IProps, any> {
             vols =
                 <div> {
                 this.props.volumes.map((v, idx) => {
-                    const nameLabel = selectValues.map((d) => {return (d.value === v.type)? d.label: null})[0];
+                    const nameLabel = selectValues.filter((d) => {return (d.value === v.type)})[0].label;
                     return (
                     <div>
-                        <div className="toolbar">
+                        <div className="toolbar input-container">
                             <Select
                                 className='react-select-container volumes-select'
                                 classNamePrefix='react-select'
@@ -92,14 +92,14 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             inputIndex={idx}
                             placeholder={"unix path"}
                             updateValue={this.props.updateVolumeMountPoint}
-                            value={v.name}
+                            value={v.mount_point}
                         />
 
-                        <div className="toolbar">
+                        <div className="toolbar input-container">
                             <div className={"switch-label"}>Snapshot Volume</div>
                             <Switch
                                 checked={v.snapshot}
-                                onChange={_ => this.props.updateVolumeSnapshot()}
+                                onChange={_ => this.props.updateVolumeSnapshot(idx)}
                                 onColor="#599EF0"
                                 onHandleColor="#477EF0"
                                 handleDiameter={18}
@@ -122,22 +122,26 @@ export class VolumesPanel extends React.Component<IProps, any> {
         }
 
         return (
-            <div className="input-container">
-                <div className="toolbar">
-                    <div>Volumes</div>
-                    <div>
+            <div>
+                <div className={"kale-header-switch"} style={{paddingTop: "20px"}}>
+                    <div className="kale-header" style={{paddingTop: "0"}}>
+                        Volumes
+                    </div>
+                    <div className={"skip-switch-container"}>
                         <button type="button"
                                 className="minimal-toolbar-button"
                                 title="Add Volume"
                                 onClick={_ => this.props.addVolume()}
                         >
-                            <span
-                                className="jp-AddIcon jp-Icon jp-Icon-16"
-                                style={{padding: 0, flex: "0 0 auto", marginRight: 0}} />
+                        <span className="jp-Icon" style={{padding: 0, flex: "0 0 auto", marginRight: 0}}>
+                            Add Volume
+                        </span>
                         </button>
                     </div>
                 </div>
+
                 {vols}
+
             </div>
         )
 

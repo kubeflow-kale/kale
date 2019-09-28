@@ -262,28 +262,28 @@ export class CellTags extends React.Component<IProps, IState> {
 
         const switchHeader =
             <div className={"kale-header-switch"} style={{paddingTop: "20px"}}>
-                    <div className="kale-header" style={{paddingTop: "0"}}>
-                        {headerName}
-                    </div>
-                    <div className={"skip-switch-container"}>
-                        <label className={"skip-switch-label"}>Hide cell</label>
-                        <Switch
-                            checked={this.state.skipCell}
-                            onChange={this.handleChangeSkipCell}
-                            onColor="#599EF0"
-                            onHandleColor="#477EF0"
-                            handleDiameter={18}
-                            uncheckedIcon={false}
-                            checkedIcon={false}
-                            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
-                            activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
-                            height={10}
-                            width={20}
-                            className="skip-switch"
-                            id="skip-switch"
-                        />
-                    </div>
-                </div>;
+                <div className="kale-header" style={{paddingTop: "0"}}>
+                    {headerName}
+                </div>
+                <div className={"skip-switch-container"}>
+                    <label className={"skip-switch-label"}>Hide cell</label>
+                    <Switch
+                        checked={this.state.skipCell}
+                        onChange={this.handleChangeSkipCell}
+                        onColor="#599EF0"
+                        onHandleColor="#477EF0"
+                        handleDiameter={18}
+                        uncheckedIcon={false}
+                        checkedIcon={false}
+                        boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+                        activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
+                        height={10}
+                        width={20}
+                        className="skip-switch"
+                        id="skip-switch"
+                    />
+                </div>
+            </div>;
 
         if (this.state.skipCell) {
             return (

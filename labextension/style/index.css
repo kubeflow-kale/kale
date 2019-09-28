@@ -27,9 +27,13 @@
 
 .kale-header-switch {
   flex: 0 0 auto;
-  display: flex;
   flex-direction: row;
   justify-content: space-between;
+  display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+  display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+  display: -ms-flexbox;      /* TWEENER - IE 10 */
+  display: -webkit-flex;     /* NEW - Chrome */
+  display: flex;
 }
 
 .kale-header:first-child {
@@ -41,7 +45,6 @@
 |----------------------------------------------------------------------------*/
 
 .kubeflow-widget {
-  display: flex;
   flex-direction: column;
   min-width: var(--jp-sidebar-min-width);
   color: var(--jp-ui-font-color1);
@@ -49,6 +52,11 @@
   font-size: var(--jp-ui-font-size1);
   overflow: auto;
   height: 100%;
+  display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+  display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+  display: -ms-flexbox;      /* TWEENER - IE 10 */
+  display: -webkit-flex;     /* NEW - Chrome */
+  display: flex;
 }
 
 .kubeflow-widget-content {
