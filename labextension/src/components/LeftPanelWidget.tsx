@@ -6,9 +6,9 @@ import {
 import NotebookUtils from "../utils/NotebookUtils";
 
 import {
-    InputText,
     DeployButton,
-    CollapsablePanel
+    CollapsablePanel,
+    MaterialInput
 } from "./Components";
 import {CellTags} from "./CellTags";
 import {Cell} from "@jupyterlab/cells";
@@ -230,16 +230,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     render() {
 
-        const experiment_name_input = <InputText
-            label={"Experiment Name"}
-            placeholder={"Experiment Name"}
+        const experiment_name_input = <MaterialInput
             updateValue={this.updateExperimentName}
             value={this.state.metadata.experiment_name}
+            label={"Experiment Name"}
         />;
 
-        const pipeline_name_input = <InputText
+        const pipeline_name_input = <MaterialInput
             label={"Pipeline Name"}
-            placeholder={"Pipeline Name"}
             updateValue={this.updatePipelineName}
             value={this.state.metadata.pipeline_name}
             regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
@@ -247,9 +245,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             valid={this.updateValidFlag}
         />;
 
-        const pipeline_desc_input = <InputText
+        const pipeline_desc_input = <MaterialInput
             label={"Pipeline Description"}
-            placeholder={"Pipeline Description"}
             updateValue={this.updatePipelineDescription}
             value={this.state.metadata.pipeline_description}
         />;
@@ -291,9 +288,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         <p className="kale-header">Pipeline Metadata</p>
                     </div>
 
-                    {experiment_name_input}
-                    {pipeline_name_input}
-                    {pipeline_desc_input}
+                    <div className={'input-container'}>
+                        {experiment_name_input}
+                        {pipeline_name_input}
+                        {pipeline_desc_input}
+                    </div>
+
                     {volsPanel}
 
                     {/*  CELLTAGS PANEL  */}

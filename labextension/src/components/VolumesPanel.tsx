@@ -1,5 +1,5 @@
 import * as React from "react";
-import {InputText} from "./Components";
+import {MaterialInput} from "./Components";
 import Select from "react-select";
 import {IVolumeMetadata} from "./LeftPanelWidget";
 import Switch from "react-switch";
@@ -38,8 +38,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 this.props.volumes.map((v, idx) => {
                     const nameLabel = selectValues.filter((d) => {return (d.value === v.type)})[0].label;
                     return (
-                    <div>
-                        <div className="toolbar input-container">
+                    <div className='input-container'>
+                        <div className="toolbar">
                             <Select
                                 className='react-select-container volumes-select'
                                 classNamePrefix='react-select'
@@ -77,25 +77,23 @@ export class VolumesPanel extends React.Component<IProps, any> {
                         {/*// TODO: Input validation with regex: In case of pv and pvc need one validation, *}
                         {/* in case of rok url validate url*/}
 
-                        <InputText
+                        <MaterialInput
                             label={nameLabel + " Name"}
                             key={idx}
                             inputIndex={idx}
-                            placeholder={nameLabel + " Name"}
                             updateValue={this.props.updateVolumeName}
                             value={v.name}
                         />
 
-                        <InputText
+                        <MaterialInput
                             label={"Mount Point"}
                             key={idx}
                             inputIndex={idx}
-                            placeholder={"unix path"}
                             updateValue={this.props.updateVolumeMountPoint}
                             value={v.mount_point}
                         />
 
-                        <div className="toolbar input-container">
+                        <div className="toolbar">
                             <div className={"switch-label"}>Snapshot Volume</div>
                             <Switch
                                 checked={v.snapshot}

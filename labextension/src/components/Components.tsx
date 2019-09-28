@@ -2,68 +2,106 @@ import * as React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
 import Switch from "react-switch";
+import {
+    makeStyles, createStyles, createMuiTheme
+} from '@material-ui/core/styles';
+import TextField from '@material-ui/core/TextField';
+import { ThemeProvider } from '@material-ui/styles';
+import { indigo } from '@material-ui/core/colors';
 
-export class InputText extends React.Component<
-    {
-        label?: string,
-        placeholder: string,
-        updateValue: Function,
-        value: string,
-        regex?: string,
-        regexErrorMsg?: string,
-        valid?: Function,
-        inputIndex?: number,
-        tight?: boolean,
-    },
-    {
-        focus: boolean,
-        error: boolean,
-    }>
-{
-    state = {
-        focus: false,
-        error: false,
-    };
 
-    onChange = (value: string, index: number) => {
+const useStyles = makeStyles(() =>
+    createStyles({
+        label: {
+            backgroundColor: "var(--jp-layout-color1)",
+            color: 'var(--jp-input-border-color)',
+        },
+        input: {
+            borderRadius: 4,
+            position: 'relative',
+            color: "var(--jp-ui-font-color1)",
+            backgroundColor: "var(--jp-layout-color1)",
+            '&$cssFocused $notchedOutline': {
+                borderColor: "var(--md-indigo-300) !important",
+            }
+        },
+        focused: {},
+        notchedOutline: {
+            borderWidth: '1px',
+            borderColor: 'var(--jp-input-border-color)',
+          },
+        textField: {
+            width: "100%",
+        }
+    }),
+);
+
+const theme = createMuiTheme({
+  palette: {
+    primary: indigo,
+  },
+});
+
+
+interface IMaterialInput {
+    updateValue: Function,
+    value: string,
+    label: string,
+    regex?: string,
+    regexErrorMsg?: string,
+    valid?: Function,
+    inputIndex?: number,
+}
+
+export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
+
+    const [error, updateError] = React.useState(
+        false
+    );
+    const classes = useStyles({});
+
+    const onChange = (value: string, index: number) => {
         // if the input domain is restricted by a regex
-        if (this.props.regex) {
-            let re = new RegExp(this.props.regex);
+        if (props.regex) {
+            let re = new RegExp(props.regex);
             if (!re.test(value)) {
-                this.setState({error: true});
-                this.props.valid(false);
+                updateError(true);
+                props.valid(false);
             } else {
-                this.setState({error: false});
-                this.props.valid(true)
+                updateError(false);
+                props.valid(true)
             }
         }
-        this.props.updateValue(value, index)
+        props.updateValue(value, index)
     };
 
-    render() {
-        const onFocusClass = (this.state.focus) ? 'input-focus' : '';
-        const lbl = (this.props.label) ? <label>{this.props.label}</label>: null;
-        const lbl_error = (this.state.error) ? <div className="input-error-label">{this.props.regexErrorMsg}</div> : null;
+    const helperText = (error)? props.regexErrorMsg: null;
 
-        const containerStyle = (this.props.tight) ? {padding: 0, minWidth: "100%"}: null;
-        const inputStyle = (this.props.tight) ? {margin: 0}: null;
+    return <ThemeProvider theme={theme}><TextField
+            InputLabelProps={{
+                classes: {
+                    root: classes.label
+                }
+            }}
+            InputProps={{
+                classes: {
+                    root: classes.input,
+                    focused: classes.focused,
+                    notchedOutline: classes.notchedOutline,
+                }
+            }}
+            className={classes.textField}
+            error={error}
+            id="outlined-name"
+            label={props.label}
+            value={props.value}
+            onChange={evt => onChange((evt.target as HTMLInputElement).value, props.inputIndex)}
+            margin="dense"
+            variant="outlined"
+            helperText={helperText}
+    /></ThemeProvider>
+};
 
-        return (
-            <div className="input-container" style={containerStyle}>
-                {lbl}
-                <div className={"input-wrapper " + onFocusClass} style={inputStyle}>
-                    <input placeholder={this.props.placeholder}
-                           value={this.props.value}
-                           onChange={evt => this.onChange((evt.target as HTMLInputElement).value, this.props.inputIndex)}
-                           onFocus={_ => this.setState({focus: !this.state.focus})}
-                           onBlur={_ => this.setState({focus: !this.state.focus})}
-                    />
-                </div>
-                { lbl_error }
-            </div>
-        )
-    }
-}
 
 
 export class DeployButton extends React.Component<
@@ -125,14 +163,13 @@ export class CollapsablePanel extends React.Component<
                     className='jp-Collapse-header'
                     onClick={_ => this.setState({collapsed: !this.state.collapsed})}
                 >{this.props.title}</div>
-                <div className={'p-Panel jp-Collapse-contents ' + content_class} style={{padding: "0 0 10px 0"}}>
-                    <InputText
+                <div className={'input-container p-Panel jp-Collapse-contents ' + content_class}>
+                    <MaterialInput
                         label={"Docker image"}
-                        placeholder={"Image name"}
                         updateValue={this.props.dockerChange}
                         value={this.props.dockerImageValue}/>
 
-                    <div className={'kale-header-switch input-container'}>
+                    <div className={'kale-header-switch'}>
                         <label className={"switch-label"}>Deploy pipeline to KFP</label>
                         <Switch
                             checked={this.props.deployChecked}

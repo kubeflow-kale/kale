@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Notebook, NotebookPanel} from "@jupyterlab/notebook";
-import {InputText} from "./Components";
+import {MaterialInput} from "./Components";
 import CellUtils from "../utils/CellUtils";
 import {ICellModel, Cell, isCodeCellModel} from "@jupyterlab/cells";
 import Select from "react-select";
@@ -307,19 +307,19 @@ export class CellTags extends React.Component<IProps, IState> {
             <div>
                 {switchHeader}
 
-                <InputText
-                    label={"Block Name"}
-                    placeholder={"Block Name"}
-                    updateValue={this.updateCurrentBlockName}
-                    value={this.state.currentActiveCellMetadata.blockName}
-                    regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
-                    regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
-                    valid={this.props.valid}
-                />
-
-                {prevBlockNotice}
-
                 <div className='input-container'>
+
+                    <MaterialInput
+                        label={"Block Name"}
+                        updateValue={this.updateCurrentBlockName}
+                        value={this.state.currentActiveCellMetadata.blockName}
+                        regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
+                        regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                        valid={this.props.valid}
+                    />
+
+                    {prevBlockNotice}
+
                     <label>Select previous blocks</label>
                      <Select
                         isMulti
