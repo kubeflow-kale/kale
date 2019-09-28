@@ -261,8 +261,8 @@ export class CellTags extends React.Component<IProps, IState> {
         }
 
         const switchHeader =
-            <div className={"kale-header-switch"} style={{paddingTop: "20px"}}>
-                <div className="kale-header" style={{paddingTop: "0"}}>
+            <div className={"kale-header-switch"} >
+                <div className="kale-header" style={{padding: "0"}}>
                     {headerName}
                 </div>
                 <div className={"skip-switch-container"}>

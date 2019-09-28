@@ -294,8 +294,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         {pipeline_desc_input}
                     </div>
 
-                    {volsPanel}
-
                     {/*  CELLTAGS PANEL  */}
                     <CellTags
                         notebook={this.state.activeNotebook}
@@ -304,6 +302,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         valid={this.updateValidFlag}
                     />
                     {/*  --------------  */}
+
+                    {volsPanel}
+
 
                     <div>
                         <p className="kale-header">Deployment Status</p>

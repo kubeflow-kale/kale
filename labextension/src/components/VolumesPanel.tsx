@@ -1,5 +1,5 @@
 import * as React from "react";
-import {MaterialInput} from "./Components";
+import {MaterialInput, MaterialSelect} from "./Components";
 import Select from "react-select";
 import {IVolumeMetadata} from "./LeftPanelWidget";
 import Switch from "react-switch";
@@ -40,27 +40,12 @@ export class VolumesPanel extends React.Component<IProps, any> {
                     return (
                     <div className='input-container'>
                         <div className="toolbar">
-                            <Select
-                                className='react-select-container volumes-select'
-                                classNamePrefix='react-select'
-                                // getting correct label from selectValue based on this volume type
-                                value={{label: nameLabel, value: v.type}}
-                                onChange={(v: any) => this.props.updateVolumeType(v.value, idx)}
-                                options={selectValues}
-                                theme={theme => ({
-                                    ...theme,
-                                    borderRadius: 0,
-                                    colors: {
-                                        ...theme.colors,
-                                        neutral0: 'var(--jp-input-active-background)',
-                                        neutral10: 'var(--md-indigo-300)',
-                                        neutral20: 'var(--jp-input-border-color)',
-                                        primary: 'var(--jp-input-active-border-color)',
-                                        primary25: 'var(--jp-layout-color3)',
-                                        neutral80: 'var(--jp-ui-font-color0)'
-                                    },
-                                })}
-                            />
+                            <MaterialSelect
+                                updateValue={this.props.updateVolumeType}
+                                values={selectValues}
+                                value={v.type}
+                                label={"Select Volume Type"}
+                                index={idx}/>
                             <div>
                                 <button type="button"
                                         className="minimal-toolbar-button"
@@ -93,7 +78,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             value={v.mount_point}
                         />
 
-                        <div className="toolbar">
+                        <div className="toolbar" style={{padding: "12px 4px 0 4px"}}>
                             <div className={"switch-label"}>Snapshot Volume</div>
                             <Switch
                                 checked={v.snapshot}
@@ -121,8 +106,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
 
         return (
             <div>
-                <div className={"kale-header-switch"} style={{paddingTop: "20px"}}>
-                    <div className="kale-header" style={{paddingTop: "0"}}>
+                <div className={"kale-header-switch"}>
+                    <div className="kale-header" style={{padding: "0"}}>
                         Volumes
                     </div>
                     <div className={"skip-switch-container"}>

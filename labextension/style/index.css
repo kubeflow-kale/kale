@@ -26,9 +26,11 @@
 }
 
 .kale-header-switch {
+  padding: 20px 12px 0 12px;
   flex: 0 0 auto;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
   display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
   display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
   display: -ms-flexbox;      /* TWEENER - IE 10 */
@@ -105,7 +107,7 @@
 
 
 .input-container {
-  padding: 10px 12px 0;
+  padding: 10px 12px;
   z-index: 2;
 }
 
@@ -208,14 +210,17 @@
 }
 
 .skip-switch-container {
-  margin: auto 5px auto 0;
-  display: table;
+  display: flex;
+  align-items: center;
 }
 
 .skip-switch-container span {
   font-size: var( --jp-ui-font-size0);
   color: var(--jp-ui-font-color0);
-  margin-right: 10px;
+}
+
+.skip-switch-label {
+  margin-right: 5px;
 }
 
 .switch-label {

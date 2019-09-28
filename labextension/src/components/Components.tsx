@@ -8,6 +8,7 @@ import {
 import TextField from '@material-ui/core/TextField';
 import { ThemeProvider } from '@material-ui/styles';
 import { indigo } from '@material-ui/core/colors';
+import {MenuItem, Select} from "@material-ui/core";
 
 
 const useStyles = makeStyles(() =>
@@ -32,7 +33,11 @@ const useStyles = makeStyles(() =>
           },
         textField: {
             width: "100%",
-        }
+        },
+        menu: {
+            backgroundColor: "var(--jp-layout-color1)",
+            color: "var(--jp-ui-font-color1)"
+        },
     }),
 );
 
@@ -102,6 +107,101 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
     /></ThemeProvider>
 };
 
+interface IMaterialSelect {
+    updateValue: Function,
+    values: any,
+    value: any,
+    label: string,
+    index: number,
+}
+
+export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) => {
+
+    const classes = useStyles({});
+
+    return <ThemeProvider theme={theme}>
+        <TextField
+            select
+            InputLabelProps={{
+                classes: {
+                    root: classes.label
+                }
+            }}
+            InputProps={{
+                classes: {
+                    root: classes.input,
+                    focused: classes.focused,
+                    notchedOutline: classes.notchedOutline,
+                }
+            }}
+            SelectProps={{
+              MenuProps: {
+                  PaperProps: {
+                    className: classes.menu,
+                  }
+              },
+            }}
+            className={classes.textField}
+            id={props.label}
+            label={props.label}
+            value={props.value}
+            onChange={evt => props.updateValue((evt.target as HTMLInputElement).value, props.index)}
+            margin="dense"
+            variant="outlined"
+        >
+            {props.values.map((option: any) => (
+                <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                </MenuItem>
+            ))}
+        </TextField>
+    </ThemeProvider>
+};
+//
+//
+// export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelect> = (props) => {
+//
+//     const classes = useStyles({});
+//
+//     return <ThemeProvider theme={theme}>
+//         <Select
+//             multiple
+//             InputLabelProps={{
+//                 classes: {
+//                     root: classes.label
+//                 }
+//             }}
+//             InputProps={{
+//                 classes: {
+//                     root: classes.input,
+//                     focused: classes.focused,
+//                     notchedOutline: classes.notchedOutline,
+//                 }
+//             }}
+//             SelectProps={{
+//               MenuProps: {
+//                   PaperProps: {
+//                     className: classes.menu,
+//                   }
+//               },
+//             }}
+//             className={classes.textField}
+//             id={props.label}
+//             label={props.label}
+//             value={props.value}
+//             onChange={evt => props.updateValue((evt.target as HTMLInputElement).value, props.index)}
+//             margin="dense"
+//             variant="outlined"
+//         >
+//             {props.values.map((option: any) => (
+//                 <MenuItem key={option.value} value={option.value}>
+//                     {option.label}
+//                 </MenuItem>
+//             ))}
+//         </Select>
+//     </ThemeProvider>
+// };
+
 
 
 export class DeployButton extends React.Component<
@@ -169,7 +269,7 @@ export class CollapsablePanel extends React.Component<
                         updateValue={this.props.dockerChange}
                         value={this.props.dockerImageValue}/>
 
-                    <div className={'kale-header-switch'}>
+                    <div className={'toolbar'} style={{padding: "12px 4px 0 4px"}}>
                         <label className={"switch-label"}>Deploy pipeline to KFP</label>
                         <Switch
                             checked={this.props.deployChecked}
