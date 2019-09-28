@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Notebook, NotebookPanel} from "@jupyterlab/notebook";
-import {MaterialInput} from "./Components";
+import {MaterialInput, MaterialSelectMulti} from "./Components";
 import CellUtils from "../utils/CellUtils";
 import {ICellModel, Cell, isCodeCellModel} from "@jupyterlab/cells";
 import Select from "react-select";
@@ -171,12 +171,8 @@ export class CellTags extends React.Component<IProps, IState> {
         )
     };
 
-    updatePrevBlocksNames = async (newvaule: any) => {
-        let prevNames = [];
-        if (newvaule) {
-            prevNames = newvaule.map((v: any) => v.label);
-        }
-        let currentCellMetadata = {...this.state.currentActiveCellMetadata, prevBlockNames: prevNames};
+    updatePrevBlocksNames = async (previousBlocks: string[]) => {
+        let currentCellMetadata = {...this.state.currentActiveCellMetadata, prevBlockNames: previousBlocks};
         await this.setState({currentActiveCellMetadata: currentCellMetadata});
         this.setKaleCellTags(
             this.props.notebook,
@@ -320,28 +316,34 @@ export class CellTags extends React.Component<IProps, IState> {
 
                     {prevBlockNotice}
 
-                    <label>Select previous blocks</label>
-                     <Select
-                        isMulti
-                        className='react-select-container'
-                        classNamePrefix='react-select'
-                        value={values}
-                        onChange={this.updatePrevBlocksNames}
-                        options={selectOptions}
-                        theme={theme => ({
-                            ...theme,
-                            borderRadius: 0,
-                            colors: {
-                                ...theme.colors,
-                                neutral0: 'var(--jp-input-active-background)',
-                                neutral10: 'var(--md-indigo-300)',
-                                neutral20: 'var(--jp-input-border-color)',
-                                primary: 'var(--jp-input-active-border-color)',
-                                primary25: 'var(--jp-layout-color3)',
-                                neutral80: 'var(--jp-ui-font-color0)'
-                            },
-                        })}
-                    />
+                    {/*<label>Select previous blocks</label>*/}
+                    {/* <Select*/}
+                    {/*    isMulti*/}
+                    {/*    className='react-select-container'*/}
+                    {/*    classNamePrefix='react-select'*/}
+                    {/*    value={values}*/}
+                    {/*    onChange={this.updatePrevBlocksNames}*/}
+                    {/*    options={selectOptions}*/}
+                    {/*    theme={theme => ({*/}
+                    {/*        ...theme,*/}
+                    {/*        borderRadius: 0,*/}
+                    {/*        colors: {*/}
+                    {/*            ...theme.colors,*/}
+                    {/*            neutral0: 'var(--jp-input-active-background)',*/}
+                    {/*            neutral10: 'var(--md-indigo-300)',*/}
+                    {/*            neutral20: 'var(--jp-input-border-color)',*/}
+                    {/*            primary: 'var(--jp-input-active-border-color)',*/}
+                    {/*            primary25: 'var(--jp-layout-color3)',*/}
+                    {/*            neutral80: 'var(--jp-ui-font-color0)'*/}
+                    {/*        },*/}
+                    {/*    })}*/}
+                    {/*/>*/}
+
+                    <MaterialSelectMulti
+                        updateSelected={this.updatePrevBlocksNames}
+                        options={this.state.allBlocks}
+                        selected={this.state.currentActiveCellMetadata.prevBlockNames}/>
+
                 </div>
 
             </div>

@@ -1,4 +1,5 @@
 import * as React from "react";
+import {findDOMNode} from "react-dom";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
 import Switch from "react-switch";
@@ -9,6 +10,11 @@ import TextField from '@material-ui/core/TextField';
 import { ThemeProvider } from '@material-ui/styles';
 import { indigo } from '@material-ui/core/colors';
 import {MenuItem, Select} from "@material-ui/core";
+import Chip from "@material-ui/core/Chip";
+import InputLabel from "@material-ui/core/InputLabel";
+import Input from "@material-ui/core/Input";
+import FormControl from '@material-ui/core/FormControl';
+import OutlinedInput from "@material-ui/core/OutlinedInput";
 
 
 const useStyles = makeStyles(() =>
@@ -38,6 +44,16 @@ const useStyles = makeStyles(() =>
             backgroundColor: "var(--jp-layout-color1)",
             color: "var(--jp-ui-font-color1)"
         },
+        chips: {
+            display: 'flex',
+            flexWrap: 'wrap',
+        },
+        chip: {
+            margin: 2,
+        },
+        multiSelectForm: {
+            width: "100%"
+        }
     }),
 );
 
@@ -157,50 +173,95 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
         </TextField>
     </ThemeProvider>
 };
-//
-//
-// export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelect> = (props) => {
-//
-//     const classes = useStyles({});
-//
-//     return <ThemeProvider theme={theme}>
-//         <Select
-//             multiple
-//             InputLabelProps={{
-//                 classes: {
-//                     root: classes.label
-//                 }
-//             }}
-//             InputProps={{
-//                 classes: {
-//                     root: classes.input,
-//                     focused: classes.focused,
-//                     notchedOutline: classes.notchedOutline,
-//                 }
-//             }}
-//             SelectProps={{
-//               MenuProps: {
-//                   PaperProps: {
-//                     className: classes.menu,
-//                   }
-//               },
-//             }}
-//             className={classes.textField}
-//             id={props.label}
-//             label={props.label}
-//             value={props.value}
-//             onChange={evt => props.updateValue((evt.target as HTMLInputElement).value, props.index)}
-//             margin="dense"
-//             variant="outlined"
-//         >
-//             {props.values.map((option: any) => (
-//                 <MenuItem key={option.value} value={option.value}>
-//                     {option.label}
-//                 </MenuItem>
-//             ))}
-//         </Select>
-//     </ThemeProvider>
-// };
+
+interface IMaterialSelectMultiple {
+    updateSelected: Function,
+    options: string[],
+    selected: string[]
+}
+export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultiple> = (props) => {
+
+    const classes = useStyles({});
+    const [inputLabelRef, setInputLabelRef] = React.useState(undefined);
+    const [age, setAge] = React.useState("");
+    const labelOffsetWidth = inputLabelRef
+        //@ts-ignore
+        ? findDOMNode(inputLabelRef).offsetWidth
+    : 0;
+
+    return <ThemeProvider theme={theme}>
+        <FormControl variant='outlined' className={classes.multiSelectForm}>
+        {/*<InputLabel htmlFor="select-previous-blocks">Select previous blocks</InputLabel>*/}
+            <InputLabel
+            ref={ref => {
+              setInputLabelRef(ref);
+            }}
+            htmlFor="select-previous-blocks"
+          >
+            Select previous blocks
+          </InputLabel>
+        <Select
+            multiple
+            MenuProps={{
+                PaperProps: {
+                    className: classes.menu,
+                }
+            }}
+            className={classes.textField}
+            onChange={evt => props.updateSelected((evt.target as HTMLInputElement).value)}
+            margin="dense"
+            variant="outlined"
+            input={<OutlinedInput labelWidth={labelOffsetWidth} name="previous"  id="select-previous-blocks" />}
+            value={props.selected}
+            renderValue={elements => (
+                <div className={classes.chips}>
+                  {(elements as string[]).map(value => (
+                    <Chip key={value} label={value} className={classes.chip} />
+                  ))}
+                </div>
+              )}
+        >
+            {props.options.map((option: any) => (
+                <MenuItem key={option} value={option}>
+                    {option}
+                </MenuItem>
+            ))}
+        </Select>
+        </FormControl>
+
+        <FormControl variant="outlined" className={classes.multiSelectForm}>
+          <InputLabel
+            ref={ref => {
+              setInputLabelRef(ref);
+            }}
+            htmlFor="outlined-age-simple"
+          >
+            Select Age
+          </InputLabel>
+          <Select
+            value={age}
+            onChange={e => {
+              setAge((e.target as HTMLInputElement).value)
+            }}
+            input={
+              <OutlinedInput
+                labelWidth={labelOffsetWidth}
+                name="age"
+                id="outlined-age-simple"
+              />
+            }
+          >
+            <MenuItem key="" value="">
+              <em>None</em>
+            </MenuItem>
+            <MenuItem key={10} value={10}>Ten</MenuItem>
+            <MenuItem key={20} value={20}>Twenty</MenuItem>
+            <MenuItem key={30} value={30}>Thirty</MenuItem>
+          </Select>
+        </FormControl>
+
+    </ThemeProvider>
+};
 
 
 
