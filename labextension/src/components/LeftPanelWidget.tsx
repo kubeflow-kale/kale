@@ -34,6 +34,20 @@ interface IState {
     activeCellIndex?: number;
 }
 
+export interface IVolumeMetadata {
+    type: string,
+    // name field will have different meaning based on the type:
+    //  - pv: name of the PV
+    //  - pvc: name of the pvc
+    //  - rok: url to rok resource
+    name: string,
+    mount_point: string,
+    // TODO: split this into size and unit? (Gb, Mb, ...)
+    size?: string,
+    // true if snapshot to be taken at the end of the pipeline
+    snapshot: boolean
+}
+
 // keep names with Python notation because they will be read
 // in python by Kale.
 interface IKaleNotebookMetadata {
@@ -41,8 +55,8 @@ interface IKaleNotebookMetadata {
     pipeline_name: string;
     pipeline_description: string;
     docker_image: string;
-    volumes: string[];
-    deploy: boolean
+    deploy: boolean;
+    volumes: IVolumeMetadata[];
 }
 
 const DefaultState: IState = {
@@ -67,6 +81,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
 
+     DefaultEmptyVolume: IVolumeMetadata = {
+        type: 'pvc',
+        name: '',
+        mount_point: '',
+        size: '',
+        snapshot: false
+    };
+
     removeIdxFromArray = (index: number, arr: Array<any>): Array<any> => {return arr.slice(0, index).concat(arr.slice(index + 1, arr.length))};
 
     updateSelectValue = (val: string) => this.setState({selectVal: val});
@@ -74,10 +96,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateExperimentName = (name: string) => this.setState({metadata: {...this.state.metadata, experiment_name: name}});
     updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipeline_name: name}});
     updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipeline_description: desc}});
-    // deleteVolumeI = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.slice(0, idx).concat(this.state.metadata.volumes.slice(idx + 1, this.state.metadata.volumes.length))}});
+
+    // Volume managers
     deleteVolume = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}});
-    addVolume = (v: string) => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, v]}});
-    updateVolume = (vol: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => { return (key === idx) ? vol : item })}});
+    addVolume = () => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, this.DefaultEmptyVolume]}});
+    updateVolumeType = (type: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], type: type}: item})}});
+    updateVolumeName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], name: name}: item})}});
+    updateVolumeMountPoint = (mountPoint: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], mount_point: mountPoint}: item})}});
+    updateVolumeSnapshot = (snap: boolean, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot: !this.state.metadata.volumes[idx].snapshot}: item})}});
+    updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
+
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
     updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
 
@@ -229,7 +257,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         const volsPanel = <VolumesPanel
             volumes={this.state.metadata.volumes}
             addVolume={this.addVolume}
-            updateVolume={this.updateVolume}
+            updateVolumeType={this.updateVolumeType}
+            updateVolumeName={this.updateVolumeName}
+            updateVolumeMountPoint={this.updateVolumeMountPoint}
+            updateVolumeSnapshot={this.updateVolumeSnapshot}
+            updateVolumeSize={this.updateVolumeSize}
             deleteVolume={this.deleteVolume}
             valid={this.updateValidFlag}
         />;

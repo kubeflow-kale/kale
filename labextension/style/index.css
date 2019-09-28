@@ -141,10 +141,36 @@
 }
 
 .toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
   justify-content: space-between;
+  align-items: center;
   border-bottom: none;
   height: auto;
   box-shadow: none;
+}
+
+.minimal-toolbar-button {
+  box-shadow: none;
+    background: none;
+    background: var(--jp-layout-color1);
+    border: none;
+    appearance: none;
+    -moz-appearance: none;
+    padding: 0px 6px;
+    height: 24px;
+    border-radius: var(--jp-border-radius);
+    display: flex;
+    cursor: pointer;
+}
+
+.minimal-toolbar-button:hover {
+  background-color: var(--jp-layout-color2);
+}
+
+.volumes-select {
+  width: 80%
 }
 
 .react-select-container {
@@ -184,7 +210,7 @@
   margin-right: 10px;
 }
 
-.skip-switch-label {
+.switch-label {
   display: table-cell;
   vertical-align: middle;
   padding-right: 10px;

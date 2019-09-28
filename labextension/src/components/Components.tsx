@@ -133,7 +133,7 @@ export class CollapsablePanel extends React.Component<
                         value={this.props.dockerImageValue}/>
 
                     <div className={'kale-header-switch input-container'}>
-                        <label className={"skip-switch-label"}>Deploy pipeline to KFP</label>
+                        <label className={"switch-label"}>Deploy pipeline to KFP</label>
                         <Switch
                             checked={this.props.deployChecked}
                             onChange={_ => this.props.deployClick()}
