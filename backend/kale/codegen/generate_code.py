@@ -8,8 +8,7 @@ from jinja2 import Environment, PackageLoader
 # TODO: Define most of this function parameters in a config file?
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
-def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description, docker_base_image, volumes,
-                 mount_container_path, deploy_pipeline):
+def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description, docker_base_image, volumes, deploy_pipeline):
     """
     Takes a NetworkX workflow graph with the following properties
 
@@ -27,14 +26,17 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         pipeline_description:
         docker_base_image:
         volumes:
-        mount_container_path:
         deploy_pipeline:
 
     Returns:
 
     """
+
+    def add_suffix(s, suffix):
+        return s + suffix
     # initialize templating environment
     template_env = Environment(loader=PackageLoader('kale', 'templates'))
+    template_env.filters['add_suffix'] = add_suffix
 
     # List of light-weight components generated code
     function_blocks = list()
@@ -67,6 +69,7 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         ))
         function_names.append(block_name)
 
+    leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
     pipeline_template = template_env.get_template('pipeline_template.txt')
     pipeline_code = pipeline_template.render(
         block_functions=function_blocks,
@@ -77,8 +80,8 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         pipeline_description=pipeline_description,
         docker_base_image=docker_base_image,
         volumes=volumes if volumes is not None else [],
-        mount_container_path=mount_container_path,
-        deploy_pipeline=deploy_pipeline
+        deploy_pipeline=deploy_pipeline,
+        leaf_nodes=leaf_nodes
     )
 
     # fix code style using pep8 guidelines

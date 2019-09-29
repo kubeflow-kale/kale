@@ -33,7 +33,11 @@ def auto_generated_pipeline():
     pvolumes_dict = {'/marshal': marshal_vop.volume}
 
     {% for vol in volumes -%}
-    {% set name, mountpoint = vol.split(';') %}
+    {% set name= vol['name'] %}
+    {% set mountpoint = vol['mount_point'] %}
+{#    TODO Add size#}
+    {% set pvc_size = "1Gi" %}
+    {% if vol['type'] == 'pv' %}
 
     pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
         api_version="v1",
@@ -46,7 +50,7 @@ def auto_generated_pipeline():
             storage_class_name="local-storage",
             access_modes=['ReadWriteOnce'],
             resources=k8s_client.V1ResourceRequirements(
-                requests={"storage": "1Gi"}
+                requests={"storage": {{ pvc_size }}}
             )
         )
     )                                                              
@@ -55,6 +59,22 @@ def auto_generated_pipeline():
         name="pvc-data{{ loop.index }}",
         k8s_resource=pvc{{ loop.index }}
     )
+
+    {% elif vol['type'] == 'pvc' %}
+
+    vop{{ loop.index }} = dsl.PipelineVolume(pvc='{{ name }}')
+
+    {% elif vol['type'] == 'rok' %}
+
+    vop{{ loop.index }} = dsl.VolumeOp(
+        name='create-volume-{{ loop.index }}',
+        resource_name='rok-volume-{{ loop.index }}',
+        annotations={"rok/origin": '{{ name }}'},
+        size='{{ pvc_size }}'
+    )
+
+    {% endif %}
+
     pvolumes_dict['{{ mountpoint }}'] = vop{{ loop.index }}.volume
 
     {% endfor %}
@@ -64,6 +84,17 @@ def auto_generated_pipeline():
     {{ name }}_task = {{ name }}_op({{ block_function_args[ name ]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)
 
+    {% endfor %}
+
+    {# Snaphosts #}
+    {% for vol in volumes -%}
+    {% if vol['snapshot'] %}
+    snapshot{{ loop.index }} = dsl.VolumeSnapshotOp(
+        name='snapshot-volume-{{ loop.index }}',
+        resource_name='{{ vol['snapshot_name'] }}',
+        volume=vop{{ loop.index }}.volume.after({{ leaf_nodes| map('add_suffix', '_task') | join(', ') }})
+    )
+    {% endif %}
     {% endfor %}
 
 {#    vol_dict = {#}
