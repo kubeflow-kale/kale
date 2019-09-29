@@ -150,6 +150,7 @@
   line-height: normal;
 }
 
+/*https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Aligning_Items_in_a_Flex_Container*/
 .toolbar {
   flex: 0 0 auto;
   display: flex;
