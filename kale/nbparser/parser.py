@@ -29,8 +29,8 @@ TAGS_LANGUAGE = [r'^imports$',
                  r'^skip$',
                  r'^in$',
                  r'^out$',
-                 r'^block:[a-z0-9]+(;[a-z0-9]+)*$',
-                 r'^prev:[a-z0-9]+(;[a-z0-9]+)*$']
+                 r'^block:[a-z0-9]([-a-z0-9]*[a-z0-9])?$',
+                 r'^prev:[a-z0-9]([-a-z0-9]*[a-z0-9])?$']
 
 
 class _dotdict(dict):

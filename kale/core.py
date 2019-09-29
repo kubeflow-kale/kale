@@ -1,4 +1,5 @@
 import os
+import re
 import pprint
 import logging
 import tempfile
@@ -41,8 +42,8 @@ class Kale:
         self.docker_base_image = docker_image
         self.volumes = volumes
 
-        # path to container folder where `mount_host_path` is mapped
-        self.mount_container_path = '/data'
+        # validate provided metadata
+        self.validate_metadata()
 
         # Setup logging
         self.log_dir_path = Path(".")
@@ -57,6 +58,26 @@ class Kale:
         fh = logging.FileHandler(self.log_dir_path / 'log.log', mode='w')
         fh.setLevel(logging.DEBUG)
         self.logger.addHandler(fh)
+
+    def validate_metadata(self):
+        k8s_valid_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+        k8s_name_msg = "must consist of lower case alphanumeric characters or '-', " \
+                       "and must start and end with an alphanumeric character."
+        rok_url_regex = r'^.+$'
+
+        if not re.match(k8s_valid_name_regex, self.pipeline_name):
+            raise ValueError(f"Pipeline name  {k8s_name_msg}")
+        for v in self.volumes:
+            if 'name' not in v:
+                raise ValueError("Provide a valid name for every volume")
+            if v['type'] in ['pv', 'pvc'] and not re.match(k8s_valid_name_regex, v['name']):
+                raise ValueError(f"PV/PVC resource name {k8s_name_msg}")
+            if v['type'] in ['rok'] and not re.match(rok_url_regex, v['name']):
+                raise ValueError(f"ROK resource name must be a valid URL")
+            if 'snapshot' in v and v['snapshot'] and \
+                    (('snapshot_name' not in v) or not re.match(k8s_valid_name_regex, v['snapshot_name'])):
+                raise ValueError(
+                    f"Provide a valid snapshot resource name if you want to snapshot a volume. Snapshot resource name {k8s_name_msg}")
 
     def run(self):
         # convert notebook to nx graph
@@ -75,7 +96,6 @@ class Kale:
                                               pipeline_description=self.pipeline_description,
                                               docker_base_image=self.docker_base_image,
                                               volumes=self.volumes,
-                                              mount_container_path=self.mount_container_path,
                                               deploy_pipeline=self.deploy_pipeline)
 
         # save kfp generated code
@@ -113,7 +133,7 @@ class Kale:
             # Get or create an experiment and submit a pipeline run
             # client = kfp.Client(host=self.kfp_url)
             client = kfp.Client()
-            experiment = client.create_experiment(self.pipeline_name)
+            experiment = client.create_experiment(self.experiment_name)
 
             # Submit a pipeline run
             run_name = self.pipeline_name + '_run'

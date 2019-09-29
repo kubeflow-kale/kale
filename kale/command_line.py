@@ -1,4 +1,5 @@
 import argparse
+import traceback
 import nbformat as nb
 
 from argparse import RawTextHelpFormatter
@@ -42,14 +43,12 @@ def main():
     parser.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
     parser.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
     parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
-    parser.add_argument('--volumes', type=str, nargs='*',
-                        help='Volume (PVC) mount points. Write as `<pvc_name>;<path_to_mount_point>`')
     # important to have default=None, otherwise it would default to False and would always override notebook_metadata
     parser.add_argument('--deploy', action='store_true', default=None)
-    # TODO: Remove port arg?
     parser.add_argument('--kfp_dns', type=str,
                         help='DNS to KFP service. Provide address as <host>:<port>. `/pipeline` will be appended automatically')
     parser.add_argument('--jupyter_args', type=str, help='YAML file with Jupyter parameters as defined by Papermill')
+    parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
 
@@ -78,17 +77,24 @@ def main():
                 volumes=metadata_arguments['volumes']
             ).run()
     else:
-        res = Kale(
-            source_notebook_path=args.nb,
-            experiment_name=metadata_arguments['experiment_name'],
-            pipeline_name=metadata_arguments['pipeline_name'],
-            pipeline_descr=metadata_arguments['pipeline_description'],
-            docker_image=metadata_arguments['docker_image'],
-            auto_deploy=metadata_arguments['deploy'],
-            volumes=metadata_arguments['volumes']
-        ).run()
-        if res is not None:
-            print(res)
+        try:
+            res = Kale(
+                source_notebook_path=args.nb,
+                experiment_name=metadata_arguments['experiment_name'],
+                pipeline_name=metadata_arguments['pipeline_name'],
+                pipeline_descr=metadata_arguments['pipeline_description'],
+                docker_image=metadata_arguments['docker_image'],
+                auto_deploy=metadata_arguments['deploy'],
+                volumes=metadata_arguments['volumes']
+            ).run()
+            if res is not None:
+                print(res)
+        except Exception as e:
+            if args.debug:
+                traceback.print_exc()
+            else:
+                print(e)
+                print("\nTo see full traceback run Kale with --debug flag")
 
 
 if __name__ == "__main__":
