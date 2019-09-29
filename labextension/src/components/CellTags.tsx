@@ -3,7 +3,6 @@ import {Notebook, NotebookPanel} from "@jupyterlab/notebook";
 import {MaterialInput, MaterialSelectMulti} from "./Components";
 import CellUtils from "../utils/CellUtils";
 import {ICellModel, Cell, isCodeCellModel} from "@jupyterlab/cells";
-import Select from "react-select";
 import Switch from "react-switch";
 
 const KUBEFLOW_CELL_METADATA_KEY = 'kubeflow_cell';
@@ -12,7 +11,6 @@ interface IProps {
     notebook: NotebookPanel;
     activeCell: Cell;
     activeCellIndex: number;
-    valid: Function;
 }
  
 interface IState {
@@ -309,7 +307,6 @@ export class CellTags extends React.Component<IProps, IState> {
                         value={this.state.currentActiveCellMetadata.blockName}
                         regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
                         regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
-                        valid={this.props.valid}
                         helperText={prevBlockNotice}
                     />
 

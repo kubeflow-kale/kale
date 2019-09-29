@@ -13,6 +13,7 @@ import {
 import {CellTags} from "./CellTags";
 import {Cell} from "@jupyterlab/cells";
 import {VolumesPanel} from "./VolumesPanel";
+import {Dialog, showDialog} from "@jupyterlab/apputils";
 
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok';
@@ -24,7 +25,6 @@ interface IProps {
 
 interface IState {
     metadata: IKaleNotebookMetadata;
-    validInputs: boolean;
     runDeployment: boolean;
     deploymentStatus: string;
     deploymentRunLink: string;
@@ -45,7 +45,8 @@ export interface IVolumeMetadata {
     // TODO: split this into size and unit? (Gb, Mb, ...)
     size?: string,
     // true if snapshot to be taken at the end of the pipeline
-    snapshot: boolean
+    snapshot: boolean,
+    snapshot_name?: string
 }
 
 // keep names with Python notation because they will be read
@@ -68,8 +69,7 @@ const DefaultState: IState = {
         volumes: [],
         deploy: true
     },
-    // true if all inputs are valid so deployment can run
-    validInputs: true,
+
     runDeployment: false,
     deploymentStatus: 'No active deployment.',
     deploymentRunLink: '',
@@ -104,12 +104,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], name: name}: item})}});
     updateVolumeMountPoint = (mountPoint: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], mount_point: mountPoint}: item})}});
     updateVolumeSnapshot = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot: !this.state.metadata.volumes[idx].snapshot}: item})}});
+    updateVolumeSnapshotName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}});
     updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
 
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
     updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
-
-    updateValidFlag = (val: boolean) => this.setState({validInputs: val});
 
     activateRunDeployState = () => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentRunLink: ''});
 
@@ -209,22 +208,26 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     };
 
     runDeploymentCommand = async () => {
-        if (this.state.validInputs) {
-            const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+        const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
 
-            const mainCommand = "output=!kale --nb " + nbFileName;
-            console.log("Executing command: " + mainCommand);
-            const expr = {output: "output"};
-            const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
-            this.setState({runDeployment: false});
+        const mainCommand = "output=!kale --nb " + nbFileName;
+        console.log("Executing command: " + mainCommand);
+        const expr = {output: "output"};
+        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
+        this.setState({runDeployment: false});
 
-            console.log(output);
-            console.log(output.user_expressions.output.data['text/plain']);
-            NotebookUtils.showMessage("Deployment result", output.user_expressions.output.data['text/plain']);
-        } else {
-            this.setState({runDeployment: false});
-            NotebookUtils.showMessage("Deployment Failed", "Can not run deployment: some of your inputs are invalid");
-        }
+        console.log(output);
+        console.log(output.user_expressions.output.data['text/plain']);
+
+        // show dialog with result
+        const buttons: ReadonlyArray<Dialog.IButton> = [
+          Dialog.okButton({ label: "OK", className: "" })
+        ];
+        const msg =
+            <div>
+                {eval(output.user_expressions.output.data['text/plain']).map((s: string) => {return <><span>{s}</span><br/></>})}
+            </div>;
+        await showDialog({ title: "Deployment Result", buttons, body: msg });
     };
 
 
@@ -242,7 +245,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             value={this.state.metadata.pipeline_name}
             regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
             regexErrorMsg={"Pipeline name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
-            valid={this.updateValidFlag}
         />;
 
         const pipeline_desc_input = <MaterialInput
@@ -258,9 +260,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             updateVolumeName={this.updateVolumeName}
             updateVolumeMountPoint={this.updateVolumeMountPoint}
             updateVolumeSnapshot={this.updateVolumeSnapshot}
+            updateVolumeSnapshotName={this.updateVolumeSnapshotName}
             updateVolumeSize={this.updateVolumeSize}
             deleteVolume={this.deleteVolume}
-            valid={this.updateValidFlag}
         />;
 
         let run_link = null;
@@ -299,7 +301,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         notebook={this.state.activeNotebook}
                         activeCellIndex={this.state.activeCellIndex}
                         activeCell={this.state.activeCell}
-                        valid={this.updateValidFlag}
                     />
                     {/*  --------------  */}
 

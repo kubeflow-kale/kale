@@ -62,7 +62,6 @@ interface IMaterialInput {
     label: string,
     regex?: string,
     regexErrorMsg?: string,
-    valid?: Function,
     inputIndex?: number,
     helperText?: string,
 }
@@ -78,12 +77,10 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
         // if the input domain is restricted by a regex
         if (props.regex) {
             let re = new RegExp(props.regex);
-            if (value !== '' && !re.test(value)) {
+            if (!re.test(value)) {
                 updateError(true);
-                props.valid(false);
             } else {
                 updateError(false);
-                props.valid(true)
             }
         }
         props.updateValue(value, index)

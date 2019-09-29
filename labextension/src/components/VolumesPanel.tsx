@@ -1,6 +1,5 @@
 import * as React from "react";
 import {MaterialInput, MaterialSelect} from "./Components";
-import Select from "react-select";
 import {IVolumeMetadata} from "./LeftPanelWidget";
 import Switch from "react-switch";
 
@@ -12,14 +11,14 @@ interface IProps {
     updateVolumeName: Function,
     updateVolumeMountPoint: Function,
     updateVolumeSnapshot: Function,
+    updateVolumeSnapshotName: Function,
     updateVolumeSize: Function,
-    valid?: Function
 }
 
 const selectValues = [
     {label: "Existing PVC", value: 'pvc'},
     {label: "Existing PV", value: 'pv'},
-    {label: "Rok Resource", value: 'rok'}
+    {label: "Rok Url", value: 'rok'}
 ];
 
 export class VolumesPanel extends React.Component<IProps, any> {
@@ -32,11 +31,41 @@ export class VolumesPanel extends React.Component<IProps, any> {
                         No volumes mounts defined
                     </div>
                 </div>;
+
         if (this.props.volumes.length > 0) {
             vols =
                 <div> {
                 this.props.volumes.map((v, idx) => {
                     const nameLabel = selectValues.filter((d) => {return (d.value === v.type)})[0].label;
+
+                    const volResourceNameInput = (v.type === 'pv' || v.type === 'pvc') ?
+                        <MaterialInput
+                            label={nameLabel + " Name"}
+                            key={idx}
+                            inputIndex={idx}
+                            updateValue={this.props.updateVolumeName}
+                            value={v.name}
+                            regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
+                            regexErrorMsg={"Resource name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                        />:
+                        <MaterialInput
+                            label={nameLabel}
+                            key={idx}
+                            inputIndex={idx}
+                            updateValue={this.props.updateVolumeName}
+                            value={v.name}
+                        />;
+
+
+                    const volSnapName = (v.snapshot)? <MaterialInput
+                            label={"Snapshot Name"}
+                            key={idx}
+                            inputIndex={idx}
+                            updateValue={this.props.updateVolumeSnapshotName}
+                            value={v.snapshot_name}
+                            regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
+                            regexErrorMsg={"Snapshot name is required. It must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                        />: null;
                     return (
                     <div className='input-container'>
                         <div className="toolbar">
@@ -59,16 +88,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             </div>
                         </div>
 
-                        {/*// TODO: Input validation with regex: In case of pv and pvc need one validation, *}
-                        {/* in case of rok url validate url*/}
-
-                        <MaterialInput
-                            label={nameLabel + " Name"}
-                            key={idx}
-                            inputIndex={idx}
-                            updateValue={this.props.updateVolumeName}
-                            value={v.name}
-                        />
+                        {volResourceNameInput}
 
                         <MaterialInput
                             label={"Mount Point"}
@@ -96,6 +116,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                                 id="skip-switch"
                             />
                         </div>
+
+                        {volSnapName}
                     </div>
                     )
                 }
