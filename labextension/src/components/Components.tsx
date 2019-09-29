@@ -12,7 +12,6 @@ import { indigo } from '@material-ui/core/colors';
 import {MenuItem, Select} from "@material-ui/core";
 import Chip from "@material-ui/core/Chip";
 import InputLabel from "@material-ui/core/InputLabel";
-import Input from "@material-ui/core/Input";
 import FormControl from '@material-ui/core/FormControl';
 import OutlinedInput from "@material-ui/core/OutlinedInput";
 
@@ -44,6 +43,9 @@ const useStyles = makeStyles(() =>
             backgroundColor: "var(--jp-layout-color1)",
             color: "var(--jp-ui-font-color1)"
         },
+        helperLabel: {
+            color: "var(--jp-info-color0)"
+        }
     }),
 );
 
@@ -62,6 +64,7 @@ interface IMaterialInput {
     regexErrorMsg?: string,
     valid?: Function,
     inputIndex?: number,
+    helperText?: string,
 }
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
@@ -75,7 +78,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
         // if the input domain is restricted by a regex
         if (props.regex) {
             let re = new RegExp(props.regex);
-            if (!re.test(value)) {
+            if (value !== '' && !re.test(value)) {
                 updateError(true);
                 props.valid(false);
             } else {
@@ -86,7 +89,8 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
         props.updateValue(value, index)
     };
 
-    const helperText = (error)? props.regexErrorMsg: null;
+    let helperText = (props.helperText) ? props.helperText: null;
+    helperText = (error)? props.regexErrorMsg: helperText;
 
     return <ThemeProvider theme={theme}><TextField
             InputLabelProps={{
@@ -99,6 +103,11 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
                     root: classes.input,
                     focused: classes.focused,
                     notchedOutline: classes.notchedOutline,
+                }
+            }}
+            FormHelperTextProps={{
+                classes: {
+                    root: classes.helperLabel
                 }
             }}
             className={classes.textField}

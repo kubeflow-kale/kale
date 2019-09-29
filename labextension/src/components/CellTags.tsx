@@ -295,7 +295,7 @@ export class CellTags extends React.Component<IProps, IState> {
         }
 
         const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
-            ? <div className={"prev-blockname-container"}>Leave block name empty to merge code to block <em>{this.state.prevBlockName}</em></div>
+            ? "Leave block name empty to merge code to block" + this.state.prevBlockName
             : null;
         return (
             <div>
@@ -310,9 +310,8 @@ export class CellTags extends React.Component<IProps, IState> {
                         regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
                         regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
                         valid={this.props.valid}
+                        helperText={prevBlockNotice}
                     />
-
-                    {prevBlockNotice}
 
                     <MaterialSelectMulti
                         updateSelected={this.updatePrevBlocksNames}
@@ -320,7 +319,6 @@ export class CellTags extends React.Component<IProps, IState> {
                         selected={this.state.currentActiveCellMetadata.prevBlockNames}/>
 
                 </div>
-
             </div>
         )
     }
