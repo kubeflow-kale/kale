@@ -297,8 +297,6 @@ export class CellTags extends React.Component<IProps, IState> {
         const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
             ? <div className={"prev-blockname-container"}>Leave block name empty to merge code to block <em>{this.state.prevBlockName}</em></div>
             : null;
-        const selectOptions: any = this.state.allBlocks.map((v, key) => {return {label: v, value: v}});
-        const values: any = this.state.currentActiveCellMetadata.prevBlockNames.map((v, key) => {return {label: v, value: v}});
         return (
             <div>
                 {switchHeader}
@@ -315,29 +313,6 @@ export class CellTags extends React.Component<IProps, IState> {
                     />
 
                     {prevBlockNotice}
-
-                    {/*<label>Select previous blocks</label>*/}
-                    {/* <Select*/}
-                    {/*    isMulti*/}
-                    {/*    className='react-select-container'*/}
-                    {/*    classNamePrefix='react-select'*/}
-                    {/*    value={values}*/}
-                    {/*    onChange={this.updatePrevBlocksNames}*/}
-                    {/*    options={selectOptions}*/}
-                    {/*    theme={theme => ({*/}
-                    {/*        ...theme,*/}
-                    {/*        borderRadius: 0,*/}
-                    {/*        colors: {*/}
-                    {/*            ...theme.colors,*/}
-                    {/*            neutral0: 'var(--jp-input-active-background)',*/}
-                    {/*            neutral10: 'var(--md-indigo-300)',*/}
-                    {/*            neutral20: 'var(--jp-input-border-color)',*/}
-                    {/*            primary: 'var(--jp-input-active-border-color)',*/}
-                    {/*            primary25: 'var(--jp-layout-color3)',*/}
-                    {/*            neutral80: 'var(--jp-ui-font-color0)'*/}
-                    {/*        },*/}
-                    {/*    })}*/}
-                    {/*/>*/}
 
                     <MaterialSelectMulti
                         updateSelected={this.updatePrevBlocksNames}

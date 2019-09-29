@@ -44,16 +44,6 @@ const useStyles = makeStyles(() =>
             backgroundColor: "var(--jp-layout-color1)",
             color: "var(--jp-ui-font-color1)"
         },
-        chips: {
-            display: 'flex',
-            flexWrap: 'wrap',
-        },
-        chip: {
-            margin: 2,
-        },
-        multiSelectForm: {
-            width: "100%"
-        }
     }),
 );
 
@@ -174,6 +164,33 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
     </ThemeProvider>
 };
 
+
+const useStylesSelectMulti = makeStyles(() =>
+    createStyles({
+        root: {
+            '&outlined': {
+                borderColor: 'var(--jp-input-border-color)',
+            },
+        },
+        outlined: {},
+        menu: {
+            backgroundColor: "var(--jp-layout-color1)",
+            color: "var(--jp-ui-font-color1)"
+        },
+        chips: {
+            display: 'flex',
+            flexWrap: 'wrap',
+        },
+        chip: {
+            margin: 2,
+        },
+        multiSelectForm: {
+            width: "100%"
+        },
+
+    }),
+);
+
 interface IMaterialSelectMultiple {
     updateSelected: Function,
     options: string[],
@@ -181,17 +198,15 @@ interface IMaterialSelectMultiple {
 }
 export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultiple> = (props) => {
 
-    const classes = useStyles({});
+    const classes = useStylesSelectMulti({});
     const [inputLabelRef, setInputLabelRef] = React.useState(undefined);
-    const [age, setAge] = React.useState("");
     const labelOffsetWidth = inputLabelRef
         //@ts-ignore
         ? findDOMNode(inputLabelRef).offsetWidth
     : 0;
 
     return <ThemeProvider theme={theme}>
-        <FormControl variant='outlined' className={classes.multiSelectForm}>
-        {/*<InputLabel htmlFor="select-previous-blocks">Select previous blocks</InputLabel>*/}
+        <FormControl variant='outlined' margin='dense' className={classes.multiSelectForm}>
             <InputLabel
             ref={ref => {
               setInputLabelRef(ref);
@@ -202,16 +217,19 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
           </InputLabel>
         <Select
             multiple
+            classes={{
+                root: classes.root,
+                outlined: classes.outlined,
+            }}
             MenuProps={{
                 PaperProps: {
                     className: classes.menu,
                 }
             }}
-            className={classes.textField}
             onChange={evt => props.updateSelected((evt.target as HTMLInputElement).value)}
             margin="dense"
             variant="outlined"
-            input={<OutlinedInput labelWidth={labelOffsetWidth} name="previous"  id="select-previous-blocks" />}
+            input={<OutlinedInput margin='dense' labelWidth={labelOffsetWidth} name="previous"  id="select-previous-blocks" />}
             value={props.selected}
             renderValue={elements => (
                 <div className={classes.chips}>
@@ -228,38 +246,6 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
             ))}
         </Select>
         </FormControl>
-
-        <FormControl variant="outlined" className={classes.multiSelectForm}>
-          <InputLabel
-            ref={ref => {
-              setInputLabelRef(ref);
-            }}
-            htmlFor="outlined-age-simple"
-          >
-            Select Age
-          </InputLabel>
-          <Select
-            value={age}
-            onChange={e => {
-              setAge((e.target as HTMLInputElement).value)
-            }}
-            input={
-              <OutlinedInput
-                labelWidth={labelOffsetWidth}
-                name="age"
-                id="outlined-age-simple"
-              />
-            }
-          >
-            <MenuItem key="" value="">
-              <em>None</em>
-            </MenuItem>
-            <MenuItem key={10} value={10}>Ten</MenuItem>
-            <MenuItem key={20} value={20}>Twenty</MenuItem>
-            <MenuItem key={30} value={30}>Thirty</MenuItem>
-          </Select>
-        </FormControl>
-
     </ThemeProvider>
 };
 
