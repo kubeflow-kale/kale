@@ -90,7 +90,6 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
     const [debouncedCallback] = useDebouncedCallback(
         // function
         (value, idx) => {
-            console.log("running debounced");
             onChange(value, idx);
         },
         // delay in ms

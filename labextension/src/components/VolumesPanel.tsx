@@ -45,8 +45,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             inputIndex={idx}
                             updateValue={this.props.updateVolumeName}
                             value={v.name}
-                            regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
-                            regexErrorMsg={"Resource name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                            regex={"^([\\.\\-a-z0-9]+)$"}
+                            regexErrorMsg={"Resource name must consist of lower case alphanumeric characters, -, and ."}
                         />:
                         <MaterialInput
                             label={nameLabel}
@@ -63,8 +63,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             inputIndex={idx}
                             updateValue={this.props.updateVolumeSnapshotName}
                             value={v.snapshot_name}
-                            regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
-                            regexErrorMsg={"Snapshot name is required. It must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                            regex={"^([\\.\\-a-z0-9]+)$"}
+                            regexErrorMsg={"Resource name must consist of lower case alphanumeric characters, -, and ."}
                         />: null;
                     return (
                     <div className='input-container'>
