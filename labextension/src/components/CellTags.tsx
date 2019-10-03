@@ -64,6 +64,19 @@ export class CellTags extends React.Component<IProps, IState> {
             if (prevProps.activeCell) {
                 prevProps.activeCell.model.contentChanged.disconnect(this.listenCellContentChanged)
             }
+            // TODO: Listen to cell type change (code, markdown, raw)
+            //   - stateChanged signal: That is fired only in a few specific circumstances,
+            //  like when the trusted or readonly state changes
+            //   - contentChange: this is wat we *would* expect to work EXCEPT in this instance.
+            //      This is because they internally implement changing a cell type by removing the
+            //      old cell and inserting a new one with the same text content.
+            //      So you can’t listen to change signals on the old one as it is not really the same cell.
+            //  Possible solution:
+            //    1. Listen to the model.cells.changed signal.
+            //    2. If a cell is deleted, cache the text content and type of the cell.
+            //    3. If a cell is subsequently inserted, check to see if it is a new cell
+            //       type with the same text content. That is your changed cell.
+            //    4. If there is any other action, clear the cache.
             this.props.activeCell.model.contentChanged.connect(this.listenCellContentChanged);
 
             // if the active cell is not of type `code`, then hide panel
