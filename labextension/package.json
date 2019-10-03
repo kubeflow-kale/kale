@@ -43,8 +43,10 @@
     "@material-ui/core": "^4.4.3",
     "@phosphor/widgets": "^1.8.0",
     "@types/node": "^11.13.8",
+    "@types/react-dom": "^16.9.1",
     "react": "16.8.4",
-    "react-switch": "^5.0.1"
+    "react-switch": "^5.0.1",
+    "use-debounce": "^3.0.1"
   },
   "devDependencies": {
     "rimraf": "~2.6.2",

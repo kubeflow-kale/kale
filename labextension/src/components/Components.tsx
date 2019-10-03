@@ -15,6 +15,8 @@ import InputLabel from "@material-ui/core/InputLabel";
 import FormControl from '@material-ui/core/FormControl';
 import OutlinedInput from "@material-ui/core/OutlinedInput";
 
+import { useDebouncedCallback } from 'use-debounce';
+
 // https://codeburst.io/my-journey-to-make-styling-with-material-ui-right-6a44f7c68113
 const useStyles = makeStyles(() =>
     createStyles({
@@ -68,9 +70,8 @@ interface IMaterialInput {
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
 
-    const [error, updateError] = React.useState(
-        false
-    );
+    const [value, setValue] = React.useState(props.value);
+    const [error, updateError] = React.useState(false);
     const classes = useStyles({});
 
     const onChange = (value: string, index: number) => {
@@ -85,6 +86,16 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
         }
         props.updateValue(value, index)
     };
+
+    const [debouncedCallback] = useDebouncedCallback(
+        // function
+        (value, idx) => {
+            console.log("running debounced");
+            onChange(value, idx);
+        },
+        // delay in ms
+        500
+    );
 
     let helperText = (props.helperText) ? props.helperText: null;
     helperText = (error)? props.regexErrorMsg: helperText;
@@ -111,8 +122,8 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
             error={error}
             id="outlined-name"
             label={props.label}
-            value={props.value}
-            onChange={evt => onChange((evt.target as HTMLInputElement).value, props.inputIndex)}
+            value={value}
+            onChange={evt => {setValue(evt.target.value); debouncedCallback(evt.target.value, props.inputIndex)}}
             margin="dense"
             variant="outlined"
             helperText={helperText}

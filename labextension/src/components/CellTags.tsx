@@ -306,7 +306,7 @@ export class CellTags extends React.Component<IProps, IState> {
         }
 
         const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
-            ? "Leave block name empty to merge code to block" + this.state.prevBlockName
+            ? "Leave block name empty to merge code to block " + this.state.prevBlockName
             : null;
         return (
             <div>
