@@ -44,6 +44,7 @@ export interface IVolumeMetadata {
     mount_point: string,
     size?: string,
     size_type?: string,
+    annotation?: string,
     // true if snapshot to be taken at the end of the pipeline
     snapshot: boolean,
     snapshot_name?: string
@@ -107,6 +108,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSnapshotName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}});
     updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
     updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
+    updateVolumeAnnotation = (annotation: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
 
 
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
@@ -266,6 +268,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             updateVolumeSize={this.updateVolumeSize}
             updateVolumeSizeType={this.updateVolumeSizeType}
             deleteVolume={this.deleteVolume}
+            updateVolumeAnnotation={this.updateVolumeAnnotation}
         />;
 
         let run_link = null;

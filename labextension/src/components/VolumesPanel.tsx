@@ -13,7 +13,9 @@ interface IProps {
     updateVolumeSnapshot: Function,
     updateVolumeSnapshotName: Function,
     updateVolumeSize: Function,
-    updateVolumeSizeType:Function
+    updateVolumeSizeType:Function,
+    updateVolumeAnnotation: Function,
+
 }
 
 const selectValues = [
@@ -46,22 +48,30 @@ export class VolumesPanel extends React.Component<IProps, any> {
                     const nameLabel = selectValues.filter((d) => {return (d.value === v.type)})[0].label;
 
                     const sizePicker = (v.type === 'pv' || v.type === 'new_pvc') ?
-                        <div className='toolbar'>
-                            <MaterialInput
-                                updateValue={this.props.updateVolumeSize}
-                                value={v.size}
-                                label={'Volume size'}
-                                inputIndex={idx}
-                                numeric
-                            />
-                            <MaterialSelect
-                                updateValue={this.props.updateVolumeSizeType}
-                                values={selectVolumeSizeTypes}
-                                value={v.size_type}
-                                label={"Type"}
-                                index={idx}/>
-                        </div>:
+                            <div className='toolbar'>
+                                <MaterialInput
+                                    updateValue={this.props.updateVolumeSize}
+                                    value={v.size}
+                                    label={'Volume size'}
+                                    inputIndex={idx}
+                                    numeric
+                                />
+                                <MaterialSelect
+                                    updateValue={this.props.updateVolumeSizeType}
+                                    values={selectVolumeSizeTypes}
+                                    value={v.size_type}
+                                    label={"Type"}
+                                    index={idx}/>
+                            </div>:
                         null;
+
+                    const annotationField = (v.type === 'pv' || v.type === 'new_pvc') ?
+                        <MaterialInput
+                            label={"Annotation"}
+                            inputIndex={idx}
+                            updateValue={this.props.updateVolumeAnnotation}
+                            value={v.annotation}
+                        />: null;
 
                     return (
                     <div className='input-container' key={idx}>
@@ -101,6 +111,11 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             value={v.mount_point}
                         />
 
+
+                        {sizePicker}
+
+                        {annotationField}
+
                         <div className="toolbar" style={{padding: "12px 4px 0 4px"}}>
                             <div className={"switch-label"}>Snapshot Volume</div>
                             <Switch
@@ -119,8 +134,6 @@ export class VolumesPanel extends React.Component<IProps, any> {
                                 id="skip-switch"
                             />
                         </div>
-
-                        {sizePicker}
 
                         {(v.snapshot)?
                             <MaterialInput
