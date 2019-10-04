@@ -61,16 +61,18 @@ const theme = createMuiTheme({
 interface IMaterialInput {
     updateValue: Function,
     value: string,
-    label: string,
     regex?: string,
     regexErrorMsg?: string,
     inputIndex?: number,
     helperText?: string,
+    label: string,
+    numeric?: boolean
+
 }
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
 
-    const [value, setValue] = React.useState(props.value);
+    const [value, setValue] = React.useState('');
     const [error, updateError] = React.useState(false);
     const classes = useStyles({});
 
@@ -86,6 +88,12 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
         }
         props.updateValue(value, index)
     };
+
+    React.useEffect(() => {
+        // need this to set the value when the notebook is loaded
+        // and the metadata is updated
+        setValue(props.value)
+    }, [props.value]); // Only re-run the effect if props.value changes
 
     const [debouncedCallback] = useDebouncedCallback(
         // function
@@ -125,6 +133,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
             onChange={evt => {setValue(evt.target.value); debouncedCallback(evt.target.value, props.inputIndex)}}
             margin="dense"
             variant="outlined"
+            type={props.numeric && 'number'}
             helperText={helperText}
     /></ThemeProvider>
 };

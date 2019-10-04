@@ -39,11 +39,11 @@ export interface IVolumeMetadata {
     // name field will have different meaning based on the type:
     //  - pv: name of the PV
     //  - pvc: name of the pvc
-    //  - rok: url to rok resource
+    //  - new_pvc: new pvc with dynamic provisioning
     name: string,
     mount_point: string,
-    // TODO: split this into size and unit? (Gb, Mb, ...)
     size?: string,
+    size_type?: string,
     // true if snapshot to be taken at the end of the pipeline
     snapshot: boolean,
     snapshot_name?: string
@@ -106,6 +106,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSnapshot = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot: !this.state.metadata.volumes[idx].snapshot}: item})}});
     updateVolumeSnapshotName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}});
     updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
+    updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
+
 
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
     updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
@@ -262,6 +264,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             updateVolumeSnapshot={this.updateVolumeSnapshot}
             updateVolumeSnapshotName={this.updateVolumeSnapshotName}
             updateVolumeSize={this.updateVolumeSize}
+            updateVolumeSizeType={this.updateVolumeSizeType}
             deleteVolume={this.deleteVolume}
         />;
 
