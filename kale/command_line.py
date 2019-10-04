@@ -44,7 +44,8 @@ def main():
     parser.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
     parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
     # important to have default=None, otherwise it would default to False and would always override notebook_metadata
-    parser.add_argument('--deploy', action='store_true', default=None)
+    parser.add_argument('--upload_pipeline', action='store_true', default=None)
+    parser.add_argument('--run_pipeline', action='store_true', default=None)
     parser.add_argument('--kfp_dns', type=str,
                         help='DNS to KFP service. Provide address as <host>:<port>. `/pipeline` will be appended automatically')
     parser.add_argument('--jupyter_args', type=str, help='YAML file with Jupyter parameters as defined by Papermill')
@@ -73,7 +74,8 @@ def main():
                 pipeline_name=metadata_arguments['pipeline_name'] + params,
                 pipeline_descr=metadata_arguments['pipeline_description'] + " params" + params,
                 docker_image=metadata_arguments['docker_image'],
-                auto_deploy=metadata_arguments['deploy'],
+                upload_pipeline=metadata_arguments['upload_pipeline'],
+                run_pipeline=metadata_arguments['run_pipeline'],
                 volumes=metadata_arguments['volumes']
             ).run()
     else:
@@ -84,7 +86,8 @@ def main():
                 pipeline_name=metadata_arguments['pipeline_name'],
                 pipeline_descr=metadata_arguments['pipeline_description'],
                 docker_image=metadata_arguments['docker_image'],
-                auto_deploy=metadata_arguments['deploy'],
+                upload_pipeline=metadata_arguments['upload_pipeline'],
+                run_pipeline=metadata_arguments['run_pipeline'],
                 volumes=metadata_arguments['volumes']
             ).run()
             if res is not None:

@@ -23,7 +23,8 @@ class Kale:
                  docker_image,
                  volumes,
                  notebook_version=4,
-                 auto_deploy=False,
+                 upload_pipeline=False,
+                 run_pipeline=False,
                  kfp_dns=None,
                  ):
         self.source_path = Path(source_notebook_path)
@@ -34,7 +35,8 @@ class Kale:
 
         self.kfp_dns = f"http://{kfp_dns}/pipeline" if kfp_dns is not None else None
 
-        self.deploy_pipeline = auto_deploy
+        self.upload_pipeline = upload_pipeline
+        self.run_pipeline = run_pipeline
 
         self.experiment_name = experiment_name
         self.pipeline_name = pipeline_name
@@ -95,13 +97,13 @@ class Kale:
                                               pipeline_description=self.pipeline_description,
                                               docker_base_image=self.docker_base_image,
                                               volumes=self.volumes,
-                                              deploy_pipeline=self.deploy_pipeline)
+                                              deploy_pipeline=self.run_pipeline)
 
         # save kfp generated code
         self.save_pipeline(kfp_code)
 
         # deploy pipeline to KFP instance
-        if self.deploy_pipeline:
+        if self.upload_pipeline or self.run_pipeline:
             return self.deploy_pipeline_to_kfp(self.output_path)
 
     def deploy_pipeline_to_kfp(self, pipeline_source):
@@ -132,14 +134,24 @@ class Kale:
             # Get or create an experiment and submit a pipeline run
             # client = kfp.Client(host=self.kfp_url)
             client = kfp.Client()
-            experiment = client.create_experiment(self.experiment_name)
 
-            # Submit a pipeline run
-            run_name = self.pipeline_name + '_run'
-            run = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
-            run_link = f"{self.kfp_dns}/#/runs/details/{run.id}"
-            self.logger.info(f"Pipeline run at {run_link}")
-            return {"result": "Deployment successful.", "run": run_link}
+            # upload the pipeline
+            if self.upload_pipeline:
+                try:
+                    client.upload_pipeline(pipeline_filename, pipeline_name=self.pipeline_name)
+                except Exception as exp:
+                    self.logger.error(exp)
+                    return {'result': f"Pipeline with name {self.pipeline_name} already exists"}
+
+            if self.run_pipeline:
+                # create experiment or get existing one
+                experiment = client.create_experiment(self.experiment_name)
+                # Submit a pipeline run
+                run_name = self.pipeline_name + '_run'
+                run = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
+                run_link = f"{self.kfp_dns}/#/runs/details/{run.id}"
+                self.logger.info(f"Pipeline run at {run_link}")
+                return {"result": "Deployment successful.", "run": run_link}
         except Exception as e:
             # remove auto-generated tar package (used for deploy)
             os.remove(self.pipeline_name + '.pipeline.tar.gz')
