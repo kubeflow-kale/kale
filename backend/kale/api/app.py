@@ -53,8 +53,7 @@ class deploy(Resource):
                 pipeline_name=args['pipeline_name'] + "-" + self.random_string(4),
                 pipeline_descr=args['pipeline_descr'],
                 docker_image=args['docker_image'],
-                auto_deploy=args['deploy'],
-                # auto_deploy=False,
+                run_pipeline=args['deploy'],
                 kfp_port=args['kfp_port'],
                 pvcs=(args['volumes'] if args['volumes'] != [''] else None)
             ).run()
