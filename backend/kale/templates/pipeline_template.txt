@@ -31,8 +31,8 @@ def auto_generated_pipeline():
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
-{#    TODO Add size#}
-    {% set pvc_size = "1Gi" %}
+    {% set pvc_size = vol['size']|default ('') + vol['size_type']|default ('') %}
+    {% set annotation = (vol['annotation']|default ('')).split(':', 1) %}
     {% if vol['type'] == 'pv' %}
 
     pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
@@ -43,7 +43,6 @@ def auto_generated_pipeline():
         ),
         spec=k8s_client.V1PersistentVolumeClaimSpec(
             volume_name="{{ name }}",
-            storage_class_name="local-storage",
             access_modes=['ReadWriteOnce'],
             resources=k8s_client.V1ResourceRequirements(
                 requests={"storage": {{ pvc_size }}}
@@ -60,12 +59,14 @@ def auto_generated_pipeline():
 
     vop{{ loop.index }} = dsl.PipelineVolume(pvc='{{ name }}')
 
-    {% elif vol['type'] == 'rok' %}
+    {% elif vol['type'] == 'new_pvc' %}
 
     vop{{ loop.index }} = dsl.VolumeOp(
         name='create-volume-{{ loop.index }}',
-        resource_name='rok-volume-{{ loop.index }}',
-        annotations={"rok/origin": '{{ name }}'},
+        resource_name='{{ name }}',
+        {% if annotation[0] != '' -%}
+        annotations={"{{ annotation[0] }}": "{{ annotation[1] }}"},
+        {%- endif %}
         size='{{ pvc_size }}'
     )
 
