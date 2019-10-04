@@ -41,6 +41,7 @@
     "@jupyterlab/coreutils": ">=3.1.0 <3.2.0",
     "@jupyterlab/notebook": "^1.0.0-alpha.6",
     "@material-ui/core": "^4.4.3",
+    "@material-ui/icons": "^4.4.3",
     "@phosphor/widgets": "^1.8.0",
     "@types/node": "^11.13.8",
     "@types/react-dom": "^16.9.1",

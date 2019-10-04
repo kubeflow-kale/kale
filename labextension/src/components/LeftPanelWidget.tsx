@@ -14,6 +14,7 @@ import {CellTags} from "./CellTags";
 import {Cell} from "@jupyterlab/cells";
 import {VolumesPanel} from "./VolumesPanel";
 import {Dialog, showDialog} from "@jupyterlab/apputils";
+import {SplitDeployButton} from "./DeployButton";
 
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok';
@@ -26,8 +27,8 @@ interface IProps {
 interface IState {
     metadata: IKaleNotebookMetadata;
     runDeployment: boolean;
+    deploymentType: string;
     deploymentStatus: string;
-    deploymentRunLink: string;
     selectVal: string;
     activeNotebook?: NotebookPanel;
     activeCell?: Cell;
@@ -72,8 +73,8 @@ const DefaultState: IState = {
     },
 
     runDeployment: false,
+    deploymentType: 'compile',
     deploymentStatus: 'No active deployment.',
-    deploymentRunLink: '',
     selectVal: '',
     activeNotebook: null,
 };
@@ -110,11 +111,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
     updateVolumeAnnotation = (annotation: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
 
-
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
     updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
 
-    activateRunDeployState = () => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentRunLink: ''});
+    activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentType: type});
 
 
     // restore state to default values
@@ -214,7 +214,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     runDeploymentCommand = async () => {
         const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
 
-        const mainCommand = "output=!kale --nb " + nbFileName;
+        let flag = '';
+        if (this.state.deploymentType === 'upload') {
+            flag = ' --upload_pipeline'
+        }
+        if (this.state.deploymentType === 'run') {
+            flag = ' --run_pipeline'
+        }
+        const mainCommand = "output=!kale --nb " + nbFileName + flag;
         console.log("Executing command: " + mainCommand);
         const expr = {output: "output"};
         const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
@@ -272,14 +279,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         />;
 
         let run_link = null;
-        if (this.state.deploymentRunLink !== '') {
-            run_link = <p>
-                Pipeline run at
-                <a style={{color: "#106ba3"}}
-                     href={this.state.deploymentRunLink}
-                     target="_blank">this
-                </a> link.</p>;
-        }
+        // if (this.state.deploymentRunLink !== '') {
+        //     run_link = <p>
+        //         Pipeline run at
+        //         <a style={{color: "#106ba3"}}
+        //              href={this.state.deploymentRunLink}
+        //              target="_blank">this
+        //         </a> link.</p>;
+        // }
 
         return (
             <div className={"kubeflow-widget"}>
@@ -329,10 +336,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         deployClick={this.updateDeployCheckbox}
                     />
 
-                    <DeployButton
-                        deploy={this.state.metadata.deploy}
-                        deployment={this.state.runDeployment}
-                        callback={this.activateRunDeployState}/>
+                    <SplitDeployButton
+                        running={this.state.runDeployment}
+                        handleClick={this.activateRunDeployState}
+                    />
                 </div>
 
             </div>
