@@ -60,20 +60,19 @@ class Kale:
         self.logger.addHandler(fh)
 
     def validate_metadata(self):
-        k8s_valid_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-        k8s_name_msg = "must consist of lower case alphanumeric characters or '-', " \
-                       "and must start and end with an alphanumeric character."
-        rok_url_regex = r'^.+$'
+        kale_block_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+        kale_name_msg = "must consist of lower case alphanumeric characters or '-', " \
+                        "and must start and end with an alphanumeric character."
+        k8s_valid_name_regex = r'^[\.\-a-z0-9]+$'
+        k8s_name_msg = "must consist of lower case alphanumeric characters, '-' or '.'"
 
-        if not re.match(k8s_valid_name_regex, self.pipeline_name):
-            raise ValueError(f"Pipeline name  {k8s_name_msg}")
+        if not re.match(kale_block_name_regex, self.pipeline_name):
+            raise ValueError(f"Pipeline name  {kale_name_msg}")
         for v in self.volumes:
             if 'name' not in v:
                 raise ValueError("Provide a valid name for every volume")
-            if v['type'] in ['pv', 'pvc'] and not re.match(k8s_valid_name_regex, v['name']):
+            if not re.match(k8s_valid_name_regex, v['name']):
                 raise ValueError(f"PV/PVC resource name {k8s_name_msg}")
-            if v['type'] in ['rok'] and not re.match(rok_url_regex, v['name']):
-                raise ValueError(f"ROK resource name must be a valid URL")
             if 'snapshot' in v and v['snapshot'] and \
                     (('snapshot_name' not in v) or not re.match(k8s_valid_name_regex, v['snapshot_name'])):
                 raise ValueError(
