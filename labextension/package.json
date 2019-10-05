@@ -33,9 +33,6 @@
     "watch": "tsc -w --listEmittedFiles"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "1.2.20-11",
-    "@fortawesome/free-solid-svg-icons": "5.10.0-11",
-    "@fortawesome/react-fontawesome": "0.1.0",
     "@jupyterlab/application": ">=1.1.0 <1.2.0",
     "@jupyterlab/apputils": ">=1.1.0 <1.2.0",
     "@jupyterlab/coreutils": ">=3.1.0 <3.2.0",
@@ -46,7 +43,6 @@
     "@types/node": "^11.13.8",
     "@types/react-dom": "^16.9.1",
     "react": "16.8.4",
-    "react-switch": "^5.0.1",
     "use-debounce": "^3.0.1"
   },
   "devDependencies": {

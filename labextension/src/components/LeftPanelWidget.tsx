@@ -6,7 +6,6 @@ import {
 import NotebookUtils from "../utils/NotebookUtils";
 
 import {
-    DeployButton,
     CollapsablePanel,
     MaterialInput
 } from "./Components";
@@ -58,7 +57,6 @@ interface IKaleNotebookMetadata {
     pipeline_name: string;
     pipeline_description: string;
     docker_image: string;
-    deploy: boolean;
     volumes: IVolumeMetadata[];
 }
 
@@ -68,8 +66,7 @@ const DefaultState: IState = {
         pipeline_name: '',
         pipeline_description: '',
         docker_image: '',
-        volumes: [],
-        deploy: true
+        volumes: []
     },
 
     runDeployment: false,
@@ -98,6 +95,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateExperimentName = (name: string) => this.setState({metadata: {...this.state.metadata, experiment_name: name}});
     updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipeline_name: name}});
     updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipeline_description: desc}});
+    updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
 
     // Volume managers
     deleteVolume = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}});
@@ -110,9 +108,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
     updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
     updateVolumeAnnotation = (annotation: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
-
-    updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
-    updateDeployCheckbox = () => this.setState({metadata: {...this.state.metadata, deploy: !this.state.metadata.deploy}});
 
     activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentType: type});
 
@@ -202,7 +197,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     pipeline_description: notebookMetadata['pipeline_description'] || '',
                     docker_image: notebookMetadata['docker_image'] || '',
                     volumes: notebookMetadata['volumes'] || [],
-                    deploy: ('deploy' in notebookMetadata)? notebookMetadata['deploy'] : true
                 };
                 this.setState({metadata: metadata})
             } else {
@@ -332,8 +326,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         title={"Advanced Settings"}
                         dockerImageValue={this.state.metadata.docker_image}
                         dockerChange={this.updateDockerImage}
-                        deployChecked={this.state.metadata.deploy}
-                        deployClick={this.updateDeployCheckbox}
                     />
 
                     <SplitDeployButton

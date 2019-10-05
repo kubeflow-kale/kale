@@ -1,8 +1,5 @@
 import * as React from "react";
 import {findDOMNode} from "react-dom";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSyncAlt} from "@fortawesome/free-solid-svg-icons";
-import Switch from "react-switch";
 import {
     makeStyles, createStyles, createMuiTheme
 } from '@material-ui/core/styles';
@@ -274,94 +271,27 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
     </ThemeProvider>
 };
 
-
-
-export class DeployButton extends React.Component<
-    {
-        callback: Function,
-        deployment: boolean,
-        // weather deployment to kfp is active or not
-        deploy: boolean
-    },
-    any>
-{
-
-    render() {
-        const buttonText = (this.props.deploy)?
-            this.props.deployment ? "Running Deployment..." : "Deploy Notebook to KFP" :
-            this.props.deployment ? "Running Conversion..." : "Generate KFP Pipeline";
-
-        return (
-            <div className="deploy-button">
-                <button onClick={() => {
-                    this.props.callback()
-                }}>
-                    {this.props.deployment ?
-                        <FontAwesomeIcon icon={faSyncAlt} spin style={{marginRight: "5px"}}/> : null}
-                    <span>{buttonText}</span>
-                </button>
-            </div>
-        )
-    }
+interface ICollapsablePanel {
+    title: string,
+    dockerImageValue: string,
+    dockerChange: Function,
 }
 
-export class CollapsablePanel extends React.Component<
-    {
-        title: string,
-        dockerImageValue: string,
-        dockerChange: Function,
-        deployChecked: boolean,
-        deployClick: Function
-    },
-    {
-        collapsed: boolean
-    }>
-{
-    state = {
-        collapsed: false
-    };
+export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = (props) => {
+    const [collapsed, setCollapsed] = React.useState(true);
 
-    render() {
-
-        let wrapper_class = '';
-        let content_class = 'p-mod-hidden';
-        if (!this.state.collapsed) {
-            wrapper_class = 'jp-Collapse-open';
-            content_class = '';
-        }
-        return (
-            <div className={'jp-Collapse ' + wrapper_class}>
+    return (
+            <div className={'jp-Collapse ' + (!collapsed && 'jp-Collapse-open')}>
                 <div
                     className='jp-Collapse-header'
-                    onClick={_ => this.setState({collapsed: !this.state.collapsed})}
-                >{this.props.title}</div>
-                <div className={'input-container p-Panel jp-Collapse-contents ' + content_class}>
+                    onClick={_ => setCollapsed(!collapsed)}
+                >{props.title}</div>
+                <div className={'input-container p-Panel jp-Collapse-contents ' + (collapsed && 'p-mod-hidden')}>
                     <MaterialInput
                         label={"Docker image"}
-                        updateValue={this.props.dockerChange}
-                        value={this.props.dockerImageValue}/>
-
-                    <div className={'toolbar'} style={{padding: "12px 4px 0 4px"}}>
-                        <label className={"switch-label"}>Deploy pipeline to KFP</label>
-                        <Switch
-                            checked={this.props.deployChecked}
-                            onChange={_ => this.props.deployClick()}
-                            onColor="#599EF0"
-                            onHandleColor="#477EF0"
-                            handleDiameter={18}
-                            uncheckedIcon={false}
-                            checkedIcon={false}
-                            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
-                            activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
-                            height={10}
-                            width={20}
-                            className="skip-switch"
-                            id="skip-switch"
-                        />
-                    </div>
-
+                        updateValue={props.dockerChange}
+                        value={props.dockerImageValue}/>
                 </div>
             </div>
         )
-    }
-}
+};
