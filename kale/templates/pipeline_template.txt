@@ -8,7 +8,11 @@ from kubernetes import client as k8s_client
 
 {# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
 {%- for name in block_functions_names -%}
+{% if docker_base_image != '' %}
 {{ name }}_op = comp.func_to_container_op({{ name }}, base_image='{{ docker_base_image }}')
+{% else %}
+{{ name }}_op = comp.func_to_container_op({{ name }})
+{% endif %}
 {% endfor -%}
 
 {# DECLARE PIPELINE #}
