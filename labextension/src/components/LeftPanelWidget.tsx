@@ -181,6 +181,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             await notebook.session.ready;
             notebook.disposed.connect(this.handleNotebookDisposed);
             notebook.content.activeCellChanged.connect(this.handleActiveCellChanged);
+            const currentCell = {activeCell: notebook.content.activeCell, activeCellIndex: notebook.content.activeCellIndex};
 
             // get notebook metadata
             const notebookMetadata = NotebookUtils.getMetaData(
@@ -198,9 +199,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     docker_image: notebookMetadata['docker_image'] || '',
                     volumes: notebookMetadata['volumes'] || [],
                 };
-                this.setState({metadata: metadata})
+                this.setState({metadata: metadata, ...currentCell})
             } else {
-                this.setState({metadata: DefaultState.metadata})
+                this.setState({metadata: DefaultState.metadata, ...currentCell})
             }
         }
     };

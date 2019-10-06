@@ -84,25 +84,36 @@ export class CellTags extends React.Component<IProps, IState> {
                 this.setState({show: false});
                 return
             }
-            this.readAndShowMetadata();
-        }
 
-        if (prevState.skipCell !== this.state.skipCell) {
-            if (this.state.skipCell) {
-                // set the currentBlockName and the list of PrevBlocksNames to `skip` and []
-                const prevs: string[] = [];
-                let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: 'skip', prevBlockNames: prevs};
-                this.setState({currentActiveCellMetadata: currentCellMetadata});
-                this.setKaleCellTags(
-                    this.props.notebook,
-                    this.props.activeCellIndex,
-                    KUBEFLOW_CELL_METADATA_KEY,
-                    currentCellMetadata,
-                    true
-                )
-            } else {
-                await this.updateCurrentBlockName('');
-                this.readAndShowMetadata()
+            this.readAndShowMetadata();
+        } else {
+            // in case the cell did not change and the user changed the skip cell toggle
+             if (prevState.skipCell !== this.state.skipCell) {
+                if (this.state.skipCell) {
+                    // set the currentBlockName and the list of PrevBlocksNames to `skip` and []
+                    const prevs: string[] = [];
+                    let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: 'skip', prevBlockNames: prevs};
+                    this.setState({currentActiveCellMetadata: currentCellMetadata});
+                    this.setKaleCellTags(
+                        this.props.notebook,
+                        this.props.activeCellIndex,
+                        KUBEFLOW_CELL_METADATA_KEY,
+                        currentCellMetadata,
+                        true
+                    )
+                } else {
+                    // In case the user clicked on the skip cell toggle.
+                    // This may not be the case when this happens:
+                    //   1. The user is active on a skip cell (skip metadata state is true)
+                    //   2. The user clicks on a code cell.
+                    //   3. The active cell props is updated, and triggers metadata read of the new cell
+                    //   4. The new metadata is saved, so skip=False is saved to state.
+                    //   5. componentDidUpdate is called again after state changed, with the same cellIndex but skip is updated to false
+                    if (this.state.currentActiveCellMetadata.blockName === 'skip') {
+                        await this.updateCurrentBlockName('')
+                    }
+                    this.readAndShowMetadata()
+                }
             }
         }
     };
