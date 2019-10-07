@@ -1,8 +1,11 @@
 import os
 import re
+import sys
 import pprint
 import logging
+import logging.handlers
 import tempfile
+import traceback
 
 import networkx as nx
 
@@ -26,6 +29,7 @@ class Kale:
                  upload_pipeline=False,
                  run_pipeline=False,
                  kfp_dns=None,
+                 debug=False
                  ):
         self.source_path = Path(source_notebook_path)
         self.output_path = os.path.join(os.path.dirname(self.source_path), f"kfp_{pipeline_name}.kfp.py")
@@ -44,22 +48,28 @@ class Kale:
         self.docker_base_image = docker_image
         self.volumes = volumes
 
-        # validate provided metadata
-        self.validate_metadata()
-
-        # Setup logging
-        self.log_dir_path = Path(".")
-        # set up logging to file
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                            datefmt='%m-%d %H:%M',
-                            )
-        self.logger = logging.getLogger('kubeflow-kale')
+        # setup logging
+        self.logger = logging.getLogger("kubeflow-kale")
+        formatter = logging.Formatter('%(asctime)s | %(name)s |  %(levelname)s: %(message)s', datefmt='%m-%d %H:%M')
         self.logger.setLevel(logging.DEBUG)
-        # create file handler which logs even debug messages
-        fh = logging.FileHandler(self.log_dir_path / 'log.log', mode='w')
-        fh.setLevel(logging.DEBUG)
-        self.logger.addHandler(fh)
+
+        stream_handler = logging.StreamHandler()
+        if debug:
+            stream_handler.setLevel(logging.DEBUG)
+        else:
+            stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(formatter)
+
+        self.log_dir_path = Path(".")
+        file_handler = logging.FileHandler(filename=self.log_dir_path / 'kale.log', mode='a')
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(logging.DEBUG)
+
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(stream_handler)
+
+        # mute other loggers
+        logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
     def validate_metadata(self):
         kale_block_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
@@ -81,30 +91,37 @@ class Kale:
                     f"Provide a valid snapshot resource name if you want to snapshot a volume. Snapshot resource name {k8s_name_msg}")
 
     def run(self):
-        # convert notebook to nx graph
+        self.logger.debug("------------- Kale Start Run -------------")
         try:
+            # validate provided metadata
+            self.validate_metadata()
+
+            # convert notebook to nx graph
             pipeline_graph = parser.parse_notebook(self.source_path, self.nbformat_version)
-        except ValueError as e:
-            return {"result": str(e)}
 
-        # run static analysis over the source code
-        dep_analysis.variables_dependencies_detection(pipeline_graph)
+            # run static analysis over the source code
+            dep_analysis.variables_dependencies_detection(pipeline_graph)
 
-        # generate full kfp pipeline definition
-        kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
-                                              experiment_name=self.experiment_name,
-                                              pipeline_name=self.pipeline_name,
-                                              pipeline_description=self.pipeline_description,
-                                              docker_base_image=self.docker_base_image,
-                                              volumes=self.volumes,
-                                              deploy_pipeline=self.run_pipeline)
+            # generate full kfp pipeline definition
+            kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
+                                                  experiment_name=self.experiment_name,
+                                                  pipeline_name=self.pipeline_name,
+                                                  pipeline_description=self.pipeline_description,
+                                                  docker_base_image=self.docker_base_image,
+                                                  volumes=self.volumes,
+                                                  deploy_pipeline=self.run_pipeline)
 
-        # save kfp generated code
-        self.save_pipeline(kfp_code)
+            # save kfp generated code
+            self.save_pipeline(kfp_code)
 
-        # deploy pipeline to KFP instance
-        if self.upload_pipeline or self.run_pipeline:
-            return self.deploy_pipeline_to_kfp(self.output_path)
+            # deploy pipeline to KFP instance
+            if self.upload_pipeline or self.run_pipeline:
+                return self.deploy_pipeline_to_kfp(self.output_path)
+        except Exception as e:
+            # self.logger.debug(traceback.print_exc())
+            self.logger.debug(e, exc_info=True)
+            self.logger.error(e)
+            print("\nTo see full traceback run Kale with --debug flag or have a look at kale.log logfile")
 
     def deploy_pipeline_to_kfp(self, pipeline_source):
         """
@@ -114,9 +131,6 @@ class Kale:
         import kfp.compiler as compiler
         import kfp
         import importlib.util
-        import logging
-
-        logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
         # create a tmp folder
         tmp_dir = tempfile.mkdtemp()
@@ -137,11 +151,7 @@ class Kale:
 
             # upload the pipeline
             if self.upload_pipeline:
-                try:
-                    client.upload_pipeline(pipeline_filename, pipeline_name=self.pipeline_name)
-                except Exception as exp:
-                    self.logger.error(exp)
-                    return {'result': f"Pipeline with name {self.pipeline_name} already exists"}
+                client.upload_pipeline(pipeline_filename, pipeline_name=self.pipeline_name)
 
             if self.run_pipeline:
                 # create experiment or get existing one
@@ -152,11 +162,11 @@ class Kale:
                 run_link = f"{self.kfp_dns}/#/runs/details/{run.id}"
                 self.logger.info(f"Pipeline run at {run_link}")
                 return {"result": "Deployment successful.", "run": run_link}
-        except Exception as e:
+        except Exception:
             # remove auto-generated tar package (used for deploy)
             os.remove(self.pipeline_name + '.pipeline.tar.gz')
-            self.logger.info(f"Kale deployment failed with exception: {e}")
-            return {"result": "Deployment Failed - no connection with Kubeflow Pipelines Endpoint"}
+            # raise again so excp is caught at higher level
+            raise
 
         # sys.path.remove(tmp_dir)
 
