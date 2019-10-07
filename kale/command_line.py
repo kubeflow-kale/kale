@@ -44,8 +44,8 @@ def main():
     parser.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
     parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
     # important to have default=None, otherwise it would default to False and would always override notebook_metadata
-    parser.add_argument('--upload_pipeline', action='store_true', default=None)
-    parser.add_argument('--run_pipeline', action='store_true', default=None)
+    parser.add_argument('--upload_pipeline', action='store_true')
+    parser.add_argument('--run_pipeline', action='store_true')
     parser.add_argument('--kfp_dns', type=str,
                         help='DNS to KFP service. Provide address as <host>:<port>. `/pipeline` will be appended automatically')
     parser.add_argument('--jupyter_args', type=str, help='YAML file with Jupyter parameters as defined by Papermill')
@@ -76,28 +76,21 @@ def main():
                 docker_image=metadata_arguments['docker_image'],
                 upload_pipeline=metadata_arguments['upload_pipeline'],
                 run_pipeline=metadata_arguments['run_pipeline'],
-                volumes=metadata_arguments['volumes']
+                volumes=metadata_arguments['volumes'],
+                debug=args.debug
             ).run()
     else:
-        try:
-            res = Kale(
-                source_notebook_path=args.nb,
-                experiment_name=metadata_arguments['experiment_name'],
-                pipeline_name=metadata_arguments['pipeline_name'],
-                pipeline_descr=metadata_arguments['pipeline_description'],
-                docker_image=metadata_arguments['docker_image'],
-                upload_pipeline=metadata_arguments['upload_pipeline'],
-                run_pipeline=metadata_arguments['run_pipeline'],
-                volumes=metadata_arguments['volumes']
-            ).run()
-            if res is not None:
-                print(res)
-        except Exception as e:
-            if args.debug:
-                traceback.print_exc()
-            else:
-                print(e)
-                print("\nTo see full traceback run Kale with --debug flag")
+        Kale(
+            source_notebook_path=args.nb,
+            experiment_name=metadata_arguments['experiment_name'],
+            pipeline_name=metadata_arguments['pipeline_name'],
+            pipeline_descr=metadata_arguments['pipeline_description'],
+            docker_image=metadata_arguments['docker_image'],
+            upload_pipeline=metadata_arguments['upload_pipeline'],
+            run_pipeline=metadata_arguments['run_pipeline'],
+            volumes=metadata_arguments['volumes'],
+            debug=args.debug
+        ).run()
 
 
 if __name__ == "__main__":
