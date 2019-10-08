@@ -28,7 +28,7 @@ multipledispatch==0.6.0
 nbconvert==5.4.0
 nbformat==4.4.0
 networkx==2.2
-notebook==5.7.4
+notebook==5.7.8
 numpy==1.16.0
 odo==0.5.0
 pandas==0.23.4
