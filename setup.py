@@ -21,20 +21,17 @@ setup(
               'kale.nbparser',
               'kale.static_analysis',
               'kale.marshal',
-              'kale.codegen',
-              'kale.api'
+              'kale.codegen'
               ],
     install_requires=[
-        'kfp',
-        'autopep8',
-        'nbformat',
-        'networkx',
-        'jinja2',
-        'graphviz',
-        'pyflakes',
-        'papermill',
-        'flask_restful',
-        'flask',
+        'kfp >=0.1.31, <0.2',
+        'autopep8 >=1.4, <1.5',
+        'nbformat >=4.4, <5.0',
+        'networkx >=2.3, <3.0',
+        'jinja2 >=2.10, <3.0',
+        'graphviz >=0.13, <1.0',
+        'pyflakes >=2.1.1',
+        'papermill >=1.2, <3.0'
     ],
     entry_points={
         'console_scripts': ['kale=kale.command_line:main', 'kale_server=kale.command_line:server'],
