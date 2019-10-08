@@ -121,7 +121,7 @@ class Kale:
             # self.logger.debug(traceback.print_exc())
             self.logger.debug(e, exc_info=True)
             self.logger.error(e)
-            print("\nTo see full traceback run Kale with --debug flag or have a look at kale.log logfile")
+            self.logger.error("To see full traceback run Kale with --debug flag or have a look at kale.log logfile")
 
     def deploy_pipeline_to_kfp(self, pipeline_source):
         """
@@ -150,7 +150,7 @@ class Kale:
             client = kfp.Client()
 
             # upload the pipeline
-            if self.upload_pipeline:
+            if self.upload_pipeline or self.run_pipeline:
                 client.upload_pipeline(pipeline_filename, pipeline_name=self.pipeline_name)
 
             if self.run_pipeline:
@@ -160,8 +160,7 @@ class Kale:
                 run_name = self.pipeline_name + '_run'
                 run = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
                 run_link = f"{self.kfp_dns}/#/runs/details/{run.id}"
-                self.logger.info(f"Pipeline run at {run_link}")
-                return {"result": "Deployment successful.", "run": run_link}
+                self.logger.info(f"Deployment Successful. Pipeline run at {run_link}")
         except Exception:
             # remove auto-generated tar package (used for deploy)
             os.remove(self.pipeline_name + '.pipeline.tar.gz')
