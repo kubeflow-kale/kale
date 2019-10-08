@@ -1,11 +1,9 @@
 import os
 import re
-import sys
 import pprint
 import logging
 import logging.handlers
 import tempfile
-import traceback
 
 import networkx as nx
 
