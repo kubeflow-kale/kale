@@ -1,4 +1,4 @@
-def {{ function_name }}({{ function_args|join(', ') }}) -> str:
+def {{ function_name }}():
 
     import os
     import shutil
@@ -57,5 +57,3 @@ def {{ function_name }}({{ function_args|join(', ') }}) -> str:
         print("_kale_resource_save: `{{ out_var }}` not found.")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
-
-    return ''

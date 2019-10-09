@@ -42,8 +42,8 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
     function_blocks = list()
     # List of names of components
     function_names = list()
-    # Arguments to be passed to the light-weight component
-    function_args = dict()
+    # Dictionary of steps defining the dependency graph
+    function_prevs = dict()
 
     # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
@@ -56,14 +56,13 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         args = list()
         if len(predecessors) > 0:
             for a in predecessors:
-                args.append(f"{a}_task.output")
-        function_args[block_name] = args
+                args.append(f"{a}_task")
+        function_prevs[block_name] = args
 
         function_blocks.append(function_template.render(
             pipeline_name=pipeline_name,
             function_name=block_name,
             function_blocks=[block_data['source']],
-            function_args=[f"arg{i}" for i in range(0, len(args))],
             in_variables=block_data['ins'],
             out_variables=block_data['outs']
         ))
@@ -74,7 +73,7 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
     pipeline_code = pipeline_template.render(
         block_functions=function_blocks,
         block_functions_names=function_names,
-        block_function_args=function_args,
+        block_function_prevs=function_prevs,
         experiment_name=experiment_name,
         pipeline_name=pipeline_name,
         pipeline_description=pipeline_description,
