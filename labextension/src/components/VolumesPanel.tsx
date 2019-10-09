@@ -19,9 +19,9 @@ interface IProps {
 }
 
 const selectValues = [
+    {label: "New Volume", value: 'new_pvc'},
     {label: "Existing PVC", value: 'pvc'},
-    {label: "Existing PV", value: 'pv'},
-    {label: "New PVC", value: 'new_pvc'}
+    {label: "Existing PV", value: 'pv'}
 ];
 
 const selectVolumeSizeTypes = [
