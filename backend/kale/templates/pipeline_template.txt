@@ -82,8 +82,9 @@ def auto_generated_pipeline():
 
     {% for name in block_functions_names %}
 
-    {{ name }}_task = {{ name }}_op({{ block_function_args[ name ]|join(', ') }})\
-                            .add_pvolumes(pvolumes_dict)
+    {{ name }}_task = {{ name }}_op()\
+                            .add_pvolumes(pvolumes_dict)\
+                            .after({{ block_function_prevs[ name ]|join(', ') }})
 
     {% endfor %}
 
