@@ -31,7 +31,8 @@ setup(
         'jinja2 >=2.10, <3.0',
         'graphviz >=0.13, <1.0',
         'pyflakes >=2.1.1',
-        'papermill >=1.2, <3.0'
+        'papermill >=1.2, <3.0',
+        'dill >=0.3, <0.4'
     ],
     entry_points={
         'console_scripts': ['kale=kale.command_line:main', 'kale_server=kale.command_line:server'],
