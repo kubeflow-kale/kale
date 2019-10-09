@@ -329,8 +329,8 @@ export class CellTags extends React.Component<IProps, IState> {
                         label={"Block Name"}
                         updateValue={this.updateCurrentBlockName}
                         value={this.state.currentActiveCellMetadata.blockName}
-                        regex={"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
-                        regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."}
+                        regex={"^[_a-z]([_a-z0-9]*)?$"}
+                        regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '_', and can not start with a digit."}
                         helperText={prevBlockNotice}
                     />
 
