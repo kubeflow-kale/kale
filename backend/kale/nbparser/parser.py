@@ -29,8 +29,8 @@ TAGS_LANGUAGE = [r'^imports$',
                  r'^skip$',
                  r'^in$',
                  r'^out$',
-                 r'^block:[a-z0-9]([-a-z0-9]*[a-z0-9])?$',
-                 r'^prev:[a-z0-9]([-a-z0-9]*[a-z0-9])?$']
+                 r'^block:[_a-z]([_a-z0-9]*)?$',
+                 r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
 class _dotdict(dict):
@@ -118,10 +118,10 @@ def parse_metadata(metadata: dict):
 
         # name of the current pipeline step
         if radix == "block":
-            parsed_tags['block_names'].extend(value.split(';'))
+            parsed_tags['block_names'].extend(value)
         # names of the [possible] previous [dependencies] steps
         if radix == "prev":
-            parsed_tags['previous_blocks'].extend(value.split(';'))
+            parsed_tags['previous_blocks'].extend(value)
         # variables to be read from previous step
         if radix == "in":
             parsed_tags['in'].append(value)
