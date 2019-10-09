@@ -148,7 +148,7 @@ class Kale:
             client = kfp.Client()
 
             # upload the pipeline
-            if self.upload_pipeline or self.run_pipeline:
+            if self.upload_pipeline:
                 client.upload_pipeline(pipeline_filename, pipeline_name=self.pipeline_name)
 
             if self.run_pipeline:
