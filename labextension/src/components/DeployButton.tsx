@@ -12,7 +12,7 @@ import MenuList from '@material-ui/core/MenuList';
 import CircularProgress from '@material-ui/core/CircularProgress'
 
 const options = [
-    {label: "Compile, Upload and Run", value: "run"},
+    {label: "Compile and Run", value: "run"},
     {label: "Compile and Upload", value: "upload"},
     {label: "Compile to DSL", value: "compile"}
 ];
