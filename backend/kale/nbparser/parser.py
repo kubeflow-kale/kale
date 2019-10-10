@@ -118,10 +118,10 @@ def parse_metadata(metadata: dict):
 
         # name of the current pipeline step
         if radix == "block":
-            parsed_tags['block_names'].extend(value)
+            parsed_tags['block_names'].append(value)
         # names of the [possible] previous [dependencies] steps
         if radix == "prev":
-            parsed_tags['previous_blocks'].extend(value)
+            parsed_tags['previous_blocks'].append(value)
         # variables to be read from previous step
         if radix == "in":
             parsed_tags['in'].append(value)
