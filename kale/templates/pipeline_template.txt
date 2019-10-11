@@ -36,7 +36,7 @@ def auto_generated_pipeline():
     {% set name= vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
     {% set pvc_size = vol['size']|default ('') + vol['size_type']|default ('') %}
-    {% set annotation = (vol['annotation']|default ('')).split(':', 1) %}
+    {% set annotation = vol['annotation'] %}
     {% if vol['type'] == 'pv' %}
 
     pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
@@ -68,8 +68,8 @@ def auto_generated_pipeline():
     vop{{ loop.index }} = dsl.VolumeOp(
         name='create-volume-{{ loop.index }}',
         resource_name='{{ name }}',
-        {% if annotation[0] != '' -%}
-        annotations={"{{ annotation[0] }}": "{{ annotation[1] }}"},
+        {% if annotation != {key: '', value: ''} -%}
+        annotations={"{{ annotation['key'] }}": "{{ annotation['value'] }}"},
         {%- endif %}
         size='{{ pvc_size }}'
     )
