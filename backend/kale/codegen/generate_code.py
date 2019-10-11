@@ -8,7 +8,7 @@ from jinja2 import Environment, PackageLoader
 # TODO: Define most of this function parameters in a config file?
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
-def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description, docker_base_image, volumes, deploy_pipeline):
+def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description, pipeline_parameters, docker_base_image, volumes, deploy_pipeline):
     """
     Takes a NetworkX workflow graph with the following properties
 
@@ -18,25 +18,10 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
 
     and generated a standalone Python script in KFP DSL to deploy
     a KFP pipeline.
-
-    Args:
-        nb_graph: NetworkX DiGraph
-                    A directed graph representing the pipeline to be executed.
-        pipeline_name:
-        pipeline_description:
-        docker_base_image:
-        volumes:
-        deploy_pipeline:
-
-    Returns:
-
     """
-
-    def add_suffix(s, suffix):
-        return s + suffix
     # initialize templating environment
     template_env = Environment(loader=PackageLoader('kale', 'templates'))
-    template_env.filters['add_suffix'] = add_suffix
+    template_env.filters['add_suffix'] = lambda s, suffix: s+suffix
 
     # List of light-weight components generated code
     function_blocks = list()
@@ -44,6 +29,15 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
     function_names = list()
     # Dictionary of steps defining the dependency graph
     function_prevs = dict()
+    # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
+    # steps they are needed we just pass them to every one. The assumption is that these variables
+    # were treated as constants notebook-wise.
+    pipeline_args_names = list(pipeline_parameters.keys())
+    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"  # wrap in quotes if parameter is string
+                               if isinstance(pipeline_parameters[arg][1], str)
+                               else f"{arg}={pipeline_parameters[arg][1]}"
+                               for arg in pipeline_args_names])
+    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}" for arg in pipeline_args_names])
 
     # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
@@ -62,6 +56,7 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         function_blocks.append(function_template.render(
             pipeline_name=pipeline_name,
             function_name=block_name,
+            function_args=function_args,
             function_blocks=[block_data['source']],
             in_variables=block_data['ins'],
             out_variables=block_data['outs']
@@ -77,6 +72,8 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         experiment_name=experiment_name,
         pipeline_name=pipeline_name,
         pipeline_description=pipeline_description,
+        pipeline_arguments=pipeline_args,
+        pipeline_arguments_names=', '.join(pipeline_args_names),
         docker_base_image=docker_base_image,
         volumes=volumes if volumes is not None else [],
         deploy_pipeline=deploy_pipeline,

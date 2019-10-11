@@ -1,4 +1,4 @@
-def {{ function_name }}():
+def {{ function_name }}({{ function_args }}):
 
     import os
     import shutil
