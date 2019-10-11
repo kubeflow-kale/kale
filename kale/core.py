@@ -102,15 +102,14 @@ class Kale:
             # run static analysis over the source code
             dep_analysis.variables_dependencies_detection(pipeline_graph, ignore_symbols=set(pipeline_parameters_dict.keys()))
 
-            # remove from steps ins and outs (variables to be loaded or saved) the ones present in the list of pipeline params.
-            # TODO: Run a static analysis over every step to check that
-
+            # TODO: Run a static analysis over every step to check that pipeline parameters are not assigned with new values.
 
             # generate full kfp pipeline definition
             kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
                                                   experiment_name=self.experiment_name,
                                                   pipeline_name=self.pipeline_name,
                                                   pipeline_description=self.pipeline_description,
+                                                  pipeline_parameters=pipeline_parameters_dict,
                                                   docker_base_image=self.docker_base_image,
                                                   volumes=self.volumes,
                                                   deploy_pipeline=self.run_pipeline)
