@@ -225,3 +225,39 @@ class CodeInspector:
                 if isinstance(node, (ast.FunctionDef, ast.ClassDef,)):
                     names.add(node.name)
         return names
+
+    def parse_variables_block(self, code):
+        """
+        Parse a code block that declared some variables with primitive types.
+        Args:
+            code: Multiline string representing Python code
+
+        Returns: Dictionary of <variable_name>: <(variable_type, variable_value)>
+        """
+        variables = dict()
+        tree = ast.parse(code)
+        for block in tree.body:
+            if not isinstance(block, ast.Assign):
+                raise ValueError("Kale Code Inspector: Must provide just primitive types assignments in variables block")
+            targets = block.targets
+            if len(targets) > 1:
+                raise ValueError("Kale Code Inspector: Must provide single variable assignments in variables block")
+            target = targets[0].id
+            value = block.value
+            # now get the type of the variable
+            if isinstance(value, ast.Num):  # [int|float]
+                value = value.n
+                var_type = type(value).__name__
+            elif isinstance(value, ast.Str):
+                value = value.s
+                var_type = 'str'
+            elif isinstance(value, ast.NameConstant):  # [True|False|None]
+                value = value.value
+                var_type = 'bool'
+            else:
+                raise ValueError(
+                    "Kale Code Inspector: Variables block must be comprised of primitive variables "
+                    "(int, float, str, bool)")
+            variables[target] = (var_type, value)
+
+        return variables
