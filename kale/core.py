@@ -95,7 +95,9 @@ class Kale:
             self.validate_metadata()
 
             # convert notebook to nx graph
-            pipeline_graph, pipeline_parameters = parser.parse_notebook(self.source_path, self.nbformat_version)
+            pipeline_graph, pipeline_parameters_code_block = parser.parse_notebook(self.source_path, self.nbformat_version)
+
+            pipeline_parameters_dict = dep_analysis.pipeline_parameters_detection(pipeline_parameters_code_block)
 
             # run static analysis over the source code
             dep_analysis.variables_dependencies_detection(pipeline_graph)
