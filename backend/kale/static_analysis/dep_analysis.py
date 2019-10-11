@@ -81,3 +81,16 @@ def variables_dependencies_detection(nb_graph):
     out_variable_detection(nb_graph)
 
     return nb_graph
+
+
+def pipeline_parameters_detection(parameters_code_block):
+    """
+
+    Args:
+        parameters_code_block: Multiline string representing Python code
+
+    Returns:
+
+    """
+    inspector = CodeInspector()
+    return inspector.parse_variables_block(parameters_code_block)
