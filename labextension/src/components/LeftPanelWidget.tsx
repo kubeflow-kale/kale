@@ -81,11 +81,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     state = DefaultState;
 
      DefaultEmptyVolume: IVolumeMetadata = {
-        type: 'pvc',
+        type: 'new_pvc',
         name: '',
         mount_point: '',
-        size: '',
         annotation: {key: '', value: ''},
+        size: '1',
+        size_type: 'Gi',
         snapshot: false
     };
 
