@@ -3,17 +3,8 @@ import networkx as nx
 from kale.static_analysis.inspector import CodeInspector
 from kale.static_analysis.linter import CodeInspectorLinter
 
-# TODO: Remove this hardcoded dependency
-# Variables that inserted at the beginning of pipeline blocks by templates
-__HARDCODED_VARIABLES = ['_input_data_folder']
 
-
-def in_variables_detection(nb_graph):
-    """
-
-    Returns:
-
-    """
+def in_variables_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     code_inspector = CodeInspectorLinter()
     # Go through pipeline DAG and parse variable names
     # Start first with __GLOBAL_BLOCKS: code blocks that are injected in every pipeline block
@@ -22,12 +13,12 @@ def in_variables_detection(nb_graph):
         source_code = nb_graph.nodes(data=True)[block]['source']
         ins = code_inspector.inspect_code(code=source_code)
 
-        # remove from the list the variables that will be injected by template code
-        ins.difference_update(set(__HARDCODED_VARIABLES))
+        if ignore_symbols:
+            ins.difference_update(set(ignore_symbols))
         nx.set_node_attributes(nb_graph, {block: {'ins': ins}})
 
 
-def out_variable_detection(nb_graph):
+def out_variable_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     """
     Create the `outs` set of variables to be written at the end of each block.
     To get the `outs` of each block, the function uses the topological order of
@@ -47,6 +38,9 @@ def out_variable_detection(nb_graph):
             outs = ins.intersection(father_data['all_names'])
             # include previous `outs` in case this father has multiple children steps
             outs.update(father_data['outs'])
+            # remove symbols to ignore
+            if ignore_symbols:
+                ins.difference_update(set(ignore_symbols))
             # add to father the new `outs` variables
             nx.set_node_attributes(nb_graph, {_a: {'outs': outs}})
 
@@ -59,16 +53,7 @@ def out_variable_detection(nb_graph):
             nx.set_node_attributes(nb_graph, {block_name: {'outs': outs}})
 
 
-def variables_dependencies_detection(nb_graph):
-    """
-
-    Args:
-        nb_graph:
-
-    Returns: NetworkX DiGraph
-                The input graph with additional tags
-
-    """
+def variables_dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     # First get all the names of each code block
     inspector = CodeInspector()
     for block in nb_graph:
@@ -77,20 +62,12 @@ def variables_dependencies_detection(nb_graph):
         nx.set_node_attributes(nb_graph, {block: {'all_names': all_names}})
 
     # get all the missing names in each block
-    in_variables_detection(nb_graph)
-    out_variable_detection(nb_graph)
+    in_variables_detection(nb_graph, ignore_symbols)
+    out_variable_detection(nb_graph, ignore_symbols)
 
     return nb_graph
 
 
 def pipeline_parameters_detection(parameters_code_block):
-    """
-
-    Args:
-        parameters_code_block: Multiline string representing Python code
-
-    Returns:
-
-    """
     inspector = CodeInspector()
     return inspector.parse_variables_block(parameters_code_block)
