@@ -44,7 +44,7 @@ export interface IVolumeMetadata {
     mount_point: string,
     size?: string,
     size_type?: string,
-    annotation?: string,
+    annotation?: {key: string, value: string},
     // true if snapshot to be taken at the end of the pipeline
     snapshot: boolean,
     snapshot_name?: string
@@ -85,6 +85,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         name: '',
         mount_point: '',
         size: '',
+        annotation: {key: '', value: ''},
         snapshot: false
     };
 
@@ -107,7 +108,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSnapshotName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}});
     updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
     updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
-    updateVolumeAnnotation = (annotation: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
+    updateVolumeAnnotation = (annotation: {key: string, value: string}, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
 
     activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentType: type});
 

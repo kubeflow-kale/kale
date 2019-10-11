@@ -64,7 +64,6 @@ interface IMaterialInput {
     helperText?: string,
     label: string,
     numeric?: boolean
-
 }
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
@@ -294,4 +293,46 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = (pro
                 </div>
             </div>
         )
+};
+
+interface IAnnotationInput {
+    updateValue: Function,
+    annotation: {key: string, value: string},
+    inputIndex?: number,
+    label: string,
+}
+
+export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props) => {
+
+    const [annotation, setAnnotation] = React.useState({key: '', value: ''});
+    const classes = useStyles({});
+
+    React.useEffect(() => {
+        // need this to set the annotation when the notebook is loaded
+        // and the metadata is updated
+        setAnnotation({...props.annotation})
+    }, [props.annotation]); // Only re-run the effect if props.annotation changes
+
+    const updateKey = (key: string) => {
+        props.updateValue({...props.annotation, key: key}, props.inputIndex)
+    };
+
+    const updateValue = (value: string) => {
+        props.updateValue({...props.annotation, value: value}, props.inputIndex)
+    };
+
+    return <div className='toolbar'>
+        <MaterialInput
+            updateValue={updateKey}
+            value={props.annotation.key}
+            label={'Key'}
+            inputIndex={props.inputIndex}
+        />
+        <MaterialInput
+            updateValue={updateValue}
+            value={props.annotation.value}
+            label={'Value'}
+            inputIndex={props.inputIndex}
+        />
+    </div>
 };

@@ -1,5 +1,5 @@
 import * as React from "react";
-import {MaterialInput, MaterialSelect} from "./Components";
+import {AnnotationInput, MaterialInput, MaterialSelect} from "./Components";
 import {IVolumeMetadata} from "./LeftPanelWidget";
 import Switch from "react-switch";
 
@@ -66,12 +66,13 @@ export class VolumesPanel extends React.Component<IProps, any> {
                         null;
 
                     const annotationField = (v.type === 'pv' || v.type === 'new_pvc') ?
-                        <MaterialInput
-                            label={"Annotation"}
-                            inputIndex={idx}
-                            updateValue={this.props.updateVolumeAnnotation}
-                            value={v.annotation}
-                        />: null;
+                            <AnnotationInput
+                                label={"Annotation"}
+                                inputIndex={idx}
+                                updateValue={this.props.updateVolumeAnnotation}
+                                annotation={v.annotation}
+                            />:
+                        null;
 
                     return (
                     <div className='input-container' key={idx}>
