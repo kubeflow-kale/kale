@@ -19,11 +19,9 @@ GLOBAL_BLOCKS = ['imports',
                  'injected-parameters'
                  ]
 
-# The block names can be just digits and numbers because those strings will be used both
-# for generated Python function names (that do not allow for '-') characters and
-# for pipeline steps names, that allow just for digits, alphabetic characters and '-'
 TAGS_LANGUAGE = [r'^imports$',
                  r'^functions$',
+                 r'^pipeline-parameters$',
                  r'^parameters$',
                  r'^injected-parameters$',
                  r'^skip$',
@@ -105,6 +103,10 @@ def parse_metadata(metadata: dict):
 
         if t == "skip":
             return None
+
+        if t == "pipeline-parameters":
+            parsed_tags['block_names'] = ['pipeline-parameters']
+            return parsed_tags
 
         if t in GLOBAL_BLOCKS:
             parsed_tags['block_names'] = ['global']
@@ -190,6 +192,8 @@ def parse_notebook(nb_path, nb_format_version):
     current_block = None
     # if the current block is either imports or functions
     current_block_global = False
+    # if the current block is pipeline-parameters
+    current_block_pipeline_parameters = False
 
     # TODO: Add flag to know when the previous cell references multiple block names
     #   In this way, if the next block has no block_name tag, kale can throuw an error
@@ -201,6 +205,9 @@ def parse_notebook(nb_path, nb_format_version):
     # are merged together in this variable and then pre-pended.
     global_block = ""
 
+    # all the variables that will become pipeline parameters
+    pipeline_parameters = ""
+
     # iterate over the notebook cells, from first to last
     for c in source_nb.cells:
         # parse only source code cells
@@ -209,6 +216,12 @@ def parse_notebook(nb_path, nb_format_version):
 
         tags = parse_metadata(c.metadata)
         if tags is None:
+            continue
+
+        # this cell defines pipeline parameters
+        if 'pipeline-parameters' in tags['block_names']:
+            pipeline_parameters += '\n' + c.source
+            current_block_pipeline_parameters = True
             continue
 
         # This cell is to be appended to every code block
@@ -228,11 +241,14 @@ def parse_notebook(nb_path, nb_format_version):
         if len(tags.block_names) == 0:
             if current_block_global:
                 global_block += '\n' + c.source
+            elif current_block_pipeline_parameters:
+                pipeline_parameters += '\n' + c.source
             else:
                 assert current_block is not None
                 nb_graph = merge_code(nb_graph, current_block, tags, c.source)
         else:
             current_block_global = False
+            current_block_pipeline_parameters = False
             # TODO: Taking by default first block name tag. Need specific behavior
             current_block = tags.block_names[0]
             for block_name in tags.block_names:
@@ -253,4 +269,4 @@ def parse_notebook(nb_path, nb_format_version):
             block_data = nb_graph.nodes(data=True)[block]
             nx.set_node_attributes(nb_graph, {block: {'source': global_block + '\n\n' + block_data['source']}})
 
-    return nb_graph
+    return nb_graph, pipeline_parameters
