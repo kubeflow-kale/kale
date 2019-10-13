@@ -61,12 +61,13 @@ export class CellTags extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
 
-    updateCurrentCellType = (value: string) => {
+    updateCurrentCellType = async (value: string) => {
         if (RESERVED_CELL_NAMES.includes(value)) {
-            this.setState({currentActiveCellMetadata: {blockName: value, prevBlockNames: []}})
+            await this.updateCurrentBlockName(value)
         } else {
-            const prevBlockName = this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex);
-            this.setState({prevBlockName: prevBlockName, currentActiveCellMetadata: {blockName: value, prevBlockNames: []}})
+            await this.updateCurrentBlockName(value);
+            await this.updatePrevBlocksNames([]);
+            await this.setState({prevBlockName: this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex)})
         }
     };
 
