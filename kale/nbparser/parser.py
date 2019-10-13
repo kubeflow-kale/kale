@@ -222,12 +222,14 @@ def parse_notebook(nb_path, nb_format_version):
         if 'pipeline-parameters' in tags['block_names']:
             pipeline_parameters += '\n' + c.source
             current_block_pipeline_parameters = True
+            current_block_global = False
             continue
 
         # This cell is to be appended to every code block
         if 'global' in tags['block_names']:
             global_block += '\n' + c.source
             current_block_global = True
+            current_block_pipeline_parameters = False
             continue
 
         # check that the previous block already exists in the graph if the prev tag is used
