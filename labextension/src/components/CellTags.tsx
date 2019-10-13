@@ -65,7 +65,7 @@ export class CellTags extends React.Component<IProps, IState> {
         if (RESERVED_CELL_NAMES.includes(value)) {
             await this.updateCurrentBlockName(value)
         } else {
-            await this.updateCurrentBlockName(value);
+            await this.updateCurrentBlockName('');
             await this.updatePrevBlocksNames([]);
             await this.setState({prevBlockName: this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex)})
         }
