@@ -1,11 +1,26 @@
 import * as React from "react";
 import {Notebook, NotebookPanel} from "@jupyterlab/notebook";
-import {MaterialInput, MaterialSelectMulti} from "./Components";
+import {MaterialInput, MaterialSelect, MaterialSelectMulti} from "./Components";
 import CellUtils from "../utils/CellUtils";
 import {ICellModel, Cell, isCodeCellModel} from "@jupyterlab/cells";
-import Switch from "react-switch";
 
 const KUBEFLOW_CELL_METADATA_KEY = 'kubeflow_cell';
+
+const CELL_TYPES = [
+    { value: 'imports', label: 'Imports' },
+    { value: 'functions', label: 'Functions' },
+    { value: 'pipeline-parameters', label: 'Pipeline Parameters' },
+    { value: 'step', label: 'Pipeline Step' },
+    { value: 'skip', label: 'Skip Cell' }
+];
+
+const RESERVED_CELL_NAMES = ['imports', 'functions', 'pipeline-parameters', 'skip'];
+const RESERVED_CELL_NAMES_HELP_TEXT :{ [id: string] : string; } = {
+    "imports": "The code in this cell will be pre-pended to every step of the pipeline.",
+    "functions": "The code in this cell will be pre-pended to every step of the pipeline, after `imports`.",
+    "pipeline-parameters": "The variables in this cell will be transformed into pipeline parameters, preserving the current values as defaults.",
+    "skip": "This cell will be skipped and excluded from pipeline steps"
+};
 
 interface IProps {
     notebook: NotebookPanel;
@@ -18,12 +33,11 @@ interface IState {
     currentActiveCellMetadata: IKaleCellMetadata;
     allBlocks?: string[];
     prevBlockName?: string;
-    skipCell: boolean
 }
 
 interface IKaleCellMetadata {
     blockName: string;
-    prevBlockNames: string[]
+    prevBlockNames?: string[]
 }
 
 const DefaultCellMetadata: IKaleCellMetadata = {
@@ -36,7 +50,6 @@ const DefaultState: IState = {
     allBlocks: [],
     currentActiveCellMetadata: DefaultCellMetadata,
     prevBlockName: null,
-    skipCell: true
 };
 
 export class CellTags extends React.Component<IProps, IState> {
@@ -48,7 +61,14 @@ export class CellTags extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
 
-    handleChangeSkipCell = () => {this.setState({ skipCell: !this.state.skipCell})};
+    updateCurrentCellType = (value: string) => {
+        if (RESERVED_CELL_NAMES.includes(value)) {
+            this.setState({currentActiveCellMetadata: {blockName: value, prevBlockNames: []}})
+        } else {
+            const prevBlockName = this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex);
+            this.setState({prevBlockName: prevBlockName, currentActiveCellMetadata: {blockName: value, prevBlockNames: []}})
+        }
+    };
 
     componentDidMount = () => {
         if (this.props.activeCell) {
@@ -86,35 +106,6 @@ export class CellTags extends React.Component<IProps, IState> {
             }
 
             this.readAndShowMetadata();
-        } else {
-            // in case the cell did not change and the user changed the skip cell toggle
-             if (prevState.skipCell !== this.state.skipCell) {
-                if (this.state.skipCell) {
-                    // set the currentBlockName and the list of PrevBlocksNames to `skip` and []
-                    const prevs: string[] = [];
-                    let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: 'skip', prevBlockNames: prevs};
-                    this.setState({currentActiveCellMetadata: currentCellMetadata});
-                    this.setKaleCellTags(
-                        this.props.notebook,
-                        this.props.activeCellIndex,
-                        KUBEFLOW_CELL_METADATA_KEY,
-                        currentCellMetadata,
-                        true
-                    )
-                } else {
-                    // In case the user clicked on the skip cell toggle.
-                    // This may not be the case when this happens:
-                    //   1. The user is active on a skip cell (skip metadata state is true)
-                    //   2. The user clicks on a code cell.
-                    //   3. The active cell props is updated, and triggers metadata read of the new cell
-                    //   4. The new metadata is saved, so skip=False is saved to state.
-                    //   5. componentDidUpdate is called again after state changed, with the same cellIndex but skip is updated to false
-                    if (this.state.currentActiveCellMetadata.blockName === 'skip') {
-                        await this.updateCurrentBlockName('')
-                    }
-                    this.readAndShowMetadata()
-                }
-            }
         }
     };
 
@@ -132,12 +123,10 @@ export class CellTags extends React.Component<IProps, IState> {
         const prevBlockName = this.getPreviousBlock(this.props.notebook.content, this.props.activeCellIndex);
 
         if (cellMetadata) {
-            let skip = !!(cellMetadata.blockName && cellMetadata.blockName === 'skip');
             this.setState({
                 show: true,
                 allBlocks: allBlocks,
                 prevBlockName: prevBlockName,
-                skipCell: skip,
                 currentActiveCellMetadata: {
                     blockName: cellMetadata.blockName || '',
                     prevBlockNames: cellMetadata.prevBlockNames || []
@@ -148,7 +137,6 @@ export class CellTags extends React.Component<IProps, IState> {
                 show: true,
                 allBlocks: allBlocks,
                 prevBlockName: prevBlockName,
-                skipCell: false,
                 currentActiveCellMetadata: DefaultCellMetadata,
             })
         }
@@ -215,8 +203,8 @@ export class CellTags extends React.Component<IProps, IState> {
             'tags'
         );
         if (tags) {
-            let b_names = tags.map(v => {
-                if (v === 'functions' || v === 'imports' || v === 'skip') {
+            let b_name = tags.map(v => {
+                if (RESERVED_CELL_NAMES.includes(v)) {
                     return v
                 }
                 if (v.startsWith('block:')) {
@@ -227,7 +215,7 @@ export class CellTags extends React.Component<IProps, IState> {
             let prevs = tags.filter(v => {return v.startsWith('prev:')})
                 .map(v => {return v.replace("prev:", '')});
             return {
-                blockName: b_names[0],
+                blockName: b_name[0],
                 prevBlockNames: prevs
             }
         }
@@ -242,7 +230,8 @@ export class CellTags extends React.Component<IProps, IState> {
         save: boolean) => {
         // make the dict to save to tags
         let nb = value.blockName;
-        if (value.blockName !== 'imports' && value.blockName !== 'functions' && value.blockName !== 'skip') {
+        // not a reserved name
+        if (!RESERVED_CELL_NAMES.includes(value.blockName)) {
             nb = 'block:' + nb
         }
         console.log('set kale cell tags');
@@ -259,88 +248,73 @@ export class CellTags extends React.Component<IProps, IState> {
     };
 
     render() {
-        const headerName = 'Cell Tags';
+        const headerName = 'Cell Metadata';
+        const headerBlock = <p className="kale-header">{ headerName }</p>;
 
         // if the active cell is not of type `code`
         if (!this.state.show) {
-            return (<div>
-                <div>
-                    <p className="kale-header">{headerName}</p>
-                </div>
-
-                <div className="jp-KeySelector">
-                <div className="jp-Toolbar toolbar" style={{padding: 0, marginLeft: "10px"}}>
-                    <div className="jp-Toolbar-item"  style={{fontSize: 'var(--jp-ui-font-size0)'}}>
+            return (
+                <React.Fragment>
+                    {headerBlock}
+                    <div className="input-container">
                         No active code cell
                     </div>
-                </div>
-                </div>
-            </div>)
+                </React.Fragment>)
         }
 
-        const switchHeader =
-            <div className={"kale-header-switch"} >
-                <div className="kale-header" style={{padding: "0"}}>
-                    {headerName}
-                </div>
-                <div className={"skip-switch-container"}>
-                    <label className={"skip-switch-label"}>Hide cell</label>
-                    <Switch
-                        checked={this.state.skipCell}
-                        onChange={this.handleChangeSkipCell}
-                        onColor="#599EF0"
-                        onHandleColor="#477EF0"
-                        handleDiameter={18}
-                        uncheckedIcon={false}
-                        checkedIcon={false}
-                        boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
-                        activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
-                        height={10}
-                        width={20}
-                        className="skip-switch"
-                        id="skip-switch"
-                    />
-                </div>
-            </div>;
+        const cellType = (RESERVED_CELL_NAMES.includes(this.state.currentActiveCellMetadata.blockName))?
+            this.state.currentActiveCellMetadata.blockName : "step";
+        const cellTypeHelperText = RESERVED_CELL_NAMES_HELP_TEXT[this.state.currentActiveCellMetadata.blockName] || null;
+        const cellTypeSelect =
+            <MaterialSelect
+                updateValue={this.updateCurrentCellType}
+                values={CELL_TYPES}
+                value={cellType}
+                label={"Select Cell Type"}
+                index={0}
+                helperText={cellTypeHelperText}
+            />;
 
-        if (this.state.skipCell) {
+        if (this.state.currentActiveCellMetadata.blockName === 'skip') {
             return (
-                <div>
-                    {switchHeader}
-                    <div className="input-container">
-                        <div className="skip-cell-info-text">
-                            This cell will be skipped and excluded from pipeline steps
-                        </div>
+                <React.Fragment>
+                    {headerBlock}
+                    <div className='input-container'>
+                        { cellTypeSelect }
                     </div>
-                </div>
-            )
+                </React.Fragment>)
         }
 
         const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
             ? "Leave block name empty to merge code to block " + this.state.prevBlockName
             : null;
+        const stepCellInputs = (cellType === 'step') ?
+            <React.Fragment>
+                <MaterialInput
+                    label={"Block Name"}
+                    updateValue={this.updateCurrentBlockName}
+                    value={this.state.currentActiveCellMetadata.blockName}
+                    regex={"^[_a-z]([_a-z0-9]*)?$"}
+                    regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '_', and can not start with a digit."}
+                    helperText={prevBlockNotice}
+                />
+
+                <MaterialSelectMulti
+                    updateSelected={this.updatePrevBlocksNames}
+                    options={this.state.allBlocks}
+                    selected={this.state.currentActiveCellMetadata.prevBlockNames}/>
+            </React.Fragment> : null;
+
         return (
-            <div>
-                {switchHeader}
+            <React.Fragment>
+                { headerBlock }
 
                 <div className='input-container'>
 
-                    <MaterialInput
-                        label={"Block Name"}
-                        updateValue={this.updateCurrentBlockName}
-                        value={this.state.currentActiveCellMetadata.blockName}
-                        regex={"^[_a-z]([_a-z0-9]*)?$"}
-                        regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '_', and can not start with a digit."}
-                        helperText={prevBlockNotice}
-                    />
-
-                    <MaterialSelectMulti
-                        updateSelected={this.updatePrevBlocksNames}
-                        options={this.state.allBlocks}
-                        selected={this.state.currentActiveCellMetadata.prevBlockNames}/>
-
+                    { cellTypeSelect }
+                    { stepCellInputs }
                 </div>
-            </div>
+            </React.Fragment>
         )
     }
 }

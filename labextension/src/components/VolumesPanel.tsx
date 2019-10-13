@@ -35,8 +35,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
     render() {
 
         let vols =
-                <div className="jp-Toolbar toolbar" style={{padding: 0, marginLeft: "10px"}}>
-                    <div className="jp-Toolbar-item"  style={{fontSize: 'var(--jp-ui-font-size0)'}}>
+                <div className="toolbar">
+                    <div className="input-container">
                         No volumes mounts defined
                     </div>
                 </div>;

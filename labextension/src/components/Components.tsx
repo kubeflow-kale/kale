@@ -140,6 +140,7 @@ interface IMaterialSelect {
     value: any,
     label: string,
     index: number,
+    helperText?: string
 }
 
 export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) => {
@@ -168,6 +169,11 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
                   }
               },
             }}
+            FormHelperTextProps={{
+                classes: {
+                    root: classes.helperLabel
+                }
+            }}
             className={classes.textField}
             id={props.label}
             label={props.label}
@@ -175,6 +181,7 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
             onChange={evt => props.updateValue((evt.target as HTMLInputElement).value, props.index)}
             margin="dense"
             variant="outlined"
+            helperText={ (props.helperText) ? props.helperText : null }
         >
             {props.values.map((option: any) => (
                 <MenuItem key={option.value} value={option.value}>
