@@ -33,9 +33,8 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
     # steps they are needed we just pass them to every one. The assumption is that these variables
     # were treated as constants notebook-wise.
     pipeline_args_names = list(pipeline_parameters.keys())
-    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"  # wrap in quotes if parameter is string
-                               if isinstance(pipeline_parameters[arg][1], str)
-                               else f"{arg}={pipeline_parameters[arg][1]}"
+    # wrap in quotes every parameter - required by kfp
+    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
                                for arg in pipeline_args_names])
     function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}" for arg in pipeline_args_names])
 
