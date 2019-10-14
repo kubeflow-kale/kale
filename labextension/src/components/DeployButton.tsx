@@ -47,7 +47,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = (p
     return (
     <div className='deploy-button'>
         <Grid container>
-          <Grid item xs={12} style={{padding: '4px 0 2px'}}>
+          <Grid item xs={12} style={{padding: '4px 10px 2px'}}>
             <ButtonGroup style={{width: '100%'}} variant="contained" color="primary" ref={anchorRef} aria-label="split button">
               <Button style={{width: '100%'}} onClick={_ => props.handleClick(options[selectedIndex].value)}>
                   {(props.running)? <CircularProgress thickness={6} size={14} color={'primary'} />: options[selectedIndex].label}

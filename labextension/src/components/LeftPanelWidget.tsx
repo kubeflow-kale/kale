@@ -27,7 +27,6 @@ interface IState {
     metadata: IKaleNotebookMetadata;
     runDeployment: boolean;
     deploymentType: string;
-    deploymentStatus: string;
     selectVal: string;
     activeNotebook?: NotebookPanel;
     activeCell?: Cell;
@@ -71,7 +70,6 @@ const DefaultState: IState = {
 
     runDeployment: false,
     deploymentType: 'compile',
-    deploymentStatus: 'No active deployment.',
     selectVal: '',
     activeNotebook: null,
 };
@@ -111,7 +109,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
     updateVolumeAnnotation = (annotation: {key: string, value: string}, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
 
-    activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentStatus: 'No active deployment', deploymentType: type});
+    activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentType: type});
 
 
     // restore state to default values
@@ -233,7 +231,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         ];
         const msg =
             <div>
-                {eval(output.user_expressions.output.data['text/plain']).map((s: string) => {return <><span>{s}</span><br/></>})}
+                {eval(output.user_expressions.output.data['text/plain']).map((s: string) => {return <><span className='dialog-box-text'>{s}</span><br/></>})}
             </div>;
         await showDialog({ title: "Deployment Result", buttons, body: msg });
     };
@@ -315,15 +313,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     {/*  --------------  */}
 
                     {volsPanel}
-
-
-                    <div>
-                        <p className="kale-header">Deployment Status</p>
-                    </div>
-                    <div className='jp-KeySelector' style={{color: "var(--jp-ui-font-color3)", margin: "10px"}}>
-                        {this.state.deploymentStatus}
-                        {run_link}
-                    </div>
 
                     <CollapsablePanel
                         title={"Advanced Settings"}
