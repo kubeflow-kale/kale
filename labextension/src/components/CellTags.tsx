@@ -251,6 +251,9 @@ export class CellTags extends React.Component<IProps, IState> {
     render() {
         const headerName = 'Cell Metadata';
         const headerBlock = <p className="kale-header">{ headerName }</p>;
+        const previousBlockChoices = this.state.allBlocks.filter(
+                ( el ) => !RESERVED_CELL_NAMES.includes( el ) &&
+                !(el === this.state.currentActiveCellMetadata.blockName) );
 
         // if the active cell is not of type `code`
         if (!this.state.show) {
@@ -302,7 +305,7 @@ export class CellTags extends React.Component<IProps, IState> {
 
                 <MaterialSelectMulti
                     updateSelected={this.updatePrevBlocksNames}
-                    options={this.state.allBlocks}
+                    options={previousBlockChoices}
                     selected={this.state.currentActiveCellMetadata.prevBlockNames}/>
             </React.Fragment> : null;
 
