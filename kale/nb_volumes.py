@@ -17,7 +17,7 @@ NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 log = logging.getLogger(__name__)
 
 
-def _get_namespace():
+def get_namespace():
     try:
         with open(NAMESPACE_PATH, "r") as f:
             return f.read()
@@ -91,7 +91,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
 
 def list_volumes():
-    namespace = _get_namespace()
+    namespace = get_namespace()
     if namespace is None:
         log.warning("Could not retrieve the kubernetes namespace")
         return {}

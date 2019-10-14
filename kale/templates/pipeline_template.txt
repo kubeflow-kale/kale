@@ -22,7 +22,6 @@ import kfp.dsl as dsl
    description='{{ pipeline_description }}'
 )
 def auto_generated_pipeline({{ pipeline_arguments }}):
-
     marshal_vop = dsl.VolumeOp(
         name="kale_marshal_volume",
         resource_name="kale-marshal-pvc",
@@ -37,6 +36,7 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
     {% set mountpoint = vol['mount_point'] %}
     {% set pvc_size = vol['size']|default ('') + vol['size_type']|default ('') %}
     {% set annotations = vol['annotations']|default({}) %}
+    annotations = {{ annotations }}
 
     {% if vol['type'] == 'pv' %}
 
@@ -62,15 +62,18 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
 
     {% elif vol['type'] == 'pvc' %}
 
-    vop{{ loop.index }} = dsl.PipelineVolume(pvc='{{ name }}')
+    vop{{ loop.index }} = dsl.PipelineVolume(pvc=vol_{{ mountpoint.replace('/', '_').strip('_') }})
 
     {% elif vol['type'] == 'new_pvc' %}
+    {% if annotations.get('rok/origin') %}
+    annotations['rok/origin'] = rok_{{ name.replace('-', '_') }}_url
+    {% endif %}
 
     vop{{ loop.index }} = dsl.VolumeOp(
         name='create-volume-{{ loop.index }}',
         resource_name='{{ name }}',
         {%- if annotations %}
-        annotations={{ annotations }},
+        annotations=annotations,
         {% endif -%}
         size='{{ pvc_size }}'
     )
