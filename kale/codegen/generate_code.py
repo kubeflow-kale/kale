@@ -31,14 +31,41 @@ def gen_kfp_code(nb_graph,
     function_names = list()
     # Dictionary of steps defining the dependency graph
     function_prevs = dict()
-    # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
-    # steps they are needed we just pass them to every one. The assumption is that these variables
-    # were treated as constants notebook-wise.
+
+    # Include all volumes as pipeline parameters
+    volumes = metadata.get('volumes', [])
+    for v in volumes:
+        annotations = {a['key']: a['value'] for a in v['annotations'] or []
+                       if a['key'] != '' and a['value'] != ''}
+        v['annotations'] = annotations
+
+        if v['type'] == 'pv':
+            # FIXME: How should we handle existing PVs?
+            continue
+
+        if v['type'] == 'pvc':
+            default = v['name']
+            par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
+        elif v['type'] == 'new_pvc':
+            if v.get('annotation', {}).get('key') == "rok/origin":
+                default = v['annotation']['value']
+                par_name = f"rok_{v['name'].replace('-', '_')}_url"
+            else:
+                default = None
+                par_name = f"vol_{v['name'].replace('-', '_')}"
+        else:
+            raise ValueError(f"Unknown volume type: {v['type']}")
+
+        pipeline_parameters[par_name] = ('str', default)
+
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
     pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
-                               for arg in pipeline_args_names])
-    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}" for arg in pipeline_args_names])
+                               for arg in pipeline_parameters])
+    # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
+    # steps they are needed we just pass them to every one. The assumption is that these variables
+    # were treated as constants notebook-wise.
+    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}" for arg in pipeline_parameters])
 
     # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
@@ -64,12 +91,6 @@ def gen_kfp_code(nb_graph,
         ))
         function_names.append(block_name)
 
-    if metadata['volumes'] and 'annotations' in metadata['volumes']:
-        for v in metadata['volumes']:
-            annotations = {a['key']: a['value'] for a in v['annotations']
-                           if a['key'] != '' and a['value'] != ''}
-            v['annotations'] = annotations
-
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
     pipeline_template = template_env.get_template('pipeline_template.txt')
     pipeline_code = pipeline_template.render(
@@ -82,7 +103,7 @@ def gen_kfp_code(nb_graph,
         pipeline_arguments=pipeline_args,
         pipeline_arguments_names=', '.join(pipeline_args_names),
         docker_base_image=metadata.get('docker_image', ''),
-        volumes=metadata.get('volumes', []),
+        volumes=volumes,
         leaf_nodes=leaf_nodes,
         working_dir=metadata.get('abs_working_dir', None)
     )
@@ -90,5 +111,3 @@ def gen_kfp_code(nb_graph,
     # fix code style using pep8 guidelines
     pipeline_code = autopep8.fix_code(pipeline_code)
     return pipeline_code
-
-
