@@ -50,7 +50,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
     pod = client.read_namespaced_pod(pod_name, namespace)
     container = _get_pod_container(pod, container_name)
 
-    rok_volumes = {}
+    rok_volumes = []
     for volume in pod.spec.volumes:
         pvc = volume.persistent_volume_claim
         if not pvc:
@@ -78,7 +78,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
         mount_path = _get_mount_path(container, volume)
         volume_size = pvc.spec.resources.requests["storage"]
-        rok_volumes[mount_path] = (volume, volume_size)
+        rok_volumes.append((mount_path, volume, volume_size))
 
     return rok_volumes
 
@@ -91,10 +91,9 @@ def list_volumes():
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    volumes = list_volumes()
     headers = ("Mount Path", "Volume Name", "Volume Size")
     rows = [(path, volume.name, size)
-             for path, (volume, size) in volumes.items()]
+             for path, volume, size in list_volumes()]
     print(tabulate.tabulate(rows, headers=headers))
 
 

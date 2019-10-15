@@ -86,7 +86,7 @@ class Kale:
         # pipeline volumes.
         volumes = self.pipeline_metadata['volumes'][:] \
             if self.pipeline_metadata['volumes'] else []
-        for mount_path, (volume, size) in list_volumes().items():
+        for mount_path, volume, size in list_volumes():
             volumes.append({'mount_point': mount_path,
                             'name': volume.name,
                             'size': size,
