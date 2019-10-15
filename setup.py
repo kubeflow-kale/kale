@@ -21,7 +21,8 @@ setup(
               'kale.nbparser',
               'kale.static_analysis',
               'kale.marshal',
-              'kale.codegen'
+              'kale.codegen',
+              'kale.utils'
               ],
     install_requires=[
         'kfp >=0.1.31, <0.2',

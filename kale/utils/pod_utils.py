@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
 import os
-import sys
 import logging
 import tabulate
 import kubernetes.client as k8s
@@ -10,16 +7,28 @@ import kubernetes.config as k8s_config
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
 
-POD_NAME = os.getenv("HOSTNAME")
-CONTAINER_NAME = os.getenv("NB_PREFIX").split("/")[-1]
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger("kubeflow-kale")
 
 
 def get_namespace():
     with open(NAMESPACE_PATH, "r") as f:
         return f.read()
+
+
+def get_pod_name():
+    pod_name = os.getenv("HOSTNAME")
+    if pod_name is None:
+        raise RuntimeError("Env variable HOSTNAME not found.")
+    return pod_name
+
+
+def get_container_name():
+    container_name = os.getenv("NB_PREFIX")
+    if container_name is None:
+        raise RuntimeError("Env variable NB_PREFIX not found.")
+    return container_name.split('/')[-1]
 
 
 def _get_k8s_client():
@@ -59,7 +68,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
         # Ensure the volume is a Rok volume, otherwise we will not be able to
         # snapshot it.
         # FIXME: Should we just ignore these volumes? Ignoring them would
-        # result in an incomplete notebook snapshot.
+        #  result in an incomplete notebook snapshot.
         pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
                                                              namespace)
         if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
@@ -84,18 +93,27 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
 
 def list_volumes():
-    namespace = get_namespace()
     client = _get_k8s_client()
-    return _list_volumes(client, namespace, POD_NAME, CONTAINER_NAME)
+    namespace = get_namespace()
+    pod_name = get_pod_name()
+    container_name = get_container_name()
+    return _list_volumes(client, namespace, pod_name, container_name)
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_docker_base_image():
+    client = _get_k8s_client()
+    namespace = get_namespace()
+    pod_name = get_pod_name()
+    container_name = get_container_name()
+
+    pod = client.read_namespaced_pod(pod_name, namespace)
+    container = _get_pod_container(pod, container_name)
+    return container.image
+
+
+def print_volumes():
     headers = ("Mount Path", "Volume Name", "Volume Size")
     rows = [(path, volume.name, size)
-             for path, volume, size in list_volumes()]
+            for path, volume, size in list_volumes()]
     print(tabulate.tabulate(rows, headers=headers))
 
-
-if __name__ == "__main__":
-    sys.exit(main())
