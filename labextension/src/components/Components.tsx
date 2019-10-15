@@ -26,15 +26,12 @@ const useStyles = makeStyles(() =>
             position: 'relative',
             color: "var(--jp-ui-font-color1)",
             backgroundColor: "var(--jp-layout-color1)",
-            '&$cssFocused $notchedOutline': {
-                borderColor: "var(--md-indigo-300) !important",
-            }
         },
         focused: {},
         notchedOutline: {
             borderWidth: '1px',
             borderColor: 'var(--jp-input-border-color)',
-          },
+        },
         textField: {
             width: "100%",
         },
@@ -195,12 +192,6 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
 
 const useStylesSelectMulti = makeStyles(() =>
     createStyles({
-        root: {
-            '&outlined': {
-                borderColor: 'var(--jp-input-border-color)',
-            },
-        },
-        outlined: {},
         menu: {
             backgroundColor: "var(--jp-layout-color1)",
             color: "var(--jp-ui-font-color1)"
@@ -215,9 +206,24 @@ const useStylesSelectMulti = makeStyles(() =>
         multiSelectForm: {
             width: "100%"
         },
-
+        label: {
+            backgroundColor: "var(--jp-layout-color1)",
+            color: 'var(--jp-input-border-color)',
+        },
     }),
 );
+
+const outlinedStyle = makeStyles(() =>
+    createStyles({
+        root: {
+            "& $notchedOutline": {
+                borderWidth: '1px',
+                borderColor: 'var(--jp-input-border-color)',
+            },
+        },
+        focused: {},
+        notchedOutline: {},
+    }));
 
 interface IMaterialSelectMultiple {
     updateSelected: Function,
@@ -227,6 +233,7 @@ interface IMaterialSelectMultiple {
 export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultiple> = (props) => {
 
     const classes = useStylesSelectMulti({});
+    const outlined_classes = outlinedStyle({});
     const [inputLabelRef, setInputLabelRef] = React.useState(undefined);
     const labelOffsetWidth = inputLabelRef
         //@ts-ignore
@@ -240,15 +247,12 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
               setInputLabelRef(ref);
             }}
             htmlFor="select-previous-blocks"
+            className={classes.label}
           >
             Select previous blocks
           </InputLabel>
         <Select
             multiple
-            classes={{
-                root: classes.root,
-                outlined: classes.outlined,
-            }}
             MenuProps={{
                 PaperProps: {
                     className: classes.menu,
@@ -257,7 +261,7 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
             onChange={evt => props.updateSelected((evt.target as HTMLInputElement).value)}
             margin="dense"
             variant="outlined"
-            input={<OutlinedInput margin='dense' labelWidth={labelOffsetWidth} name="previous"  id="select-previous-blocks" />}
+            input={<OutlinedInput classes={outlined_classes} margin='dense' labelWidth={labelOffsetWidth} name="previous"  id="select-previous-blocks" />}
             value={props.selected}
             renderValue={elements => (
                 <div className={classes.chips}>
