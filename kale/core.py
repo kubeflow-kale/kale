@@ -18,7 +18,7 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dep_analysis
 from kale.codegen import generate_code
-from kale.nb_volumes import list_volumes, get_namespace
+from kale.nb_utils import list_volumes, get_namespace
 from kale.utils import pod_utils
 
 
