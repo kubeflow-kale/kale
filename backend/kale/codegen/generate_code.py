@@ -34,29 +34,28 @@ def gen_kfp_code(nb_graph,
 
     # Include all volumes as pipeline parameters
     volumes = metadata.get('volumes', [])
+    # Convert annotations to a dictionary and convert size to a string
     for v in volumes:
+        # Convert annotations to a dictionary
         annotations = {a['key']: a['value'] for a in v['annotations'] or []
                        if a['key'] != '' and a['value'] != ''}
         v['annotations'] = annotations
+        v['size'] = str(v['size'])
 
         if v['type'] == 'pv':
             # FIXME: How should we handle existing PVs?
             continue
 
         if v['type'] == 'pvc':
-            default = v['name']
             par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
+            pipeline_parameters[par_name] = ('str', v['name'])
         elif v['type'] == 'new_pvc':
-            if v.get('annotation', {}).get('key') == "rok/origin":
-                default = v['annotation']['value']
+            rok_url = v['annotations'].get("rok/origin")
+            if rok_url is not None:
                 par_name = f"rok_{v['name'].replace('-', '_')}_url"
-            else:
-                default = None
-                par_name = f"vol_{v['name'].replace('-', '_')}"
+                pipeline_parameters[par_name] = ('str', rok_url)
         else:
             raise ValueError(f"Unknown volume type: {v['type']}")
-
-        pipeline_parameters[par_name] = ('str', default)
 
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
