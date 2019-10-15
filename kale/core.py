@@ -1,9 +1,7 @@
 import os
 import re
-import json
 import pprint
 import tempfile
-import subprocess
 
 import logging
 import logging.handlers
@@ -16,6 +14,10 @@ from shutil import copyfile
 from kale.nbparser import parser
 from kale.static_analysis import dep_analysis
 from kale.codegen import generate_code
+
+from kale.utils import pod_utils
+
+from kubernetes.config import ConfigException
 
 
 class Kale:
@@ -91,49 +93,6 @@ class Kale:
                 raise ValueError(
                     f"Provide a valid snapshot resource name if you want to snapshot a volume. Snapshot resource name {k8s_name_msg}")
 
-    def inspect_incluster_environmnet(self):
-        """
-        In case Kale is running in a Kubeflow Notebook Server, detect
-        the docker image used in the running container and use it in the
-        pipeline steps
-        """
-        pod_name = os.getenv("HOSTNAME")
-        if pod_name is None:
-            self.logger.debug("Env variable HOSTNAME not found. In-cluster inspection failed.")
-            return None
-        container_name = os.getenv("NB_PREFIX")
-        if container_name is None:
-            self.logger.debug("Env variable NB_PREFIX not found. In-cluster inspection failed.")
-            return None
-        container_name = container_name.split('/')[-1]
-        home = os.getenv("HOME")
-        if home is None:
-            self.logger.debug("Env variable HOME not found. In-cluster inspection failed.")
-            return None
-
-        def getProcessOutput(cmd):
-            process = subprocess.Popen(
-                cmd,
-                shell=True,
-                stdout=subprocess.PIPE)
-            process.wait()
-            data, err = process.communicate()
-            if process.returncode is 0:
-                return data.decode('utf-8')
-            else:
-                self.logger.debug(f"Error in running command '{cmd}': {err}")
-            return None
-
-        pods = json.loads(getProcessOutput("kubectl get pods -o json"))
-        if pods is None:
-            self.logger.debug("Could not retrieve the list of pods. In-cluster inspection failed.")
-            return None
-
-        pod_spec = list(filter(lambda x: x['metadata']['name'] == pod_name, pods['items']))[0]['spec']
-        container_spec = list(filter(lambda x: x['name'] == container_name, pod_spec['containers']))
-        current_docker_image = container_spec[0]['image']
-        return current_docker_image
-
     def run(self):
         self.logger.debug("------------- Kale Start Run -------------")
         try:
@@ -150,14 +109,17 @@ class Kale:
 
             # TODO: Run a static analysis over every step to check that pipeline parameters are not assigned with new values.
 
-            # detect now any in-cluster spec in case Kale is running in a Kubeflow Notebook Server
             # in case the user did not specify a custom docker image, use the same base image of
             # the current Notebook Server
-            # TODO: User the dns flag to check what environment we are in (in-cluster, local)
             if self.docker_base_image == '':
-                base_image = self.inspect_incluster_environmnet()
-                if base_image is not None:
-                    self.docker_base_image = base_image
+                try:
+                    self.docker_base_image = pod_utils.get_docker_base_image()
+                except ConfigException:
+                    # no K8s config found
+                    # use kfp default image
+                    pass
+                except Exception:
+                    raise
 
             # generate full kfp pipeline definition
             kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
