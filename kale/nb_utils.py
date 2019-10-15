@@ -18,19 +18,12 @@ log = logging.getLogger(__name__)
 
 
 def get_namespace():
-    try:
-        with open(NAMESPACE_PATH, "r") as f:
-            return f.read()
-    except FileNotFoundError:
-        return None
+    with open(NAMESPACE_PATH, "r") as f:
+        return f.read()
 
 
 def _get_k8s_client():
-    try:
-        k8s_config.load_incluster_config()
-    except k8s_config.ConfigException:
-        return None
-
+    k8s_config.load_incluster_config()
     api_client = k8s.ApiClient()
     return k8s.CoreV1Api(api_client)
 
@@ -92,15 +85,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
 def list_volumes():
     namespace = get_namespace()
-    if namespace is None:
-        log.warning("Could not retrieve the kubernetes namespace")
-        return {}
-
     client = _get_k8s_client()
-    if client is None:
-        log.warning("Could not initialize the kubernetes client")
-        return {}
-
     return _list_volumes(client, namespace, POD_NAME, CONTAINER_NAME)
 
 
