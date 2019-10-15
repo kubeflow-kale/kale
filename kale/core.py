@@ -4,7 +4,6 @@ import copy
 import json
 import pprint
 import tempfile
-import subprocess
 
 import logging
 import subprocess
