@@ -80,5 +80,102 @@ def main():
         )
 
 
+KALE_VOLUMES_DESCRIPTION = """
+Call kale-volumes to get information about Rok volumes currently mounted on
+your Notebook Server.
+"""
+
+
+def kale_volumes():
+    """This function handles kale-volumes CLI command"""
+    import logging
+    import os
+    import sys
+    import tabulate
+    from pathlib import Path
+    import json
+    from kale.utils import pod_utils
+
+    # Add logger
+    # Log to stdout. Set logging level according to --debug flag
+    # Log to file ./kale-volumes.log. Logging level == DEBUG
+    logger = logging.getLogger("kubeflow-kale")
+    formatter = logging.Formatter(
+        "%(asctime)s | %(name)s | %(levelname)s: %(message)s",
+        datefmt="%m-%d %H:%M"
+    )
+    logger.setLevel(logging.DEBUG)
+
+    log_dir_path = Path(".")
+    file_handler = logging.FileHandler(
+        filename=log_dir_path / 'kale-volumes.log',
+        mode='a'
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    def list_volumes(args, logger):
+        """This function gets invoked by the sub-command 'list'."""
+        volumes = pod_utils.list_volumes()
+
+        if args.output == "table":
+            headers = ["Mount Path", "Volume Name", "PVC Name", "Volume Size"]
+            data = [(path, volume.name,
+                     volume.persistent_volume_claim.claim_name, size)
+                    for path, volume, size in volumes]
+            logger.info(tabulate.tabulate(data, headers=headers))
+        else:
+            volumes_out = [{"type": "clone",
+                            "name": volume.name,
+                            "mount_point": path,
+                            "size": size,
+                            "size_type": "",
+                            "snapshot": False}
+                           for path, volume, size in volumes]
+            print(json.dumps(volumes_out,
+                             sort_keys=True,
+                             indent=3,
+                             separators=(",", ": ")))
+
+    parser = argparse.ArgumentParser(description=KALE_VOLUMES_DESCRIPTION)
+    parser.add_argument(
+        "--output",
+        "-o",
+        choices=["table", "json"],
+        default="table",
+        nargs="?",
+        type=str,
+        help="Output format - Default: 'table'"
+    )
+    parser.add_argument('--debug', action='store_true')
+    subparsers = parser.add_subparsers(
+        dest="subcommand",
+        help="kale-volumes sub-commands"
+    )
+
+    parser_list = subparsers.add_parser("list",
+                                        help="List Rok volumes currently "
+                                             "mounted on the Notebook "
+                                             "Server")
+    parser_list.set_defaults(func=list_volumes)
+
+    args = parser.parse_args()
+
+    if args.debug:
+        stream_handler.setLevel(logging.DEBUG)
+
+    if not os.getenv("NB_PREFIX"):
+        logger.error("You may run this command only inside a Notebook Server.")
+        sys.exit(1)
+
+    args.func(args, logger)
+
+
 if __name__ == "__main__":
     main()
