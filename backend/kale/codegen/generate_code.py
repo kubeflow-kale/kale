@@ -62,6 +62,11 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         ))
         function_names.append(block_name)
 
+    for v in volumes:
+        annotations = {a['key']: a['value'] for a in v['annotations']
+                       if a['key'] != '' and a['value'] != ''}
+        v['annotations'] = annotations
+
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
     pipeline_template = template_env.get_template('pipeline_template.txt')
     pipeline_code = pipeline_template.render(
