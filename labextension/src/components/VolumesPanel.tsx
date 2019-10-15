@@ -15,7 +15,8 @@ interface IProps {
     updateVolumeSize: Function,
     updateVolumeSizeType:Function,
     updateVolumeAnnotation: Function,
-
+    addAnnotation: Function,
+    deleteAnnotation: Function,
 }
 
 const selectValues = [
@@ -66,13 +67,39 @@ export class VolumesPanel extends React.Component<IProps, any> {
                         null;
 
                     const annotationField = (v.type === 'pv' || v.type === 'new_pvc') ?
-                            <AnnotationInput
-                                label={"Annotation"}
-                                inputIndex={idx}
-                                updateValue={this.props.updateVolumeAnnotation}
-                                annotation={v.annotation}
-                            />:
-                        null;
+                        <div>
+                            <div className={"kale-header-switch"} style={{padding: "0px 10px"}}>
+                                <div className="kale-header" style={{padding: "0", letterSpacing: ".3px", textTransform: "capitalize"}}>
+                                    Annotations
+                                </div>
+                                <div className={"skip-switch-container"}>
+                                    <button type="button"
+                                            className="minimal-toolbar-button"
+                                            title="Add Annotation"
+                                            onClick={_ => this.props.addAnnotation(idx)}
+                                    >
+                                    <span className="jp-Icon" style={{padding: 0, flex: "0 0 auto", marginRight: 0}}>
+                                        Add Annotation
+                                    </span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {(v.annotations.length > 0) ?
+                                (v.annotations || []).map((a, a_idx) => {
+                                    return (<div key={idx + " " + a_idx}>
+                                        <AnnotationInput
+                                            label={"Annotation"}
+                                            volumeIdx={idx}
+                                            annotationIdx={a_idx}
+                                            updateValue={this.props.updateVolumeAnnotation}
+                                            deleteValue={this.props.deleteAnnotation}
+                                            annotation={a}
+                                        />
+                                    </div>)
+                                })
+                            : null}
+                        </div>: null;
 
                     return (
                     <div className='input-container' key={idx}>

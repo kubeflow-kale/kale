@@ -308,8 +308,10 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = (pro
 
 interface IAnnotationInput {
     updateValue: Function,
+    deleteValue: Function,
     annotation: {key: string, value: string},
-    inputIndex?: number,
+    volumeIdx: number,
+    annotationIdx: number,
     label: string,
 }
 
@@ -325,11 +327,11 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props
     }, [props.annotation]); // Only re-run the effect if props.annotation changes
 
     const updateKey = (key: string) => {
-        props.updateValue({...props.annotation, key: key}, props.inputIndex)
+        props.updateValue({...props.annotation, key: key}, props.volumeIdx, props.annotationIdx)
     };
 
     const updateValue = (value: string) => {
-        props.updateValue({...props.annotation, value: value}, props.inputIndex)
+        props.updateValue({...props.annotation, value: value}, props.volumeIdx, props.annotationIdx)
     };
 
     return <div className='toolbar'>
@@ -337,13 +339,24 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props
             updateValue={updateKey}
             value={props.annotation.key}
             label={'Key'}
-            inputIndex={props.inputIndex}
+            inputIndex={props.volumeIdx}
         />
         <MaterialInput
             updateValue={updateValue}
             value={props.annotation.value}
             label={'Value'}
-            inputIndex={props.inputIndex}
+            inputIndex={props.volumeIdx}
         />
+        <div>
+            <button type="button"
+                className="minimal-toolbar-button"
+                title="Delete Annotation"
+                onClick={_ => props.deleteValue(props.volumeIdx, props.annotationIdx)}
+            >
+            <span
+                className="jp-CloseIcon jp-Icon jp-Icon-16"
+                style={{padding: 0, flex: "0 0 auto", marginRight: 0}}/>
+            </button>
+        </div>
     </div>
 };

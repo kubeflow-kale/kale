@@ -33,6 +33,11 @@ interface IState {
     activeCellIndex?: number;
 }
 
+export interface IAnnotation {
+    key: string,
+    value: string
+}
+
 export interface IVolumeMetadata {
     type: string,
     // name field will have different meaning based on the type:
@@ -43,7 +48,7 @@ export interface IVolumeMetadata {
     mount_point: string,
     size?: string,
     size_type?: string,
-    annotation?: {key: string, value: string},
+    annotations?: IAnnotation[],
     // true if snapshot to be taken at the end of the pipeline
     snapshot: boolean,
     snapshot_name?: string
@@ -82,13 +87,19 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         type: 'new_pvc',
         name: '',
         mount_point: '',
-        annotation: {key: '', value: ''},
+        annotations: [],
         size: '1',
         size_type: 'Gi',
         snapshot: false
     };
 
+    DefaultEmptyAnnotation: IAnnotation = {
+        key: '',
+        value: ''
+    };
+
     removeIdxFromArray = (index: number, arr: Array<any>): Array<any> => {return arr.slice(0, index).concat(arr.slice(index + 1, arr.length))};
+    updateIdxInArray = (element: any, index: number, arr: Array<any>): Array<any> => {return arr.slice(0, index).concat([element]).concat(arr.slice(index + 1, arr.length))};
 
     updateSelectValue = (val: string) => this.setState({selectVal: val});
     // update metadata state values: use destructure operator to update nested dict
@@ -107,7 +118,46 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateVolumeSnapshotName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}});
     updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
     updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
-    updateVolumeAnnotation = (annotation: {key: string, value: string}, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], annotation: annotation}: item})}});
+    addAnnotation = (idx: number) => this.setState({metadata: {
+        ...this.state.metadata,
+        volumes: this.state.metadata.volumes.map((item, key) => {
+            if (key === idx) {
+                return {
+                    ...this.state.metadata.volumes[idx],
+                    annotations: [...this.state.metadata.volumes[idx].annotations, this.DefaultEmptyAnnotation]
+                };
+            } else {
+                return item;
+            }
+        })
+    }});
+    deleteAnnotation = (volumeIdx: number, annotationIdx: number) => {
+        this.setState({metadata: {
+            ...this.state.metadata,
+            volumes: this.state.metadata.volumes.map((item, key) => {
+                if (key === volumeIdx) {
+                    return {...item, annotations: this.removeIdxFromArray(annotationIdx, this.state.metadata.volumes[volumeIdx].annotations)};
+                } else {
+                    return item;
+                }
+            })
+        }});
+    };
+    updateVolumeAnnotation = (annotation: {key: string, value: string}, volumeIdx: number, annotationIdx: number) => {
+        this.setState({metadata: {
+            ...this.state.metadata,
+            volumes: this.state.metadata.volumes.map((item, key) => {
+                if (key === volumeIdx) {
+                    return {
+                        ...item,
+                        annotations: this.updateIdxInArray(annotation, annotationIdx, this.state.metadata.volumes[volumeIdx].annotations)
+                    };
+                } else {
+                    return item;
+                }
+            })
+        }});
+    };
 
     activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentType: type});
 
@@ -271,6 +321,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             updateVolumeSizeType={this.updateVolumeSizeType}
             deleteVolume={this.deleteVolume}
             updateVolumeAnnotation={this.updateVolumeAnnotation}
+            addAnnotation={this.addAnnotation}
+            deleteAnnotation={this.deleteAnnotation}
         />;
 
         let run_link = null;
