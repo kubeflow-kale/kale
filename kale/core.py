@@ -19,8 +19,8 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dep_analysis
 from kale.codegen import generate_code
-from kale.nb_utils import list_volumes, get_namespace
-from kale.utils import pod_utils
+from kale.utils.pod_utils import list_volumes, get_namespace, \
+                                 get_docker_base_image
 
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
@@ -201,7 +201,7 @@ class Kale:
         if not self.pipeline_metadata['docker_image']:
             try:
                 # will fail in case in cluster config is not found
-                self.pipeline_metadata['docker_image'] = pod_utils.get_docker_base_image()
+                self.pipeline_metadata['docker_image'] = get_docker_base_image()
             except ConfigException:
                 # no K8s config found
                 # use kfp default image
