@@ -15,6 +15,7 @@ import OutlinedInput from "@material-ui/core/OutlinedInput";
 
 import { useDebouncedCallback } from 'use-debounce';
 import Switch from "react-switch";
+import {RokInput} from './RokInput';
 
 // https://codeburst.io/my-journey-to-make-styling-with-material-ui-right-6a44f7c68113
 const useStyles = makeStyles(() =>
@@ -54,9 +55,9 @@ const theme = createMuiTheme({
 });
 
 
-interface IMaterialInput {
+export interface IMaterialInput {
     updateValue: Function,
-    value: string,
+    value: string | number,
     regex?: string,
     regexErrorMsg?: string,
     inputIndex?: number,
@@ -70,7 +71,7 @@ interface IMaterialInput {
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
 
-    const [value, setValue] = React.useState('');
+    const [value, setValue] = React.useState('' as any);
     const [error, updateError] = React.useState(false);
     const classes = useStyles({});
 
@@ -119,7 +120,8 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
             InputLabelProps={{
                 classes: {
                     root: classes.label
-                }
+                },
+                shrink: value !== ''
             }}
             InputProps={inputProps}
             FormHelperTextProps={{
@@ -160,7 +162,8 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
             InputLabelProps={{
                 classes: {
                     root: classes.label
-                }
+                },
+                shrink: props.value !== ''
             }}
             InputProps={{
                 classes: {
@@ -353,6 +356,7 @@ interface IAnnotationInput {
     volumeIdx: number,
     annotationIdx: number,
     label: string,
+    cannotBeDeleted?: boolean,
 }
 
 export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props) => {
@@ -374,29 +378,47 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props
         props.updateValue({...props.annotation, value: value}, props.volumeIdx, props.annotationIdx)
     };
 
-    return <div className='toolbar'>
-        <MaterialInput
-            updateValue={updateKey}
-            value={props.annotation.key}
-            label={'Key'}
+    const valueField = (props.annotation.key === 'rok/origin') ?
+        <RokInput
+            updateValue={updateValue}
+            value={props.annotation.value}
+            label={'Rok URL'}
             inputIndex={props.volumeIdx}
+            annotationIdx={props.annotationIdx}
         />
-        <MaterialInput
+        :<MaterialInput
             updateValue={updateValue}
             value={props.annotation.value}
             label={'Value'}
             inputIndex={props.volumeIdx}
-        />
-        <div>
-            <button type="button"
-                className="minimal-toolbar-button"
-                title="Delete Annotation"
-                onClick={_ => props.deleteValue(props.volumeIdx, props.annotationIdx)}
-            >
-            <span
-                className="jp-CloseIcon jp-Icon jp-Icon-16"
-                style={{padding: 0, flex: "0 0 auto", marginRight: 0}}/>
-            </button>
+        />;
+
+    return <div className='toolbar'>
+        <div style={{marginRight: "10px", width: "50%"}}>
+            <MaterialInput
+                updateValue={updateKey}
+                value={props.annotation.key}
+                label={'Key'}
+                inputIndex={props.volumeIdx}
+                readOnly={props.cannotBeDeleted || false}
+            />
         </div>
+        <div style={{width: "50%"}}>
+            {valueField}
+        </div>
+        {(!props.cannotBeDeleted) ?
+            <div className="delete-button">
+                <Button
+                    variant="contained"
+                    size="small"
+                    title="Remove Annotation"
+                    onClick={_ => props.deleteValue(props.volumeIdx, props.annotationIdx)}
+                    style={{transform: 'scale(0.9)'}}
+                >
+                    <DeleteIcon />
+                </Button>
+            </div>
+            : null
+        }
     </div>
 };

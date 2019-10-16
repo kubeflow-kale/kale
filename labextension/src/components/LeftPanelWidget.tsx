@@ -33,6 +33,19 @@ export const NEW_EXPERIMENT: IExperiment = {
     name: "+ New Experiment",
     id: "new"
 };
+const selectVolumeSizeTypes = [
+    {label: "Gi", value: "Gi", base: 1024 ** 3},
+    {label: "Mi", value: "Mi", base: 1024 ** 2},
+    {label: "Ki", value: "Ki", base: 1024 ** 1},
+    {label: "", value: "", base: 1024 ** 0},
+];
+
+const selectVolumeTypes = [
+    {label: "Create Empty Volume", value: 'new_pvc'},
+    {label: "Clone Notebook Volume", value: 'clone'},
+    {label: "Clone Existing Snapshot", value: 'snap'},
+    {label: "Use Existing Volume", value: 'pvc'},
+];
 
 interface IProps {
     tracker: INotebookTracker;
@@ -50,6 +63,9 @@ interface IState {
     activeCellIndex?: number;
     experiments: IExperiment[];
     gettingExperiments: boolean;
+    notebookVolumes: IVolumeMetadata[];
+    volumes: IVolumeMetadata[];
+    selectVolumeTypes: {label: string, value: string}[];
 }
 
 export interface IAnnotation {
@@ -63,12 +79,13 @@ export interface IVolumeMetadata {
     //  - pv: name of the PV
     //  - pvc: name of the pvc
     //  - new_pvc: new pvc with dynamic provisioning
+    //  - clone: clone a volume which is currently mounted to the Notebook Server
+    //  - snap: new_pvc from Rok Snapshot
     name: string,
     mount_point: string,
-    size?: string,
+    size?: number,
     size_type?: string,
-    annotations?: IAnnotation[],
-    // true if snapshot to be taken at the end of the pipeline
+    annotations: IAnnotation[],
     snapshot: boolean,
     snapshot_name?: string
 }
@@ -102,26 +119,30 @@ const DefaultState: IState = {
     activeCellIndex: 0,
     experiments: [],
     gettingExperiments: false,
+    notebookVolumes: [],
+    volumes: [],
+    selectVolumeTypes: selectVolumeTypes,
+};
+
+const DefaultEmptyVolume: IVolumeMetadata = {
+    type: 'new_pvc',
+    name: '',
+    mount_point: '',
+    annotations: [],
+    size: 1,
+    size_type: 'Gi',
+    snapshot: false,
+    snapshot_name: '',
+};
+
+const DefaultEmptyAnnotation: IAnnotation = {
+    key: '',
+    value: ''
 };
 
 export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // init state default values
     state = DefaultState;
-
-     DefaultEmptyVolume: IVolumeMetadata = {
-        type: 'new_pvc',
-        name: '',
-        mount_point: '',
-        annotations: [],
-        size: '1',
-        size_type: 'Gi',
-        snapshot: false
-    };
-
-    DefaultEmptyAnnotation: IAnnotation = {
-        key: '',
-        value: ''
-    };
 
     removeIdxFromArray = (index: number, arr: Array<any>): Array<any> => {return arr.slice(0, index).concat(arr.slice(index + 1, arr.length))};
     updateIdxInArray = (element: any, index: number, arr: Array<any>): Array<any> => {return arr.slice(0, index).concat([element]).concat(arr.slice(index + 1, arr.length))};
@@ -134,56 +155,141 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
 
     // Volume managers
-    deleteVolume = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}});
-    addVolume = () => this.setState({metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, this.DefaultEmptyVolume]}});
-    updateVolumeType = (type: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], type: type}: item})}});
-    updateVolumeName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], name: name}: item})}});
-    updateVolumeMountPoint = (mountPoint: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], mount_point: mountPoint}: item})}});
-    updateVolumeSnapshot = (idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot: !this.state.metadata.volumes[idx].snapshot}: item})}});
-    updateVolumeSnapshotName = (name: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}});
-    updateVolumeSize = (size: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}});
-    updateVolumeSizeType = (sizeType: string, idx: number) => this.setState({metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}});
-    addAnnotation = (idx: number) => this.setState({metadata: {
-        ...this.state.metadata,
-        volumes: this.state.metadata.volumes.map((item, key) => {
+    deleteVolume = (idx: number) => {
+        this.setState({
+            volumes: this.removeIdxFromArray(idx, this.state.volumes),
+            metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}
+        });
+    };
+    addVolume = () => {
+        this.setState({
+            volumes: [...this.state.volumes, DefaultEmptyVolume],
+            metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, DefaultEmptyVolume]}
+        });
+    };
+    updateVolumeType = (type: string, idx: number) => {
+        const kaleType: string = (type === "snap") ? "new_pvc" : type;
+        const annotations: IAnnotation[] = (type === "snap") ? [{key: "rok/origin", value: ""}]: [];
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return (key === idx) ? {...item, type: type, annotations: annotations}: item}),
+            metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...item, type: kaleType, annotations: annotations}: item})}
+        });
+    };
+    updateVolumeName = (name: string, idx: number) => {
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return (key === idx) ? {...item, name: name}: item}),
+            metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...item, name: name}: item})}
+        });
+    };
+    updateVolumeMountPoint = (mountPoint: string, idx: number) => {
+        let cloneVolume: IVolumeMetadata = null;
+        if (this.state.volumes[idx].type === "clone") {
+            cloneVolume = this.state.notebookVolumes.filter(v => v.mount_point === mountPoint)[0];
+        }
+        const updateItem = (item: IVolumeMetadata, key: number): IVolumeMetadata => {
+            if (key === idx) {
+                if (item.type === "clone") {
+                    return {...cloneVolume};
+                } else {
+                    return {...this.state.volumes[idx], mount_point: mountPoint};
+                }
+            } else {
+                return item;
+            }
+        };
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return updateItem(item, key)}),
+            metadata: {
+                ...this.state.metadata,
+                volumes: this.state.metadata.volumes.map((item, key) => {return updateItem(item, key)})
+            }
+        });
+    };
+    updateVolumeSnapshot = (idx: number) => {
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return (key === idx) ? {...this.state.volumes[idx], snapshot: !this.state.volumes[idx].snapshot}: item}),
+            metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot: !this.state.metadata.volumes[idx].snapshot}: item})}
+        });
+    };
+    updateVolumeSnapshotName = (name: string, idx: number) => {
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return (key === idx) ? {...this.state.volumes[idx], snapshot_name: name}: item}),
+            metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], snapshot_name: name}: item})}
+        });
+    };
+    updateVolumeSize = (size: number, idx: number) => {
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return (key === idx) ? {...this.state.volumes[idx], size: size}: item}),
+            metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size: size}: item})}
+        });
+    };
+    updateVolumeSizeType = (sizeType: string, idx: number) => {
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return (key === idx) ? {...this.state.volumes[idx], size_type: sizeType}: item}),
+            metadata: {...this.state.metadata, volumes: this.state.metadata.volumes.map((item, key) => {return (key === idx) ? {...this.state.metadata.volumes[idx], size_type: sizeType}: item})}
+        });
+    };
+    addAnnotation = (idx: number) => {
+        const updateItem = (item: IVolumeMetadata, key: number) => {
             if (key === idx) {
                 return {
-                    ...this.state.metadata.volumes[idx],
-                    annotations: [...this.state.metadata.volumes[idx].annotations, this.DefaultEmptyAnnotation]
+                    ...item,
+                    annotations: [...item.annotations, DefaultEmptyAnnotation]
                 };
             } else {
                 return item;
             }
-        })
-    }});
+        };
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return updateItem(item, key)}),
+            metadata: {
+                ...this.state.metadata,
+                volumes: this.state.metadata.volumes.map((item, key) => {return updateItem(item, key)})
+            }
+        });
+    };
     deleteAnnotation = (volumeIdx: number, annotationIdx: number) => {
-        this.setState({metadata: {
-            ...this.state.metadata,
-            volumes: this.state.metadata.volumes.map((item, key) => {
-                if (key === volumeIdx) {
-                    return {...item, annotations: this.removeIdxFromArray(annotationIdx, this.state.metadata.volumes[volumeIdx].annotations)};
-                } else {
-                    return item;
-                }
-            })
-        }});
+        const updateItem = (item: IVolumeMetadata, key: number) => {
+            if (key === volumeIdx) {
+                return {...item, annotations: this.removeIdxFromArray(annotationIdx, item.annotations)};
+            } else {
+                return item;
+            }
+        };
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return updateItem(item, key)}),
+            metadata: {
+                ...this.state.metadata,
+                volumes: this.state.metadata.volumes.map((item, key) => {return updateItem(item, key)})
+            }
+        });
     };
     updateVolumeAnnotation = (annotation: {key: string, value: string}, volumeIdx: number, annotationIdx: number) => {
-        this.setState({metadata: {
-            ...this.state.metadata,
-            volumes: this.state.metadata.volumes.map((item, key) => {
-                if (key === volumeIdx) {
-                    return {
-                        ...item,
-                        annotations: this.updateIdxInArray(annotation, annotationIdx, this.state.metadata.volumes[volumeIdx].annotations)
-                    };
-                } else {
-                    return item;
-                }
-            })
-        }});
+        const updateItem = (item: IVolumeMetadata, key: number) => {
+            if (key === volumeIdx) {
+                return {
+                    ...item,
+                    annotations: this.updateIdxInArray(annotation, annotationIdx, item.annotations)
+                };
+            } else {
+                return item;
+            }
+        };
+        this.setState({
+            volumes: this.state.volumes.map((item, key) => {return updateItem(item, key)}),
+            metadata: {
+                ...this.state.metadata,
+                volumes: this.state.metadata.volumes.map((item, key) => {return updateItem(item, key)})
+            }
+        });
     };
-
+    getNotebookMountPoints = (): {label: string; value: string}[] => {
+        const mountPoints: {label: string, value: string}[] = [];
+        this.state.notebookVolumes.map((item) => {
+            mountPoints.push({label: item.mount_point, value: item.mount_point});
+        });
+        return mountPoints;
+    };
     activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentType: type});
     changeDeployDebugMessage = () => this.setState({deployDebugMessage: !this.state.deployDebugMessage});
 
@@ -279,6 +385,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             console.log(notebookMetadata);
 
             await this.getExperiments();
+            // Get information about volumes currently mounted on the notebook server
+            await this.getMountedVolumes();
 
             // if the key exists in the notebook's metadata
             if (notebookMetadata) {
@@ -299,62 +407,38 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     }
                     experiment_name = notebookMetadata['experiment_name'];
                 }
+                let metadataVolumes = (notebookMetadata['volumes'] || []).filter((v: IVolumeMetadata) => v.type !== 'clone');
+                let stateVolumes = metadataVolumes.map((volume: IVolumeMetadata) => {
+                    if (volume.type === 'new_pvc' && volume.annotations.length > 0 && volume.annotations[0].key === 'rok/origin') {
+                        return {...volume, type: 'snap'};
+                    }
+                    return volume;
+                });
+                if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
+                    metadataVolumes = stateVolumes = this.state.notebookVolumes;
+                } else {
+                    metadataVolumes = metadataVolumes.concat(this.state.notebookVolumes);
+                    stateVolumes = stateVolumes.concat(this.state.notebookVolumes);
+                }
+
                 let metadata: IKaleNotebookMetadata = {
                     experiment: experiment,
                     experiment_name: experiment_name,
                     pipeline_name: notebookMetadata['pipeline_name'] || '',
                     pipeline_description: notebookMetadata['pipeline_description'] || '',
-                    docker_image: notebookMetadata['docker_image'] || '',
-                    volumes: notebookMetadata['volumes'] || [],
+                    docker_image: notebookMetadata['docker_image'] || DefaultState.metadata.docker_image,
+                    volumes: metadataVolumes,
                 };
-                this.setState({metadata: metadata, ...currentCell})
+                this.setState({
+                    volumes: stateVolumes,
+                    metadata: metadata, ...currentCell
+                });
             } else {
                 this.setState({metadata: DefaultState.metadata, ...currentCell})
             }
         } else {
             this.resetState();
         }
-    };
-
-    getExperiments = async () => {
-        this.setState({gettingExperiments: true});
-        let list_experiments: IExperiment[] = await this.executeRpc(this.state.activeNotebook, "kfp.list_experiments");
-        if (list_experiments) {
-            list_experiments.push(NEW_EXPERIMENT);
-        } else {
-            list_experiments = [NEW_EXPERIMENT];
-        }
-
-        // Fix experiment metadata
-        let experiment: IExperiment = null;
-        let selectedExperiments: IExperiment[] = list_experiments.filter(
-            e => (
-                e.id === this.state.metadata.experiment.id
-                || e.name === this.state.metadata.experiment.name
-                || e.name === this.state.metadata.experiment_name
-            )
-        );
-        if (selectedExperiments.length === 0 || selectedExperiments[0].id === NEW_EXPERIMENT.id) {
-            let name = list_experiments[0].name;
-            if (name === NEW_EXPERIMENT.name) {
-                name = (this.state.metadata.experiment.name !== '') ?
-                    this.state.metadata.experiment.name
-                    : this.state.metadata.experiment_name;
-            }
-            experiment = {...list_experiments[0], name: name};
-        } else {
-            experiment = selectedExperiments[0];
-        }
-
-        this.setState({
-            experiments: list_experiments,
-            gettingExperiments: false,
-            metadata: {
-                ...this.state.metadata,
-                experiment: experiment,
-                experiment_name: experiment.name,
-            },
-        });
     };
 
     runDeploymentCommand = async () => {
@@ -370,7 +454,7 @@ except Exception as e:
         _kale_output_message = [traceback.format_exc()]
     else:
         _kale_output_message = [str(e), 'To see full traceback activate the debugging option in Advanced Settings']
-`;
+        `;
         const initKaleCommand = `
     import traceback
     from kale.core import Kale as _Kale_Class
@@ -380,7 +464,7 @@ except Exception as e:
     _kale_generated_script_path = _kale_instance.generate_kfp_executable(_kale_pipeline_graph, _kale_pipeline_parameters)
     _kale_package_path = _kale_kfp_utils.compile_pipeline(_kale_generated_script_path, _kale_instance.pipeline_metadata['pipeline_name'])
     _kale_pipeline_name = _kale_instance.pipeline_metadata['pipeline_name']
-    `;
+        `;
         const uploadPipelineCommand = (overwrite: string = 'False') => `
     _kale_kfp_utils.upload_pipeline(
         pipeline_package_path=_kale_package_path,
@@ -388,7 +472,7 @@ except Exception as e:
         overwrite=${overwrite},
         host=_kale_instance.pipeline_metadata.get('kfp_host', None)
     )
-`;
+        `;
         const runPipelineCommand = `
     _kale_kfp_utils.run_pipeline(
         run_name=_kale_instance.pipeline_metadata['pipeline_name'] + '_run',
@@ -396,7 +480,7 @@ except Exception as e:
         pipeline_package_path=_kale_package_path,
         host=_kale_instance.pipeline_metadata.get('kfp_host', None)
     )
-`;
+        `;
 
         // CREATE PIPELINE
         const expr = {output: "_kale_output_message", pipeline_name: "_kale_pipeline_name"};
@@ -458,6 +542,67 @@ except Exception as e:
         this.setState({runDeployment: false});
     };
 
+    getExperiments = async () => {
+        this.setState({gettingExperiments: true});
+        let list_experiments: IExperiment[] = await this.executeRpc(this.state.activeNotebook, "kfp.list_experiments");
+        if (list_experiments) {
+            list_experiments.push(NEW_EXPERIMENT);
+        } else {
+            list_experiments = [NEW_EXPERIMENT];
+        }
+
+        // Fix experiment metadata
+        let experiment: IExperiment = null;
+        let selectedExperiments: IExperiment[] = list_experiments.filter(
+            e => (
+                e.id === this.state.metadata.experiment.id
+                || e.name === this.state.metadata.experiment.name
+                || e.name === this.state.metadata.experiment_name
+            )
+        );
+        if (selectedExperiments.length === 0 || selectedExperiments[0].id === NEW_EXPERIMENT.id) {
+            let name = list_experiments[0].name;
+            if (name === NEW_EXPERIMENT.name) {
+                name = (this.state.metadata.experiment.name !== '') ?
+                    this.state.metadata.experiment.name
+                    : this.state.metadata.experiment_name;
+            }
+            experiment = {...list_experiments[0], name: name};
+        } else {
+            experiment = selectedExperiments[0];
+        }
+
+        this.setState({
+            experiments: list_experiments,
+            gettingExperiments: false,
+            metadata: {
+                ...this.state.metadata,
+                experiment: experiment,
+                experiment_name: experiment.name,
+            },
+        });
+    };
+
+    getMountedVolumes = async () => {
+        let notebookVolumes: IVolumeMetadata[] = await this.executeRpc(this.state.activeNotebook, "nb.list_volumes");
+
+        if (notebookVolumes) {
+            notebookVolumes = notebookVolumes.map((volume) => {
+                const sizeGroup = selectVolumeSizeTypes.filter(s => volume.size >= s.base)[0];
+                volume.size = Math.ceil(volume.size / sizeGroup.base);
+                volume.size_type = sizeGroup.value;
+                volume.annotations = [];
+                return volume;
+            });
+            this.setState({
+                notebookVolumes: notebookVolumes,
+                selectVolumeTypes: selectVolumeTypes,
+            });
+        } else {
+            this.setState({selectVolumeTypes: selectVolumeTypes.filter(t => t.value !== 'clone')});
+        }
+    };
+
     render() {
 
         // FIXME: What about human-created Notebooks? Match name and old API as well
@@ -508,7 +653,7 @@ except Exception as e:
         />;
 
         const volsPanel = <VolumesPanel
-            volumes={this.state.metadata.volumes}
+            volumes={this.state.volumes}
             addVolume={this.addVolume}
             updateVolumeType={this.updateVolumeType}
             updateVolumeName={this.updateVolumeName}
@@ -521,6 +666,9 @@ except Exception as e:
             updateVolumeAnnotation={this.updateVolumeAnnotation}
             addAnnotation={this.addAnnotation}
             deleteAnnotation={this.deleteAnnotation}
+            notebookMountPoints={this.getNotebookMountPoints()}
+            selectVolumeSizeTypes={selectVolumeSizeTypes}
+            selectVolumeTypes={this.state.selectVolumeTypes}
         />;
 
         return (
@@ -534,38 +682,47 @@ except Exception as e:
                         </p>
                     </div>
 
-                    <div>
-                        <p className="kale-header">Pipeline Metadata</p>
+                    <div className="kale-component">
+                        <div>
+                            <p className="kale-header">Pipeline Metadata</p>
+                        </div>
+
+                        <div className={'input-container'}>
+                            {experiment_name_input}
+                            {pipeline_name_input}
+                            {pipeline_desc_input}
+                        </div>
                     </div>
 
-                    <div className={'input-container'}>
-                        {experiment_name_input}
-                        {pipeline_name_input}
-                        {pipeline_desc_input}
-                    </div>
 
                     {/*  CELLTAGS PANEL  */}
-                    <CellTags
-                        notebook={this.state.activeNotebook}
-                        activeCellIndex={this.state.activeCellIndex}
-                        activeCell={this.state.activeCell}
-                    />
+                    <div className="kale-component">
+                        <CellTags
+                            notebook={this.state.activeNotebook}
+                            activeCellIndex={this.state.activeCellIndex}
+                            activeCell={this.state.activeCell}
+                        />
+                    </div>
                     {/*  --------------  */}
 
                     {volsPanel}
 
-                    <CollapsablePanel
-                        title={"Advanced Settings"}
-                        dockerImageValue={this.state.metadata.docker_image}
-                        dockerChange={this.updateDockerImage}
-                        debug={this.state.deployDebugMessage}
-                        changeDebug={this.changeDeployDebugMessage}
-                    />
+                    <div className="kale-component">
+                        <CollapsablePanel
+                            title={"Advanced Settings"}
+                            dockerImageValue={this.state.metadata.docker_image}
+                            dockerChange={this.updateDockerImage}
+                            debug={this.state.deployDebugMessage}
+                            changeDebug={this.changeDeployDebugMessage}
+                        />
+                    </div>
 
-                    <SplitDeployButton
-                        running={this.state.runDeployment}
-                        handleClick={this.activateRunDeployState}
-                    />
+                    <div className="kale-component">
+                        <SplitDeployButton
+                            running={this.state.runDeployment}
+                            handleClick={this.activateRunDeployState}
+                        />
+                    </div>
                 </div>
 
             </div>

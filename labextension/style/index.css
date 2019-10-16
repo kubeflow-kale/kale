@@ -14,11 +14,15 @@
 | Components
 |----------------------------------------------------------------------------*/
 
+.kale-component {
+  padding: 5px 0px;
+}
+
 .kale-header {
   color: #477EF0;
   letter-spacing: .4px;
   /*margin-top: 8px;*/
-  padding: 20px 0 5px 12px;
+  padding: 5px;
   font-size: var(--jp-ui-font-size1);
   font-weight: 800;
   text-transform: uppercase;
@@ -26,7 +30,6 @@
 }
 
 .kale-header-switch {
-  padding: 20px 12px 0 12px;
   flex: 0 0 auto;
   flex-direction: row;
   justify-content: space-between;
@@ -150,6 +153,10 @@
   line-height: normal;
 }
 
+.volume-container {
+  border-bottom: inset;
+}
+
 /*https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Aligning_Items_in_a_Flex_Container*/
 .toolbar {
   flex: 0 0 auto;
@@ -245,4 +252,38 @@
 
 .jp-Dialog-content {
   max-width: 75% !important;
+}
+
+.add-button {
+  padding: 5px;
+}
+
+.add-button button {
+  color: white;
+  background: rgb(65, 121, 244);
+}
+
+.add-button button:hover {
+  background: rgb(63, 108, 197);
+}
+
+.delete-button button {
+  padding: 5px 0px;
+  margin: 0px 10px;
+  min-width: 0px;
+  min-height: 0px;
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  color: rgb(255, 0, 25);
+  background: white;
+  box-shadow: none;
+}
+
+.delete-button button:hover {
+  color: rgb(189, 21, 35);
+}
+
+.delete-button svg {
+  transform: scale(0.8);
 }

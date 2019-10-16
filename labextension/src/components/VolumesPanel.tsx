@@ -1,4 +1,7 @@
 import * as React from "react";
+import {Button} from "@material-ui/core";
+import AddIcon from '@material-ui/icons/Add';
+import DeleteIcon from '@material-ui/icons/Delete';
 import {AnnotationInput, MaterialInput, MaterialSelect} from "./Components";
 import {IVolumeMetadata} from "./LeftPanelWidget";
 import Switch from "react-switch";
@@ -17,19 +20,10 @@ interface IProps {
     updateVolumeAnnotation: Function,
     addAnnotation: Function,
     deleteAnnotation: Function,
+    notebookMountPoints: {label: string, value: string}[],
+    selectVolumeSizeTypes: {label: string, value: string, base: number}[],
+    selectVolumeTypes: {label: string, value: string}[],
 }
-
-const selectValues = [
-    {label: "New Volume", value: 'new_pvc'},
-    {label: "Existing PVC", value: 'pvc'},
-    {label: "Existing PV", value: 'pv'}
-];
-
-const selectVolumeSizeTypes = [
-    {label: "Gi", value: "Gi"},
-    {label: "Mi", value: "Mi"},
-    {label: "Ki", value: "Ki"}
-];
 
 export class VolumesPanel extends React.Component<IProps, any> {
 
@@ -46,10 +40,31 @@ export class VolumesPanel extends React.Component<IProps, any> {
             vols =
                 <div> {
                 this.props.volumes.map((v, idx) => {
-                    const nameLabel = selectValues.filter((d) => {return (d.value === v.type)})[0].label;
+                    const nameLabel = this.props.selectVolumeTypes.filter((d) => {return (d.value === v.type)})[0].label;
 
-                    const sizePicker = (v.type === 'pv' || v.type === 'new_pvc') ?
-                            <div className='toolbar'>
+                    const mountPointPicker = (v.type === 'clone') ?
+                        <div>
+                            <MaterialSelect
+                                label={"Select from currently mounted points"}
+                                index={idx}
+                                updateValue={this.props.updateVolumeMountPoint}
+                                values={this.props.notebookMountPoints}
+                                value={v.mount_point}
+                            />
+                        </div>:
+                        <div>
+                            <MaterialInput
+                                label={"Mount Point"}
+                                inputIndex={idx}
+                                updateValue={this.props.updateVolumeMountPoint}
+                                value={v.mount_point}
+                            />
+                        </div>
+                        ;
+                    const sizePicker = (v.type === 'pvc') ?
+                        null:
+                        <div className='toolbar'>
+                            <div style={{marginRight: "10px", width: "50%"}}>
                                 <MaterialInput
                                     updateValue={this.props.updateVolumeSize}
                                     value={v.size}
@@ -57,37 +72,28 @@ export class VolumesPanel extends React.Component<IProps, any> {
                                     inputIndex={idx}
                                     numeric
                                 />
+                            </div>
+                            <div style={{width: "50%"}}>
                                 <MaterialSelect
                                     updateValue={this.props.updateVolumeSizeType}
-                                    values={selectVolumeSizeTypes}
+                                    values={this.props.selectVolumeSizeTypes}
                                     value={v.size_type}
                                     label={"Type"}
                                     index={idx}/>
-                            </div>:
-                        null;
+                            </div>
+                        </div>;
 
-                    const annotationField = (v.type === 'pv' || v.type === 'new_pvc') ?
+                    const annotationField = (v.type === 'pv' || v.type === 'new_pvc' || v.type === 'snap') ?
                         <div>
                             <div className={"kale-header-switch"} style={{padding: "0px 10px"}}>
                                 <div className="kale-header" style={{padding: "0", letterSpacing: ".3px", textTransform: "capitalize"}}>
                                     Annotations
                                 </div>
-                                <div className={"skip-switch-container"}>
-                                    <button type="button"
-                                            className="minimal-toolbar-button"
-                                            title="Add Annotation"
-                                            onClick={_ => this.props.addAnnotation(idx)}
-                                    >
-                                    <span className="jp-Icon" style={{padding: 0, flex: "0 0 auto", marginRight: 0}}>
-                                        Add Annotation
-                                    </span>
-                                    </button>
-                                </div>
                             </div>
 
-                            {(v.annotations.length > 0) ?
-                                (v.annotations || []).map((a, a_idx) => {
-                                    return (<div key={idx + " " + a_idx}>
+                            {(v.annotations && v.annotations.length > 0) ?
+                                v.annotations.map((a, a_idx) => {
+                                    return (<div key={"vol:" + idx + " annotation:" + a_idx}>
                                         <AnnotationInput
                                             label={"Annotation"}
                                             volumeIdx={idx}
@@ -95,23 +101,46 @@ export class VolumesPanel extends React.Component<IProps, any> {
                                             updateValue={this.props.updateVolumeAnnotation}
                                             deleteValue={this.props.deleteAnnotation}
                                             annotation={a}
+                                            cannotBeDeleted={(v.type === 'snap' && a_idx === 0)}
                                         />
                                     </div>)
                                 })
                             : null}
+
+                            <div className="add-button">
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    title="Add Annotation"
+                                    onClick={_ => this.props.addAnnotation(idx)}
+                                    style={{transform: 'scale(0.7)'}}
+                                >
+                                    <AddIcon />
+                                    Add Annotation
+                                </Button>
+                            </div>
+
                         </div>: null;
 
                     return (
-                    <div className='input-container' key={idx}>
+                    <div className="input-container volume-container" key={idx}>
                         <div className="toolbar">
                             <MaterialSelect
                                 updateValue={this.props.updateVolumeType}
-                                values={selectValues}
+                                values={this.props.selectVolumeTypes}
                                 value={v.type}
                                 label={"Select Volume Type"}
                                 index={idx}/>
-                            <div>
-                                <button type="button"
+                            <div className="delete-button">
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    title="Remove Volume"
+                                    onClick={_ => this.props.deleteVolume(idx)}
+                                >
+                                    <DeleteIcon />
+                                </Button>
+                                {/* <button type="button"
                                         className="minimal-toolbar-button"
                                         title="Delete Volume"
                                         onClick={_ => this.props.deleteVolume(idx)}
@@ -119,11 +148,13 @@ export class VolumesPanel extends React.Component<IProps, any> {
                                     <span
                                         className="jp-CloseIcon jp-Icon jp-Icon-16"
                                         style={{padding: 0, flex: "0 0 auto", marginRight: 0}}/>
-                                </button>
+                                </button> */}
                             </div>
                         </div>
 
-                         <MaterialInput
+                        {mountPointPicker}
+
+                        <MaterialInput
                             label={nameLabel + " Name"}
                             inputIndex={idx}
                             updateValue={this.props.updateVolumeName}
@@ -131,14 +162,6 @@ export class VolumesPanel extends React.Component<IProps, any> {
                             regex={"^([\\.\\-a-z0-9]+)$"}
                             regexErrorMsg={"Resource name must consist of lower case alphanumeric characters, -, and ."}
                         />
-
-                        <MaterialInput
-                            label={"Mount Point"}
-                            inputIndex={idx}
-                            updateValue={this.props.updateVolumeMountPoint}
-                            value={v.mount_point}
-                        />
-
 
                         {sizePicker}
 
@@ -182,26 +205,35 @@ export class VolumesPanel extends React.Component<IProps, any> {
         }
 
         return (
-            <div>
-                <div className={"kale-header-switch"}>
-                    <div className="kale-header" style={{padding: "0"}}>
+            <div className="kale-component">
+                <div className="kale-header-switch">
+                    <p className="kale-header">
                         Volumes
-                    </div>
+                    </p>
                     <div className={"skip-switch-container"}>
                         <button type="button"
                                 className="minimal-toolbar-button"
                                 title="Add Volume"
                                 onClick={_ => this.props.addVolume()}
                         >
-                        <span className="jp-Icon" style={{padding: 0, flex: "0 0 auto", marginRight: 0}}>
-                            Add Volume
-                        </span>
                         </button>
                     </div>
                 </div>
 
                 {vols}
 
+                <div className="add-button">
+                    <Button
+                        variant="contained"
+                        size="small"
+                        title="Add Volume"
+                        onClick={_ => this.props.addVolume()}
+                        style={{marginLeft: "10px"}}
+                    >
+                        <AddIcon />
+                        Add Volume
+                    </Button>
+                </div>
             </div>
         )
 
