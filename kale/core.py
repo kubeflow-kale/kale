@@ -153,8 +153,8 @@ class Kale:
             if snap['object_name'] == volume['name']:
                 volume = copy.deepcopy(volume)
                 volume['type'] = 'new_pvc'
-                volume['annotation'] = {'key': 'rok/origin',
-                                        'value': snap['rok_url']}
+                volume['annotations'] = [{'key': 'rok/origin',
+                                          'value': snap['rok_url']}]
                 return volume
 
         msg = f"Volume '{volume['name']}' not found in notebook snapshot"

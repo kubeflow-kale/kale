@@ -35,6 +35,7 @@ def gen_kfp_code(nb_graph,
     # Include all volumes as pipeline parameters
     volumes = metadata.get('volumes', [])
     for v in volumes:
+        # Convert annotations to a dictionary
         annotations = {a['key']: a['value'] for a in v['annotations'] or []
                        if a['key'] != '' and a['value'] != ''}
         v['annotations'] = annotations
@@ -44,19 +45,15 @@ def gen_kfp_code(nb_graph,
             continue
 
         if v['type'] == 'pvc':
-            default = v['name']
             par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
+            pipeline_parameters[par_name] = ('str', v['name'])
         elif v['type'] == 'new_pvc':
-            if v.get('annotation', {}).get('key') == "rok/origin":
-                default = v['annotation']['value']
+            rok_url = annotations.get("rok/origin")
+            if rok_url is not None:
                 par_name = f"rok_{v['name'].replace('-', '_')}_url"
-            else:
-                default = None
-                par_name = f"vol_{v['name'].replace('-', '_')}"
+                pipeline_parameters[par_name] = ('str', rok_url)
         else:
             raise ValueError(f"Unknown volume type: {v['type']}")
-
-        pipeline_parameters[par_name] = ('str', default)
 
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
@@ -90,11 +87,6 @@ def gen_kfp_code(nb_graph,
             out_variables=block_data['outs']
         ))
         function_names.append(block_name)
-
-    for v in volumes:
-        annotations = {a['key']: a['value'] for a in v['annotations']
-                       if a['key'] != '' and a['value'] != ''}
-        v['annotations'] = annotations
 
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
     pipeline_template = template_env.get_template('pipeline_template.txt')
