@@ -50,7 +50,7 @@ def gen_kfp_code(nb_graph,
             par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
             pipeline_parameters[par_name] = ('str', v['name'])
         elif v['type'] == 'new_pvc':
-            rok_url = annotations.get("rok/origin")
+            rok_url = v['annotations'].get("rok/origin")
             if rok_url is not None:
                 par_name = f"rok_{v['name'].replace('-', '_')}_url"
                 pipeline_parameters[par_name] = ('str', rok_url)
