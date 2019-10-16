@@ -152,7 +152,7 @@ class Kale:
 
     def create_cloned_volumes(self, volumes):
         if not any(v['type'] == 'clone' for v in volumes):
-            return
+            return volumes
 
         # FIXME: Make sure the bucket exists
         # FIXME: Import the Rok client instead of spawning external commands
