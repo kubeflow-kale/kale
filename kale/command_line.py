@@ -145,7 +145,7 @@ def kale_volumes():
                             "size_type": "",
                             "snapshot": False}
                            for path, volume, size in volumes]
-            logger.info(json.dumps(volumes_out))
+            print(json.dumps(volumes_out, sort_keys=True, indent=3, separators=(",", ": ")))
 
     parser = argparse.ArgumentParser(description=KALE_VOLUMES_DESCRIPTION)
     parser.add_argument(
