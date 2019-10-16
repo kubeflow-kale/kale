@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import tabulate
 import kubernetes.client as k8s
@@ -9,7 +10,30 @@ ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
 
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
+K8S_SIZE_RE = re.compile(r'^([0-9]+)(E|Ei|P|Pi|T|Ti|G|Gi|M|Mi|K|Ki){0,1}$')
+K8S_SIZE_UNITS = {"E": 10 ** 18,
+                  "P": 10 ** 15,
+                  "T": 10 ** 12,
+                  "G": 10 ** 9,
+                  "M": 10 ** 6,
+                  "K": 10 ** 3,
+                  "Ei": 2 ** 60,
+                  "Pi": 2 ** 50,
+                  "Ti": 2 ** 40,
+                  "Gi": 2 ** 30,
+                  "Mi": 2 ** 20,
+                  "Ki": 2 ** 10}
+
 logger = logging.getLogger("kubeflow-kale")
+
+
+def parse_k8s_size(size):
+    match = K8S_SIZE_RE.match(size)
+    if not match:
+        raise ValueError("Could not parse Kubernetes size: {}".format(size))
+
+    count, unit = match.groups()
+    return int(count) * K8S_SIZE_UNITS[unit]
 
 
 def get_namespace():
@@ -86,7 +110,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
             raise RuntimeError(msg)
 
         mount_path = _get_mount_path(container, volume)
-        volume_size = pvc.spec.resources.requests["storage"]
+        volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])
         rok_volumes.append((mount_path, volume, volume_size))
 
     return rok_volumes
