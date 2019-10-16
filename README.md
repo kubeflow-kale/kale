@@ -61,6 +61,58 @@ Multiple code cells performing a related task (e.g. some data processing) can be
 
 Cell can be merged even if not contiguous in the notebook, just by tagging them with the same block name - the order of cells in the notebook will be preserved in the resulting pipeline step.
 
+#### Notebook Tags
+
+The ell tags can be added to the `tags` section of a code cell metadata (see nbformat doc on [cell metadata](https://nbformat.readthedocs.io/en/latest/format_description.html#metadata)).
+
+## Notebook Metadata Spec
+
+In order to deploy a pipeline to Kubeflow Pipeline, Kale needs several information like the name of the experiment and the pipeline, its description, volume mounts, etc...
+
+All this information can be embedded into the Notebook in the `metadata` section (see the [nbformat spec](https://nbformat.readthedocs.io/en/latest/format_description.html#top-level-structure)). Kale expects an entry in the `metadata` section named `kubeflow_notebook` with the following spec:
+
+| Key | Required | Description | Spec |
+| :---: | :---: | :---: | :---: | 
+| `pipeline_experiment` | Yes | Name of the KFP Experiment | Free Text |
+| `pipeline_name` | Yes | Name of the pipeline | Alphanumeric characters or `-` |
+| `pipeline_description` | No | Description of the pipeline | Free Text |
+| `volumes` | No | A list of volume specs | See below the Volume spec |
+| `docker_image` | No | Base docker image for pipeline steps | - |
+
+Volume spec:
+
+| Key | Required | Description | Spec |
+| :---: | :---: | :---: | :---: | 
+| `type` | Yes | Type of Volume to be mounted | One of `pv`, `pvc`, `new_pvc` |
+| `name` | Yes | Name of the existing or new resource | K8s compliant resource name |
+| `mount_point` | Yes | The mount point in the pipeline step fs | Valid Unix path |
+| `size` | Yes (for `pv` and `new_pvc` options | Size of Volume | Integer |
+| `size_type` | Yes (when defining `size`) | Storage size | One of `Gi`, `Mi`, `Ki` |
+| `snapshot` | Yes | When true: snapshot volume at the end of pipeline | Bool |
+| `snapshot_name` | Yes (when `snapshot` True) | Name of the snapshot resource | K8s compliant resource name|
+
+A sample Notebook metadata:
+
+```json
+"kubeflow_noteobok": {
+    "experiment_name": "Titanic Experiment",
+    "pipeline_name": "ml-comparison",
+    "pipeline_description": "ML Pipeline predicting survival score of passengers of Titanic",
+    "docker_image": "docker.io/kubeflow-kale/launcher:latest",
+    "volumes": [
+        {
+            "type": "new_pvc",
+            "name": "titanic-data-pvc",
+            "mount_point": "/data",
+            "size": "1",
+            "size_type": "Gi",
+            "snapshot": true,
+            "snapshot_name": "titanic-data-snapshot"
+        }
+    ]
+}
+```
+
 ## Data passing
 
 When splitting a Notebook into separate execution steps (each pipeline step runs inside its own docker container) the data dependencies between the steps would not allow the proper execution of the pipeline.
