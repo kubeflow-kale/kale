@@ -36,6 +36,8 @@ class Kale:
                  ):
         self.source_path = Path(source_notebook_path)
         self.output_path = os.path.join(os.path.dirname(self.source_path), f"kfp_{pipeline_name}.kfp.py")
+        self.abs_working_dir = \
+            os.path.dirname(os.path.abspath(self.source_path))
         if not self.source_path.exists():
             raise ValueError(f"Path {self.source_path} does not exist")
         self.nbformat_version = notebook_version
@@ -129,7 +131,8 @@ class Kale:
                                                   pipeline_parameters=pipeline_parameters_dict,
                                                   docker_base_image=self.docker_base_image,
                                                   volumes=self.volumes,
-                                                  deploy_pipeline=self.run_pipeline)
+                                                  deploy_pipeline=self.run_pipeline,
+                                                  working_dir=self.abs_working_dir)
 
             # save kfp generated code
             self.save_pipeline(kfp_code)
