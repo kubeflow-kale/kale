@@ -82,19 +82,9 @@ class Kale:
         # mute other loggers
         logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
-        # XXX: Add all notebook volumes by default. This should be removed once
-        # the plugin is updated to allow using the notebook's volumes as
-        # pipeline volumes.
+        # Replace all requested cloned volumes with the snapshotted PVCs
         volumes = self.pipeline_metadata['volumes'][:] \
             if self.pipeline_metadata['volumes'] else []
-        for mount_path, volume, size in list_volumes():
-            volumes.append({'mount_point': mount_path,
-                            'name': volume.name,
-                            'size': size,
-                            'snapshot': False,
-                            'type': 'clone'})
-
-        # Replace all requested cloned volumes with the snapshotted PVCs
         self.pipeline_metadata['volumes'] = self.create_cloned_volumes(volumes)
 
     def validate_metadata(self):
