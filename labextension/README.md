@@ -1,21 +1,18 @@
-## Kubeflow-Kale-Launcher JupyterLab Extension
+## Kale JupyterLab Extension
 
-JupyterLab extension that provides a Kubeflow specific left area that can be used to deploy a Notebook to Kubeflow Pipelines. This panel provides several inputs to customize pipeline metadata (name, description, parameters), volume mount points, ...
+This JupyterLab extension provides a Kubeflow specific left area that can be used to deploy a Notebook to Kubeflow Pipelines. The UI is just high level component designed to let the user annotate Notebook metadata and Cells metadata easily and visually. In order to convert the notebook to a Kubeflow Pipeline workflow and have it run in KFP, [Kale](http://github.com/kubeflow-kale/kale) needs to be installed in the same Python environment as the running Notebook Kernel.
 
-When hitting the deploy button, the active Kubeflow-Kale REST endpoint will be called, sending the active notebook with its tags. Kubeflow-Kale will then manage the actual deployment to Kubeflow Pipelines, to have a more in depth look at how this works check out the [Kubeflow-Kale repository](http://github.com/kubeflow-kale/kale).
-
-![JPKaleScreen Logo](https://raw.githubusercontent.com/kubeflow-kale/jupyterlab-kubeflow-kale/master/docs/imgs/jp-kale.png)
-
-## Installation
-
-The extension currently supports JupyterLab `v1.1.1`:
+### Getting started
 
 ```bash
+# install jupyter lab
 pip install jupyterlab==1.1.1
 
-# add the extension
-jupyter labextension install kubeflow-kale-launcher
+# install kale: see instructions in Kale repository
+# ...
 
+# install the extension
+jupyter labextension install kubeflow-kale-launcher
 # verify extension status
 jupyter labextension list
 
@@ -23,19 +20,47 @@ jupyter labextension list
 jupyter lab
 ```
 
-## Development
+![KaleLauncherScreenshot](https://raw.githubusercontent.com/kubeflow-kale/jupyterlab-kubeflow-kale/master/docs/imgs/kale-launcher-screen.png)
 
-To build the extension
+## How it works
 
-```bash
-jlpm install
+Kale Launcher UI lets you update Notebook and Cells metadata according to Kale [spec](https://github.com/kubeflow-kale/kale#notebook-metadata-spec). The extension reads and saves Notebook metadata automatically, keeping a consistent view of the Notebook spec. You don't have to worry about manually saving the Notebook, the extension will write any new changes automatically.
+
+When clicking the big blue run button, Kale will be run in the background over the active Notebook and perform the required action based on the button option selected.
+
+The Launcher is able to invoke Kale in the background by programmatically executing shell commands in the Kernel environment. Specifically, it will run:
+
+```
+kale --nb <current_active_notebook_name> [--upload_pipeline] [--run_pipeline]
 ```
 
-And then add the extension to JupyterLab
+## Contributing
+
+To build and run the extension in dev mode, first clone the repository in your local machine.
 
 ```bash
+# Move to repository folder
+cd jupyterlab-kubeflow-kale
+
+# Install dependencies
+jlpm install
+
+# Build the extension. This will generate a dist/ folder with build files
+jlpm run build
+
+# Add the extension to jupyterlab. 
+# Be sure to uninstall any other version first (e.g. npm kubeflow-kale-launcher package)
 jupyter labextension install .
 ```
 
+When developing, you can run `jlpm` in `watch` mode to incrementally compile the new changes:
 
-To reinstall continuously the new changes while developing, run `jlpm run watch`. To install the entire package run `jlpm install` while inside the extension's directory. Then run JuptyerLab with `jupyter lab --watch` to watch for changes in the extension.
+```
+jlpm run watch
+```
+
+And run JupyterLab in `watch` mode to load the new compiled version:
+
+```
+jupyter lab --no-browser --watch
+```
