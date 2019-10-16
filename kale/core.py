@@ -140,7 +140,7 @@ class Kale:
 
     def _get_cloned_volume(self, volume, snapshot_volumes):
         for snap in snapshot_volumes:
-            if snap['object_name'] == volume['name']:
+            if snap['mount_point'] == volume['mount_point']:
                 volume = copy.deepcopy(volume)
                 volume['type'] = 'new_pvc'
                 volume['annotations'] = [{'key': 'rok/origin',
@@ -155,20 +155,30 @@ class Kale:
             return volumes
 
         # FIXME: Make sure the bucket exists
+        bucket_name = "notebooks"
+        hostname = os.getenv("HOSTNAME")
         # FIXME: Import the Rok client instead of spawning external commands
         namespace = get_namespace()
-        hostname = os.getenv("HOSTNAME")
         commit_title = f"Snapshot of notebook {hostname}"
         commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                                  namespace)
         output = self.run_cmd(f"rok-gw -o json object-register jupyter"
-                              f" notebooks '{hostname}' --no-interactive"
+                              f" '{bucket_name}' '{hostname}' --no-interactive"
                               f" --param namespace='{namespace}'"
                               f" --param commit_title='{commit_title}'"
                               f" --param commit_message='{commit_message}'")
 
         output = json.loads(output)
         snapshot_volumes = output['group_members']
+
+        # Retrieve the mount point of each snapshotted volume
+        for v in snapshot_volumes:
+            obj_name = v["object_name"]
+            version_name = v["version_name"]
+            output = self.run_cmd(f"rok-gw -o json object-show '{bucket_name}'"
+                                  f" '{obj_name}' --version '{version_name}'"
+                                  " --detail")
+            v["mount_point"] = json.loads(output)["metadata"]["mountpoint"]
 
         _volumes = []
         for volume in volumes or []:
