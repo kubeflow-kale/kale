@@ -34,11 +34,13 @@ def gen_kfp_code(nb_graph,
 
     # Include all volumes as pipeline parameters
     volumes = metadata.get('volumes', [])
+    # Convert annotations to a dictionary and convert size to a string
     for v in volumes:
         # Convert annotations to a dictionary
         annotations = {a['key']: a['value'] for a in v['annotations'] or []
                        if a['key'] != '' and a['value'] != ''}
         v['annotations'] = annotations
+        v['size'] = str(v['size'])
 
         if v['type'] == 'pv':
             # FIXME: How should we handle existing PVs?

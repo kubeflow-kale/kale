@@ -57,6 +57,7 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
 
     vop{{ loop.index }} = dsl.VolumeOp(
         name="pvc-data{{ loop.index }}",
+        annotations=annotations,
         k8s_resource=pvc{{ loop.index }}
     )
     volume = vop{{ loop.index }}.volume
