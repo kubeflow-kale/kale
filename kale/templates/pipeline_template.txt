@@ -87,6 +87,7 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
                             .add_pvolumes(pvolumes_dict)\
                             .after({{ block_function_prevs[ name ]|join(', ') }})
     {{ name }}_task.container.working_dir = "{{ working_dir }}"
+    {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
 
     {% endfor %}
 
