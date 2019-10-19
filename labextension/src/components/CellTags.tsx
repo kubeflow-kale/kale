@@ -171,6 +171,7 @@ export class CellTags extends React.Component<IProps, IState> {
     };
 
     updateCurrentBlockName = async (value: string) => {
+        const oldBlockName: string = this.state.currentActiveCellMetadata.blockName;
         let currentCellMetadata = {...this.state.currentActiveCellMetadata, blockName: value};
         await this.setState({currentActiveCellMetadata: currentCellMetadata});
         this.setKaleCellTags(
@@ -179,7 +180,12 @@ export class CellTags extends React.Component<IProps, IState> {
             KUBEFLOW_CELL_METADATA_KEY,
             currentCellMetadata,
             true
-        )
+        );
+        this.updateKaleCellTags(
+            this.props.notebook,
+            oldBlockName,
+            value
+        );
     };
 
     updatePrevBlocksNames = async (previousBlocks: string[]) => {
@@ -246,6 +252,35 @@ export class CellTags extends React.Component<IProps, IState> {
             tags,
             save
         )
+    };
+
+    updateKaleCellTags = (
+        notebookPanel: NotebookPanel,
+        oldBlockName: string,
+        newBlockName: string,
+        save: boolean = true) => {
+        let i: number;
+        for(i = 0; i < notebookPanel.model.cells.length; i++) {
+            const tags: string[] = CellUtils.getCellMetaData(
+                notebookPanel.content,
+                i,
+                'tags'
+            );
+            let newTags: string[] = (tags || []).map(t => {
+                if (t === 'prev:' + oldBlockName) {
+                    return RESERVED_CELL_NAMES.includes(newBlockName) ? '' : 'prev:' + newBlockName;
+                } else {
+                    return t;
+                }
+            }).filter(t => t !== '' && t !== 'prev:');
+            CellUtils.setCellMetaData(
+                notebookPanel,
+                i,
+                'tags',
+                newTags,
+                save
+            )
+        }
     };
 
     render() {
