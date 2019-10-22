@@ -8,7 +8,9 @@ from jinja2 import Environment, PackageLoader
 # TODO: Define most of this function parameters in a config file?
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
-def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description, pipeline_parameters, docker_base_image, volumes, deploy_pipeline, working_dir):
+def gen_kfp_code(nb_graph,
+                 pipeline_parameters,
+                 metadata):
     """
     Takes a NetworkX workflow graph with the following properties
 
@@ -53,7 +55,7 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         function_prevs[block_name] = args
 
         function_blocks.append(function_template.render(
-            pipeline_name=pipeline_name,
+            pipeline_name=metadata['pipeline_name'],
             function_name=block_name,
             function_args=function_args,
             function_blocks=[block_data['source']],
@@ -62,7 +64,7 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         ))
         function_names.append(block_name)
 
-    for v in volumes:
+    for v in metadata['volumes']:
         annotations = {a['key']: a['value'] for a in v['annotations']
                        if a['key'] != '' and a['value'] != ''}
         v['annotations'] = annotations
@@ -73,16 +75,15 @@ def gen_kfp_code(nb_graph, experiment_name, pipeline_name, pipeline_description,
         block_functions=function_blocks,
         block_functions_names=function_names,
         block_function_prevs=function_prevs,
-        experiment_name=experiment_name,
-        pipeline_name=pipeline_name,
-        pipeline_description=pipeline_description,
+        experiment_name=metadata['experiment_name'],
+        pipeline_name=metadata['pipeline_name'],
+        pipeline_description=metadata['pipeline_description'],
         pipeline_arguments=pipeline_args,
         pipeline_arguments_names=', '.join(pipeline_args_names),
-        docker_base_image=docker_base_image,
-        volumes=volumes if volumes is not None else [],
-        deploy_pipeline=deploy_pipeline,
+        docker_base_image=metadata['docker_image'],
+        volumes=metadata['volumes'],
         leaf_nodes=leaf_nodes,
-        working_dir=working_dir
+        working_dir=metadata['working_dir']
     )
 
     # fix code style using pep8 guidelines
