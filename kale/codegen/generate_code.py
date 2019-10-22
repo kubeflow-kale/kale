@@ -64,10 +64,11 @@ def gen_kfp_code(nb_graph,
         ))
         function_names.append(block_name)
 
-    for v in metadata['volumes']:
-        annotations = {a['key']: a['value'] for a in v['annotations']
-                       if a['key'] != '' and a['value'] != ''}
-        v['annotations'] = annotations
+    if metadata['volumes']:
+        for v in metadata['volumes']:
+            annotations = {a['key']: a['value'] for a in v['annotations']
+                           if a['key'] != '' and a['value'] != ''}
+            v['annotations'] = annotations
 
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
     pipeline_template = template_env.get_template('pipeline_template.txt')
@@ -77,13 +78,13 @@ def gen_kfp_code(nb_graph,
         block_function_prevs=function_prevs,
         experiment_name=metadata['experiment_name'],
         pipeline_name=metadata['pipeline_name'],
-        pipeline_description=metadata['pipeline_description'],
+        pipeline_description=metadata.get('pipeline_description', ''),
         pipeline_arguments=pipeline_args,
         pipeline_arguments_names=', '.join(pipeline_args_names),
-        docker_base_image=metadata['docker_image'],
-        volumes=metadata['volumes'],
+        docker_base_image=metadata.get('docker_image', ''),
+        volumes=metadata.get('volumes', []),
         leaf_nodes=leaf_nodes,
-        working_dir=metadata['working_dir']
+        working_dir=metadata.get('working_dir', None)
     )
 
     # fix code style using pep8 guidelines
