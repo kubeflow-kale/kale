@@ -25,44 +25,39 @@ is provided both in the Notebook metadata and from CLI, the CLI parameter
 will take precedence.\n
 """
 
-KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok'
-REQUIRED_ARGUMENTS = ['experiment_name', 'pipeline_name', 'docker_image']
+METADATA_GROUP_DESC = """
+Override the arguments provided in the Kale metadata section of the source Notebook
+"""
 
 
 def main():
     parser = argparse.ArgumentParser(description=ARGS_DESC, formatter_class=RawTextHelpFormatter)
-    parser.add_argument('--nb', type=str, help='Path to source JupyterNotebook', required=True)
-    parser.add_argument('--experiment_name', type=str, help='Name of the created experiment')
-    parser.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
-    parser.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
-    parser.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
-    # important to have default=None, otherwise it would default to False and would always override notebook_metadata
-    parser.add_argument('--upload_pipeline', action='store_true')
-    parser.add_argument('--run_pipeline', action='store_true')
-    parser.add_argument('--kfp_dns', type=str,
-                        help='DNS to KFP service. Provide address as <host>:<port>. `/pipeline` will be appended automatically')
-    parser.add_argument('--debug', action='store_true')
+    general_group = parser.add_argument_group('General')
+    general_group.add_argument('--nb', type=str, help='Path to source JupyterNotebook', required=True)
+    # use store_const instead of store_true because we None instead of False in case the flag is missing
+    general_group.add_argument('--upload_pipeline', action='store_const', const=True)
+    general_group.add_argument('--run_pipeline', action='store_const', const=True)
+    general_group.add_argument('--debug', action='store_true')
+
+    metadata_group = parser.add_argument_group('Notebook Metadata Overrides', METADATA_GROUP_DESC)
+    metadata_group.add_argument('--experiment_name', type=str, help='Name of the created experiment')
+    metadata_group.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
+    metadata_group.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
+    metadata_group.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
+    general_group.add_argument('--kfp_dns', type=str, help='KFP endpoint. Provide address as <host>:<port>.')
 
     args = parser.parse_args()
 
-    notebook_metadata = nb.read(args.nb, as_version=nb.NO_CONVERT).metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict())
-    # convert args to dict removing all None elements, and overwrite keys into notebook_metadata
-    metadata_arguments = {**notebook_metadata, **{k: v for k, v in vars(args).items() if v is not None}}
-    for r in REQUIRED_ARGUMENTS:
-        if r not in metadata_arguments:
-            raise ValueError(f"Required argument not found: {r}")
-
-    Kale(
+    kale = Kale(
         source_notebook_path=args.nb,
-        experiment_name=metadata_arguments['experiment_name'],
-        pipeline_name=metadata_arguments['pipeline_name'],
-        pipeline_descr=metadata_arguments['pipeline_description'],
-        docker_image=metadata_arguments['docker_image'],
-        upload_pipeline=metadata_arguments['upload_pipeline'],
-        run_pipeline=metadata_arguments['run_pipeline'],
-        volumes=metadata_arguments['volumes'],
+        notebook_metadata_overrides=args.metadata,
         debug=args.debug
-    ).run()
+    )
+    pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
+    script_path = kale.generate_kfp_executable(pipeline_graph, pipeline_parameters)
+    # deploy pipeline to KFP instance
+    if args.upload_pipeline or args.run_pipeline:
+        return kale.deploy_pipeline_to_kfp(script_path)
 
 
 if __name__ == "__main__":
