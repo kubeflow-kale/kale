@@ -32,6 +32,7 @@ class Kale:
     def __init__(self,
                  source_notebook_path: str,
                  notebook_metadata_overrides: dict = None,
+                 debug: bool = False
                  ):
         self.source_path = Path(source_notebook_path)
         if not self.source_path.exists():
@@ -46,8 +47,6 @@ class Kale:
         self.pipeline_metadata = {**notebook_metadata, **{k: v for k, v in vars(notebook_metadata_overrides).items() if v is not None}}
         self.validate_metadata()
         self.detect_current_environment()
-
-        self.kfp_dns = f"http://{kfp_dns}/pipeline" if kfp_dns is not None else None
 
         # setup logging
         self.logger = logging.getLogger("kubeflow-kale")
@@ -148,21 +147,22 @@ class Kale:
                                               pipeline_parameters=pipeline_parameters,
                                               metadata=self.pipeline_metadata)
 
-        output_path = os.path.join(os.path.dirname(self.source_path), f"kfp_{pipeline_name}.kfp.py")
+        output_path = os.path.join(os.path.dirname(self.source_path),
+                                   f"{self.pipeline_metadata['pipeline_name']}.kale.py")
         # save kfp generated code
         self.save_pipeline(kfp_code, output_path)
         return output_path
 
-    def run_func_form_notebook(self, func):
+    def run_func_form_notebook(self, func, **kwargs):
         try:
-            func()
+            return func(**kwargs)
         except Exception as e:
             # self.logger.debug(traceback.print_exc())
             self.logger.debug(e, exc_info=True)
             self.logger.error(e)
             self.logger.error("To see full traceback run Kale with --debug flag or have a look at kale.log logfile")
 
-    def deploy_pipeline_to_kfp(self, pipeline_source):
+    def deploy_pipeline_to_kfp(self, pipeline_source, auto_upload=True, auto_run=False):
         """
         Import the generated kfp pipeline definition and deploy it
         to a running KFP instance
@@ -180,8 +180,8 @@ class Kale:
         foo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(foo)
 
-        pipeline_filename = self.pipeline_name + '.pipeline.tar.gz'
-        compiler.Compiler().compile(foo.auto_generated_pipeline, pipeline_filename)
+        pipeline_package = self.pipeline_metadata['pipeline_name'] + '.pipeline.tar.gz'
+        compiler.Compiler().compile(foo.auto_generated_pipeline, pipeline_package)
 
         try:
             # Get or create an experiment and submit a pipeline run
@@ -189,20 +189,20 @@ class Kale:
             client = kfp.Client()
 
             # upload the pipeline
-            if self.upload_pipeline:
-                client.upload_pipeline(pipeline_filename, pipeline_name=self.pipeline_name)
+            if auto_upload:
+                client.upload_pipeline(pipeline_package, pipeline_name=self.pipeline_metadata['pipeline_name'])
 
-            if self.run_pipeline:
+            if auto_run:
                 # create experiment or get existing one
-                experiment = client.create_experiment(self.experiment_name)
+                experiment = client.create_experiment(self.pipeline_metadata['experiment_name'])
                 # Submit a pipeline run
-                run_name = self.pipeline_name + '_run'
-                run = client.run_pipeline(experiment.id, run_name, pipeline_filename, {})
-                run_link = f"{self.kfp_dns}/#/runs/details/{run.id}"
-                self.logger.info(f"Deployment Successful. Pipeline run at {run_link}")
+                run_name = self.pipeline_metadata['pipeline_name'] + '_run'
+                run = client.run_pipeline(experiment.id, run_name, pipeline_package, {})
+                run_link = f"http://{self.pipeline_metadata['kfp_dns']}/pipeline/#/runs/details/{run.id}"
+                self.logger.info(f"Deployment Successful. Check the pipeline run in the KFP UI.")
         except Exception:
             # remove auto-generated tar package (used for deploy)
-            os.remove(self.pipeline_name + '.pipeline.tar.gz')
+            os.remove(self.pipeline_metadata['pipeline_name'] + '.pipeline.tar.gz')
             # raise again so excp is caught at higher level
             raise
 
