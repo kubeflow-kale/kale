@@ -4,7 +4,6 @@ import nbformat as nb
 from argparse import RawTextHelpFormatter
 
 from kale.core import Kale
-from kale.notebook_gen import generate_notebooks_from_yml
 
 
 ARGS_DESC = """
@@ -42,7 +41,6 @@ def main():
     parser.add_argument('--run_pipeline', action='store_true')
     parser.add_argument('--kfp_dns', type=str,
                         help='DNS to KFP service. Provide address as <host>:<port>. `/pipeline` will be appended automatically')
-    parser.add_argument('--jupyter_args', type=str, help='YAML file with Jupyter parameters as defined by Papermill')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
@@ -54,37 +52,17 @@ def main():
         if r not in metadata_arguments:
             raise ValueError(f"Required argument not found: {r}")
 
-    # if jupyter_args is set, generate first a set of temporary notebooks
-    # based on the input yml parameters (via Papermill)
-    if 'jupyter_args' in metadata_arguments:
-        generated_notebooks = generate_notebooks_from_yml(input_nb_path=args.nb,
-                                                          yml_parameters_path=metadata_arguments['jupyter_args'])
-
-        # Run KaleCore over each generated notebook
-        for n, params in generated_notebooks:
-            Kale(
-                source_notebook_path=n,
-                experiment_name=metadata_arguments['experiment_name'] + params,
-                pipeline_name=metadata_arguments['pipeline_name'] + params,
-                pipeline_descr=metadata_arguments['pipeline_description'] + " params" + params,
-                docker_image=metadata_arguments['docker_image'],
-                upload_pipeline=metadata_arguments['upload_pipeline'],
-                run_pipeline=metadata_arguments['run_pipeline'],
-                volumes=metadata_arguments['volumes'],
-                debug=args.debug
-            ).run()
-    else:
-        Kale(
-            source_notebook_path=args.nb,
-            experiment_name=metadata_arguments['experiment_name'],
-            pipeline_name=metadata_arguments['pipeline_name'],
-            pipeline_descr=metadata_arguments['pipeline_description'],
-            docker_image=metadata_arguments['docker_image'],
-            upload_pipeline=metadata_arguments['upload_pipeline'],
-            run_pipeline=metadata_arguments['run_pipeline'],
-            volumes=metadata_arguments['volumes'],
-            debug=args.debug
-        ).run()
+    Kale(
+        source_notebook_path=args.nb,
+        experiment_name=metadata_arguments['experiment_name'],
+        pipeline_name=metadata_arguments['pipeline_name'],
+        pipeline_descr=metadata_arguments['pipeline_description'],
+        docker_image=metadata_arguments['docker_image'],
+        upload_pipeline=metadata_arguments['upload_pipeline'],
+        run_pipeline=metadata_arguments['run_pipeline'],
+        volumes=metadata_arguments['volumes'],
+        debug=args.debug
+    ).run()
 
 
 if __name__ == "__main__":
