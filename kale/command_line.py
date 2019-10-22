@@ -44,7 +44,7 @@ def main():
     metadata_group.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
     metadata_group.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
     metadata_group.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
-    general_group.add_argument('--kfp_dns', type=str, help='KFP endpoint. Provide address as <host>:<port>.')
+    metadata_group.add_argument('--kfp_dns', type=str, help='KFP endpoint. Provide address as <host>:<port>.')
 
     args = parser.parse_args()
 
