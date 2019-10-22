@@ -6,6 +6,7 @@ import tempfile
 import logging
 import logging.handlers
 
+import nbformat as nb
 import networkx as nx
 
 from pathlib import Path
@@ -20,38 +21,33 @@ from kale.utils import pod_utils
 from kubernetes.config import ConfigException
 
 
+KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok'
+METADATA_REQUIRED_KEYS = [
+    'experiment_name',
+    'pipeline_name',
+]
+
+
 class Kale:
     def __init__(self,
                  source_notebook_path: str,
-                 experiment_name,
-                 pipeline_name,
-                 pipeline_descr,
-                 docker_image,
-                 volumes,
-                 notebook_version=4,
-                 upload_pipeline=False,
-                 run_pipeline=False,
-                 kfp_dns=None,
-                 debug=False
+                 notebook_metadata_overrides: dict = None,
                  ):
         self.source_path = Path(source_notebook_path)
-        self.output_path = os.path.join(os.path.dirname(self.source_path), f"kfp_{pipeline_name}.kfp.py")
-        self.abs_working_dir = \
-            os.path.dirname(os.path.abspath(self.source_path))
         if not self.source_path.exists():
             raise ValueError(f"Path {self.source_path} does not exist")
-        self.nbformat_version = notebook_version
+
+        # read notebook
+        self.notebook = nb.read(self.source_path.__str__(), as_version=nb.NO_CONVERT)
+
+        # read Kale notebook metadata. In case it is not specified get an empty dict
+        notebook_metadata = self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict())
+        # override notebook metadata with provided arguments
+        self.pipeline_metadata = {**notebook_metadata, **{k: v for k, v in vars(notebook_metadata_overrides).items() if v is not None}}
+        self.validate_metadata()
+        self.detect_current_environment()
 
         self.kfp_dns = f"http://{kfp_dns}/pipeline" if kfp_dns is not None else None
-
-        self.upload_pipeline = upload_pipeline
-        self.run_pipeline = run_pipeline
-
-        self.experiment_name = experiment_name
-        self.pipeline_name = pipeline_name
-        self.pipeline_description = pipeline_descr
-        self.docker_base_image = docker_image
-        self.volumes = volumes
 
         # setup logging
         self.logger = logging.getLogger("kubeflow-kale")
@@ -83,63 +79,83 @@ class Kale:
         k8s_valid_name_regex = r'^[\.\-a-z0-9]+$'
         k8s_name_msg = "must consist of lower case alphanumeric characters, '-' or '.'"
 
-        if not re.match(kale_block_name_regex, self.pipeline_name):
-            raise ValueError(f"Pipeline name  {kale_name_msg}")
-        for v in self.volumes:
-            if 'name' not in v:
-                raise ValueError("Provide a valid name for every volume")
-            if not re.match(k8s_valid_name_regex, v['name']):
-                raise ValueError(f"PV/PVC resource name {k8s_name_msg}")
-            if 'snapshot' in v and v['snapshot'] and \
-                    (('snapshot_name' not in v) or not re.match(k8s_valid_name_regex, v['snapshot_name'])):
+        # check for required fields
+        for required in METADATA_REQUIRED_KEYS:
+            if required not in self.pipeline_metadata:
                 raise ValueError(
-                    f"Provide a valid snapshot resource name if you want to snapshot a volume. Snapshot resource name {k8s_name_msg}")
+                    "Key %s not found. Add this field either on the notebook metadata or as an override" % required)
 
-    def run(self):
+        if not re.match(kale_block_name_regex, self.pipeline_metadata['pipeline_name']):
+            raise ValueError("Pipeline name  %s" % kale_name_msg)
+
+        volumes = self.pipeline_metadata.get('volumes', [])
+        if volumes and isinstance(volumes, list):
+            for v in volumes:
+                if 'name' not in v:
+                    raise ValueError("Provide a valid name for every volume")
+                if not re.match(k8s_valid_name_regex, v['name']):
+                    raise ValueError(f"PV/PVC resource name {k8s_name_msg}")
+                if 'snapshot' in v and v['snapshot'] and \
+                        (('snapshot_name' not in v) or not re.match(k8s_valid_name_regex, v['snapshot_name'])):
+                    raise ValueError(
+                        "Provide a valid snapshot resource name if you want to snapshot a volume. "
+                        "Snapshot resource name %s" % k8s_name_msg)
+        else:
+            raise ValueError("Volumes must be a valid list of volumes spec")
+
+    def detect_current_environment(self):
+        """
+        Detect local configs to preserve reproducibility of
+        dev env in pipeline steps
+        """
+        # used to set container step working dir same as current environment
+        self.pipeline_metadata['abs_working_dir'] = os.path.dirname(os.path.abspath(self.source_path))
+
+        # When running inside a Kubeflow Notebook Server we can detect the running
+        # docker image and use it as default in the pipeline steps.
+        if not self.pipeline_metadata['docker_image']:
+            try:
+                # will fail in case in cluster config is not found
+                self.pipeline_metadata['docker_image'] = pod_utils.get_docker_base_image()
+            except ConfigException:
+                # no K8s config found
+                # use kfp default image
+                pass
+            except Exception:
+                # some other exception
+                raise
+
+    def notebook_to_graph(self):
+        # convert notebook to nx graph
+        pipeline_graph, pipeline_parameters_code_block = parser.parse_notebook(self.notebook)
+
+        pipeline_parameters_dict = dep_analysis.pipeline_parameters_detection(pipeline_parameters_code_block)
+
+        # run static analysis over the source code
+        dep_analysis.variables_dependencies_detection(pipeline_graph,
+                                                      ignore_symbols=set(pipeline_parameters_dict.keys()))
+
+        # TODO: Additional Step required:
+        #  Run a static analysis over every step to check that pipeline
+        #  parameters are not assigned with new values.
+        return pipeline_graph, pipeline_parameters_dict
+
+    def generate_kfp_executable(self, pipeline_graph, pipeline_parameters):
         self.logger.debug("------------- Kale Start Run -------------")
+
+        # generate full kfp pipeline definition
+        kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
+                                              pipeline_parameters=pipeline_parameters,
+                                              metadata=self.pipeline_metadata)
+
+        output_path = os.path.join(os.path.dirname(self.source_path), f"kfp_{pipeline_name}.kfp.py")
+        # save kfp generated code
+        self.save_pipeline(kfp_code, output_path)
+        return output_path
+
+    def run_func_form_notebook(self, func):
         try:
-            # validate provided metadata
-            self.validate_metadata()
-
-            # convert notebook to nx graph
-            pipeline_graph, pipeline_parameters_code_block = parser.parse_notebook(self.source_path, self.nbformat_version)
-
-            pipeline_parameters_dict = dep_analysis.pipeline_parameters_detection(pipeline_parameters_code_block)
-
-            # run static analysis over the source code
-            dep_analysis.variables_dependencies_detection(pipeline_graph, ignore_symbols=set(pipeline_parameters_dict.keys()))
-
-            # TODO: Run a static analysis over every step to check that pipeline parameters are not assigned with new values.
-
-            # in case the user did not specify a custom docker image, use the same base image of
-            # the current Notebook Server
-            if self.docker_base_image == '':
-                try:
-                    self.docker_base_image = pod_utils.get_docker_base_image()
-                except ConfigException:
-                    # no K8s config found
-                    # use kfp default image
-                    pass
-                except Exception:
-                    raise
-
-            # generate full kfp pipeline definition
-            kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
-                                                  experiment_name=self.experiment_name,
-                                                  pipeline_name=self.pipeline_name,
-                                                  pipeline_description=self.pipeline_description,
-                                                  pipeline_parameters=pipeline_parameters_dict,
-                                                  docker_base_image=self.docker_base_image,
-                                                  volumes=self.volumes,
-                                                  deploy_pipeline=self.run_pipeline,
-                                                  working_dir=self.abs_working_dir)
-
-            # save kfp generated code
-            self.save_pipeline(kfp_code)
-
-            # deploy pipeline to KFP instance
-            if self.upload_pipeline or self.run_pipeline:
-                return self.deploy_pipeline_to_kfp(self.output_path)
+            func()
         except Exception as e:
             # self.logger.debug(traceback.print_exc())
             self.logger.debug(e, exc_info=True)
@@ -213,7 +229,7 @@ class Kale:
             print("-------------------------------")
             print()
 
-    def save_pipeline(self, pipeline_code):
+    def save_pipeline(self, pipeline_code, output_path):
         # save pipeline code to temp directory
         # tmp_dir = tempfile.mkdtemp()
         # with open(tmp_dir + f"/{filename}", "w") as f:
@@ -221,6 +237,6 @@ class Kale:
         # print(f"Pipeline code saved at {tmp_dir}/{filename}")
 
         # Save pipeline code in the notebook source directory
-        with open(self.output_path, "w") as f:
+        with open(output_path, "w") as f:
             f.write(pipeline_code)
-        self.logger.info(f"Pipeline code saved at {self.output_path}")
+        self.logger.info(f"Pipeline code saved at {output_path}")

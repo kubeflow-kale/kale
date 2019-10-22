@@ -168,22 +168,11 @@ def merge_code(nb_graph, dst, tags, code):
     return nb_graph
 
 
-def parse_notebook(nb_path, nb_format_version):
+def parse_notebook(notebook):
     """
     Created a NetworkX graph based on the input notebook's tags
     Cell's source code are embedded into the graph as node attributes
-
-    Args:
-        nb_path:
-        nb_format_version:
-
-    Returns: NetworkX DiGraph
-                NetworkX directed graph representing the pipeline defined by the notebook tags
-
     """
-    # Read source JupyterNotebook
-
-    source_nb = nb.read(nb_path.__str__(), as_version=nb_format_version)
     # output graph
     nb_graph = nx.DiGraph()
 
@@ -209,7 +198,7 @@ def parse_notebook(nb_path, nb_format_version):
     pipeline_parameters = ""
 
     # iterate over the notebook cells, from first to last
-    for c in source_nb.cells:
+    for c in notebook.cells:
         # parse only source code cells
         if c.cell_type != "code":
             continue
