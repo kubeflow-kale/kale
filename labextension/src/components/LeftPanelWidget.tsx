@@ -320,7 +320,7 @@ except Exception as e:
             if (uploadCommandResult[0] !== 'ok') {
                 // Upload failed. Probably because pipeline already exists
                 // show dialog to ask user if he wants to overwrite the existing pipeline
-                const result = NotebookUtils.showYesNoDialog(
+                const result: boolean = await NotebookUtils.showYesNoDialog(
                     "Pipeline Upload Failed",
                     "Pipeline with name " + output.pipeline_name.data['text/plain'] + " already exists. " +
                     "Would you like to overwrite it?",
