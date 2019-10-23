@@ -76,7 +76,7 @@ def upload_pipeline(pipeline_package_path, pipeline_name, overwrite=False, host=
         # is by matching the error message
         if overwrite and f'The name {pipeline_name} already exist' in str(e):
             # Get the id of the existing pipeline
-            pipeline_id = get_pipeline_id(client, pipeline_name)
+            pipeline_id = get_pipeline_id(pipeline_name, host=host)
             # Delete the existing pipeline and upload the new one
             client._pipelines_api.delete_pipeline(id=pipeline_id)
             client.upload_pipeline(pipeline_package_path, pipeline_name=pipeline_name)
