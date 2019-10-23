@@ -278,7 +278,7 @@ except Exception as e:
     _kale_instance = _Kale_Class(source_notebook_path='${nbFileName}')
     _kale_pipeline_graph, _kale_pipeline_parameters = _kale_instance.notebook_to_graph()
     _kale_generated_script_path = _kale_instance.generate_kfp_executable(_kale_pipeline_graph, _kale_pipeline_parameters)
-    _kale_package_path = _kale_kfp_utils.compile_pipeline(script_path, _kale_instance.pipeline_metadata['pipeline_name'])
+    _kale_package_path = _kale_kfp_utils.compile_pipeline(_kale_generated_script_path, _kale_instance.pipeline_metadata['pipeline_name'])
     _kale_pipeline_name = _kale_instance.pipeline_metadata['pipeline_name']
     `;
         const uploadPipelineCommand = (overwrite: string = 'False') => `
