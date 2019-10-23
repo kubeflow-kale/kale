@@ -4,6 +4,7 @@ import nbformat as nb
 from argparse import RawTextHelpFormatter
 
 from kale.core import Kale
+from kale.utils import kfp_utils
 
 
 ARGS_DESC = """
@@ -44,20 +45,39 @@ def main():
     metadata_group.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
     metadata_group.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
     metadata_group.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
-    metadata_group.add_argument('--kfp_dns', type=str, help='KFP endpoint. Provide address as <host>:<port>.')
+    metadata_group.add_argument('--kfp_host', type=str, help='KFP endpoint. Provide address as <host>:<port>.')
 
     args = parser.parse_args()
 
+    # get the notebook metadata args group
+    metadata_overrides_group = next(filter(lambda x: x.title == 'Notebook Metadata Overrides', parser._action_groups))
+    # get the single args of that group
+    metadata_overrides_group_dict = {a.dest: getattr(args, a.dest, None) for a in metadata_overrides_group._group_actions}
+
     kale = Kale(
         source_notebook_path=args.nb,
-        notebook_metadata_overrides=args.metadata,
+        notebook_metadata_overrides=metadata_overrides_group_dict,
         debug=args.debug
     )
     pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
     script_path = kale.generate_kfp_executable(pipeline_graph, pipeline_parameters)
-    # deploy pipeline to KFP instance
-    if args.upload_pipeline or args.run_pipeline:
-        return kale.deploy_pipeline_to_kfp(script_path)
+    # compile the pipeline to kfp tar package
+    pipeline_package_path = kfp_utils.compile_pipeline(script_path, kale.pipeline_metadata['pipeline_name'])
+
+    if args.upload_pipeline:
+        kfp_utils.upload_pipeline(
+            pipeline_package_path=pipeline_package_path,
+            pipeline_name=kale.pipeline_metadata['pipeline_name'],
+            host=kale.pipeline_metadata.get('kfp_host', None)
+        )
+
+    if args.run_pipeline:
+        kfp_utils.run_pipeline(
+            run_name=kale.pipeline_metadata['pipeline_name'] + '_run',
+            experiment_name=kale.pipeline_metadata['experiment_name'],
+            pipeline_package_path=pipeline_package_path,
+            host=kale.pipeline_metadata.get('kfp_host', None)
+        )
 
 
 if __name__ == "__main__":
