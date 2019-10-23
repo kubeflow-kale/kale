@@ -2,28 +2,36 @@ import { Dialog, showDialog } from "@jupyterlab/apputils";
 import { NotebookPanel } from "@jupyterlab/notebook";
 import { KernelMessage } from "@jupyterlab/services";
 import { CommandRegistry } from "@phosphor/commands";
+import * as React from "react";
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
 export default class NotebookUtilities {
   /**
    * Opens a pop-up dialog in JupyterLab to display a simple message.
    * @param title The title for the message popup
-   * @param msg The message
+   * @param msg The message as an array of strings
    * @param buttonLabel The label to use for the button. Default is 'OK'
    * @param buttonClassName The classname to give to the 'ok' button
    * @returns Promise<void> - A promise once the message is closed.
    */
   public static async showMessage(
     title: string,
-    msg: string,
+    msg: string[],
     buttonLabel: string = "OK",
     buttonClassName: string = ""
   ): Promise<void> {
     const buttons: ReadonlyArray<Dialog.IButton> = [
       Dialog.okButton({ label: buttonLabel, className: buttonClassName })
     ];
-    await showDialog({ title, buttons, body: msg });
+
+    const messageBody =
+        <div>{msg.map((s: string) => {
+            return <><span className='dialog-box-text'>{s}</span><br/></>
+        })}</div>;
+
+    await showDialog({ title, buttons, body: messageBody });
   }
+
 
   /**
    * Opens a pop-up dialog in JupyterLab to display a yes/no dialog.
@@ -48,10 +56,7 @@ export default class NotebookUtilities {
       Dialog.cancelButton({ label: rejectLabel, className: noButtonClassName })
     ];
     const result = await showDialog({ title, buttons, body: msg });
-    if (result.button.label === acceptLabel) {
-      return true;
-    }
-    return false;
+    return result.button.label === acceptLabel
   }
 
   /**
@@ -208,23 +213,14 @@ export default class NotebookUtilities {
     ).done;
 
     const content: any = message.content;
-    return content;
 
-    // if (content.status !== "ok") {
-    //   // If cdat is requesting user input, return nothing
-    //   if (
-    //     content.status === "error" &&
-    //     content.ename === "StdinNotImplementedError"
-    //   ) {
-    //     return "";
-    //   }
-    //
-    //   // If response is not 'ok', throw contents as error, log code
-    //   const msg: string = `Code caused an error:\n${runCode}`;
-    //   console.error(msg);
-    //   throw content;
-    // }
-    // // Return user_expressions of the content
-    // return content.user_expressions;
+    if (content.status !== "ok") {
+      // If response is not 'ok', throw contents as error, log code
+      const msg: string = `Code caused an error:\n${runCode}`;
+      console.error(msg);
+      throw content;
+    }
+    // Return user_expressions of the content
+    return content.user_expressions;
   }
 }

@@ -258,32 +258,104 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     runDeploymentCommand = async () => {
         const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+        const printDebug = false;
 
-        let flag = '';
+        let mainCommand = (coreCommand: string) => `
+_kale_jp_command_debug = ${printDebug ? "True" : "False"}
+try:
+    ${coreCommand}
+    _kale_output_message = ['ok']
+except Exception as e:
+    if _kale_jp_command_debug:
+        _kale_output_message = traceback.format_exc()
+    else:
+        _kale_output_message = [str(e), 'To see full traceback activate the debugging option in Advanced Settings']
+`;
+        const initKaleCommand = `
+    import traceback
+    from kale.core import Kale as _Kale_Class
+    from kale.utils import kfp_utils as _kale_kfp_utils
+    _kale_instance = _Kale_Class(source_notebook_path='${nbFileName}')
+    _kale_pipeline_graph, _kale_pipeline_parameters = _kale_instance.notebook_to_graph()
+    _kale_generated_script_path = _kale_instance.generate_kfp_executable(_kale_pipeline_graph, _kale_pipeline_parameters)
+    _kale_package_path = _kale_kfp_utils.compile_pipeline(script_path, _kale_instance.pipeline_metadata['pipeline_name'])
+    _kale_pipeline_name = _kale_instance.pipeline_metadata['pipeline_name']
+    `;
+        const uploadPipelineCommand = (overwrite: string = 'False') => `
+    _kale_kfp_utils.upload_pipeline(
+        pipeline_package_path=_kale_package_path,
+        pipeline_name=_kale_pipeline_name,
+        overwrite=${overwrite},
+        host=_kale_instance.pipeline_metadata.get('kfp_host', None)
+    )
+`;
+        const runPipelineCommand = `
+    _kale_kfp_utils.run_pipeline(
+        run_name=_kale_instance.pipeline_metadata['pipeline_name'] + '_run',
+        experiment_name=_kale_instance.pipeline_metadata['experiment_name'],
+        pipeline_package_path=_kale_package_path,
+        host=_kale_instance.pipeline_metadata.get('kfp_host', None)
+    )
+`;
+
+        // CREATE PIPELINE
+        const expr = {output: "_kale_output_message", pipeline_name: "_kale_pipeline_name"};
+        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(initKaleCommand), expr, false);
+        const boxTitle = (error: boolean) => error ? "Operation Failed" : "Operation Successful";
+        let initCommandResult = eval(output.output.data['text/plain']);
+        if (initCommandResult[0] !== 'ok') {
+            await NotebookUtils.showMessage(boxTitle(true), initCommandResult);
+            // stop deploy button icon spin
+            this.setState({runDeployment: false});
+        }
+        initCommandResult = ["Pipeline saved successfully at " + output.pipeline_name.data['text/plain']];
+        if (this.state.deploymentType === 'compile') {
+            await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
+        }
+
+        // UPLOAD
         if (this.state.deploymentType === 'upload') {
-            flag = ' --upload_pipeline'
+            const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(uploadPipelineCommand()), expr, false);
+            const uploadCommandResult = eval(output.output.data['text/plain']);
+            if (uploadCommandResult[0] !== 'ok') {
+                // Upload failed. Probably because pipeline already exists
+                // show dialog to ask user if he wants to overwrite the existing pipeline
+                const result = NotebookUtils.showYesNoDialog(
+                    "Pipeline Upload Failed",
+                    "Pipeline with name " + output.pipeline_name.data['text/plain'] + " already exists. " +
+                    "Would you like to overwrite it?",
+                );
+                // OVERWRITE EXISTING PIPELINE
+                if (result) {
+                    // re-send upload command to kernel with `overwrite` flag
+                    const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(uploadPipelineCommand('True')), expr, false);
+                    const upload_error = (output.output.data['text/plain'] !== 'ok');
+                    const boxMessage = upload_error ?
+                        eval(output.output.data['text/plain']):
+                        ["Pipeline with name " + output.pipeline_name.data['text/plain'] + " uploaded successfully."];
+                    await NotebookUtils.showMessage(boxTitle(upload_error), boxMessage);
+                }
+            } else {
+                // Upload success
+                initCommandResult.push(["Pipeline with name " + output.pipeline_name.data['text/plain'] + " uploaded successfully."]);
+                await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
+            }
         }
+
+        // RUN
         if (this.state.deploymentType === 'run') {
-            flag = ' --run_pipeline'
+            const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(runPipelineCommand), expr, false);
+            const runCommandResult = eval(output.output.data['text/plain']);
+            if (runCommandResult[0] !== 'ok') {
+                await NotebookUtils.showMessage(boxTitle(true), runCommandResult);
+            } else {
+                initCommandResult.push(["Pipeline run created successfully"]);
+                await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
+            }
+
         }
-        const mainCommand = "output=!kale --nb " + nbFileName + flag;
-        console.log("Executing command: " + mainCommand);
-        const expr = {output: "output"};
-        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand, expr, false);
+        // stop deploy button icon spin
         this.setState({runDeployment: false});
-
-        console.log(output);
-        console.log(output.user_expressions.output.data['text/plain']);
-
-        // show dialog with result
-        const buttons: ReadonlyArray<Dialog.IButton> = [
-          Dialog.okButton({ label: "OK", className: "" })
-        ];
-        const msg =
-            <div>
-                {eval(output.user_expressions.output.data['text/plain']).map((s: string) => {return <><span className='dialog-box-text'>{s}</span><br/></>})}
-            </div>;
-        await showDialog({ title: "Deployment Result", buttons, body: msg });
     };
 
 
