@@ -300,7 +300,7 @@ except Exception as e:
 
         // CREATE PIPELINE
         const expr = {output: "_kale_output_message", pipeline_name: "_kale_pipeline_name"};
-        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(initKaleCommand), expr, false);
+        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(initKaleCommand), {...expr, script_path: "_kale_generated_script_path"}, false);
         const boxTitle = (error: boolean) => error ? "Operation Failed" : "Operation Successful";
         let initCommandResult = eval(output.output.data['text/plain']);
         if (initCommandResult[0] !== 'ok') {
@@ -308,7 +308,7 @@ except Exception as e:
             // stop deploy button icon spin
             this.setState({runDeployment: false});
         }
-        initCommandResult = ["Pipeline saved successfully at " + output.pipeline_name.data['text/plain'] + ".kale.py"];
+        initCommandResult = ["Pipeline saved successfully at " + output.script_path.data['text/plain']];
         if (this.state.deploymentType === 'compile') {
             await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
         }
