@@ -329,7 +329,7 @@ except Exception as e:
                 if (result) {
                     // re-send upload command to kernel with `overwrite` flag
                     const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(uploadPipelineCommand('True')), expr, false);
-                    const upload_error = (output.output.data['text/plain'] !== 'ok');
+                    const upload_error = (eval(output.output.data['text/plain'])[0] !== 'ok');
                     const boxMessage = upload_error ?
                         eval(output.output.data['text/plain']):
                         ["Pipeline with name " + output.pipeline_name.data['text/plain'] + " uploaded successfully."];
