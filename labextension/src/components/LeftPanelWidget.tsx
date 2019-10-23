@@ -308,7 +308,7 @@ except Exception as e:
             // stop deploy button icon spin
             this.setState({runDeployment: false});
         }
-        initCommandResult = ["Pipeline saved successfully at " + output.pipeline_name.data['text/plain']];
+        initCommandResult = ["Pipeline saved successfully at " + output.pipeline_name.data['text/plain'] + ".kale.py"];
         if (this.state.deploymentType === 'compile') {
             await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
         }
