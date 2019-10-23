@@ -64,7 +64,7 @@ def gen_kfp_code(nb_graph,
         ))
         function_names.append(block_name)
 
-    if metadata['volumes']:
+    if metadata['volumes'] and 'annotations' in metadata['volumes']:
         for v in metadata['volumes']:
             annotations = {a['key']: a['value'] for a in v['annotations']
                            if a['key'] != '' and a['value'] != ''}
