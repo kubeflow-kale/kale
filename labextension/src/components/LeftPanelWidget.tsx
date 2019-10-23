@@ -12,7 +12,6 @@ import {
 import {CellTags} from "./CellTags";
 import {Cell} from "@jupyterlab/cells";
 import {VolumesPanel} from "./VolumesPanel";
-import {Dialog, showDialog} from "@jupyterlab/apputils";
 import {SplitDeployButton} from "./DeployButton";
 
 
@@ -27,6 +26,7 @@ interface IState {
     metadata: IKaleNotebookMetadata;
     runDeployment: boolean;
     deploymentType: string;
+    deployDebugMessage: boolean;
     selectVal: string;
     activeNotebook?: NotebookPanel;
     activeCell?: Cell;
@@ -72,9 +72,9 @@ const DefaultState: IState = {
         docker_image: '',
         volumes: []
     },
-
     runDeployment: false,
     deploymentType: 'compile',
+    deployDebugMessage: false,
     selectVal: '',
     activeNotebook: null,
 };
@@ -160,6 +160,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     };
 
     activateRunDeployState = (type: string) => this.setState({runDeployment: true, deploymentType: type});
+    changeDeployDebugMessage = () => this.setState({deployDebugMessage: !this.state.deployDebugMessage});
 
 
     // restore state to default values
@@ -258,16 +259,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     runDeploymentCommand = async () => {
         const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
-        const printDebug = false;
 
         let mainCommand = (coreCommand: string) => `
-_kale_jp_command_debug = ${printDebug ? "True" : "False"}
+_kale_jp_command_debug = ${this.state.deployDebugMessage ? "True" : "False"}
 try:
     ${coreCommand}
     _kale_output_message = ['ok']
 except Exception as e:
     if _kale_jp_command_debug:
-        _kale_output_message = traceback.format_exc()
+        _kale_output_message = [traceback.format_exc()]
     else:
         _kale_output_message = [str(e), 'To see full traceback activate the debugging option in Advanced Settings']
 `;
@@ -397,16 +397,6 @@ except Exception as e:
             deleteAnnotation={this.deleteAnnotation}
         />;
 
-        let run_link = null;
-        // if (this.state.deploymentRunLink !== '') {
-        //     run_link = <p>
-        //         Pipeline run at
-        //         <a style={{color: "#106ba3"}}
-        //              href={this.state.deploymentRunLink}
-        //              target="_blank">this
-        //         </a> link.</p>;
-        // }
-
         return (
             <div className={"kubeflow-widget"}>
                 <div className={"kubeflow-widget-content"}>
@@ -442,6 +432,8 @@ except Exception as e:
                         title={"Advanced Settings"}
                         dockerImageValue={this.state.metadata.docker_image}
                         dockerChange={this.updateDockerImage}
+                        debug={this.state.deployDebugMessage}
+                        changeDebug={this.changeDeployDebugMessage}
                     />
 
                     <SplitDeployButton

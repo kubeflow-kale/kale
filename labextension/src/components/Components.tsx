@@ -13,6 +13,7 @@ import FormControl from '@material-ui/core/FormControl';
 import OutlinedInput from "@material-ui/core/OutlinedInput";
 
 import { useDebouncedCallback } from 'use-debounce';
+import Switch from "react-switch";
 
 // https://codeburst.io/my-journey-to-make-styling-with-material-ui-right-6a44f7c68113
 const useStyles = makeStyles(() =>
@@ -285,6 +286,8 @@ interface ICollapsablePanel {
     title: string,
     dockerImageValue: string,
     dockerChange: Function,
+    debug: boolean,
+    changeDebug: Function
 }
 
 export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = (props) => {
@@ -301,6 +304,24 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = (pro
                         label={"Docker image"}
                         updateValue={props.dockerChange}
                         value={props.dockerImageValue}/>
+
+                    <div className="toolbar" style={{padding: "12px 4px 0 4px"}}>
+                        <div className={"switch-label"}>Debug</div>
+                        <Switch
+                            checked={props.debug}
+                            onChange={_ => props.changeDebug()}
+                            onColor="#599EF0"
+                            onHandleColor="#477EF0"
+                            handleDiameter={18}
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+                            activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
+                            height={10}
+                            width={20}
+                            className="skip-switch"
+                        />
+                    </div>
                 </div>
             </div>
         )
