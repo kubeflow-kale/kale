@@ -1,8 +1,29 @@
 import { Dialog, showDialog } from "@jupyterlab/apputils";
 import { NotebookPanel } from "@jupyterlab/notebook";
-import { KernelMessage } from "@jupyterlab/services";
+import { KernelMessage, Kernel } from "@jupyterlab/services";
 import { CommandRegistry } from "@phosphor/commands";
 import * as React from "react";
+import {instanceOf} from "prop-types";
+
+
+enum RPC_CALL_STATUS {
+  OK = 0,
+  ImportError = 1,
+  ExecutionError = 2,
+}
+
+const getRpcStatusName = (code: number) => {
+  switch (code) {
+    case RPC_CALL_STATUS.OK:
+      return 'OK';
+    case RPC_CALL_STATUS.ImportError:
+      return 'ImportError';
+    case RPC_CALL_STATUS.ExecutionError:
+      return 'ExecutionError';
+    default:
+      return 'UnknownError';
+  }
+};
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
 export default class NotebookUtilities {
@@ -151,6 +172,23 @@ export default class NotebookUtilities {
   }
 
   /**
+   * Get a new Kernel, not tied to a Notebook
+   * Source code here: https://github.com/jupyterlab/jupyterlab/tree/473348d25bcb258ca2f0c127dd8fb5b193217135/packages/services
+   */
+  public static async createNewKernel() {
+    // Get info about the available kernels and start a new one.
+    let options: Kernel.IOptions = await Kernel.getSpecs().then(kernelSpecs => {
+      console.log('Default spec:', kernelSpecs.default);
+      console.log('Available specs', Object.keys(kernelSpecs.kernelspecs));
+      // use the default name
+      return {name: kernelSpecs.default}
+    });
+    return await Kernel.startNew(options).then(_kernel => {
+        return _kernel
+      });
+  }
+
+  /**
    * @description This function runs code directly in the notebook's kernel and then evaluates the
    * result and returns it as a promise.
    * @param notebookPanel The notebook to run the code in.
@@ -183,7 +221,7 @@ export default class NotebookUtilities {
    * https://jupyter-client.readthedocs.io/en/latest/messaging.html#execution-results
    */
   public static async sendKernelRequest(
-    notebookPanel: NotebookPanel,
+    kernel: Kernel.IKernelConnection,
     runCode: string,
     userExpressions: any,
     runSilent: boolean = false,
@@ -191,17 +229,14 @@ export default class NotebookUtilities {
     allowStdIn: boolean = false,
     stopOnError: boolean = false
   ): Promise<any> {
-    // Check notebook panel is ready
-    if (notebookPanel === null) {
-      throw new Error("The notebook is null or undefined.");
+    if (!kernel) {
+      throw new Error("Kernel is null or undefined.");
     }
 
     // Wait for kernel to be ready before sending request
-    await notebookPanel.activated;
-    await notebookPanel.session.ready;
-    await notebookPanel.session.kernel.ready;
+    await kernel.ready;
 
-    const message: KernelMessage.IShellMessage = await notebookPanel.session.kernel.requestExecute(
+    const message: KernelMessage.IShellMessage = await kernel.requestExecute(
       {
         allow_stdin: allowStdIn,
         code: runCode,
@@ -222,5 +257,111 @@ export default class NotebookUtilities {
     }
     // Return user_expressions of the content
     return content.user_expressions;
+  }
+
+  /**
+   * Same as method sendKernelRequest but passing
+   * a NotebookPanel instead of a Kernel
+   */
+  public static async sendKernelRequestFromNotebook(
+      notebookPanel: NotebookPanel,
+      runCode: string,
+      userExpressions: any,
+      runSilent: boolean = false,
+      storeHistory: boolean = false,
+      allowStdIn: boolean = false,
+      stopOnError: boolean = false
+  ) {
+    if (!notebookPanel) {
+      throw new Error("Notebook is null or undefined.");
+    }
+
+    // Wait for notebook panel to be ready
+    await notebookPanel.activated;
+    await notebookPanel.session.ready;
+
+    return this.sendKernelRequest(
+        notebookPanel.session.kernel,
+        runCode,
+        userExpressions,
+        runSilent,
+        storeHistory,
+        allowStdIn,
+        stopOnError
+    )
+  }
+
+  /**
+   * Execute kale.rpc module functions
+   * Example: func_result = await this.executeRpc("rpc_submodule.func", {arg1, arg2})
+   *    where func_result is a JSON object
+   * @param func Function name to be executed
+   * @param kwargs Dictionary with arguments to be passed to the function
+   * @param env instance of Kernel or NotebookPanel
+   */
+  public static async executeRpc(env: Kernel.IKernelConnection | NotebookPanel,
+                                 func: string,
+                                 kwargs: any = {}) {
+    const cmd: string = `from kale.rpc.run import run as __kale_rpc_run\n`
+        + `__kale_rpc_result = __kale_rpc_run("${func}", '${window.btoa(JSON.stringify(kwargs))}')`;
+    console.log("Executing command: " + cmd);
+    const expressions = {result: "__kale_rpc_result"};
+    const output = (env instanceof NotebookPanel) ?
+      await this.sendKernelRequestFromNotebook(env, cmd, expressions) :
+      await this.sendKernelRequest(env, cmd, expressions);
+
+    const argsAsStr = Object.keys(kwargs).map(key => `${key}=${kwargs[key]}`).join(', ');
+    let msg = [
+      `Function Call: ${func}(${argsAsStr})`,
+    ];
+    // Log output
+    if (output.result.status !== "ok") {
+      const title = `Kernel failed during code execution`;
+      msg = msg.concat([
+        `Status: ${output.result.status}`,
+        `Output: ${JSON.stringify(output, null, 3)}`
+      ]);
+      console.error([title].concat(msg));
+      await this.showMessage(title, msg);
+      return null;
+    }
+
+    // console.log(msg.concat([output]));
+    const raw_data = output.result.data["text/plain"];
+    const json_data = window.atob(raw_data.substring(1, raw_data.length - 1));
+
+    // Validate response is a JSON
+    // If successful, run() method returns json.dumps() of any result
+    let parsedResult = undefined;
+    try {
+      parsedResult = JSON.parse(json_data);
+    } catch (error) {
+      const title = `Failed to parse response as JSON`;
+      msg = msg.concat([
+        `Error: ${JSON.stringify(error, null, 3)}`,
+        `Response data: ${json_data}`
+      ]);
+      console.error(msg);
+      await this.showMessage(title, msg);
+      return null;
+    }
+
+    if (parsedResult.status !== 0) {
+      const title = `An error has occured`;
+      msg = msg.concat([
+        `Status: ${parsedResult.status} (${getRpcStatusName(parsedResult.status)})`,
+        `Type: ${JSON.stringify(parsedResult.err_cls, null, 3)}`,
+        `Message: ${parsedResult.err_message}`
+      ]);
+      console.error(msg);
+      await this.showMessage(title, msg);
+      return null;
+    } else {
+      msg = msg.concat([
+        `Result: ${parsedResult}`
+      ]);
+      // console.log(msg);
+      return parsedResult.result;
+    }
   }
 }

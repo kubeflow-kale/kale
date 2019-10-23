@@ -13,8 +13,10 @@ import {CellTags} from "./CellTags";
 import {Cell} from "@jupyterlab/cells";
 import {VolumesPanel} from "./VolumesPanel";
 import {SplitDeployButton} from "./DeployButton";
+import { Kernel } from "@jupyterlab/services";
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
+
 
 interface IProps {
     tracker: INotebookTracker;
@@ -213,6 +215,25 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         this.setState({activeCell: activeCell, activeCellIndex: notebook.activeCellIndex});
     };
 
+    executeRpc = async (env: NotebookPanel | Kernel.IKernel, func: string, args: any = {}) => {
+        let retryRpc = true;
+        let result: any = null;
+        // Kerned aborts the execution if busy
+        // If that is the case, retry the RPC
+        while (retryRpc) {
+            try {
+                result = await NotebookUtils.executeRpc(env, func, args);
+                retryRpc = false;
+            } catch (error) {
+                if (error.status !== 'aborted') {
+                    console.error(error);
+                    retryRpc = false;
+                }
+            }
+        }
+        return result;
+    };
+
     /**
      * Read new notebook and assign its metadata to the state.
      * @param notebook active NotebookPanel
@@ -293,7 +314,7 @@ except Exception as e:
 
         // CREATE PIPELINE
         const expr = {output: "_kale_output_message", pipeline_name: "_kale_pipeline_name"};
-        const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(initKaleCommand), {...expr, script_path: "_kale_generated_script_path"}, false);
+        const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(initKaleCommand), {...expr, script_path: "_kale_generated_script_path"}, false);
         const boxTitle = (error: boolean) => error ? "Operation Failed" : "Operation Successful";
         let initCommandResult = eval(output.output.data['text/plain']);
         if (initCommandResult[0] !== 'ok') {
@@ -308,7 +329,7 @@ except Exception as e:
 
         // UPLOAD
         if (this.state.deploymentType === 'upload') {
-            const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(uploadPipelineCommand()), expr, false);
+            const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(uploadPipelineCommand()), expr, false);
             const uploadCommandResult = eval(output.output.data['text/plain']);
             if (uploadCommandResult[0] !== 'ok') {
                 // Upload failed. Probably because pipeline already exists
@@ -321,7 +342,7 @@ except Exception as e:
                 // OVERWRITE EXISTING PIPELINE
                 if (result) {
                     // re-send upload command to kernel with `overwrite` flag
-                    const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(uploadPipelineCommand('True')), expr, false);
+                    const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(uploadPipelineCommand('True')), expr, false);
                     const upload_error = (eval(output.output.data['text/plain'])[0] !== 'ok');
                     const boxMessage = upload_error ?
                         eval(output.output.data['text/plain']):
@@ -337,7 +358,7 @@ except Exception as e:
 
         // RUN
         if (this.state.deploymentType === 'run') {
-            const output = await NotebookUtils.sendKernelRequest(this.state.activeNotebook, mainCommand(runPipelineCommand), expr, false);
+            const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(runPipelineCommand), expr, false);
             const runCommandResult = eval(output.output.data['text/plain']);
             if (runCommandResult[0] !== 'ok') {
                 await NotebookUtils.showMessage(boxTitle(true), runCommandResult);
@@ -350,7 +371,6 @@ except Exception as e:
         // stop deploy button icon spin
         this.setState({runDeployment: false});
     };
-
 
     render() {
 

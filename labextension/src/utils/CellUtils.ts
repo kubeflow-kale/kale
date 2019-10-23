@@ -318,7 +318,7 @@ export default class CellUtilities {
         index,
         code
       );
-      const output: string = await NotebookUtilities.sendKernelRequest(
+      const output: string = await NotebookUtilities.sendKernelRequestFromNotebook(
         notebookPanel,
         code,
           {output:"output"},
