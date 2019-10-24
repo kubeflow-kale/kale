@@ -22,7 +22,8 @@ setup(
               'kale.static_analysis',
               'kale.marshal',
               'kale.codegen',
-              'kale.utils'
+              'kale.utils',
+              'kale.rpc'
               ],
     install_requires=[
         'kfp >=0.1.31, <0.2',
