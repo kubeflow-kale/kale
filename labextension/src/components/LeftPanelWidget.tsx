@@ -4,6 +4,7 @@ import {
     NotebookPanel
 } from "@jupyterlab/notebook";
 import NotebookUtils from "../utils/NotebookUtils";
+import Switch from "react-switch";
 
 import {
     CollapsablePanel,
@@ -63,9 +64,10 @@ interface IState {
     activeCellIndex?: number;
     experiments: IExperiment[];
     gettingExperiments: boolean;
-    notebookVolumes: IVolumeMetadata[];
-    volumes: IVolumeMetadata[];
+    notebookVolumes?: IVolumeMetadata[];
+    volumes?: IVolumeMetadata[];
     selectVolumeTypes: {label: string, value: string}[];
+    useNotebookVolumes: boolean;
 }
 
 export interface IAnnotation {
@@ -122,6 +124,7 @@ const DefaultState: IState = {
     notebookVolumes: [],
     volumes: [],
     selectVolumeTypes: selectVolumeTypes,
+    useNotebookVolumes: false,
 };
 
 const DefaultEmptyVolume: IVolumeMetadata = {
@@ -153,6 +156,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     updatePipelineName = (name: string) => this.setState({metadata: {...this.state.metadata, pipeline_name: name}});
     updatePipelineDescription = (desc: string) => this.setState({metadata: {...this.state.metadata, pipeline_description: desc}});
     updateDockerImage = (name: string) => this.setState({metadata: {...this.state.metadata, docker_image: name}});
+    updateVolumesSwitch = () => {
+        this.setState({
+            useNotebookVolumes: !this.state.useNotebookVolumes,
+            volumes: this.state.notebookVolumes,
+            metadata: {
+                ...this.state.metadata,
+                volumes: this.state.notebookVolumes,
+            },
+        })
+    };
 
     // Volume managers
     deleteVolume = (idx: number) => {
@@ -407,6 +420,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     }
                     experiment_name = notebookMetadata['experiment_name'];
                 }
+
+                let useNotebookVolumes = this.state.notebookVolumes.length > 0;
                 let metadataVolumes = (notebookMetadata['volumes'] || []).filter((v: IVolumeMetadata) => v.type !== 'clone');
                 let stateVolumes = metadataVolumes.map((volume: IVolumeMetadata) => {
                     if (volume.type === 'new_pvc' && volume.annotations.length > 0 && volume.annotations[0].key === 'rok/origin') {
@@ -417,6 +432,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
                     metadataVolumes = stateVolumes = this.state.notebookVolumes;
                 } else {
+                    useNotebookVolumes = false;
                     metadataVolumes = metadataVolumes.concat(this.state.notebookVolumes);
                     stateVolumes = stateVolumes.concat(this.state.notebookVolumes);
                 }
@@ -431,7 +447,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 };
                 this.setState({
                     volumes: stateVolumes,
-                    metadata: metadata, ...currentCell
+                    metadata: metadata,
+                    useNotebookVolumes: useNotebookVolumes,
+                    ...currentCell
                 });
             } else {
                 this.setState({metadata: DefaultState.metadata, ...currentCell})
@@ -669,6 +687,8 @@ except Exception as e:
             notebookMountPoints={this.getNotebookMountPoints()}
             selectVolumeSizeTypes={selectVolumeSizeTypes}
             selectVolumeTypes={this.state.selectVolumeTypes}
+            useNotebookVolumes={this.state.useNotebookVolumes}
+            updateVolumesSwitch={this.updateVolumesSwitch}
         />;
 
         return (

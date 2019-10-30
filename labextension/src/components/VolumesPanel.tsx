@@ -23,6 +23,8 @@ interface IProps {
     notebookMountPoints: {label: string, value: string}[],
     selectVolumeSizeTypes: {label: string, value: string, base: number}[],
     selectVolumeTypes: {label: string, value: string}[],
+    useNotebookVolumes: boolean,
+    updateVolumesSwitch: Function,
 }
 
 export class VolumesPanel extends React.Component<IProps, any> {
@@ -201,8 +203,21 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 }
 
             )}
-                </div>
+            </div>
         }
+        const addButton =
+            <div className="add-button">
+                <Button
+                    variant="contained"
+                    size="small"
+                    title="Add Volume"
+                    onClick={_ => this.props.addVolume()}
+                    style={{marginLeft: "10px"}}
+                >
+                    <AddIcon />
+                    Add Volume
+                </Button>
+            </div>;
 
         return (
             <div className="kale-component">
@@ -220,20 +235,26 @@ export class VolumesPanel extends React.Component<IProps, any> {
                     </div>
                 </div>
 
-                {vols}
-
-                <div className="add-button">
-                    <Button
-                        variant="contained"
-                        size="small"
-                        title="Add Volume"
-                        onClick={_ => this.props.addVolume()}
-                        style={{marginLeft: "10px"}}
-                    >
-                        <AddIcon />
-                        Add Volume
-                    </Button>
+                <div className='toolbar input-container' style={{borderBottom: 'inset', fontSize: 'initial'}}>
+                    <div className='switch-label'>Use this Notebook's Volumes</div>
+                    <Switch
+                        checked={this.props.useNotebookVolumes}
+                        onChange={_ => this.props.updateVolumesSwitch()}
+                        onColor='#599EF0'
+                        onHandleColor='#477EF0'
+                        handleDiameter={18}
+                        uncheckedIcon={false}
+                        checkedIcon={false}
+                        boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
+                        activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
+                        height={10}
+                        width={20}
+                        className='skip-switch'
+                        id='skip-switch'
+                    />
                 </div>
+                {this.props.useNotebookVolumes ? null : vols}
+                {this.props.useNotebookVolumes ? null : addButton}
             </div>
         )
 
