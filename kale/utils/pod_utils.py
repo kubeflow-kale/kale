@@ -140,4 +140,3 @@ def print_volumes():
     rows = [(path, volume.name, size)
             for path, volume, size in list_volumes()]
     print(tabulate.tabulate(rows, headers=headers))
-
