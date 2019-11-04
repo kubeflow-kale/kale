@@ -84,7 +84,7 @@ def gen_kfp_code(nb_graph,
         docker_base_image=metadata.get('docker_image', ''),
         volumes=metadata.get('volumes', []),
         leaf_nodes=leaf_nodes,
-        working_dir=metadata.get('working_dir', None)
+        working_dir=metadata.get('abs_working_dir', None)
     )
 
     # fix code style using pep8 guidelines
