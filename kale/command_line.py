@@ -123,13 +123,6 @@ def kale_volumes():
     def list_volumes(args, logger):
         """This function gets invoked by the sub-command 'list'."""
         volumes = pod_utils.list_volumes()
-        # from kubernetes import client
-        # volumes = [("/lala",
-        #             client.V1Volume(name="lala",
-        #                             persistent_volume_claim=
-        #                             client.V1PersistentVolumeClaimVolumeSource(
-        #                                 claim_name="koko")),
-        #             "5")]
 
         if args.output == "table":
             headers = ["Mount Path", "Volume Name", "PVC Name", "Volume Size"]
@@ -145,7 +138,10 @@ def kale_volumes():
                             "size_type": "",
                             "snapshot": False}
                            for path, volume, size in volumes]
-            print(json.dumps(volumes_out, sort_keys=True, indent=3, separators=(",", ": ")))
+            print(json.dumps(volumes_out,
+                             sort_keys=True,
+                             indent=3,
+                             separators=(",", ": ")))
 
     parser = argparse.ArgumentParser(description=KALE_VOLUMES_DESCRIPTION)
     parser.add_argument(
