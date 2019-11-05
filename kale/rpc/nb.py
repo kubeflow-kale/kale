@@ -11,3 +11,7 @@ def list_volumes():
                     "snapshot": False}
                    for path, volume, size in volumes]
     return volumes_out
+
+
+def get_base_image():
+    return pod_utils.get_docker_base_image()
