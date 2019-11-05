@@ -3,7 +3,6 @@ import re
 import copy
 import json
 import pprint
-import tempfile
 
 import logging
 import subprocess
@@ -19,8 +18,7 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dep_analysis
 from kale.codegen import generate_code
-from kale.utils.pod_utils import list_volumes, get_namespace, \
-                                 get_docker_base_image
+from kale.utils.pod_utils import get_namespace, get_docker_base_image
 
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
