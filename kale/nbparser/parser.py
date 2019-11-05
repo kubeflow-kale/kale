@@ -27,7 +27,9 @@ TAGS_LANGUAGE = [r'^imports$',
                  r'^skip$',
                  r'^in$',
                  r'^out$',
-                 r'^block:[_a-z]([_a-z0-9]*)?$',
+                 # Extension may end up with 'block:' as a tag.  We handle that
+                 # as if it was empty.
+                 r'^block:([_a-z]([_a-z0-9]*)?)?$',
                  r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
@@ -114,12 +116,12 @@ def parse_metadata(metadata: dict):
 
         elems = t.split(':')
         radix = elems[0]
-        value = elems[1]
+        value = elems[1] if len(elems) > 1 else None
         # in the future we could define tags that have optional arguments
         args = elems[2:] if len(elems) > 2 else None
 
         # name of the current pipeline step
-        if radix == "block":
+        if radix == "block" and value:
             parsed_tags['block_names'].append(value)
         # names of the [possible] previous [dependencies] steps
         if radix == "prev":
