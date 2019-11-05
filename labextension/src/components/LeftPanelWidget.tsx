@@ -409,6 +409,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             await this.getExperiments();
             // Get information about volumes currently mounted on the notebook server
             await this.getMountedVolumes();
+            // Detect the base image of the current Notebook Server
+            await this.getBaseImage();
 
             // if the key exists in the notebook's metadata
             if (notebookMetadata) {
@@ -628,6 +630,15 @@ except Exception as e:
             });
         } else {
             this.setState({selectVolumeTypes: selectVolumeTypes.filter(t => t.value !== 'clone')});
+        }
+    };
+
+    getBaseImage = async () => {
+        let baseImage: string = await this.executeRpc("nb.get_base_image");
+        if (baseImage) {
+            DefaultState.metadata.docker_image = baseImage
+        } else {
+            DefaultState.metadata.docker_image = ''
         }
     };
 
