@@ -155,12 +155,12 @@ def merge_code(nb_graph, dst, tags, code):
     source_code = nb_graph.nodes(data=True)[dst]['source']
     existing_tags = nb_graph.nodes(data=True)[dst]['tags']
     # use `set` operation to make unique list
-    if len(tags['in']) > 0:
-        existing_tags['in'].extend(tags['in'])
-        existing_tags['in'] = list(set(existing_tags['in']))
-    if len(tags['out']) > 0:
-        existing_tags['out'].extend(tags['out'])
-        existing_tags['out'] = list(set(existing_tags['out']))
+    for key in ['in', 'out', 'previous_blocks']:
+        if len(tags[key]) > 0:
+            existing_tags[key].extend(tags[key])
+            existing_tags[key] = list(set(existing_tags[key]))
+    for block in tags['previous_blocks']:
+        nb_graph.add_edge(block, dst)
     source_code += "\n" + code
     # update pipeline block source code
     nx.set_node_attributes(nb_graph, {dst: {'source': source_code,
