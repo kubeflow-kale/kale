@@ -42,7 +42,6 @@ def format_error(status, exc_info):
 
 
 def run(func, kwargs):
-    kwargs = json.loads(kwargs)
     try:
         func = import_func(func)
     except ImportError:
