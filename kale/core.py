@@ -167,7 +167,7 @@ class Kale:
                               f" --param commit_message='{commit_message}'")
 
         output = json.loads(output)
-        snapshot_volumes = output['group_members']
+        snapshot_volumes = output['result']['version']['group_members']
 
         # Retrieve the mount point of each snapshotted volume
         for v in snapshot_volumes:
