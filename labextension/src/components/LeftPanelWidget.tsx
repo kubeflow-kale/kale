@@ -104,6 +104,24 @@ interface IKaleNotebookMetadata {
     volumes: IVolumeMetadata[];
 }
 
+interface ICompileNotebookArgs {
+    source_notebook_path: string;
+    notebook_metadata_overrides: Object;
+    debug: boolean;
+    auto_snapshot: boolean;
+}
+
+interface IUploadPipelineArgs {
+    pipeline_package_path: string;
+    pipeline_metadata: Object;
+    overwrite: boolean;
+}
+
+interface IRunPipelineArgs {
+    pipeline_package_path: string;
+    pipeline_metadata: Object;
+}
+
 const DefaultState: IState = {
     metadata: {
         experiment: {id: '', name: ''},
@@ -472,101 +490,77 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     };
 
     runDeploymentCommand = async () => {
+        const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
+        console.log('metadata:', metadata);
+
         const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
 
-        let mainCommand = (coreCommand: string) => `
-_kale_jp_command_debug = ${this.state.deployDebugMessage ? "True" : "False"}
-try:
-    ${coreCommand}
-    _kale_output_message = ['ok']
-except Exception as e:
-    if _kale_jp_command_debug:
-        _kale_output_message = [traceback.format_exc()]
-    else:
-        _kale_output_message = [str(e), 'To see full traceback activate the debugging option in Advanced Settings']
-        `;
-        const initKaleCommand = `
-    import traceback
-    from kale.core import Kale as _Kale_Class
-    from kale.utils import kfp_utils as _kale_kfp_utils
-    _kale_instance = _Kale_Class(source_notebook_path='${nbFileName}')
-    _kale_pipeline_graph, _kale_pipeline_parameters = _kale_instance.notebook_to_graph()
-    _kale_generated_script_path = _kale_instance.generate_kfp_executable(_kale_pipeline_graph, _kale_pipeline_parameters)
-    _kale_package_path = _kale_kfp_utils.compile_pipeline(_kale_generated_script_path, _kale_instance.pipeline_metadata['pipeline_name'])
-    _kale_pipeline_name = _kale_instance.pipeline_metadata['pipeline_name']
-        `;
-        const uploadPipelineCommand = (overwrite: string = 'False') => `
-    _kale_kfp_utils.upload_pipeline(
-        pipeline_package_path=_kale_package_path,
-        pipeline_name=_kale_pipeline_name,
-        overwrite=${overwrite},
-        host=_kale_instance.pipeline_metadata.get('kfp_host', None)
-    )
-        `;
-        const runPipelineCommand = `
-    _kale_kfp_utils.run_pipeline(
-        run_name=_kale_instance.pipeline_metadata['pipeline_name'] + '_run',
-        experiment_name=_kale_instance.pipeline_metadata['experiment_name'],
-        pipeline_package_path=_kale_package_path,
-        host=_kale_instance.pipeline_metadata.get('kfp_host', None)
-    )
-        `;
-
         // CREATE PIPELINE
-        const expr = {output: "_kale_output_message", pipeline_name: "_kale_pipeline_name"};
-        const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(initKaleCommand), {...expr, script_path: "_kale_generated_script_path"}, false);
-        const boxTitle = (error: boolean) => error ? "Operation Failed" : "Operation Successful";
-        let initCommandResult = eval(output.output.data['text/plain']);
-        if (initCommandResult[0] !== 'ok') {
-            await NotebookUtils.showMessage(boxTitle(true), initCommandResult);
-            // stop deploy button icon spin
+        const compileNotebookArgs: ICompileNotebookArgs = {
+            source_notebook_path: nbFileName,
+            notebook_metadata_overrides: metadata,
+            debug: this.state.deployDebugMessage,
+            auto_snapshot: this.state.autosnapshot,
+        };
+        const compileNotebook = await this.executeRpc(this.state.activeNotebook, 'nb.compile_notebook', compileNotebookArgs);
+        let msg = ["Pipeline saved successfully at " + compileNotebook.pipeline_package_path];
+        if (!compileNotebook) {
             this.setState({runDeployment: false});
+            await NotebookUtils.showMessage('Operation Failed', ['Could not compile pipeline.']);
+            return;
         }
-        initCommandResult = ["Pipeline saved successfully at " + output.script_path.data['text/plain']];
         if (this.state.deploymentType === 'compile') {
-            await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
+            await NotebookUtils.showMessage('Operation Successful', msg);
         }
 
         // UPLOAD
         if (this.state.deploymentType === 'upload') {
-            const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(uploadPipelineCommand()), expr, false);
-            const uploadCommandResult = eval(output.output.data['text/plain']);
-            if (uploadCommandResult[0] !== 'ok') {
-                // Upload failed. Probably because pipeline already exists
-                // show dialog to ask user if he wants to overwrite the existing pipeline
-                const result: boolean = await NotebookUtils.showYesNoDialog(
-                    "Pipeline Upload Failed",
-                    "Pipeline with name " + output.pipeline_name.data['text/plain'] + " already exists. " +
-                    "Would you like to overwrite it?",
+            const uploadPipelineArgs: IUploadPipelineArgs = {
+                pipeline_package_path: compileNotebook.pipeline_package_path,
+                pipeline_metadata: compileNotebook.pipeline_metadata,
+                overwrite: false,
+            };
+            let uploadPipeline = await this.executeRpc(this.state.activeNotebook, 'kfp.upload_pipeline', uploadPipelineArgs);
+            let result = true;
+            if (!uploadPipeline) {
+                this.setState({runDeployment: false});
+                msg = msg.concat(['Could not upload pipeline.']);
+                await NotebookUtils.showMessage('Operation Failed', msg);
+                return;
+            }
+            if (uploadPipeline && uploadPipeline.already_exists) {
+                // show dialog to ask user if they want to overwrite the existing pipeline
+                result = await NotebookUtils.showYesNoDialog(
+                    'Pipeline Upload Failed',
+                    'Pipeline with name ' + compileNotebook.pipeline_metadata.pipeline_name + ' already exists. ' +
+                    'Would you like to overwrite it?',
                 );
                 // OVERWRITE EXISTING PIPELINE
                 if (result) {
-                    // re-send upload command to kernel with `overwrite` flag
-                    const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(uploadPipelineCommand('True')), expr, false);
-                    const upload_error = (eval(output.output.data['text/plain'])[0] !== 'ok');
-                    const boxMessage = upload_error ?
-                        eval(output.output.data['text/plain']):
-                        ["Pipeline with name " + output.pipeline_name.data['text/plain'] + " uploaded successfully."];
-                    await NotebookUtils.showMessage(boxTitle(upload_error), boxMessage);
+                    uploadPipelineArgs.overwrite = true;
+                    uploadPipeline = await this.executeRpc(this.state.activeNotebook, 'kfp.upload_pipeline', uploadPipelineArgs);
                 }
-            } else {
-                // Upload success
-                initCommandResult.push(["Pipeline with name " + output.pipeline_name.data['text/plain'] + " uploaded successfully."]);
-                await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
+            }
+            if (uploadPipeline && result) {
+                msg = msg.concat(['Pipeline with name ' + uploadPipeline.pipeline.name + ' uploaded successfully.']);
+                await NotebookUtils.showMessage('Operation Successful', msg);
             }
         }
 
         // RUN
         if (this.state.deploymentType === 'run') {
-            const output = await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, mainCommand(runPipelineCommand), expr, false);
-            const runCommandResult = eval(output.output.data['text/plain']);
-            if (runCommandResult[0] !== 'ok') {
-                await NotebookUtils.showMessage(boxTitle(true), runCommandResult);
+            const runPipelineArgs: IRunPipelineArgs = {
+                pipeline_package_path: compileNotebook.pipeline_package_path,
+                pipeline_metadata: compileNotebook.pipeline_metadata,
+            };
+            const runPipeline = await this.executeRpc(this.state.activeNotebook, 'kfp.run_pipeline', runPipelineArgs);
+            if (runPipeline) {
+                msg = msg.concat(['Pipeline run created successfully']);
+                await NotebookUtils.showMessage('Operation Successful', msg);
             } else {
-                initCommandResult.push(["Pipeline run created successfully"]);
-                await NotebookUtils.showMessage(boxTitle(false), initCommandResult);
+                msg = msg.concat(['Could not create run.']);
+                await NotebookUtils.showMessage('Operation Failed', msg);
             }
-
         }
         // stop deploy button icon spin
         this.setState({runDeployment: false});
@@ -634,7 +628,7 @@ except Exception as e:
     };
 
     getBaseImage = async () => {
-        let baseImage: string = await this.executeRpc("nb.get_base_image");
+        let baseImage: string = await this.executeRpc(this.state.activeNotebook, "nb.get_base_image");
         if (baseImage) {
             DefaultState.metadata.docker_image = baseImage
         } else {
