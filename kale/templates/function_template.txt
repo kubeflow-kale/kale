@@ -5,7 +5,7 @@ def {{ function_name }}({{ function_args }}):
     from kale.marshal import resource_save as _kale_resource_save
     from kale.marshal import resource_load as _kale_resource_load
 
-    _kale_data_directory = "/marshal/{{ pipeline_name }}/"
+    _kale_data_directory = os.path.join("{{ marshal_path }}", "{{ pipeline_name }}")
 
 {%- if in_variables|length > 0 %}
     # -----------------------DATA LOADING START--------------------------------

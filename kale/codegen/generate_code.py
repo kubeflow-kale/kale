@@ -1,3 +1,4 @@
+import os
 import autopep8
 
 import networkx as nx
@@ -9,6 +10,7 @@ from jinja2 import Environment, PackageLoader
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
 def gen_kfp_code(nb_graph,
+                 nb_path,
                  pipeline_parameters,
                  metadata):
     """
@@ -57,6 +59,22 @@ def gen_kfp_code(nb_graph,
         else:
             raise ValueError(f"Unknown volume type: {v['type']}")
 
+    marshal_volume = True
+    marshal_path = "/marshal"
+    # Check if the workspace directory is under a mounted volume.
+    # If so, marshal data into a folder in that volume,
+    # otherwise create a new volume and mount it at /marshal
+    wd = metadata.get('abs_working_dir', None)
+    if wd:
+        wd = os.path.realpath(wd)
+        # get the volumes for which the working directory is a subpath of the mount point
+        vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
+        # if we found any, then set marshal directory inside working directory
+        if len(vols) >= 1:
+            marshal_volume = False
+            marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
+            marshal_path = os.path.join(wd, marshal_dir)
+
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
     pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
@@ -86,7 +104,8 @@ def gen_kfp_code(nb_graph,
             function_args=function_args,
             function_blocks=[block_data['source']],
             in_variables=block_data['ins'],
-            out_variables=block_data['outs']
+            out_variables=block_data['outs'],
+            marshal_path=marshal_path
         ))
         function_names.append(block_name)
 
@@ -104,7 +123,9 @@ def gen_kfp_code(nb_graph,
         docker_base_image=metadata.get('docker_image', ''),
         volumes=volumes,
         leaf_nodes=leaf_nodes,
-        working_dir=metadata.get('abs_working_dir', None)
+        working_dir=metadata.get('abs_working_dir', None),
+        marshal_volume=marshal_volume,
+        marshal_path=marshal_path
     )
 
     # fix code style using pep8 guidelines
