@@ -1,4 +1,5 @@
-from kale.utils import pod_utils
+from kale.core import Kale
+from kale.utils import pod_utils, kfp_utils
 
 
 def list_volumes():
@@ -15,3 +16,18 @@ def list_volumes():
 
 def get_base_image():
     return pod_utils.get_docker_base_image()
+
+
+def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
+                     debug=False):
+    instance = Kale(source_notebook_path, notebook_metadata_overrides,
+                    debug)
+    pipeline_graph, pipeline_parameters = instance.notebook_to_graph()
+    script_path = instance.generate_kfp_executable(pipeline_graph,
+                                                   pipeline_parameters)
+
+    pipeline_name = instance.pipeline_metadata["pipeline_name"]
+    package_path = kfp_utils.compile_pipeline(script_path, pipeline_name)
+
+    return {"pipeline_package_path": package_path,
+            "pipeline_metadata": instance.pipeline_metadata}
