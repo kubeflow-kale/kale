@@ -55,10 +55,15 @@ def get_container_name():
     return container_name.split('/')[-1]
 
 
-def _get_k8s_client():
+def _get_k8s_v1_client():
     k8s_config.load_incluster_config()
     api_client = k8s.ApiClient()
     return k8s.CoreV1Api(api_client)
+
+
+def _get_k8s_custom_objects_client():
+    k8s_config.load_incluster_config()
+    return k8s.CustomObjectsApi()
 
 
 def _get_pod_container(pod, container_name):
@@ -117,7 +122,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
 
 def list_volumes():
-    client = _get_k8s_client()
+    client = _get_k8s_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
     container_name = get_container_name()
@@ -125,7 +130,7 @@ def list_volumes():
 
 
 def get_docker_base_image():
-    client = _get_k8s_client()
+    client = _get_k8s_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
     container_name = get_container_name()
@@ -140,3 +145,58 @@ def print_volumes():
     rows = [(path, volume.name, size)
             for path, volume, size in list_volumes()]
     print(tabulate.tabulate(rows, headers=headers))
+
+
+def snapshot_pipeline_step(pipeline, step):
+    from rok_gw_client.client import RokClient
+
+    bucket = "pipelines"
+    run_uuid = get_run_uuid()
+    obj = f"{pipeline}-{run_uuid}"
+    commit_title = f"Step: {step}"
+    commit_message = f"Step '{step}' of pipeline run '{run_uuid}'"
+    params = {"pod": get_pod_name(),
+              "default_container": "main",
+              "commit_title": commit_title,
+              "commit_message": commit_message}
+    rok = RokClient()
+    print("Creating snapshot for step '%s'" % step)
+    task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
+    print("Successfully created snapshot for step '%s'" % step)
+    print("You can explore the state of the notebook at the beginning"
+          " of this step by spawning a new notebook from the following"
+          " Rok snapshot:")
+
+    # FIXME: How do we retrieve the base URL of the ROK UI?
+    version = task_info["task"]["result"]["event"]["version"]
+    print("\n/rok/buckets/%s/files/%s/versions/%s\n" % (bucket, obj, version))
+
+
+def get_run_uuid():
+    # Retrieve the pod
+    pod_name = get_pod_name()
+    namespace = get_namespace()
+    v1_client = _get_k8s_v1_client()
+    pod = v1_client.read_namespaced_pod(pod_name, namespace)
+
+    # Obtain the workflow name
+    labels = pod.metadata.labels
+    workflow_name = labels.get("workflows.argoproj.io/workflow", None)
+    if workflow_name is None:
+        msg = (f"Could not retrieve workflow name from pod"
+               f"{namespace}/{pod_name}")
+        raise RuntimeError(msg)
+
+    # Retrieve the Argo workflow
+    api_group = "argoproj.io"
+    api_version = "v1alpha1"
+    co_name = "workflows"
+    co_client = _get_k8s_custom_objects_client()
+    workflow = co_client.get_namespaced_custom_object(api_group, api_version,
+                                                      namespace, co_name,
+                                                      workflow_name)
+
+    # FIXME: Currently workflows are not annotated with the Kubeflow pipeline
+    # run UUID, so there is no way to retrieve the run UUID from within a pod.
+    # For now we return the workflow UUID instead.
+    return workflow["metadata"]["uid"]
