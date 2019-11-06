@@ -11,7 +11,8 @@ from jinja2 import Environment, PackageLoader
 #   Need to implement tag arguments first.
 def gen_kfp_code(nb_graph,
                  pipeline_parameters,
-                 metadata):
+                 metadata,
+                 auto_snapshot):
     """
     Takes a NetworkX workflow graph with the following properties
 
@@ -111,7 +112,8 @@ def gen_kfp_code(nb_graph,
             function_blocks=[block_data['source']],
             in_variables=block_data['ins'],
             out_variables=block_data['outs'],
-            marshal_path=marshal_path
+            marshal_path=marshal_path,
+            auto_snapshot=auto_snapshot
         ))
         function_names.append(block_name)
 

@@ -39,7 +39,9 @@ class Kale:
     def __init__(self,
                  source_notebook_path: str,
                  notebook_metadata_overrides: dict = None,
-                 debug: bool = False):
+                 debug: bool = False,
+                 auto_snapshot: bool = False):
+        self.auto_snapshot = auto_snapshot
         self.source_path = Path(source_notebook_path)
         if not self.source_path.exists():
             raise ValueError(f"Path {self.source_path} does not exist")
@@ -229,7 +231,8 @@ class Kale:
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
                                               pipeline_parameters=pipeline_parameters,
-                                              metadata=self.pipeline_metadata)
+                                              metadata=self.pipeline_metadata,
+                                              auto_snapshot=self.auto_snapshot)
 
         output_path = os.path.join(os.path.dirname(self.source_path),
                                    f"{self.pipeline_metadata['pipeline_name']}.kale.py")

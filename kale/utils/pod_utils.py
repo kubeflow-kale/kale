@@ -141,3 +141,31 @@ def print_volumes():
             for path, volume, size in list_volumes()]
     print(tabulate.tabulate(rows, headers=headers))
 
+
+def snapshot_pipeline_step(pipeline, step):
+    from rok_gw_client.client import RokClient
+
+    bucket = "pipelines"
+    run_uuid = get_run_uuid()
+    obj = f"{pipeline}-{run_uuid}"
+    commit_title = f"Step: {step}"
+    commit_message = f"Step '{step}' of pipeline run '{run_uuid}'"
+    params = {"pod": get_pod_name(),
+              "default_container": "main",
+              "commit_title": commit_title,
+              "commit_message": commit_message}
+    rok = RokClient()
+    print("Creating snapshot for step '%s'" % step)
+    task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
+    print("Successfully created snapshot for step '%s'" % step)
+    print("You can explore the state of the notebook at the beginning"
+          " of this step by spawning a new notebook from the following"
+          " Rok snapshot:")
+
+    # FIXME: How do we retrieve the base URL of the ROK UI?
+    version = task_info["task"]["result"]["event"]["version"]
+    print("\n/rok/buckets/%s/files/%s/versions/%s\n" % (bucket, obj, version))
+
+
+def get_run_uuid():
+    return "1111-2222-3333-4444"

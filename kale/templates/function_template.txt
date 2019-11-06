@@ -2,10 +2,15 @@ def {{ function_name }}({{ function_args }}):
 
     import os
     import shutil
+    from kale.utils import pod_utils
     from kale.marshal import resource_save as _kale_resource_save
     from kale.marshal import resource_load as _kale_resource_load
 
     _kale_data_directory = os.path.join("{{ marshal_path }}", "{{ pipeline_name }}")
+
+    {% if auto_snapshot -%}
+    pod_utils.snapshot_pipeline_step("{{ pipeline_name }}", "{{ function_name }}")
+    {% endif -%}
 
     # -----------------------DATA LOADING START--------------------------------
 {%- if in_variables|length > 0 %}
