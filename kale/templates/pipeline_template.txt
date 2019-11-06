@@ -22,14 +22,18 @@ import kfp.dsl as dsl
    description='{{ pipeline_description }}'
 )
 def auto_generated_pipeline({{ pipeline_arguments }}):
+    {% if marshal_volume %}
     marshal_vop = dsl.VolumeOp(
         name="kale_marshal_volume",
         resource_name="kale-marshal-pvc",
         modes=dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
+    pvolumes_dict = {'{{ marshal_path }}': marshal_vop.volume}
+    {% else %}
+    pvolumes_dict = dict()
+    {% endif %}
 
-    pvolumes_dict = {'/marshal': marshal_vop.volume}
 
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
@@ -108,19 +112,6 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
     {% endif %}
     {% endfor %}
 
-{#    vol_dict = {#}
-{#        "apiVersion": "v1",#}
-{#        "kind": "PersistentVolumeClaim",#}
-{#        "metadata": {#}
-{#            "name": marshal_vop.outputs['name']#}
-{#        }#}
-{#    }#}
-{##}
-{#    delete_vol = dsl.ResourceOp(#}
-{#        name="delete_kale_marshal_volume",#}
-{#        action="delete",#}
-{#        k8s_resource=vol_dict#}
-{#    ).after({{ leaf_steps|join(', ') }})  # Depend on the last executing steps#}
 
 {# The script will deploy the pipeline if run manually #}
 if __name__ == "__main__":
