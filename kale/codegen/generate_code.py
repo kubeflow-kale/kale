@@ -1,3 +1,4 @@
+import os
 import autopep8
 
 import networkx as nx
@@ -57,6 +58,29 @@ def gen_kfp_code(nb_graph,
         else:
             raise ValueError(f"Unknown volume type: {v['type']}")
 
+    marshal_volume = True
+    marshal_path = "/marshal"
+    # Check if the workspace directory is under a mounted volume.
+    # If so, marshal data into a folder in that volume,
+    # otherwise create a new volume and mount it at /marshal
+    wd = metadata.get('abs_working_dir', None)
+    if wd:
+        wd = os.path.realpath(wd)
+        # get the volumes for which the working directory is a subpath of the mount point
+        vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
+        # assure both > 0 and < 2.
+        # FIXME: Need to decide how to handle second case (<2).
+        #  It means there are volumes mounted on subpaths of other volumes.
+        #  For now we take the one mounted closest to /
+        if len(vols) >= 1:
+            # In case vols contains more that one volume,
+            # get the parent volume, the one closest to /.
+            # Sort by length of mount point path, get the shortest.
+            vol = sorted(vols, key=lambda _v: len(_v['mount_point']))[0]
+            marshal_volume = False
+            marshal_dir = ".kale.marshal.dir"
+            marshal_path = os.path.join(vol['mount_point'], marshal_dir)
+
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
     pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
@@ -86,7 +110,8 @@ def gen_kfp_code(nb_graph,
             function_args=function_args,
             function_blocks=[block_data['source']],
             in_variables=block_data['ins'],
-            out_variables=block_data['outs']
+            out_variables=block_data['outs'],
+            marshal_path=marshal_path
         ))
         function_names.append(block_name)
 
@@ -104,7 +129,9 @@ def gen_kfp_code(nb_graph,
         docker_base_image=metadata.get('docker_image', ''),
         volumes=volumes,
         leaf_nodes=leaf_nodes,
-        working_dir=metadata.get('abs_working_dir', None)
+        working_dir=metadata.get('abs_working_dir', None),
+        marshal_volume=marshal_volume,
+        marshal_path=marshal_path
     )
 
     # fix code style using pep8 guidelines
