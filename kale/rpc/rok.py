@@ -1,7 +1,7 @@
 import os
 import copy
 
-from rok_gw_client import client, auth
+from rok_gw_client.client import RokClient
 
 from kale.utils import pod_utils
 
@@ -22,12 +22,7 @@ def _get_client():
     global _client
 
     if _client is None:
-        # FIXME: Retrieve the endpoint and credentials from the environment
-        # FIXME: Automatically create the auth session
-        _client = client.GatewayClient("http://rok.rok.svc.cluster.local")
-        _client.auth = auth.get_auth_session(_client.settings, _client.url,
-                                             username="user",
-                                             password="12341234")
+        _client = RokClient()
 
     return _client
 
