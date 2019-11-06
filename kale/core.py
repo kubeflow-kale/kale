@@ -40,7 +40,7 @@ class Kale:
                  source_notebook_path: str,
                  notebook_metadata_overrides: dict = None,
                  debug: bool = False,
-                 auto_snapshot: bool = False):
+                 auto_snapshot: bool = True):
         self.auto_snapshot = auto_snapshot
         self.source_path = Path(source_notebook_path)
         if not self.source_path.exists():
