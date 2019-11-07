@@ -6,7 +6,10 @@ def {{ function_name }}({{ function_args }}):
     from kale.marshal import resource_save as _kale_resource_save
     from kale.marshal import resource_load as _kale_resource_load
 
-    _kale_data_directory = os.path.join("{{ marshal_path }}", "{{ pipeline_name }}")
+    _kale_data_directory = "{{ marshal_path }}"
+    {# Verify directory exists #}
+    if not os.path.isdir(_kale_data_directory):
+        os.makedirs(_kale_data_directory, exist_ok=True)
 
     {% if auto_snapshot -%}
     pod_utils.snapshot_pipeline_step("{{ pipeline_name }}",
@@ -16,10 +19,6 @@ def {{ function_name }}({{ function_args }}):
 
 {%- if in_variables|length > 0 %}
     # -----------------------DATA LOADING START--------------------------------
-    {# Check directory exists #}
-    if not os.path.isdir(_kale_data_directory):
-        raise ValueError(_kale_data_directory + " directory does not exist")
-
     _kale_directory_file_names = [
         os.path.splitext(f)[0]
         for f in os.listdir(_kale_data_directory)
@@ -52,11 +51,6 @@ def {{ function_name }}({{ function_args }}):
 {% endfor %}
 {%- if out_variables|length > 0 %}
     # -----------------------DATA SAVING START---------------------------------
-{%- if out_variables|length > 0 %}
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-{%- endif %}
-
 {%- for out_var in out_variables %}
     if "{{ out_var }}" in locals():
         {#-  `_kale_resource_save` will automatically add the correct extension #}
