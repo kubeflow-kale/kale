@@ -71,3 +71,9 @@ def run_pipeline(pipeline_package_path, pipeline_metadata):
     run_name = pipeline_metadata["pipeline_name"] + "_run"
     run = client.run_pipeline(experiment.id, run_name, pipeline_package_path)
     return {"id": run.id, "name": run.name, "status": run.status}
+
+
+def get_run(run_id):
+    client = _get_client()
+    run = client.get_run(run_id)
+    return {"id": run.id, "name": run.name, "status": run.status}
