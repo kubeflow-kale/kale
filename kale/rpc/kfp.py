@@ -75,5 +75,5 @@ def run_pipeline(pipeline_package_path, pipeline_metadata):
 
 def get_run(run_id):
     client = _get_client()
-    run = client.get_run(run_id)
+    run = client.get_run(run_id).run
     return {"id": run.id, "name": run.name, "status": run.status}
