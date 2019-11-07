@@ -290,16 +290,16 @@ export class CellTags extends React.Component<IProps, IState> {
         }
 
         const prevBlockNotice = (this.state.prevBlockName && this.state.currentActiveCellMetadata.blockName === '')
-            ? "Leave block name empty to merge code to block " + this.state.prevBlockName
+            ? "Leave step name empty to merge code to block " + this.state.prevBlockName
             : null;
         const stepCellInputs = (cellType === 'step') ?
             <React.Fragment>
                 <MaterialInput
-                    label={"Block Name"}
+                    label={"Step Name"}
                     updateValue={this.updateCurrentBlockName}
                     value={this.state.currentActiveCellMetadata.blockName}
-                    regex={"^[_a-z]([_a-z0-9]*)?$"}
-                    regexErrorMsg={"Block name must consist of lower case alphanumeric characters or '_', and can not start with a digit."}
+                    regex={"^([_a-z]([_a-z0-9]*)?)?$"}
+                    regexErrorMsg={"Step name must consist of lower case alphanumeric characters or '_', and can not start with a digit."}
                     helperText={prevBlockNotice}
                 />
 
