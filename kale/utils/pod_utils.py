@@ -169,3 +169,7 @@ def snapshot_pipeline_step(pipeline, step):
 
 def get_run_uuid():
     return "1111-2222-3333-4444"
+
+
+def is_workspace_dir(directory):
+    return directory == os.getenv("HOME")
