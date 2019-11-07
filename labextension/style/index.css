@@ -45,6 +45,17 @@
   margin-top: 0;
 }
 
+.kale-footer {
+  padding: 5px 0px;
+  bottom: 0;
+  width: 100%;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--jp-border-color2);
+  margin-top: auto;
+}
+
 /*-----------------------------------------------------------------------------
 | Deploy Button
 |----------------------------------------------------------------------------*/
@@ -66,22 +77,19 @@
 
 .kubeflow-widget-content {
   min-width: var(--jp-sidebar-min-width);
-  height: calc(100% - 42px);
+  /* height: calc(100% - 42px); */
   overflow: auto;
-  border-bottom: 1px solid var(--jp-border-color2);
+  /* border-bottom: 1px solid var(--jp-border-color2); */
 }
 
 /*-----------------------------------------------------------------------------
 | Deploy Button
 |----------------------------------------------------------------------------*/
+/*
 .deploy-button {
-  position: absolute;
-  bottom: 4px;
-  width: 100%;
-  margin: auto;
-  text-align: center;
-  z-index: 10;
+
 }
+*/
 
 .deploy-button button {
   height: 30px;
@@ -286,4 +294,63 @@
 
 .delete-button svg {
   transform: scale(0.8);
+}
+
+a {
+  text-decoration: underline;
+  color: #477EF0;
+}
+
+.pre {
+  white-space: pre;
+}
+
+.hidden {
+  display: none!important;
+}
+
+.deploy-progress {
+  border-top: 2px solid var(--jp-border-color2);
+}
+
+.deploy-progress:last-child {
+  border-bottom: 2px solid var(--jp-border-color2);
+}
+
+.deploy-progress-label{
+  /* min-width: 116px; */
+  white-space: pre;
+}
+
+.deploy-progress-value {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.deploy-progress-value a {
+  height: 16px;
+  display: flex;
+}
+
+.deploy-progress-value svg {
+  margin-left: 0.25rem;
+}
+
+.deploy-progress-value .MuiLinearProgress-root {
+  margin-left: 0.25rem;
+  width: 100%;
+}
+
+.deploy-progress-row {
+  margin: 0 10px;
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--jp-border-color2);
+}
+
+.deploy-progress-row:last-child {
+    border-bottom:none;
+    margin-bottom: 6px;
 }

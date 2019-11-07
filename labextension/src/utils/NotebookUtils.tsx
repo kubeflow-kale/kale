@@ -255,6 +255,10 @@ export default class NotebookUtilities {
       // If response is not 'ok', throw contents as error, log code
       const msg: string = `Code caused an error:\n${runCode}`;
       console.error(msg);
+      if(content.traceback){
+        content.traceback.forEach((line:string) => console.log(line.replace(
+    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')));
+      }
       throw content;
     }
     // Return user_expressions of the content
