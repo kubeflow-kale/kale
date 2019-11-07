@@ -1,4 +1,5 @@
 import kfp.components as comp
+from collections import OrderedDict
 from kubernetes import client as k8s_client
 
 {# PIPELINE FUNCTION BLOCKS #}
@@ -22,18 +23,7 @@ import kfp.dsl as dsl
    description='{{ pipeline_description }}'
 )
 def auto_generated_pipeline({{ pipeline_arguments }}):
-    {% if marshal_volume %}
-    marshal_vop = dsl.VolumeOp(
-        name="kale_marshal_volume",
-        resource_name="kale-marshal-pvc",
-        modes=dsl.VOLUME_MODE_RWM,
-        size="1Gi"
-    )
-    pvolumes_dict = {'{{ marshal_path }}': marshal_vop.volume}
-    {% else %}
-    pvolumes_dict = dict()
-    {% endif %}
-
+    pvolumes_dict = OrderedDict()
 
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
@@ -90,6 +80,16 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
     pvolumes_dict['{{ mountpoint }}'] = volume
 
     {% endfor %}
+
+    {% if marshal_volume %}
+    marshal_vop = dsl.VolumeOp(
+        name="kale_marshal_volume",
+        resource_name="kale-marshal-pvc",
+        modes=dsl.VOLUME_MODE_RWM,
+        size="1Gi"
+    )
+    pvolumes_dict['{{ marshal_path }}'] = marshal_vop.volume
+    {% endif %}
 
     {% for name in block_functions_names %}
 

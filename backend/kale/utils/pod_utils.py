@@ -221,3 +221,7 @@ def get_run_uuid():
     # run UUID, so there is no way to retrieve the run UUID from within a pod.
     # For now we return the workflow UUID instead.
     return workflow["metadata"]["uid"]
+
+
+def is_workspace_dir(directory):
+    return directory == os.getenv("HOME")
