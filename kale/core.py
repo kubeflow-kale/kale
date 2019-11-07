@@ -235,7 +235,8 @@ class Kale:
         #  parameters are not assigned with new values.
         return pipeline_graph, pipeline_parameters_dict
 
-    def generate_kfp_executable(self, pipeline_graph, pipeline_parameters):
+    def generate_kfp_executable(self, pipeline_graph, pipeline_parameters,
+                                source_notebook_path):
         self.logger.debug("------------- Kale Start Run -------------")
 
         # generate full kfp pipeline definition

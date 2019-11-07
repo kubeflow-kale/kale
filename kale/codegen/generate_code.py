@@ -76,18 +76,11 @@ def gen_kfp_code(nb_graph,
         wd = os.path.realpath(wd)
         # get the volumes for which the working directory is a subpath of the mount point
         vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
-        # assure both > 0 and < 2.
-        # FIXME: Need to decide how to handle second case (<2).
-        #  It means there are volumes mounted on subpaths of other volumes.
-        #  For now we take the one mounted closest to /
+        # if we found any, then set marshal directory inside working directory
         if len(vols) >= 1:
-            # In case vols contains more that one volume,
-            # get the parent volume, the one closest to /.
-            # Sort by length of mount point path, get the shortest.
-            vol = sorted(vols, key=lambda _v: len(_v['mount_point']))[0]
             marshal_volume = False
-            marshal_dir = ".kale.marshal.dir"
-            marshal_path = os.path.join(vol['mount_point'], marshal_dir)
+            marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
+            marshal_path = os.path.join(wd, marshal_dir)
 
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
