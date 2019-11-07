@@ -4,6 +4,7 @@ import autopep8
 import networkx as nx
 
 from jinja2 import Environment, PackageLoader
+from kale.utils.pod_utils import is_workspace_dir
 
 
 # TODO: Define most of this function parameters in a config file?
@@ -59,6 +60,11 @@ def gen_kfp_code(nb_graph,
                 pipeline_parameters[par_name] = ('str', rok_url)
         else:
             raise ValueError(f"Unknown volume type: {v['type']}")
+
+    # The Jupyter Web App assumes the first volume of the notebook is the
+    # working directory, so we make sure to make it appear first in the spec.
+    volumes = sorted(volumes, reverse=True,
+                     key=lambda v: is_workspace_dir(v['mount_point']))
 
     marshal_volume = True
     marshal_path = "/marshal"
