@@ -14,7 +14,7 @@ const CELL_TYPES = [
     { value: 'skip', label: 'Skip Cell' }
 ];
 
-const RESERVED_CELL_NAMES = ['imports', 'functions', 'pipeline-parameters', 'skip'];
+export const RESERVED_CELL_NAMES = ['imports', 'functions', 'pipeline-parameters', 'skip'];
 const RESERVED_CELL_NAMES_HELP_TEXT :{ [id: string] : string; } = {
     "imports": "The code in this cell will be pre-pended to every step of the pipeline.",
     "functions": "The code in this cell will be pre-pended to every step of the pipeline, after `imports`.",
@@ -72,15 +72,15 @@ export class CellTags extends React.Component<IProps, IState> {
     };
 
     componentDidMount = () => {
-        if (this.props.activeCell) {
-            if (isCodeCellModel(this.props.activeCell.model)) {
+        if (this.props.activeCellIndex) {
+            if (isCodeCellModel(this.props.notebook.content.model.cells.get(this.props.activeCellIndex))) {
                 this.readAndShowMetadata();
             }
         }
     };
 
     componentDidUpdate = async (prevProps: Readonly<IProps>, prevState: Readonly<IState>) => {
-        if (prevProps.activeCellIndex !== this.props.activeCellIndex) {
+        if (prevProps.activeCellIndex !== this.props.activeCellIndex || prevProps.activeCell !== this.props.activeCell) {
             // listen to cell type changes
             if (prevProps.activeCell) {
                 prevProps.activeCell.model.contentChanged.disconnect(this.listenCellContentChanged)
@@ -101,7 +101,7 @@ export class CellTags extends React.Component<IProps, IState> {
             this.props.activeCell.model.contentChanged.connect(this.listenCellContentChanged);
 
             // if the active cell is not of type `code`, then hide panel
-            if (!isCodeCellModel(this.props.activeCell.model)) {
+            if (!isCodeCellModel(this.props.notebook.content.model.cells.get(this.props.activeCellIndex))) {
                 this.setState({show: false});
                 return
             }

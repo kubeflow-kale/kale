@@ -4,22 +4,34 @@ import {
     NotebookPanel
 } from "@jupyterlab/notebook";
 import NotebookUtils from "../utils/NotebookUtils";
-import Switch from "react-switch";
-
+import CellUtils from "../utils/CellUtils";
 import {
     CollapsablePanel,
     MaterialInput
 } from "./Components";
 import {CellTags} from "./CellTags";
-import {Cell} from "@jupyterlab/cells";
+import {Cell, isCodeCellModel, CodeCell, CodeCellModel} from "@jupyterlab/cells";
 import {VolumesPanel} from "./VolumesPanel";
 import {SplitDeployButton} from "./DeployButton";
-import { Kernel } from "@jupyterlab/services";
+import { KernelMessage, Kernel } from "@jupyterlab/services";
 import {ExperimentInput} from "./ExperimentInput";
 import { DeploysProgress, DeployProgressState } from "./deploys-progress/DeploysProgress";
+import { RESERVED_CELL_NAMES } from "./CellTags";
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
+enum RUN_CELL_STATUS {
+    OK = 'ok',
+    ERROR = 'error',
+}
+
+interface IRunCellResponse {
+    status: string,
+    cellType?: string,
+    cellIndex?: number,
+    ename?: string,
+    evalue?: string,
+}
 
 export interface ISelectOption {
     label: string;
@@ -421,7 +433,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             // wait for the session to be ready before reading metadata
             await notebook.session.ready;
             notebook.content.activeCellChanged.connect(this.handleActiveCellChanged);
-            const currentCell = {activeCell: notebook.content.activeCell, activeCellIndex: notebook.content.activeCellIndex};
+            let currentCell = {
+                activeCell: notebook.content.activeCell,
+                activeCellIndex: notebook.content.activeCellIndex
+            };
 
             // get notebook metadata
             const notebookMetadata = NotebookUtils.getMetaData(
@@ -430,6 +445,47 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             );
             console.log("Kubeflow metadata:");
             console.log(notebookMetadata);
+
+            // Detect whether this is an exploration, i.e., recovery from snapshot
+            const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+            const exploration = await this.executeRpc(
+                this.state.activeNotebook,
+                'nb.explore_notebook',
+                {source_notebook_path: nbFileName}
+            );
+            if (exploration && exploration.is_exploration) {
+                this.clearCellOutputs(this.state.activeNotebook);
+                let runCellResponse = await this.runGlobalCells(this.state.activeNotebook);
+                if (runCellResponse.status === RUN_CELL_STATUS.OK) {
+                    await this.unmarshalData(nbFileName);
+                    const cell = this.getCellByStepName(this.state.activeNotebook, exploration.step_name);
+                    this.selectAndScrollToCell(this.state.activeNotebook, cell);
+                    currentCell = {activeCell: cell.cell, activeCellIndex: cell.index};
+                    await NotebookUtils.showMessage(
+                        'Notebook Exploration',
+                        [`Resuming notebook at step: "${exploration.step_name}"`]
+                    );
+                } else {
+                    currentCell = {
+                        activeCell: notebook.content.widgets[runCellResponse.cellIndex],
+                        activeCellIndex: runCellResponse.cellIndex,
+                    };
+                    await NotebookUtils.showMessage(
+                        'Notebook Exploration',
+                        [
+                            `Executing "${runCellResponse.cellType}" cell failed.\n` +
+                                `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
+                            `Error name: ${runCellResponse.ename}`,
+                            `Error value: ${runCellResponse.evalue}`
+                        ],
+                    );
+                }
+                await this.executeRpc(
+                    this.state.activeNotebook,
+                    'nb.remove_marshal_dir',
+                    {source_notebook_path: nbFileName}
+                );
+            }
 
             await this.getExperiments();
             // Get information about volumes currently mounted on the notebook server
@@ -756,6 +812,82 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             {bucket, obj, version, volumes}
         );
     };
+
+    unmarshalData = async (nbFileName: string) => {
+        const cmd: string = `from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n`
+            + `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
+        console.log("Executing command: " + cmd);
+        await NotebookUtils.sendKernelRequestFromNotebook(this.state.activeNotebook, cmd, {});
+    };
+
+    getStepName = (notebook: NotebookPanel, index: number): string => {
+        const names: string[] = (CellUtils.getCellMetaData(
+            notebook.content,
+            index,
+            'tags'
+        ) || []).filter((t: string) => !t.startsWith('prev:')
+        ).map((t: string) => t.replace('block:', ''));
+        return names.length > 0 ? names[0]: '';
+    };
+
+    clearCellOutputs = (notebook: NotebookPanel): void => {
+        for (let i = 0; i < notebook.model.cells.length; i++) {
+            if (!isCodeCellModel(notebook.model.cells.get(i))) {
+                continue;
+            }
+            (notebook.model.cells.get(i) as CodeCellModel).executionCount = null;
+            (notebook.model.cells.get(i) as CodeCellModel).outputs.clear();
+        }
+    };
+
+    selectAndScrollToCell = (notebook: NotebookPanel, cell: {cell: Cell; index: number}): void => {
+        notebook.content.select(cell.cell);
+        notebook.content.activeCellIndex = cell.index;
+        this.setState({activeCellIndex: cell.index, activeCell: cell.cell});
+        const cellPosition = (notebook.content.node.childNodes[cell.index] as HTMLElement).getBoundingClientRect();
+        notebook.content.scrollToPosition(cellPosition.top);
+    };
+
+    runGlobalCells = async (notebook: NotebookPanel): Promise<IRunCellResponse> => {
+        for (let i = 0; i < notebook.model.cells.length; i++) {
+            if (!isCodeCellModel(notebook.model.cells.get(i))) {
+                continue;
+            }
+            const blockName = this.getStepName(notebook, i);
+            // If a cell of that type is found, run that
+            // and all consequent cells getting merged to that one
+            if (blockName !== 'skip' && RESERVED_CELL_NAMES.includes(blockName)) {
+                while (i < notebook.model.cells.length) {
+                    const cellName = this.getStepName(notebook, i);
+                    if (cellName !== blockName && cellName !== '') {
+                        break;
+                    }
+                    this.selectAndScrollToCell(notebook, {cell: notebook.content.widgets[i], index: i});
+                    const kernelMsg = await CodeCell.execute(notebook.content.widgets[i] as CodeCell, notebook.session) as KernelMessage.IExecuteReplyMsg;
+                    if (kernelMsg.content && kernelMsg.content.status === 'error') {
+                        return {
+                            status: 'error',
+                            cellType: blockName,
+                            cellIndex: i,
+                            ename: kernelMsg.content.ename,
+                            evalue: kernelMsg.content.evalue,
+                        };
+                    }
+                    i++;
+                }
+            }
+        }
+        return {status: 'ok'};
+    };
+
+    getCellByStepName = (notebook: NotebookPanel, stepName: string): { cell: Cell; index: number } => {
+        for (let i = 0; i < notebook.model.cells.length; i++) {
+            const name = this.getStepName(notebook, i);
+            if (name === stepName) {
+                return {cell: notebook.content.widgets[i], index: i};
+            }
+        }
+    }
 
     render() {
 
