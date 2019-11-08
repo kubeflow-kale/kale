@@ -17,6 +17,8 @@ import { KernelMessage, Kernel } from "@jupyterlab/services";
 import {ExperimentInput} from "./ExperimentInput";
 import { DeploysProgress, DeployProgressState } from "./deploys-progress/DeploysProgress";
 import { RESERVED_CELL_NAMES } from "./CellTags";
+import {JupyterFrontEnd} from "@jupyterlab/application";
+import {IDocumentManager} from "@jupyterlab/docmanager";
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -62,8 +64,10 @@ const selectVolumeTypes = [
 ];
 
 interface IProps {
+    lab: JupyterFrontEnd;
     tracker: INotebookTracker;
-    notebook: NotebookPanel
+    notebook: NotebookPanel;
+    docManager: IDocumentManager;
 }
 
 interface IState {

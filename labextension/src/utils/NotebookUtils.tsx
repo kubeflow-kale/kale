@@ -193,7 +193,7 @@ export default class NotebookUtilities {
   /**
    * @description This function runs code directly in the notebook's kernel and then evaluates the
    * result and returns it as a promise.
-   * @param notebookPanel The notebook to run the code in.
+   * @param kernel The kernel to run the code in.
    * @param runCode The code to run in the kernel.
    * @param userExpressions The expressions used to capture the desired info from the executed code.
    * @param runSilent Default is false. If true, kernel will execute as quietly as possible.
