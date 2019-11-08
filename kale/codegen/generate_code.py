@@ -113,7 +113,8 @@ def gen_kfp_code(nb_graph,
             in_variables=block_data['ins'],
             out_variables=block_data['outs'],
             marshal_path=marshal_path,
-            auto_snapshot=auto_snapshot
+            auto_snapshot=auto_snapshot,
+            nb_path=nb_path
         ))
         function_names.append(block_name)
 
