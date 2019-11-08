@@ -9,7 +9,9 @@ def {{ function_name }}({{ function_args }}):
     _kale_data_directory = os.path.join("{{ marshal_path }}", "{{ pipeline_name }}")
 
     {% if auto_snapshot -%}
-    pod_utils.snapshot_pipeline_step("{{ pipeline_name }}", "{{ function_name }}")
+    pod_utils.snapshot_pipeline_step("{{ pipeline_name }}",
+                                     "{{ function_name }}",
+                                     "{{ nb_path }}")
     {% endif -%}
 
     # -----------------------DATA LOADING START--------------------------------

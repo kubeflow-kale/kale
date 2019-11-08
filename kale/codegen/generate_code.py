@@ -11,6 +11,7 @@ from kale.utils.pod_utils import is_workspace_dir
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
 def gen_kfp_code(nb_graph,
+                 nb_path,
                  pipeline_parameters,
                  metadata,
                  auto_snapshot):
@@ -119,7 +120,8 @@ def gen_kfp_code(nb_graph,
             in_variables=block_data['ins'],
             out_variables=block_data['outs'],
             marshal_path=marshal_path,
-            auto_snapshot=auto_snapshot
+            auto_snapshot=auto_snapshot,
+            nb_path=nb_path
         ))
         function_names.append(block_name)
 

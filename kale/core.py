@@ -230,6 +230,7 @@ class Kale:
 
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
+                                              nb_path=os.path.abspath(self.source_path),
                                               pipeline_parameters=pipeline_parameters,
                                               metadata=self.pipeline_metadata,
                                               auto_snapshot=self.auto_snapshot)

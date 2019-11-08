@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import logging
 import tabulate
 import kubernetes.client as k8s
@@ -142,7 +143,7 @@ def print_volumes():
     print(tabulate.tabulate(rows, headers=headers))
 
 
-def snapshot_pipeline_step(pipeline, step):
+def snapshot_pipeline_step(pipeline, step, nb_path):
     from rok_gw_client.client import RokClient
 
     bucket = "pipelines"
@@ -150,7 +151,11 @@ def snapshot_pipeline_step(pipeline, step):
     obj = f"{pipeline}-{run_uuid}"
     commit_title = f"Step: {step}"
     commit_message = f"Step '{step}' of pipeline run '{run_uuid}'"
+    environment = json.dumps({"KALE_PIPELINE_STEP": step,
+                              "KALE_NOTEBOOK_PATH": nb_path})
+    metadata = json.dumps({"environment": environment})
     params = {"pod": get_pod_name(),
+              "metadata": metadata,
               "default_container": "main",
               "commit_title": commit_title,
               "commit_message": commit_message}
