@@ -514,7 +514,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         }
 
         // UPLOAD
-        if (this.state.deploymentType === 'upload') {
+        if (this.state.deploymentType === 'upload' || this.state.deploymentType === 'run') {
             const uploadPipelineArgs: IUploadPipelineArgs = {
                 pipeline_package_path: compileNotebook.pipeline_package_path,
                 pipeline_metadata: compileNotebook.pipeline_metadata,
@@ -543,7 +543,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             }
             if (uploadPipeline && result) {
                 msg = msg.concat(['Pipeline with name ' + uploadPipeline.pipeline.name + ' uploaded successfully.']);
-                await NotebookUtils.showMessage('Operation Successful', msg);
+                if (this.state.deploymentType === 'upload') {
+                    await NotebookUtils.showMessage('Operation Successful', msg);
+                }
             }
         }
 
