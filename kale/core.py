@@ -3,6 +3,8 @@ import re
 import copy
 import json
 import pprint
+import random
+import string
 
 import logging
 import subprocess
@@ -35,6 +37,11 @@ METADATA_REQUIRED_KEYS = [
 ]
 
 
+def _random_string(size=9, chars=string.ascii_lowercase + string.digits):
+    """Generate random string."""
+    return "".join(random.choice(chars) for _ in range(size))
+
+
 class Kale:
     def __init__(self,
                  source_notebook_path: str,
@@ -56,6 +63,9 @@ class Kale:
             self.pipeline_metadata = {**self.pipeline_metadata,
                                       **{k: v for k, v in notebook_metadata_overrides.items() if v}}
 
+        pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
+                                   _random_string())
+        self.pipeline_metadata['pipeline_name'] = pipeline_name
         self.validate_metadata()
         self.detect_environment()
 
