@@ -6,7 +6,8 @@ import {
 import TextField from '@material-ui/core/TextField';
 import { ThemeProvider } from '@material-ui/styles';
 import { indigo } from '@material-ui/core/colors';
-import {MenuItem, Select} from "@material-ui/core";
+import {MenuItem, Select, Button, Input} from "@material-ui/core";
+import DeleteIcon from '@material-ui/icons/Delete';
 import Chip from "@material-ui/core/Chip";
 import InputLabel from "@material-ui/core/InputLabel";
 import FormControl from '@material-ui/core/FormControl';
@@ -29,10 +30,10 @@ const useStyles = makeStyles(() =>
             backgroundColor: "var(--jp-layout-color1)",
         },
         focused: {},
-        notchedOutline: {
-            borderWidth: '1px',
-            borderColor: 'var(--jp-input-border-color)',
-        },
+        // notchedOutline: {
+        //     borderWidth: '1px',
+        //     borderColor: 'var(--jp-input-border-color)',
+        // },
         textField: {
             width: "100%",
         },
@@ -61,7 +62,10 @@ interface IMaterialInput {
     inputIndex?: number,
     helperText?: string,
     label: string,
-    numeric?: boolean
+    numeric?: boolean,
+    readOnly?: boolean,
+    extraInputProps?: any,
+    variant?: "filled" | "standard" | "outlined",
 }
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
@@ -101,19 +105,23 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
     let helperText = (props.helperText) ? props.helperText: null;
     helperText = (error)? props.regexErrorMsg: helperText;
 
+    let inputProps = {
+        classes: {
+            root: classes.input,
+            focused: classes.focused,
+            // notchedOutline: classes.notchedOutline,
+        },
+        readOnly: props.readOnly,
+    };
+    inputProps = {...inputProps, ...props.extraInputProps};
+
     return <ThemeProvider theme={theme}><TextField
             InputLabelProps={{
                 classes: {
                     root: classes.label
                 }
             }}
-            InputProps={{
-                classes: {
-                    root: classes.input,
-                    focused: classes.focused,
-                    notchedOutline: classes.notchedOutline,
-                }
-            }}
+            InputProps={inputProps}
             FormHelperTextProps={{
                 classes: {
                     root: classes.helperLabel
@@ -126,7 +134,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
             value={value}
             onChange={evt => {setValue(evt.target.value); debouncedCallback(evt.target.value, props.inputIndex)}}
             margin="dense"
-            variant="outlined"
+            variant={props.variant || "outlined" as any}
             type={props.numeric && 'number'}
             helperText={helperText}
     /></ThemeProvider>
@@ -139,6 +147,7 @@ interface IMaterialSelect {
     label: string,
     index: number,
     helperText?: string
+    variant?: "filled" | "standard" | "outlined",
 }
 
 export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) => {
@@ -157,7 +166,7 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
                 classes: {
                     root: classes.input,
                     focused: classes.focused,
-                    notchedOutline: classes.notchedOutline,
+                    // notchedOutline: classes.notchedOutline,
                 }
             }}
             SelectProps={{
@@ -178,7 +187,7 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
             value={props.value}
             onChange={evt => props.updateValue((evt.target as HTMLInputElement).value, props.index)}
             margin="dense"
-            variant="outlined"
+            variant={props.variant || "outlined" as any}
             helperText={ (props.helperText) ? props.helperText : null }
         >
             {props.values.map((option: any) => (
@@ -216,20 +225,21 @@ const useStylesSelectMulti = makeStyles(() =>
 
 const outlinedStyle = makeStyles(() =>
     createStyles({
-        root: {
-            "& $notchedOutline": {
-                borderWidth: '1px',
-                borderColor: 'var(--jp-input-border-color)',
-            },
-        },
+        // root: {
+        //     "& $notchedOutline": {
+        //         borderWidth: '1px',
+        //         borderColor: 'var(--jp-input-border-color)',
+        //     },
+        // },
         focused: {},
-        notchedOutline: {},
+        // notchedOutline: {},
     }));
 
 interface IMaterialSelectMultiple {
     updateSelected: Function,
     options: string[],
     selected: string[]
+    variant?: "filled" | "standard" | "outlined",
 }
 export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultiple> = (props) => {
 
@@ -241,8 +251,17 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
         ? findDOMNode(inputLabelRef).offsetWidth
     : 0;
 
+    let inputComponent = <Input classes={outlined_classes} margin='dense' name="previous" id="select-previous-blocks" />
+
+    if (!props.variant || props.variant === 'outlined') {
+        inputComponent = <OutlinedInput classes={outlined_classes} margin='dense' labelWidth={labelOffsetWidth} name="previous" id="select-previous-blocks" />
+    }
+
     return <ThemeProvider theme={theme}>
-        <FormControl variant='outlined' margin='dense' className={classes.multiSelectForm}>
+        <FormControl
+            variant={props.variant || "outlined" as any}
+            margin='dense'
+            className={classes.multiSelectForm}>
             <InputLabel
             ref={ref => {
               setInputLabelRef(ref);
@@ -261,8 +280,8 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
             }}
             onChange={evt => props.updateSelected((evt.target as HTMLInputElement).value)}
             margin="dense"
-            variant="outlined"
-            input={<OutlinedInput classes={outlined_classes} margin='dense' labelWidth={labelOffsetWidth} name="previous"  id="select-previous-blocks" />}
+            variant={props.variant || "outlined" as any}
+            input={inputComponent}
             value={props.selected}
             renderValue={elements => (
                 <div className={classes.chips}>
