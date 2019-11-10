@@ -340,7 +340,7 @@ export class CellTags extends React.Component<IProps, IState> {
 
                 <MaterialSelectMulti
                     updateSelected={this.updatePrevBlocksNames}
-                    options={previousBlockChoices}
+                    options={previousBlockChoices as any}
                     selected={this.state.currentActiveCellMetadata.prevBlockNames}/>
             </React.Fragment> : null;
 

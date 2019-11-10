@@ -16,6 +16,7 @@ import OutlinedInput from "@material-ui/core/OutlinedInput";
 import { useDebouncedCallback } from 'use-debounce';
 import Switch from "react-switch";
 import {RokInput} from './RokInput';
+import ColorUtils from './cell-metadata/ColorUtils';
 
 // https://codeburst.io/my-journey-to-make-styling-with-material-ui-right-6a44f7c68113
 const useStyles = makeStyles(() =>
@@ -240,9 +241,10 @@ const outlinedStyle = makeStyles(() =>
 
 interface IMaterialSelectMultiple {
     updateSelected: Function,
-    options: string[],
+    options: { value:string, color:string }[],
     selected: string[]
     variant?: "filled" | "standard" | "outlined",
+    disabled?:boolean,
 }
 export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultiple> = (props) => {
 
@@ -264,6 +266,7 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
         <FormControl
             variant={props.variant || "outlined" as any}
             margin='dense'
+            disabled={props.disabled}
             className={classes.multiSelectForm}>
             <InputLabel
             ref={ref => {
@@ -272,7 +275,7 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
             htmlFor="select-previous-blocks"
             className={classes.label}
           >
-            Select previous blocks
+            Depends on
           </InputLabel>
         <Select
             multiple
@@ -288,15 +291,20 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
             value={props.selected}
             renderValue={elements => (
                 <div className={classes.chips}>
-                  {(elements as string[]).map(value => (
-                    <Chip key={value} label={value} className={classes.chip} />
-                  ))}
+                    {(elements as string[]).map(value => {
+                        return (
+                            <Chip
+                                style={{ backgroundColor: `#${ColorUtils.getColor(value)}` }}
+                                key={value}
+                                label={value}
+                                className={`kale-chip ${classes.chip}`} />
+                  )})}
                 </div>
               )}
         >
-            {props.options.map((option: any) => (
-                <MenuItem key={option} value={option}>
-                    {option}
+            {props.options.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                    {option.value}
                 </MenuItem>
             ))}
         </Select>
