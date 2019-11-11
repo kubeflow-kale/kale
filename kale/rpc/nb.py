@@ -9,6 +9,10 @@ KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
 
 
+def resume_notebook_path():
+    return os.environ.get("KALE_NOTEBOOK_PATH")
+
+
 def list_volumes():
     volumes = pod_utils.list_volumes()
     volumes_out = [{"type": "clone",
