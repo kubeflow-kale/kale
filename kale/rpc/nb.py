@@ -31,8 +31,7 @@ def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
                     debug)
     pipeline_graph, pipeline_parameters = instance.notebook_to_graph()
     script_path = instance.generate_kfp_executable(pipeline_graph,
-                                                   pipeline_parameters,
-                                                   source_notebook_path)
+                                                   pipeline_parameters)
 
     pipeline_name = instance.pipeline_metadata["pipeline_name"]
     package_path = kfp_utils.compile_pipeline(script_path, pipeline_name)
