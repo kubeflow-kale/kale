@@ -14,8 +14,7 @@ import {Cell} from "@jupyterlab/cells";
 import {VolumesPanel} from "./VolumesPanel";
 import {SplitDeployButton} from "./DeployButton";
 
-
-const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok';
+const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
 interface IProps {
     tracker: INotebookTracker;
