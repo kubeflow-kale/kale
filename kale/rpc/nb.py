@@ -11,10 +11,22 @@ KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
 
 def resume_notebook_path():
     p = os.environ.get("KALE_NOTEBOOK_PATH")
-    if p and os.path.isfile(p):
-        return p
-    else:
+    if p and not os.path.isfile(p):
         raise RuntimeError("env path KALE_NOTEBOOK_PATH=%s is not a file" % p)
+    if not p:
+        return None
+
+    home = os.environ.get("HOME")
+    if not home.endswith('/'):
+        home = home + '/'
+
+    # JupyterLab needs a relative path to open a file
+    # JP should always run form the HOME directory, so we strip the
+    # leading HOME from the absolute path
+    if p.startswith(home):
+        return p[len(home):]
+    else:
+        return p
 
 
 def list_volumes():
