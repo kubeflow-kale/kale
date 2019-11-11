@@ -19,7 +19,7 @@ from kale.utils import pod_utils
 from kubernetes.config import ConfigException
 
 
-KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_noteobok'
+KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
 METADATA_REQUIRED_KEYS = [
     'experiment_name',
     'pipeline_name',
