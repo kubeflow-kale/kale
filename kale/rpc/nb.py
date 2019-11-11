@@ -10,7 +10,11 @@ KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
 
 
 def resume_notebook_path():
-    return os.environ.get("KALE_NOTEBOOK_PATH")
+    p = os.environ.get("KALE_NOTEBOOK_PATH")
+    if p and os.path.isfile(p):
+        return p
+    else:
+        raise RuntimeError("env path KALE_NOTEBOOK_PATH=%s is not a file" % p)
 
 
 def list_volumes():
