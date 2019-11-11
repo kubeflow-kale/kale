@@ -62,6 +62,9 @@ def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
 
 def unmarshal_data(source_notebook_path):
     kale_marshal_dir = "." + source_notebook_path + KALE_MARSHAL_DIR_POSTFIX
+    if not os.path.exists(kale_marshal_dir):
+        return {}
+
     load_file_names = [f for f in os.listdir(kale_marshal_dir)
                        if os.path.isfile(os.path.join(kale_marshal_dir, f))]
 
@@ -71,10 +74,9 @@ def unmarshal_data(source_notebook_path):
 
 
 def explore_notebook(source_notebook_path):
-    kale_marshal_dir = "." + source_notebook_path + KALE_MARSHAL_DIR_POSTFIX
     step_name = os.getenv(KALE_PIPELINE_STEP_ENV, None)
 
-    if os.path.exists(kale_marshal_dir) and step_name:
+    if step_name:
         return {"is_exploration": True,
                 "step_name": step_name}
     return {"is_exploration": False,
