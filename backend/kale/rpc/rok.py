@@ -32,6 +32,23 @@ def get_task(task_id, bucket=DEFAULT_BUCKET):
     return rok.task_get(bucket, task_id)
 
 
+def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
+    rok = _get_client()
+    hostname = os.getenv("HOSTNAME")
+    namespace = pod_utils.get_namespace()
+    commit_title = f"Snapshot of notebook {hostname}"
+    commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
+                                                             namespace)
+    params = {"namespace": namespace,
+              "commit_title": commit_title,
+              "commit_message": commit_message}
+
+    obj = obj or pod_utils.get_pod_name()
+    # Create the bucket in case it does not exist
+    pod_utils.create_rok_bucket(bucket, client=rok)
+    return rok.version_register(bucket, obj, "jupyter", params)
+
+
 def _get_group_members(info):
     member_cnt = int(info["group_member_count"])
     members = []

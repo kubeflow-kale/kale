@@ -147,7 +147,26 @@ def print_volumes():
     print(tabulate.tabulate(rows, headers=headers))
 
 
-def snapshot_pipeline_step(pipeline, step):
+def create_rok_bucket(bucket, client=None):
+    from rok_gw_client.client import RokClient, GatewayClientError
+    if client is None:
+        client = RokClient()
+
+    # FIXME: Currently the Rok API only supports update-or-create for buckets,
+    # so we do a HEAD first to avoid updating an existing bucket. This
+    # obviously has a small race, which should be removed by extending the Rok
+    # API with an exclusive creation API call.
+    try:
+        return False, client.bucket_info(bucket)
+    except GatewayClientError as e:
+        if e.response.status_code != 404:
+            raise
+
+        logger.info("Creating bucket: %s", bucket)
+        return client.bucket_create(bucket)
+
+
+def snapshot_pipeline_step(pipeline, step, nb_path):
     from rok_gw_client.client import RokClient
 
     bucket = "pipelines"
@@ -160,6 +179,8 @@ def snapshot_pipeline_step(pipeline, step):
               "commit_title": commit_title,
               "commit_message": commit_message}
     rok = RokClient()
+    # Create the bucket in case it does not exist
+    create_rok_bucket(bucket, client=rok)
     print("Creating snapshot for step '%s'" % step)
     task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
     print("Successfully created snapshot for step '%s'" % step)
