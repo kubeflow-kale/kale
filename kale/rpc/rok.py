@@ -1,7 +1,7 @@
 import os
 import copy
 
-from rok_gw_client.client import RokClient
+from rok_gw_client.client import RokClient, GatewayClientError
 
 from kale.utils import pod_utils
 
@@ -44,6 +44,8 @@ def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
               "commit_message": commit_message}
 
     obj = obj or pod_utils.get_pod_name()
+    # Create the bucket in case it does not exist
+    pod_utils.create_rok_bucket(bucket, client=rok)
     return rok.version_register(bucket, obj, "jupyter", params)
 
 
