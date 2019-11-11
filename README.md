@@ -94,7 +94,7 @@ Volume spec:
 A sample Notebook metadata:
 
 ```json
-"kubeflow_noteobok": {
+"kubeflow_notebook": {
     "experiment_name": "Titanic Experiment",
     "pipeline_name": "ml-comparison",
     "pipeline_description": "ML Pipeline predicting survival score of passengers of Titanic",
