@@ -68,6 +68,7 @@ interface IProps {
     tracker: INotebookTracker;
     notebook: NotebookPanel;
     docManager: IDocumentManager;
+    backend: boolean;
 }
 
 interface IState {
@@ -450,52 +451,54 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             console.log("Kubeflow metadata:");
             console.log(notebookMetadata);
 
-            // Detect whether this is an exploration, i.e., recovery from snapshot
-            const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
-            const exploration = await this.executeRpc(
-                this.state.activeNotebook,
-                'nb.explore_notebook',
-                {source_notebook_path: nbFileName}
-            );
-            if (exploration && exploration.is_exploration) {
-                this.clearCellOutputs(this.state.activeNotebook);
-                let runCellResponse = await this.runGlobalCells(this.state.activeNotebook);
-                if (runCellResponse.status === RUN_CELL_STATUS.OK) {
-                    await this.unmarshalData(nbFileName);
-                    const cell = this.getCellByStepName(this.state.activeNotebook, exploration.step_name);
-                    this.selectAndScrollToCell(this.state.activeNotebook, cell);
-                    currentCell = {activeCell: cell.cell, activeCellIndex: cell.index};
-                    await NotebookUtils.showMessage(
-                        'Notebook Exploration',
-                        [`Resuming notebook at step: "${exploration.step_name}"`]
-                    );
-                } else {
-                    currentCell = {
-                        activeCell: notebook.content.widgets[runCellResponse.cellIndex],
-                        activeCellIndex: runCellResponse.cellIndex,
-                    };
-                    await NotebookUtils.showMessage(
-                        'Notebook Exploration',
-                        [
-                            `Executing "${runCellResponse.cellType}" cell failed.\n` +
-                                `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
-                            `Error name: ${runCellResponse.ename}`,
-                            `Error value: ${runCellResponse.evalue}`
-                        ],
-                    );
-                }
-                await this.executeRpc(
+            if (this.props.backend) {
+                // Detect whether this is an exploration, i.e., recovery from snapshot
+                const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+                const exploration = await this.executeRpc(
                     this.state.activeNotebook,
-                    'nb.remove_marshal_dir',
+                    'nb.explore_notebook',
                     {source_notebook_path: nbFileName}
                 );
-            }
+                if (exploration && exploration.is_exploration) {
+                    this.clearCellOutputs(this.state.activeNotebook);
+                    let runCellResponse = await this.runGlobalCells(this.state.activeNotebook);
+                    if (runCellResponse.status === RUN_CELL_STATUS.OK) {
+                        await this.unmarshalData(nbFileName);
+                        const cell = this.getCellByStepName(this.state.activeNotebook, exploration.step_name);
+                        this.selectAndScrollToCell(this.state.activeNotebook, cell);
+                        currentCell = {activeCell: cell.cell, activeCellIndex: cell.index};
+                        await NotebookUtils.showMessage(
+                            'Notebook Exploration',
+                            [`Resuming notebook at step: "${exploration.step_name}"`]
+                        );
+                    } else {
+                        currentCell = {
+                            activeCell: notebook.content.widgets[runCellResponse.cellIndex],
+                            activeCellIndex: runCellResponse.cellIndex,
+                        };
+                        await NotebookUtils.showMessage(
+                            'Notebook Exploration',
+                            [
+                                `Executing "${runCellResponse.cellType}" cell failed.\n` +
+                                    `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
+                                `Error name: ${runCellResponse.ename}`,
+                                `Error value: ${runCellResponse.evalue}`
+                            ],
+                        );
+                    }
+                    await this.executeRpc(
+                        this.state.activeNotebook,
+                        'nb.remove_marshal_dir',
+                        {source_notebook_path: nbFileName}
+                    );
+                }
 
-            await this.getExperiments();
-            // Get information about volumes currently mounted on the notebook server
-            await this.getMountedVolumes();
-            // Detect the base image of the current Notebook Server
-            await this.getBaseImage();
+                await this.getExperiments();
+                // Get information about volumes currently mounted on the notebook server
+                await this.getMountedVolumes();
+                // Detect the base image of the current Notebook Server
+                await this.getBaseImage();
+            }
 
             // if the key exists in the notebook's metadata
             if (notebookMetadata) {

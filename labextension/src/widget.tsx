@@ -25,6 +25,7 @@ import '../style/index.css';
 
 import {KubeflowKaleLeftPanel} from './components/LeftPanelWidget'
 import NotebookUtils from "./utils/NotebookUtils";
+import { Kernel } from "@jupyterlab/services";
 
 
 /* tslint:disable */
@@ -58,19 +59,49 @@ async function activate(
 ): Promise<IKubeflowKale> {
 
     let widget: ReactWidget;
+    const kernel: Kernel.IKernel = await NotebookUtils.createNewKernel();
+    window.addEventListener("beforeunload", () => kernel.shutdown());
+    // TODO: backend can become an Enum that indicates the type of
+    //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
+    const backend = await getBackend(kernel);
 
-    async function load_notebook() {
-        let k = await NotebookUtils.createNewKernel();
-        const cmd: string = `import os\n`
-            + `home=os.environ.get("NOTEBOOK_PATH")`;
-        console.log("Executing command: " + cmd);
-        const expressions = {result: "home"};
-        const output = await NotebookUtils.sendKernelRequest(k, cmd, expressions);
-        const notebookPath = output.result['data']['text/plain'];
-        if (notebookPath !== 'None') {
-            console.log("Resuming notebook " + notebookPath);
-            // open the notebook panel
-            docManager.openOrReveal(notebookPath);
+    /**
+     * Detect if Kale is installed
+     */
+    async function getBackend(kernel: Kernel.IKernel) {
+        try {
+            await NotebookUtils.sendKernelRequest(
+                kernel,
+                `import kale`,
+                {});
+        } catch (error) {
+            console.error("Kale backend is not installed.");
+            return false
+        }
+        return true
+    }
+
+    async function loadPanel() {
+        let reveal_widget = undefined;
+        if (backend) {
+            // Check if NOTEBOOK_PATH env variable exists and if so load
+            // that Notebook
+            const path = await NotebookUtils.executeRpc(kernel, "nb.resume_notebook_path");
+            if (path) {
+                console.log("Resuming notebook " + path);
+                // open the notebook panel
+                reveal_widget = docManager.openOrReveal(path);
+            }
+        }
+
+        // add widget
+        if (!widget.isAttached) {
+            labShell.add(widget, "left");
+        }
+        // open widget if resuming from a notebook
+        if (reveal_widget) {
+            // open kale panel
+            widget.activate()
         }
     }
 
@@ -84,6 +115,7 @@ async function activate(
                 tracker={tracker}
                 notebook={tracker.currentWidget}
                 docManager={docManager}
+                backend={backend}
             />
         );
         widget.id = "kubeflow-kale/kubeflowDeployment";
@@ -96,10 +128,7 @@ async function activate(
     // Initialize once the application shell has been restored
     // and all the widgets have been added to the NotebookTracker
     lab.restored.then(() => {
-        load_notebook();
-        if (!widget.isAttached) {
-                labShell.add(widget, "left");
-            }
+        loadPanel();
     });
 
     return {widget};

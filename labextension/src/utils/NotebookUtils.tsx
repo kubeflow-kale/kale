@@ -180,14 +180,31 @@ export default class NotebookUtilities {
   public static async createNewKernel() {
     // Get info about the available kernels and start a new one.
     let options: Kernel.IOptions = await Kernel.getSpecs().then(kernelSpecs => {
-      console.log('Default spec:', kernelSpecs.default);
-      console.log('Available specs', Object.keys(kernelSpecs.kernelspecs));
+      // console.log('Default spec:', kernelSpecs.default);
+      // console.log('Available specs', Object.keys(kernelSpecs.kernelspecs));
       // use the default name
       return {name: kernelSpecs.default}
     });
     return await Kernel.startNew(options).then(_kernel => {
         return _kernel
       });
+  }
+
+  // TODO: We can use this context manager to execute commands inside a new kernel
+  //  and be sure that it will be disposed of at the end.
+  //  Another approach could be to create a kale_rpc Kernel, as a singleton,
+  //  created at startup. The only (possible) drawback is that we can not name
+  //  a kernel instance with a custom id/name, so when refreshing JupyterLab we would
+  //  not recognize the kernel. A solution could be to have a kernel spec dedicated to kale rpc calls.
+  public static async executeWithNewKernel(action: Function, args: any[] = []) {
+    // create brand new kernel
+    const _k = await this.createNewKernel();
+    // execute action inside kernel
+    const res = await action(_k, ...args);
+    // close kernel
+    _k.shutdown();
+    // return result
+    return res
   }
 
   /**
@@ -299,7 +316,7 @@ export default class NotebookUtilities {
 
   /**
    * Execute kale.rpc module functions
-   * Example: func_result = await this.executeRpc("rpc_submodule.func", {arg1, arg2})
+   * Example: func_result = await this.executeRpc(kernel | notebookPanel, "rpc_submodule.func", {arg1, arg2})
    *    where func_result is a JSON object
    * @param func Function name to be executed
    * @param kwargs Dictionary with arguments to be passed to the function
