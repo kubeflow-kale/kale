@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from kale.core import Kale
 from kale.utils import pod_utils, kfp_utils
@@ -84,3 +85,10 @@ def explore_notebook(source_notebook_path):
                 "step_name": step_name}
     return {"is_exploration": False,
             "step_name": ""}
+
+
+def remove_marshal_dir(source_notebook_path):
+    kale_marshal_dir = ".%s%s" % (source_notebook_path,
+                                  KALE_MARSHAL_DIR_POSTFIX)
+    if os.path.exists(kale_marshal_dir):
+        shutil.rmtree(kale_marshal_dir)

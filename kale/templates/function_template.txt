@@ -17,6 +17,9 @@ def {{ function_name }}({{ function_args }}):
     {% endif -%}
 
     # -----------------------DATA LOADING START--------------------------------
+    if not os.path.isdir(_kale_data_directory):
+        os.makedirs(_kale_data_directory, exist_ok=True)
+
 {%- if in_variables|length > 0 %}
     {# Check directory exists #}
     if not os.path.isdir(_kale_data_directory):
@@ -53,11 +56,6 @@ def {{ function_name }}({{ function_args }}):
 {{block|indent(4, True)}}
 {% endfor %}
     # -----------------------DATA SAVING START---------------------------------
-{%- if out_variables|length > 0 %}
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-{%- endif %}
-
 {%- for out_var in out_variables %}
     if "{{ out_var }}" in locals():
         {#-  `_kale_resource_save` will automatically add the correct extension #}
