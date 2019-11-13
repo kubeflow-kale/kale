@@ -2,7 +2,7 @@ import * as React from "react";
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
 import ClickAwayListener from '@material-ui/core/ClickAwayListener';
 import Grow from '@material-ui/core/Grow';
 import Paper from '@material-ui/core/Paper';
@@ -14,7 +14,7 @@ import CircularProgress from '@material-ui/core/CircularProgress'
 const options = [
     {label: "Compile and Run", value: "run"},
     {label: "Compile and Upload", value: "upload"},
-    {label: "Compile to DSL", value: "compile"}
+    {label: "Compile and Save", value: "compile"}
 ];
 
 interface ISplitDeployButton {
@@ -61,7 +61,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = (p
                 onClick={handleToggle}
                 style={{width: 'auto'}}
               >
-                <ArrowDropDownIcon />
+                <MoreVertIcon />
               </Button>
             </ButtonGroup>
             <Popper style={{zIndex: 2}} open={open} anchorEl={anchorRef.current} transition disablePortal>

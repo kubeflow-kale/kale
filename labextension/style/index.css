@@ -23,9 +23,9 @@
   letter-spacing: .4px;
   /*margin-top: 8px;*/
   padding: 5px;
-  font-size: var(--jp-ui-font-size1);
+  font-size: var(--jp-ui-font-size2);
   font-weight: 800;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   /*border-bottom: solid var(--jp-border-width) var(--jp-border-color2);*/
 }
 
@@ -162,12 +162,15 @@
 }
 
 .volume-container {
-  border-bottom: inset;
+  border-top: 2px solid var(--jp-layout-color2);
+}
+
+.volume-container:last-child {
+  border-bottom: 2px solid var(--jp-layout-color2);
 }
 
 /*https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Aligning_Items_in_a_Flex_Container*/
 .toolbar {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -243,6 +246,7 @@
   display: table-cell;
   vertical-align: middle;
   padding-right: 10px;
+  font-size: var(--jp-ui-font-size2);
 }
 
 .skip-cell-info-text {
@@ -264,6 +268,7 @@
 
 .add-button {
   padding: 5px;
+  margin-top: 10px;
 }
 
 .add-button button {
