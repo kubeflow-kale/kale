@@ -119,6 +119,24 @@ def gen_kfp_code(nb_graph,
         function_names.append(block_name)
 
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
+
+    if auto_snapshot:
+        final_auto_snapshot_name = 'final_auto_snapshot'
+        function_blocks.append(function_template.render(
+            pipeline_name=metadata['pipeline_name'],
+            function_name=final_auto_snapshot_name,
+            function_args=function_args,
+            function_blocks=[],
+            in_variables=set(),
+            out_variables=set(),
+            marshal_path=marshal_path,
+            auto_snapshot=auto_snapshot,
+            nb_path=nb_path
+        ))
+        function_names.append(final_auto_snapshot_name)
+        function_prevs[final_auto_snapshot_name] = [f"{x}_task"
+                                                    for x in leaf_nodes]
+
     pipeline_template = template_env.get_template('pipeline_template.txt')
     pipeline_code = pipeline_template.render(
         block_functions=function_blocks,
