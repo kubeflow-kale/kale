@@ -1031,7 +1031,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         />
                     </div>
                 </div>
-                <div className={this.state.isEnabled ? '' : 'hidden'}>
+                <div className={this.state.isEnabled ? '' : 'hidden'}
+                    style={{ marginTop: 'auto' }}>
                     <DeploysProgress deploys={this.state.deploys} onPanelRemove={this.onPanelRemove} />
                     <SplitDeployButton
                         running={this.state.runDeployment}
