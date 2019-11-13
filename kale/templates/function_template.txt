@@ -7,6 +7,7 @@ def {{ function_name }}({{ function_args }}):
     from kale.marshal import resource_load as _kale_resource_load
 
     _kale_data_directory = "{{ marshal_path }}"
+    {# Check directory exists #}
     if not os.path.isdir(_kale_data_directory):
         os.makedirs(_kale_data_directory, exist_ok=True)
 
@@ -16,21 +17,13 @@ def {{ function_name }}({{ function_args }}):
                                      "{{ nb_path }}")
     {% endif -%}
 
-    # -----------------------DATA LOADING START--------------------------------
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-
 {%- if in_variables|length > 0 %}
-    {# Check directory exists #}
-    if not os.path.isdir(_kale_data_directory):
-        raise ValueError(_kale_data_directory + " directory does not exist")
-
+    # -----------------------DATA LOADING START--------------------------------
     _kale_directory_file_names = [
         os.path.splitext(f)[0]
         for f in os.listdir(_kale_data_directory)
         if os.path.isfile(os.path.join(_kale_data_directory, f))
     ]
-{%- endif %}
 
 {%- for in_var in in_variables %}
     {# First check that the variable exists in the path #}
@@ -50,11 +43,13 @@ def {{ function_name }}({{ function_args }}):
     {{ in_var }} = _kale_resource_load(os.path.join(_kale_data_directory, _kale_load_file_name))
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
+{%- endif %}
 
 
 {% for block in function_blocks %}
 {{block|indent(4, True)}}
 {% endfor %}
+{%- if out_variables|length > 0 %}
     # -----------------------DATA SAVING START---------------------------------
 {%- for out_var in out_variables %}
     if "{{ out_var }}" in locals():
@@ -64,3 +59,4 @@ def {{ function_name }}({{ function_args }}):
         print("_kale_resource_save: `{{ out_var }}` not found.")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
+{%- endif %}
