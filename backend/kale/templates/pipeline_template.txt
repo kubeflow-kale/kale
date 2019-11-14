@@ -98,6 +98,10 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
                             .after({{ block_function_prevs[ name ]|join(', ') }})
     {{ name }}_task.container.working_dir = "{{ working_dir }}"
     {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
+    {% if auto_snapshot -%}
+    mlpipeline_ui_metadata = {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'}
+    {{ name }}_task.output_artifact_paths.update(mlpipeline_ui_metadata)
+    {% endif -%}
 
     {% endfor %}
 
