@@ -186,7 +186,6 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
     rok = RokClient()
     # Create the bucket in case it does not exist
     create_rok_bucket(bucket, client=rok)
-    print("Creating snapshot for step '%s'" % step)
     task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
     print("Successfully created snapshot for step '%s'" % step)
     print("You can explore the state of the notebook at the beginning"
@@ -195,7 +194,22 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
 
     # FIXME: How do we retrieve the base URL of the ROK UI?
     version = task_info["task"]["result"]["event"]["version"]
-    print("\n/rok/buckets/%s/files/%s/versions/%s\n" % (bucket, obj, version))
+    url_path = "/rok/buckets/%s/files/%s/versions/%s" % (bucket, obj, version)
+    print("\n%s\n" % url_path)
+
+    md_source = ("# Rok autosnapshot\n"
+                 "Rok has successfully created a snapshot for step `%s`.\n\n"
+                 "To **explore the execution state** at the beginning of "
+                 "this step follow the instructions below:\n\n"
+                 "1\\. View the [snapshot in the Rok UI](%s).\n\n"
+                 "2\\. Copy the Rok URL.\n\n"
+                 "3\\. Create a new Notebook Server by using this Rok URL to "
+                 "autofill the form." % (step, url_path))
+    metadata = {"outputs": [{"storage": "inline",
+                             "source": md_source,
+                             "type": "markdown"}]}
+    with open("/mlpipeline-ui-metadata.json", "w") as f:
+        json.dump(metadata, f)
 
 
 def get_run_uuid():
