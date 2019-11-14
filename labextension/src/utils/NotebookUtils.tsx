@@ -48,8 +48,11 @@ export default class NotebookUtilities {
     ];
 
     const messageBody =
-        <div>{msg.map((s: string) => {
-            return <><span className='dialog-box-text'>{s}</span><br/></>
+        <div key={`msg-box-${Math.random() * 100000}`}>{msg.map((s: string, i: number) => {
+            return <React.Fragment>
+              <span className='dialog-box-text' key={`msg-${i}`}>{s}</span>
+              <br key={`br-msg-${i}`}/>
+            </React.Fragment>
         })}</div>;
 
     await showDialog({ title, buttons, body: messageBody });

@@ -262,7 +262,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
             </div>;
 
         return (
-            <div className="kale-component">
+            <div className="kale-component" key="kale-component-volumes">
                 <div className="kale-header-switch">
                     <p className="kale-header">
                         Volumes

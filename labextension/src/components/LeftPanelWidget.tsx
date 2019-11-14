@@ -969,7 +969,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         />;
 
         return (
-            <div className={"kubeflow-widget"}>
+            <div className={"kubeflow-widget"} key="kale-widget">
                 <div className={"kubeflow-widget-content"}>
 
                     <div>
