@@ -25,6 +25,8 @@ interface IProps {
     selectVolumeTypes: {label: string, value: string}[],
     useNotebookVolumes: boolean,
     updateVolumesSwitch: Function,
+    autosnapshot: boolean,
+    updateAutosnapshotSwitch: Function,
 }
 
 export class VolumesPanel extends React.Component<IProps, any> {
@@ -95,7 +97,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
 
                             {(v.annotations && v.annotations.length > 0) ?
                                 v.annotations.map((a, a_idx) => {
-                                    return (<div key={"vol:" + idx + " annotation:" + a_idx}>
+                                    return (<div key={`vol-${idx}-annotation-${a_idx}`}>
                                         <AnnotationInput
                                             label={"Annotation"}
                                             volumeIdx={idx}
@@ -125,7 +127,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
                         </div>: null;
 
                     return (
-                    <div className="input-container volume-container" key={idx}>
+                    <div className="input-container volume-container" key={`v-${idx}`}>
                         <div className="toolbar">
                             <MaterialSelect
                                 updateValue={this.props.updateVolumeType}
@@ -218,6 +220,46 @@ export class VolumesPanel extends React.Component<IProps, any> {
                     Add Volume
                 </Button>
             </div>;
+        const useNotebookVolumesSwitch =
+            <div className='toolbar input-container'>
+                <div className='switch-label'>Use this notebook's volumes</div>
+                <Switch
+                    checked={this.props.useNotebookVolumes}
+                    disabled={this.props.notebookMountPoints.length === 0}
+                    onChange={_ => this.props.updateVolumesSwitch()}
+                    onColor='#599EF0'
+                    onHandleColor='#477EF0'
+                    handleDiameter={18}
+                    uncheckedIcon={false}
+                    checkedIcon={false}
+                    boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
+                    activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
+                    height={10}
+                    width={20}
+                    className='skip-switch'
+                    id='nb-volumes-switch'
+                />
+            </div>;
+        const autoSnapshotSwitch =
+            <div className='toolbar input-container'>
+                <div className='switch-label'>Take Rok snapshots before each step</div>
+                <Switch
+                    checked={this.props.autosnapshot}
+                    disabled={this.props.volumes.length === 0}
+                    onChange={_ => this.props.updateAutosnapshotSwitch()}
+                    onColor='#599EF0'
+                    onHandleColor='#477EF0'
+                    handleDiameter={18}
+                    uncheckedIcon={false}
+                    checkedIcon={false}
+                    boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
+                    activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
+                    height={10}
+                    width={20}
+                    className='skip-switch'
+                    id='autosnapshot-switch'
+                />
+            </div>;
 
         return (
             <div className="kale-component">
@@ -225,36 +267,11 @@ export class VolumesPanel extends React.Component<IProps, any> {
                     <p className="kale-header">
                         Volumes
                     </p>
-                    <div className={"skip-switch-container"}>
-                        <button type="button"
-                                className="minimal-toolbar-button"
-                                title="Add Volume"
-                                onClick={_ => this.props.addVolume()}
-                        >
-                        </button>
-                    </div>
                 </div>
-
-                <div className='toolbar input-container' style={{borderBottom: 'inset', fontSize: 'initial'}}>
-                    <div className='switch-label'>Use this Notebook's Volumes</div>
-                    <Switch
-                        checked={this.props.useNotebookVolumes}
-                        onChange={_ => this.props.updateVolumesSwitch()}
-                        onColor='#599EF0'
-                        onHandleColor='#477EF0'
-                        handleDiameter={18}
-                        uncheckedIcon={false}
-                        checkedIcon={false}
-                        boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
-                        activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
-                        height={10}
-                        width={20}
-                        className='skip-switch'
-                        id='skip-switch'
-                    />
-                </div>
-                {this.props.useNotebookVolumes ? null : vols}
-                {this.props.useNotebookVolumes ? null : addButton}
+                {useNotebookVolumesSwitch}
+                {autoSnapshotSwitch}
+                {this.props.notebookMountPoints.length > 0 && this.props.useNotebookVolumes ? null : vols}
+                {this.props.notebookMountPoints.length > 0 && this.props.useNotebookVolumes ? null : addButton}
             </div>
         )
 

@@ -68,6 +68,7 @@ interface IState {
     volumes?: IVolumeMetadata[];
     selectVolumeTypes: {label: string, value: string}[];
     useNotebookVolumes: boolean;
+    autosnapshot: boolean;
 }
 
 export interface IAnnotation {
@@ -125,6 +126,7 @@ const DefaultState: IState = {
     volumes: [],
     selectVolumeTypes: selectVolumeTypes,
     useNotebookVolumes: false,
+    autosnapshot: false,
 };
 
 const DefaultEmptyVolume: IVolumeMetadata = {
@@ -166,18 +168,25 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             },
         })
     };
+    updateAutosnapshotSwitch = () => this.setState({autosnapshot: !this.state.autosnapshot});
 
     // Volume managers
     deleteVolume = (idx: number) => {
+        // If we delete the last volume, turn autosnapshot off
+        const autosnapshot = this.state.volumes.length === 1 ? false : this.state.autosnapshot;
         this.setState({
             volumes: this.removeIdxFromArray(idx, this.state.volumes),
-            metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)}
+            metadata: {...this.state.metadata, volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes)},
+            autosnapshot: autosnapshot,
         });
     };
     addVolume = () => {
+        // If we add a volume to an empty list, turn autosnapshot on
+        const autosnapshot = this.state.volumes.length === 0 ? true : this.state.autosnapshot;
         this.setState({
             volumes: [...this.state.volumes, DefaultEmptyVolume],
-            metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, DefaultEmptyVolume]}
+            metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, DefaultEmptyVolume]},
+            autosnapshot: autosnapshot,
         });
     };
     updateVolumeType = (type: string, idx: number) => {
@@ -449,6 +458,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     volumes: stateVolumes,
                     metadata: metadata,
                     useNotebookVolumes: useNotebookVolumes,
+                    autosnapshot: stateVolumes.length > 0,
                     ...currentCell
                 });
             } else {
@@ -689,6 +699,8 @@ except Exception as e:
             selectVolumeTypes={this.state.selectVolumeTypes}
             useNotebookVolumes={this.state.useNotebookVolumes}
             updateVolumesSwitch={this.updateVolumesSwitch}
+            autosnapshot={this.state.autosnapshot}
+            updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
         />;
 
         return (
