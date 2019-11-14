@@ -490,6 +490,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     };
 
     runDeploymentCommand = async () => {
+        if (!this.state.activeNotebook) {
+            this.setState({ runDeployment: false });
+            return;
+        }
+
         const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
         console.log('metadata:', metadata);
 
