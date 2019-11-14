@@ -47,9 +47,9 @@ def get_base_image():
 
 
 def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
-                     debug=False):
+                     debug=False, auto_snapshot=False):
     instance = Kale(source_notebook_path, notebook_metadata_overrides,
-                    debug)
+                    debug, auto_snapshot)
     pipeline_graph, pipeline_parameters = instance.notebook_to_graph()
     script_path = instance.generate_kfp_executable(pipeline_graph,
                                                    pipeline_parameters)
