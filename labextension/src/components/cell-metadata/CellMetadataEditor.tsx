@@ -26,6 +26,8 @@ const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string; } = {
     "skip": "This cell will be skipped and excluded from pipeline steps"
 };
 
+const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric characters or \'_\', and can not start with a digit.`
+
 interface IProps {
     notebook: NotebookPanel;
     activeCellIndex: number;
@@ -41,6 +43,7 @@ interface IState {
     allBlocks?: string[];
     prevBlockName?: string;
     wrapperClass?: string;
+    stepNameErrorMsg?: string;
 }
 
 interface IKaleCellMetadata {
@@ -59,6 +62,7 @@ const DefaultState: IState = {
     currentActiveCellMetadata: DefaultCellMetadata,
     prevBlockName: null,
     wrapperClass: '',
+    stepNameErrorMsg: STEP_NAME_ERROR_MSG
 };
 
 export class CellMetadataEditor extends React.Component<IProps, IState> {
@@ -281,6 +285,19 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
         return ColorUtils.getColor(name);
     }
 
+    onBeforeUpdate = (value: string) => {
+        const stepNameErrorMsg = STEP_NAME_ERROR_MSG;
+        this.setState({ stepNameErrorMsg });
+
+        const blockNames = this.getAllBlocks(this.props.notebook.content);
+        if (blockNames.includes(value)) {
+            this.setState({ stepNameErrorMsg: 'This name already exists.' })
+            return true;
+        }
+
+        return false
+    }
+
     render() {
         const previousBlockChoices = this.state.allBlocks.filter(
             (el) => !RESERVED_CELL_NAMES.includes(el) &&
@@ -328,9 +345,10 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                                         updateValue={this.updateCurrentBlockName}
                                         value={this.state.currentActiveCellMetadata.blockName}
                                         regex={"^([_a-z]([_a-z0-9]*)?)?$"}
-                                        regexErrorMsg={"Step name must consist of lower case alphanumeric characters or '_', and can not start with a digit."}
+                                        regexErrorMsg={this.state.stepNameErrorMsg}
                                         helperText={prevBlockNotice}
                                         variant="standard"
+                                        onBeforeUpdate={this.onBeforeUpdate}
                                     />
                                 ) : ''}
                             </div>

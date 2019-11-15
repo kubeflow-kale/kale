@@ -68,6 +68,7 @@ export interface IMaterialInput {
     readOnly?: boolean,
     extraInputProps?: any,
     variant?: "filled" | "standard" | "outlined",
+    onBeforeUpdate?: (value: string) => boolean;
 }
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) => {
@@ -78,15 +79,18 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
 
     const onChange = (value: string, index: number) => {
         // if the input domain is restricted by a regex
-        if (props.regex) {
-            let re = new RegExp(props.regex);
-            if (!re.test(value)) {
-                updateError(true);
-            } else {
-                updateError(false);
-            }
+        if (!props.regex) {
+            props.updateValue(value, index);
+            return;
         }
-        props.updateValue(value, index)
+
+        let re = new RegExp(props.regex);
+        if (!re.test(value)) {
+            updateError(true);
+        } else {
+            updateError(false);
+            props.updateValue(value, index)
+        }
     };
 
     React.useEffect(() => {
@@ -135,7 +139,20 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
             id="outlined-name"
             label={props.label}
             value={value}
-            onChange={evt => {setValue(evt.target.value); debouncedCallback(evt.target.value, props.inputIndex)}}
+            onChange={evt => {
+                setValue(evt.target.value);
+                if (!props.onBeforeUpdate) {
+                    debouncedCallback(evt.target.value, props.inputIndex)
+                }else {
+                    const r = props.onBeforeUpdate(evt.target.value)
+                    if (r) {
+                        updateError(true);
+                    } else {
+                        updateError(false);
+                        debouncedCallback(evt.target.value, props.inputIndex)
+                    }
+                }
+            }}
             margin="dense"
             variant={props.variant || "outlined" as any}
             type={props.numeric && 'number'}
