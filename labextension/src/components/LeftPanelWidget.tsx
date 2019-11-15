@@ -495,6 +495,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             return;
         }
 
+        await this.state.activeNotebook.context.save();
+
         const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
         console.log('metadata:', metadata);
 
