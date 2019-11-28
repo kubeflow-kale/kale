@@ -171,9 +171,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         this.props.tracker.currentChanged.connect(this.handleNotebookChanged, this);
         // Set notebook widget if one is open
         if (this.props.tracker.currentWidget instanceof  NotebookPanel) {
+            this.setState({activeNotebook: this.props.tracker.currentWidget});
             this.setNotebookPanel(this.props.tracker.currentWidget);
-        } else {
-            this.setNotebookPanel(null);
         }
     };
 
