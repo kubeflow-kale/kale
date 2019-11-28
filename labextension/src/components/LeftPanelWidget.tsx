@@ -164,7 +164,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
 
     // restore state to default values
-    resetState = () => this.setState({...DefaultState, ...DefaultState.metadata});
+    resetState = () => this.setState(DefaultState);
 
     componentDidMount = () => {
         // Notebook tracker will signal when a notebook is changed
@@ -210,12 +210,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         }
     };
 
-    handleNotebookDisposed = async (notebookPanel: NotebookPanel) => {
-        notebookPanel.disposed.disconnect(this.handleNotebookDisposed);
-        // reset widget to default state
-        this.resetState()
-    };
-
     handleActiveCellChanged = async (notebook: Notebook, activeCell: Cell) => {
         this.setState({activeCell: activeCell, activeCellIndex: notebook.activeCellIndex});
     };
@@ -229,7 +223,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         if (this.props.tracker.size > 0 && notebook) {
             // wait for the session to be ready before reading metadata
             await notebook.session.ready;
-            notebook.disposed.connect(this.handleNotebookDisposed);
             notebook.content.activeCellChanged.connect(this.handleActiveCellChanged);
             const currentCell = {activeCell: notebook.content.activeCell, activeCellIndex: notebook.content.activeCellIndex};
 
@@ -253,6 +246,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             } else {
                 this.setState({metadata: DefaultState.metadata, ...currentCell})
             }
+        } else {
+            this.resetState();
         }
     };
 
