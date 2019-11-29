@@ -7,8 +7,8 @@ def {{ function_name }}({{ function_args }}):
 
     _kale_data_directory = "/marshal/{{ pipeline_name }}/"
 
-    # -----------------------DATA LOADING START--------------------------------
 {%- if in_variables|length > 0 %}
+    # -----------------------DATA LOADING START--------------------------------
     {# Check directory exists #}
     if not os.path.isdir(_kale_data_directory):
         raise ValueError(_kale_data_directory + " directory does not exist")
@@ -18,7 +18,6 @@ def {{ function_name }}({{ function_args }}):
         for f in os.listdir(_kale_data_directory)
         if os.path.isfile(_kale_data_directory + f)
     ]
-{%- endif %}
 
 {%- for in_var in in_variables %}
     {# First check that the variable exists in the path #}
@@ -38,11 +37,13 @@ def {{ function_name }}({{ function_args }}):
     {{ in_var }} = _kale_resource_load(_kale_data_directory + _kale_load_file_name)
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
+{%- endif %}
 
 
 {% for block in function_blocks %}
 {{block|indent(4, True)}}
 {% endfor %}
+{%- if out_variables|length > 0 %}
     # -----------------------DATA SAVING START---------------------------------
 {%- if out_variables|length > 0 %}
     if not os.path.isdir(_kale_data_directory):
@@ -57,3 +58,4 @@ def {{ function_name }}({{ function_args }}):
         print("_kale_resource_save: `{{ out_var }}` not found.")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
+{%- endif %}
