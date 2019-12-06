@@ -3,13 +3,13 @@ import { NotebookPanel } from "@jupyterlab/notebook";
 import { KernelMessage, Kernel } from "@jupyterlab/services";
 import { CommandRegistry } from "@phosphor/commands";
 import * as React from "react";
-import {instanceOf} from "prop-types";
 
 
 enum RPC_CALL_STATUS {
   OK = 0,
   ImportError = 1,
   ExecutionError = 2,
+  EncodingError = 3,
 }
 
 const getRpcStatusName = (code: number) => {
@@ -20,6 +20,8 @@ const getRpcStatusName = (code: number) => {
       return 'ImportError';
     case RPC_CALL_STATUS.ExecutionError:
       return 'ExecutionError';
+    case RPC_CALL_STATUS.EncodingError:
+      return 'EncodingError';
     default:
       return 'UnknownError';
   }
