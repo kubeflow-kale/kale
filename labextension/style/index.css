@@ -258,8 +258,8 @@
 
 .dialog-box-text {
   display: block;
-  background-color: rgba(104, 160, 217, 0.25);
-  padding: 4px;
+  /* background-color: rgba(104, 160, 217, 0.25); */
+  /* padding: 4px; */
 }
 
 .jp-Dialog-content {
