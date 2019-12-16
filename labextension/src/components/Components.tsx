@@ -136,7 +136,6 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = (props) =>
             }}
             className={classes.textField}
             error={error}
-            id="outlined-name"
             label={props.label}
             value={value}
             onChange={evt => {
