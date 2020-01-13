@@ -1,7 +1,3 @@
-> :warning: **NOTICE** :warning:: The latest and greatest features are being developed in branch `kubecon-workshop` in preparation of [this](https://kccncna19.sched.com/event/Uaeq/tutorial-from-notebook-to-kubeflow-pipelines-an-end-to-end-data-science-workflow-michelle-casbon-google-stefano-fioravanzo-fondazione-bruno-kessler-ilias-katsakioris-arrikto?iframe=no&w=100%&sidebar=yes&bg=no) tutorial session at KubeCon North America on Nov 21st.
-> 
-> Note that we are targeting for a seamless experience on [MiniKF](https://www.kubeflow.org/docs/other-guides/virtual-dev/getting-started-minikf/) for the tutorial, so running Kale on local machines or on K8S clusters might result in unexpected behaviors. We will work to merge all the new features to `master` and support all environments after the conference.
-
 ## Kale JupyterLab Extension
 
 
