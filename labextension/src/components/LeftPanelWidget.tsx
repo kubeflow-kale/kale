@@ -555,7 +555,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     ...currentCell
                 });
             } else {
-                this.setState({metadata: DefaultState.metadata, ...currentCell})
+                this.setState({
+                    metadata: {
+                        volumes: this.state.notebookVolumes,
+                        ...DefaultState.metadata
+                    },
+                    volumes: this.state.notebookVolumes,
+                    ...currentCell
+                });
             }
         } else {
             this.resetState();
