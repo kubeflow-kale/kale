@@ -61,9 +61,15 @@ def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
             "pipeline_metadata": instance.pipeline_metadata}
 
 
+def _get_kale_marshal_dir(source_notebook_path):
+    nb_file_name = os.path.basename(source_notebook_path)
+    nb_dir_name = os.path.dirname(source_notebook_path)
+    kale_marshal_dir_name = f".{nb_file_name}{KALE_MARSHAL_DIR_POSTFIX}"
+    return os.path.realpath(os.path.join(nb_dir_name, kale_marshal_dir_name))
+
+
 def unmarshal_data(source_notebook_path):
-    kale_marshal_dir = ".%s%s" % (source_notebook_path,
-                                  KALE_MARSHAL_DIR_POSTFIX)
+    kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if not os.path.exists(kale_marshal_dir):
         return {}
 
@@ -77,8 +83,7 @@ def unmarshal_data(source_notebook_path):
 
 def explore_notebook(source_notebook_path):
     step_name = os.getenv(KALE_PIPELINE_STEP_ENV, None)
-    kale_marshal_dir = ".%s%s" % (source_notebook_path,
-                                  KALE_MARSHAL_DIR_POSTFIX)
+    kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
 
     if step_name and os.path.exists(kale_marshal_dir):
         return {"is_exploration": True,
@@ -88,7 +93,6 @@ def explore_notebook(source_notebook_path):
 
 
 def remove_marshal_dir(source_notebook_path):
-    kale_marshal_dir = ".%s%s" % (source_notebook_path,
-                                  KALE_MARSHAL_DIR_POSTFIX)
+    kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if os.path.exists(kale_marshal_dir):
         shutil.rmtree(kale_marshal_dir)
