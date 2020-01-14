@@ -468,12 +468,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     if (runCellResponse.status === RUN_CELL_STATUS.OK) {
                         await this.unmarshalData(nbFileName);
                         const cell = this.getCellByStepName(this.state.activeNotebook, exploration.step_name);
-                        this.selectAndScrollToCell(this.state.activeNotebook, cell);
-                        currentCell = {activeCell: cell.cell, activeCellIndex: cell.index};
-                        await NotebookUtils.showMessage(
-                            'Notebook Exploration',
-                            [`Resuming notebook at step: "${exploration.step_name}"`]
-                        );
+                        const title = 'Notebook Exploration'
+                        const message = [`Resuming notebook at step: "${exploration.step_name}"`]
+                        if (cell) {
+                            this.selectAndScrollToCell(this.state.activeNotebook, cell);
+                            currentCell = {activeCell: cell.cell, activeCellIndex: cell.index};
+                        } else {
+                            message.push(`ERROR: Could not retrieve step's position.`);
+                        }
+                        await NotebookUtils.showMessage(title, message);
                     } else {
                         currentCell = {
                             activeCell: notebook.content.widgets[runCellResponse.cellIndex],
