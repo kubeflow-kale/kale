@@ -116,6 +116,7 @@ async function activate(
                 notebook={tracker.currentWidget}
                 docManager={docManager}
                 backend={backend}
+                kernel={kernel}
             />
         );
         widget.id = "kubeflow-kale/kubeflowDeployment";
