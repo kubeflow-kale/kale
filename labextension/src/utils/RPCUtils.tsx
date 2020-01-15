@@ -14,8 +14,11 @@ export interface IRPCError {
 enum RPC_CALL_STATUS {
     OK = 0,
     ImportError = 1,
-    ExecutionError = 2,
-    EncodingError = 3,
+    EncodingError = 2,
+    NotFound = 3,
+    InternalError = 4,
+    ServiceUnavailable = 5,
+    UnhandledError = 6,
 }
 
 const getRpcCodeName = (code: number) => {
@@ -24,12 +27,16 @@ const getRpcCodeName = (code: number) => {
             return 'OK';
         case RPC_CALL_STATUS.ImportError:
             return 'ImportError';
-        case RPC_CALL_STATUS.ExecutionError:
-            return 'ExecutionError';
         case RPC_CALL_STATUS.EncodingError:
             return 'EncodingError';
+        case RPC_CALL_STATUS.NotFound:
+            return 'NotFound';
+        case RPC_CALL_STATUS.InternalError:
+            return 'InternalError';
+        case RPC_CALL_STATUS.ServiceUnavailable:
+            return 'ServiceUnavailable';
         default:
-            return 'UnknownError';
+            return 'UnhandledError';
     }
 };
 
@@ -113,7 +120,7 @@ export const executeRpc = async (
         msg = msg.concat([
             `Code: ${parsedResult.code} (${getRpcCodeName(parsedResult.code)})`,
             `Message: ${parsedResult.err_message}`,
-            `Details: ${parsedResult.err_details || ''}`
+            `Details: ${parsedResult.err_details}`,
         ]);
         let error = {
             rpc: `${func}`,
