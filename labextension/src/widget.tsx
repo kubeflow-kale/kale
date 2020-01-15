@@ -25,7 +25,7 @@ import '../style/index.css';
 
 import {KubeflowKaleLeftPanel} from './components/LeftPanelWidget'
 import NotebookUtils from "./utils/NotebookUtils";
-import { executeRpc, globalUnhandledRejection } from "./utils/RPCUtils";
+import { executeRpc, globalUnhandledRejection, BaseError } from "./utils/RPCUtils";
 import { Kernel } from "@jupyterlab/services";
 
 
@@ -67,7 +67,12 @@ async function activate(
     //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
     const backend = await getBackend(kernel);
     if (backend) {
-        await executeRpc(kernel, 'log.setup_logging');
+        try {
+            await executeRpc(kernel, 'log.setup_logging');
+        } catch (error) {
+            globalUnhandledRejection({reason: error});
+            throw error;
+        }
     }
 
     /**

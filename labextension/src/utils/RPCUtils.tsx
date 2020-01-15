@@ -27,7 +27,7 @@ export interface IRPCError {
     err_cls: string;
 }
 
-enum RPC_CALL_STATUS {
+export enum RPC_CALL_STATUS {
     OK = 0,
     ImportError = 1,
     EncodingError = 2,
