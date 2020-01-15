@@ -4,6 +4,7 @@ import {
     NotebookPanel
 } from "@jupyterlab/notebook";
 import NotebookUtils from "../utils/NotebookUtils";
+import { executeRpc } from "../utils/RPCUtils"
 import CellUtils from "../utils/CellUtils";
 import {
     CollapsablePanel,
@@ -420,7 +421,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // If that is the case, retry the RPC
         while (retryRpc) {
             try {
-                result = await NotebookUtils.executeRpc(this.props.kernel, func, args);
+                result = await executeRpc(this.props.kernel, func, args);
                 retryRpc = false;
             } catch (error) {
                 if (error.status !== 'aborted') {

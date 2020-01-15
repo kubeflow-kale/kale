@@ -25,6 +25,7 @@ import '../style/index.css';
 
 import {KubeflowKaleLeftPanel} from './components/LeftPanelWidget'
 import NotebookUtils from "./utils/NotebookUtils";
+import { executeRpc } from "./utils/RPCUtils";
 import { Kernel } from "@jupyterlab/services";
 
 
@@ -65,7 +66,7 @@ async function activate(
     //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
     const backend = await getBackend(kernel);
     if (backend) {
-        await NotebookUtils.executeRpc(kernel, 'log.setup_logging');
+        await executeRpc(kernel, 'log.setup_logging');
     }
 
     /**
@@ -89,7 +90,7 @@ async function activate(
         if (backend) {
             // Check if NOTEBOOK_PATH env variable exists and if so load
             // that Notebook
-            const path = await NotebookUtils.executeRpc(kernel, "nb.resume_notebook_path");
+            const path = await executeRpc(kernel, "nb.resume_notebook_path");
             if (path) {
                 console.log("Resuming notebook " + path);
                 // open the notebook panel
