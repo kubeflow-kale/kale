@@ -3,6 +3,14 @@ import { NotebookPanel } from "@jupyterlab/notebook";
 import { Kernel } from "@jupyterlab/services";
 import NotebookUtils from "./NotebookUtils"
 
+export interface IRPCError {
+    rpc: string;
+    code: number;
+    err_message: string;
+    err_details: string;
+    err_cls: string;
+}
+
 enum RPC_CALL_STATUS {
     OK = 0,
     ImportError = 1,
@@ -42,13 +50,24 @@ export const executeRpc = async (
         + `__kale_rpc_result = __kale_rpc_run("${func}", '${window.btoa(JSON.stringify(kwargs))}')`;
     console.log("Executing command: " + cmd);
     const expressions = {result: "__kale_rpc_result"};
-    const output = (env instanceof NotebookPanel) ?
-        await NotebookUtils.sendKernelRequestFromNotebook(env, cmd, expressions) :
-        await NotebookUtils.sendKernelRequest(env, cmd, expressions);
+    let output: any = null;
+    try {
+        output = (env instanceof NotebookPanel) ?
+            await NotebookUtils.sendKernelRequestFromNotebook(env, cmd, expressions) :
+            await NotebookUtils.sendKernelRequest(env, cmd, expressions);
+    } catch (e) {
+        console.warn(e);
+        const error = {
+            rpc: `${func}`,
+            status: `${e.ename}: ${e.evalue}`,
+            output: e.traceback,
+        }
+        throw new KernelError(error);
+    }
 
-    const argsAsStr = Object.keys(kwargs).map(key => `${key}=${kwargs[key]}`).join(', ');
+    // const argsAsStr = Object.keys(kwargs).map(key => `${key}=${kwargs[key]}`).join(', ');
     let msg = [
-        `Function Call: ${func}(${argsAsStr})`,
+        `RPC: ${func}`,
     ];
     // Log output
     if (output.result.status !== "ok") {
@@ -57,9 +76,12 @@ export const executeRpc = async (
             `Status: ${output.result.status}`,
             `Output: ${JSON.stringify(output, null, 3)}`
         ]);
-        console.error([title].concat(msg));
-        await NotebookUtils.showMessage(title, msg);
-        return null;
+        const error = {
+            rpc: `${func}`,
+            status: output.result.status,
+            output: output,
+        };
+        throw new KernelError(error);
     }
 
     // console.log(msg.concat([output]));
@@ -77,26 +99,147 @@ export const executeRpc = async (
             `Error: ${JSON.stringify(error, null, 3)}`,
             `Response data: ${json_data}`
         ]);
-        console.error(msg);
-        await NotebookUtils.showMessage(title, msg);
-        return null;
+        const jsonError = {
+            rpc: `${func}`,
+            err_message: 'Failed to parse response as JSON',
+            error: error,
+            jsonData: json_data,
+        };
+        throw new JSONParseError(jsonError);
     }
 
     if (parsedResult.code !== 0) {
         const title = `An error has occured`;
         msg = msg.concat([
             `Code: ${parsedResult.code} (${getRpcCodeName(parsedResult.code)})`,
-            `Type: ${JSON.stringify(parsedResult.err_cls, null, 3)}`,
-            `Message: ${parsedResult.err_message}`
+            `Message: ${parsedResult.err_message}`,
+            `Details: ${parsedResult.err_details || ''}`
         ]);
-        console.error(msg);
-        await NotebookUtils.showMessage(title, msg);
-        return null;
+        let error = {
+            rpc: `${func}`,
+            code: parsedResult.code,
+            err_message: parsedResult.err_message,
+            err_details: parsedResult.err_details,
+            err_cls: parsedResult.err_cls,
+        };
+        throw new RPCError(error);
     } else {
         msg = msg.concat([
             `Result: ${parsedResult}`
         ]);
         // console.log(msg);
         return parsedResult.result;
+    }
+}
+
+export const showError = async (
+    title: string,
+    type: string,
+    message: string,
+    details: string,
+    refresh: boolean = true,
+    method: string = null,
+    code: number = null,
+): Promise<void> => {
+    let msg: string[] = [
+        `Browser: ${navigator ? navigator.userAgent : 'other'}`,
+        `Type: ${type}`
+    ];
+    if (method) {
+        msg.push(`Method: ${method}()`)
+    }
+    if (code) {
+        msg.push(`Code: ${code} (${getRpcCodeName(code)})`)
+    }
+    msg.push(
+        `Message: ${message}`,
+        `Details: ${details}`
+    );
+
+    if (refresh) {
+        await NotebookUtils.showRefreshDialog(title, msg);
+    } else {
+        await NotebookUtils.showMessage(title, msg);
+    }
+};
+
+export const showRpcError = async (
+    error: IRPCError,
+    refresh: boolean = false
+): Promise<void> => {
+    await showError(
+        'An RPC Error has occurred',
+        'RPC',
+        error.err_message,
+        error.err_details,
+        refresh,
+        error.rpc,
+        error.code,
+    );
+}
+
+export abstract class BaseError extends Error {
+    constructor(
+        message: string,
+        public error: any
+    ) {
+        super(message);
+        this.name = this.constructor.name;
+        if (typeof Error.captureStackTrace === 'function') {
+            Error.captureStackTrace(this, this.constructor);
+        } else {
+            this.stack = (new Error(message)).stack;
+        }
+        Object.setPrototypeOf(this, BaseError.prototype);
+        console.error(message, error);
+    }
+
+    public abstract async showDialog(refresh: boolean): Promise<void>
+}
+
+export class KernelError extends BaseError {
+    constructor(error: any) {
+        super('Kernel error', error);
+        Object.setPrototypeOf(this, KernelError.prototype);
+    }
+
+    public async showDialog(refresh: boolean = true): Promise<void> {
+        await showError(
+            'A Kernel Error has occurred',
+            'Kernel',
+            this.error.status,
+            JSON.stringify(this.error.output, null, 3),
+            refresh,
+            this.error.rpc
+        );
+    }
+}
+
+export class JSONParseError extends BaseError {
+    constructor(error: any) {
+        super('JSON Parse error', error);
+        Object.setPrototypeOf(this, JSONParseError.prototype);
+    }
+
+    public async showDialog(refresh: boolean = false): Promise<void> {
+        await showError(
+            'Failed to parse RPC response as JSON',
+            'JSONParse',
+            this.error.error.message,
+            this.error.json_data,
+            refresh,
+            this.error.rpc
+        );
+    }
+}
+
+export class RPCError extends BaseError {
+    constructor(error: IRPCError) {
+        super('RPC Error', error);
+        Object.setPrototypeOf(this, RPCError.prototype);
+    }
+
+    public async showDialog(refresh: boolean = false): Promise<void> {
+        await showRpcError(this.error, refresh);
     }
 }
