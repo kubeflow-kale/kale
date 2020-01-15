@@ -64,6 +64,9 @@ async function activate(
     // TODO: backend can become an Enum that indicates the type of
     //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
     const backend = await getBackend(kernel);
+    if (backend) {
+        await NotebookUtils.executeRpc(kernel, 'log.setup_logging');
+    }
 
     /**
      * Detect if Kale is installed
