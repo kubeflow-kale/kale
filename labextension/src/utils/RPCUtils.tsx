@@ -64,21 +64,26 @@ export const rokErrorTooltip = (rokError: IRPCError) => {
     </React.Fragment>;
 };
 
+const serialize = (obj: any) => window.btoa(JSON.stringify(obj));
+const deserialize = (raw_data: string) => window.atob(raw_data.substring(1, raw_data.length - 1));
+
 /**
  * Execute kale.rpc module functions
  * Example: func_result = await this.executeRpc(kernel | notebookPanel, "rpc_submodule.func", {arg1, arg2})
  *    where func_result is a JSON object
  * @param func Function name to be executed
  * @param kwargs Dictionary with arguments to be passed to the function
+ * @param ctx Dictionary with the RPC context (e.g., nb_path)
  * @param env instance of Kernel or NotebookPanel
  */
 export const executeRpc = async (
     env: Kernel.IKernelConnection | NotebookPanel,
     func: string,
-    kwargs: any = {}
+    kwargs: any = {},
+    ctx: any = {}
 ) => {
     const cmd: string = `from kale.rpc.run import run as __kale_rpc_run\n`
-        + `__kale_rpc_result = __kale_rpc_run("${func}", '${window.btoa(JSON.stringify(kwargs))}')`;
+        + `__kale_rpc_result = __kale_rpc_run("${func}", '${serialize(kwargs)}', '${serialize(ctx)}')`;
     console.log("Executing command: " + cmd);
     const expressions = {result: "__kale_rpc_result"};
     let output: any = null;
@@ -117,7 +122,7 @@ export const executeRpc = async (
 
     // console.log(msg.concat([output]));
     const raw_data = output.result.data["text/plain"];
-    const json_data = window.atob(raw_data.substring(1, raw_data.length - 1));
+    const json_data = deserialize(raw_data);
 
     // Validate response is a JSON
     // If successful, run() method returns json.dumps() of any result

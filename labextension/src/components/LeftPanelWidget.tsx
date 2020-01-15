@@ -449,14 +449,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         this.setState({activeCell: activeCell, activeCellIndex: notebook.activeCellIndex});
     };
 
-    executeRpc = async (func: string, args: any = {}) => {
+    executeRpc = async (func: string, args: any = {}, nb_path: string = null) => {
+        if (!nb_path && this.state.activeNotebook) {
+            nb_path = this.state.activeNotebook.context.path;
+        }
         let retryRpc = true;
         let result: any = null;
         // Kerned aborts the execution if busy
         // If that is the case, retry the RPC
         while (retryRpc) {
             try {
-                result = await executeRpc(this.props.kernel, func, args);
+                result = await executeRpc(this.props.kernel, func, args, {nb_path});
                 retryRpc = false;
             } catch (error) {
                 if ((error instanceof KernelError) && (error.error.status === 'aborted')) {
@@ -473,9 +476,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // This is our default behavior prior to this commit. This may probably
     // change in the future, setting custom logic for each RPC call. For
     // example, see getBaseImage().
-    executeRpcAndShowRPCError = async (func: string, args: any = {}) => {
+    executeRpcAndShowRPCError = async (func: string, args: any = {}, nb_path: string = null) => {
         try {
-            const result = await this.executeRpc(func, args);
+            const result = await this.executeRpc(func, args, nb_path);
             return result;
         } catch (error) {
             if (error instanceof RPCError) {
