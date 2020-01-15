@@ -1,5 +1,6 @@
 import os
 import shutil
+import logging
 
 from kale.core import Kale
 from kale.utils import pod_utils, kfp_utils
@@ -8,6 +9,9 @@ from kale.marshal import resource_load
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
+
+
+log = logging.getLogger(__name__)
 
 
 def resume_notebook_path():
@@ -50,6 +54,15 @@ def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
                      debug=False, auto_snapshot=False):
     instance = Kale(source_notebook_path, notebook_metadata_overrides,
                     debug, auto_snapshot)
+    instance.logger = log
+    stream_handlers = [h for h in instance.logger.handlers
+                       if isinstance(h, logging.StreamHandler)]
+    if debug:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+    for stream_handler in stream_handlers:
+        stream_handler.setLevel(log_level)
     pipeline_graph, pipeline_parameters = instance.notebook_to_graph()
     script_path = instance.generate_kfp_executable(pipeline_graph,
                                                    pipeline_parameters)
