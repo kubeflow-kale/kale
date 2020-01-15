@@ -457,16 +457,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
             if (this.props.backend) {
                 // Detect whether this is an exploration, i.e., recovery from snapshot
-                const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+                const nbFilePath = this.state.activeNotebook.context.path;
                 const exploration = await this.executeRpc(
                     'nb.explore_notebook',
-                    {source_notebook_path: nbFileName}
+                    {source_notebook_path: nbFilePath}
                 );
                 if (exploration && exploration.is_exploration) {
                     this.clearCellOutputs(this.state.activeNotebook);
                     let runCellResponse = await this.runGlobalCells(this.state.activeNotebook);
                     if (runCellResponse.status === RUN_CELL_STATUS.OK) {
-                        await this.unmarshalData(nbFileName);
+                        // unmarshalData runs in the same kernel as the .ipynb, so it requires the filename
+                        await this.unmarshalData(nbFilePath.split('/').pop());
                         const cell = this.getCellByStepName(this.state.activeNotebook, exploration.step_name);
                         const title = 'Notebook Exploration'
                         const message = [`Resuming notebook at step: "${exploration.step_name}"`]
@@ -494,7 +495,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     }
                     await this.executeRpc(
                         'nb.remove_marshal_dir',
-                        {source_notebook_path: nbFileName}
+                        {source_notebook_path: nbFilePath}
                     );
                 }
 
@@ -646,11 +647,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
         console.log('metadata:', metadata);
 
-        const nbFileName = this.state.activeNotebook.context.path.split('/').pop();
+        const nbFilePath = this.state.activeNotebook.context.path;
 
         // CREATE PIPELINE
         const compileNotebookArgs: ICompileNotebookArgs = {
-            source_notebook_path: nbFileName,
+            source_notebook_path: nbFilePath,
             notebook_metadata_overrides: metadata,
             debug: this.state.deployDebugMessage,
             auto_snapshot: this.state.autosnapshot,
