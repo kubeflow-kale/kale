@@ -1,9 +1,9 @@
 import sys
-import json
-import base64
-import enum
 import logging
 import importlib
+
+from kale.rpc import errors, utils
+
 
 log = logging.getLogger(__name__)
 
@@ -25,51 +25,37 @@ def import_func(import_func_str):
                           (func_str, mod_str, e))
 
 
-class Code(enum.Enum):
-    OK = 0
-    IMPORT_ERROR = 1
-    EXECUTION_ERROR = 2
-    ENCODING_ERROR = 3
-
-
-def _serialize_result(result):
-    return base64.b64encode(json.dumps(result).encode("utf-8")).decode("utf-8")
-
-
 def format_success(result):
-    return _serialize_result({"code": Code.OK.value,
-                              "result": result})
-
-
-def format_error(code, exc_info):
-    return _serialize_result({"code": code.value,
-                              "err_message": str(exc_info[1]),
-                              "err_cls": exc_info[0].__name__})
+    return utils.serialize({"code": errors.Code.OK.value,
+                            "result": result})
 
 
 def run(func, kwargs):
     try:
         log.debug("Decoding kwargs of RPC function '%s'", func)
-        kwargs = json.loads(base64.b64decode(kwargs).decode("utf-8"))
+        kwargs = utils.deserialize(kwargs)
     except Exception:
         exc_info = sys.exc_info()
         log.exception("Failed to decode kwargs: %s", kwargs)
-        return format_error(Code.ENCODING_ERROR, exc_info)
+        return errors.RPCEncodingError(message=str(exc_info[1])).serialize()
     try:
         log.debug("Importing RPC function '%s'", func)
         func = import_func(func)
-    except ImportError:
+    except ImportError as e:
         exc_info = sys.exc_info()
         log.exception("Failed to import RPC function '%s'", func)
-        return format_error(Code.IMPORT_ERROR, exc_info)
+        return errors.RPCImportError(message=str(e)).serialize()
 
     try:
         log.info("Executing RPC function '%s(%s)'", func.__name__,
                  ", ".join("%s=%s" % i for i in kwargs.items()))
         result = func(**kwargs)
         return format_success(result)
+    except errors._RPCError as e:
+        log.exception("RPC function '%s' raised an RPCError", func.__name__)
+        return e.serialize()
     except Exception:
         exc_info = sys.exc_info()
         log.exception("RPC function '%s' raised an unhandled exception",
                       func.__name__)
-        return format_error(Code.EXECUTION_ERROR, exc_info)
+        return errors.RPCUnhandledError(message=str(exc_info[1])).serialize()
