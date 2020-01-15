@@ -86,6 +86,25 @@ export default class NotebookUtilities {
   }
 
   /**
+   * Opens a pop-up dialog in JupyterLab with various information and button
+   * triggering reloading the page.
+   * @param title The title for the message popup
+   * @param msg The message
+   * @param buttonLabel The label to use for the button. Default is 'Refresh'
+   * @param buttonClassName The  classname to give to the 'refresh' button.
+   * @returns Promise<void> - A promise once the message is closed.
+   */
+  public static async showRefreshDialog(
+    title: string,
+    msg: string[],
+    buttonLabel: string = "Refresh",
+    buttonClassName: string = ""
+  ): Promise<void> {
+    await this.showMessage(title, msg, buttonLabel, buttonClassName);
+    location.reload();
+  }
+
+  /**
    * @description Creates a new JupyterLab notebook for use by the application
    * @param command The command registry
    * @returns Promise<NotebookPanel> - A promise containing the notebook panel object that was created (if successful).
