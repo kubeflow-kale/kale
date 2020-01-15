@@ -25,6 +25,7 @@ export interface IRPCError {
     err_message: string;
     err_details: string;
     err_cls: string;
+    trans_id?: number;
 }
 
 export enum RPC_CALL_STATUS {
@@ -157,13 +158,11 @@ export const executeRpc = async (
             err_message: parsedResult.err_message,
             err_details: parsedResult.err_details,
             err_cls: parsedResult.err_cls,
+            trans_id: parsedResult.trans_id,
         };
         throw new RPCError(error);
     } else {
-        msg = msg.concat([
-            `Result: ${parsedResult}`
-        ]);
-        // console.log(msg);
+        // console.log(msg, parsedResult);
         return parsedResult.result;
     }
 }
@@ -176,6 +175,7 @@ export const showError = async (
     refresh: boolean = true,
     method: string = null,
     code: number = null,
+    trans_id: number = null,
 ): Promise<void> => {
     let msg: string[] = [
         `Browser: ${navigator ? navigator.userAgent : 'other'}`,
@@ -186,6 +186,9 @@ export const showError = async (
     }
     if (code) {
         msg.push(`Code: ${code} (${getRpcCodeName(code)})`)
+    }
+    if (trans_id) {
+        msg.push(`Transaction ID: ${trans_id}`)
     }
     msg.push(
         `Message: ${message}`,
@@ -211,6 +214,7 @@ export const showRpcError = async (
         refresh,
         error.rpc,
         error.code,
+        error.trans_id,
     );
 }
 
