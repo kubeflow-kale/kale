@@ -3,6 +3,22 @@ import { NotebookPanel } from "@jupyterlab/notebook";
 import { Kernel } from "@jupyterlab/services";
 import NotebookUtils from "./NotebookUtils"
 
+export const globalUnhandledRejection = async (event: any) => {
+    // console.error(event.reason);
+    if (event.reason instanceof BaseError) {
+        console.error(event.reason.message, event.reason.error);
+        event.reason.showDialog().then();
+    } else {
+        showError(
+            'An unexpected error has occurred',
+            'JS',
+            `${event.reason.name}: ${event.reason.message}`,
+            'Please see the console for more information',
+            true
+        ).then();
+    }
+};
+
 export interface IRPCError {
     rpc: string;
     code: number;
@@ -198,7 +214,6 @@ export abstract class BaseError extends Error {
             this.stack = (new Error(message)).stack;
         }
         Object.setPrototypeOf(this, BaseError.prototype);
-        console.error(message, error);
     }
 
     public abstract async showDialog(refresh: boolean): Promise<void>

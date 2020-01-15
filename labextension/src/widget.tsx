@@ -25,7 +25,7 @@ import '../style/index.css';
 
 import {KubeflowKaleLeftPanel} from './components/LeftPanelWidget'
 import NotebookUtils from "./utils/NotebookUtils";
-import { executeRpc } from "./utils/RPCUtils";
+import { executeRpc, globalUnhandledRejection } from "./utils/RPCUtils";
 import { Kernel } from "@jupyterlab/services";
 
 
@@ -62,6 +62,7 @@ async function activate(
     let widget: ReactWidget;
     const kernel: Kernel.IKernel = await NotebookUtils.createNewKernel();
     window.addEventListener("beforeunload", () => kernel.shutdown());
+    window.addEventListener('unhandledrejection', globalUnhandledRejection);
     // TODO: backend can become an Enum that indicates the type of
     //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
     const backend = await getBackend(kernel);
