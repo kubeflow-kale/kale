@@ -25,11 +25,11 @@ def import_func(import_func_str):
                           (func_str, mod_str, e))
 
 
-class Status(enum.Enum):
-    STATUS_OK = 0
-    STATUS_IMPORT_ERROR = 1
-    STATUS_EXECUTION_ERROR = 2
-    STATUS_ENCODING_ERROR = 3
+class Code(enum.Enum):
+    OK = 0
+    IMPORT_ERROR = 1
+    EXECUTION_ERROR = 2
+    ENCODING_ERROR = 3
 
 
 def _serialize_result(result):
@@ -37,12 +37,12 @@ def _serialize_result(result):
 
 
 def format_success(result):
-    return _serialize_result({"status": Status.STATUS_OK.value,
+    return _serialize_result({"code": Code.OK.value,
                               "result": result})
 
 
-def format_error(status, exc_info):
-    return _serialize_result({"status": status.value,
+def format_error(code, exc_info):
+    return _serialize_result({"code": code.value,
                               "err_message": str(exc_info[1]),
                               "err_cls": exc_info[0].__name__})
 
@@ -54,14 +54,14 @@ def run(func, kwargs):
     except Exception:
         exc_info = sys.exc_info()
         log.exception("Failed to decode kwargs: %s", kwargs)
-        return format_error(Status.STATUS_ENCODING_ERROR, exc_info)
+        return format_error(Code.ENCODING_ERROR, exc_info)
     try:
         log.debug("Importing RPC function '%s'", func)
         func = import_func(func)
     except ImportError:
         exc_info = sys.exc_info()
         log.exception("Failed to import RPC function '%s'", func)
-        return format_error(Status.STATUS_IMPORT_ERROR, exc_info)
+        return format_error(Code.IMPORT_ERROR, exc_info)
 
     try:
         log.info("Executing RPC function '%s(%s)'", func.__name__,
@@ -72,4 +72,4 @@ def run(func, kwargs):
         exc_info = sys.exc_info()
         log.exception("RPC function '%s' raised an unhandled exception",
                       func.__name__)
-        return format_error(Status.STATUS_EXECUTION_ERROR, exc_info)
+        return format_error(Code.EXECUTION_ERROR, exc_info)
