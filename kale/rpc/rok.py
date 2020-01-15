@@ -1,9 +1,10 @@
 import os
 import copy
-
-from rok_gw_client.client import RokClient, GatewayClientError
+import logging
 
 from kale.utils import pod_utils
+from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
+
 
 DEFAULT_BUCKET = "notebooks"
 
@@ -16,9 +17,12 @@ and use them to spawn a Kubeflow pipeline.\
 
 
 _client = None
+log = logging.getLogger(__name__)
 
 
 def _get_client():
+    from rok_gw_client.client import RokClient
+
     global _client
 
     if _client is None:
@@ -87,3 +91,40 @@ def replace_cloned_volumes(bucket, obj, version, volumes):
         _volumes.append(volume)
 
     return _volumes
+
+
+def check_rok_availability():
+    try:
+        rok = _get_client()
+    except ImportError:
+        log.exception("Failed to import RokClient")
+        raise RPCNotFoundError(details="Rok Gateway Client module not found")
+    except Exception:
+        log.exception("Failed to initialize RokClient")
+        raise RPCServiceUnavailableError(details=("Failed to initialize"
+                                                  " RokClient"))
+
+    try:
+        rok.account_info()
+    except Exception:
+        log.exception("Failed to retrieve account information")
+        raise RPCServiceUnavailableError(details="Failed to access Rok")
+
+    name = pod_utils.get_pod_name()
+    namespace = pod_utils.get_namespace()
+    try:
+        suggestions = rok.version_register_suggest(DEFAULT_BUCKET, name,
+                                                   "jupyter", "params:lab",
+                                                   {"namespace": namespace},
+                                                   ignore_env=True)
+    except Exception as e:
+        log.exception("Failed to list lab suggestions")
+        message = "%s: %s" % (e.__class__.__name__, e)
+        raise RPCServiceUnavailableError(message=message,
+                                         details=("Rok cannot list notebooks"
+                                                  " in this namespace"))
+
+    if not any(s["value"] == name for s in suggestions):
+        log.error("Could not find notebook '%s' in list of suggestions", name)
+        raise RPCNotFoundError(details=("Could not find this notebook in"
+                                        " notebooks listed by Rok"))
