@@ -49,19 +49,27 @@ def format_error(status, exc_info):
 
 def run(func, kwargs):
     try:
+        log.debug("Decoding kwargs of RPC function '%s'", func)
         kwargs = json.loads(base64.b64decode(kwargs).decode("utf-8"))
     except Exception:
         exc_info = sys.exc_info()
+        log.exception("Failed to decode kwargs: %s", kwargs)
         return format_error(Status.STATUS_ENCODING_ERROR, exc_info)
     try:
+        log.debug("Importing RPC function '%s'", func)
         func = import_func(func)
     except ImportError:
         exc_info = sys.exc_info()
+        log.exception("Failed to import RPC function '%s'", func)
         return format_error(Status.STATUS_IMPORT_ERROR, exc_info)
 
     try:
+        log.info("Executing RPC function '%s(%s)'", func.__name__,
+                 ", ".join("%s=%s" % i for i in kwargs.items()))
         result = func(**kwargs)
         return format_success(result)
     except Exception:
         exc_info = sys.exc_info()
+        log.exception("RPC function '%s' raised an unhandled exception",
+                      func.__name__)
         return format_error(Status.STATUS_EXECUTION_ERROR, exc_info)
