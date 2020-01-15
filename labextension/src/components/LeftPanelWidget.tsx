@@ -4,7 +4,7 @@ import {
     NotebookPanel
 } from "@jupyterlab/notebook";
 import NotebookUtils from "../utils/NotebookUtils";
-import { executeRpc, BaseError, KernelError, RPCError } from "../utils/RPCUtils"
+import { executeRpc, BaseError, KernelError, RPCError, IRPCError, rokErrorTooltip } from "../utils/RPCUtils"
 import CellUtils from "../utils/CellUtils";
 import {
     CollapsablePanel,
@@ -58,11 +58,43 @@ const selectVolumeSizeTypes = [
     {label: "", value: "", base: 1024 ** 0},
 ];
 
-const selectVolumeTypes = [
-    {label: "Create Empty Volume", value: 'new_pvc'},
-    {label: "Clone Notebook Volume", value: 'clone'},
-    {label: "Clone Existing Snapshot", value: 'snap'},
-    {label: "Use Existing Volume", value: 'pvc'},
+enum VOLUME_TOOLTIP {
+    CREATE_EMTPY_VOLUME = "Mount an empty volume on your pipeline steps",
+    CLONE_NOTEBOOK_VOLUME = "Clone a Notebook Server's volume and mount it on your pipeline steps",
+    CLONE_EXISTING_SNAPSHOT = "Clone a Rok Snapshot and mount it on your pipeline steps",
+    USE_EXISTING_VOLUME = "Mount an existing volume on your pipeline steps",
+}
+
+export interface ISelectVolumeTypes extends ISelectOption {
+    invalid: boolean;
+    tooltip: any;
+}
+
+const selectVolumeTypes: ISelectVolumeTypes[] = [
+    {
+        label: 'Create Empty Volume',
+        value: 'new_pvc',
+        invalid: false,
+        tooltip: VOLUME_TOOLTIP.CREATE_EMTPY_VOLUME,
+    },
+    {
+        label: 'Clone Notebook Volume',
+        value: 'clone',
+        invalid: true,
+        tooltip: VOLUME_TOOLTIP.CLONE_NOTEBOOK_VOLUME,
+    },
+    {
+        label: 'Clone Existing Snapshot',
+        value: 'snap',
+        invalid: true,
+        tooltip: VOLUME_TOOLTIP.CLONE_EXISTING_SNAPSHOT,
+    },
+    {
+        label: 'Use Existing Volume',
+        value: 'pvc',
+        invalid: false,
+        tooltip: VOLUME_TOOLTIP.USE_EXISTING_VOLUME,
+    },
 ];
 
 interface IProps {
@@ -72,6 +104,7 @@ interface IProps {
     docManager: IDocumentManager;
     backend: boolean;
     kernel: Kernel.IKernel;
+    rokError: IRPCError;
 }
 
 interface IState {
@@ -87,7 +120,7 @@ interface IState {
     gettingExperiments: boolean;
     notebookVolumes?: IVolumeMetadata[];
     volumes?: IVolumeMetadata[];
-    selectVolumeTypes: {label: string, value: string}[];
+    selectVolumeTypes: ISelectVolumeTypes[];
     useNotebookVolumes: boolean;
     autosnapshot: boolean;
     deploys: { [index:number]: DeployProgressState };
@@ -227,7 +260,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     };
     addVolume = () => {
         // If we add a volume to an empty list, turn autosnapshot on
-        const autosnapshot = this.state.volumes.length === 0 ? true : this.state.autosnapshot;
+        const autosnapshot = !this.props.rokError && this.state.volumes.length === 0 ?
+            true :
+            !this.props.rokError && this.state.autosnapshot;
         this.setState({
             volumes: [...this.state.volumes, DefaultEmptyVolume],
             metadata: {...this.state.metadata, volumes: [...this.state.metadata.volumes, DefaultEmptyVolume]},
@@ -518,11 +553,20 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     );
                 }
 
-                await this.getExperiments();
-                // Get information about volumes currently mounted on the notebook server
-                await this.getMountedVolumes();
+                if (!this.props.rokError) {
+                    // Get information about volumes currently mounted on the notebook server
+                    await this.getMountedVolumes();
+                } else {
+                    this.setState({selectVolumeTypes: this.state.selectVolumeTypes.map(t => {
+                        return (t.value === 'clone' || t.value === 'snap') ?
+                            {...t, tooltip: rokErrorTooltip(this.props.rokError)} :
+                            t;
+                    })});
+                }
                 // Detect the base image of the current Notebook Server
                 await this.getBaseImage();
+                // Get experiment information last because it may take more time to respond
+                await this.getExperiments();
             }
 
             // if the key exists in the notebook's metadata
@@ -547,12 +591,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
                 let useNotebookVolumes = this.state.notebookVolumes.length > 0;
                 let metadataVolumes = (notebookMetadata['volumes'] || []).filter((v: IVolumeMetadata) => v.type !== 'clone');
-                let stateVolumes = metadataVolumes.map((volume: IVolumeMetadata) => {
-                    if (volume.type === 'new_pvc' && volume.annotations.length > 0 && volume.annotations[0].key === 'rok/origin') {
-                        return {...volume, type: 'snap'};
-                    }
-                    return volume;
-                });
+                let stateVolumes = this.props.rokError ?
+                    metadataVolumes :
+                    metadataVolumes.map((volume: IVolumeMetadata) => {
+                        if (volume.type === 'new_pvc' && volume.annotations.length > 0 && volume.annotations[0].key === 'rok/origin') {
+                            return {...volume, type: 'snap'};
+                        }
+                        return volume;
+                    });
                 if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
                     metadataVolumes = stateVolumes = this.state.notebookVolumes;
                 } else {
@@ -573,7 +619,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                     volumes: stateVolumes,
                     metadata: metadata,
                     useNotebookVolumes: useNotebookVolumes,
-                    autosnapshot: stateVolumes.length > 0,
+                    autosnapshot: !this.props.rokError && stateVolumes.length > 0,
                     ...currentCell
                 });
             } else {
@@ -583,6 +629,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         ...DefaultState.metadata
                     },
                     volumes: this.state.notebookVolumes,
+                    useNotebookVolumes: !this.props.rokError && this.state.notebookVolumes.length > 0,
+                    autosnapshot: !this.props.rokError && this.state.notebookVolumes.length > 0,
                     ...currentCell
                 });
             }
@@ -800,6 +848,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     getMountedVolumes = async () => {
         let notebookVolumes: IVolumeMetadata[] = await this.executeRpcAndShowRPCError("nb.list_volumes");
+        let availableVolumeTypes = selectVolumeTypes.map(t => {
+            return (t.value === 'snap') ? {...t, invalid: false} : t;
+        });
 
         if (notebookVolumes) {
             notebookVolumes = notebookVolumes.map((volume) => {
@@ -809,13 +860,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 volume.annotations = [];
                 return volume;
             });
-            this.setState({
-                notebookVolumes: notebookVolumes,
-                selectVolumeTypes: selectVolumeTypes,
+            availableVolumeTypes = availableVolumeTypes.map(t => {
+                return (t.value === 'clone') ? {...t, invalid: false} : t;
             });
         } else {
-            this.setState({selectVolumeTypes: selectVolumeTypes.filter(t => t.value !== 'clone')});
+            notebookVolumes = this.state.notebookVolumes;
         }
+        this.setState({
+            notebookVolumes: notebookVolumes,
+            selectVolumeTypes: availableVolumeTypes,
+        });
     };
 
     getBaseImage = async () => {
@@ -1010,6 +1064,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             updateVolumesSwitch={this.updateVolumesSwitch}
             autosnapshot={this.state.autosnapshot}
             updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
+            rokError={this.props.rokError}
         />;
 
         return (

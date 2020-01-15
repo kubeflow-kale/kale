@@ -56,6 +56,14 @@ const getRpcCodeName = (code: number) => {
     }
 };
 
+export const rokErrorTooltip = (rokError: IRPCError) => {
+    return <React.Fragment>
+        <div className='toolbar'>
+            This feature requires Rok. <a onClick={_ => showRpcError(rokError)}>More info...</a>
+        </div>
+    </React.Fragment>;
+};
+
 /**
  * Execute kale.rpc module functions
  * Example: func_result = await this.executeRpc(kernel | notebookPanel, "rpc_submodule.func", {arg1, arg2})

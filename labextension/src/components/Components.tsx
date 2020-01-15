@@ -1,12 +1,12 @@
 import * as React from "react";
 import {findDOMNode} from "react-dom";
 import {
-    makeStyles, createStyles, createMuiTheme
+    makeStyles, createStyles, createMuiTheme, withStyles, Theme
 } from '@material-ui/core/styles';
 import TextField from '@material-ui/core/TextField';
 import { ThemeProvider } from '@material-ui/styles';
 import { indigo } from '@material-ui/core/colors';
-import {MenuItem, Select, Button, Input} from "@material-ui/core";
+import {MenuItem, Select, Button, Input, Tooltip, Zoom} from "@material-ui/core";
 import DeleteIcon from '@material-ui/icons/Delete';
 import Chip from "@material-ui/core/Chip";
 import InputLabel from "@material-ui/core/InputLabel";
@@ -173,6 +173,12 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
 
     const classes = useStyles({});
 
+    const disableMenuItem = (event: React.MouseEvent, invalidOption: boolean) => {
+        if (invalidOption) {
+            event.stopPropagation();
+        }
+    }
+
     return <ThemeProvider theme={theme}>
         <TextField
             select
@@ -211,8 +217,31 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
             helperText={ (props.helperText) ? props.helperText : null }
         >
             {props.values.map((option: any) => (
-                <MenuItem key={option.value} value={option.value}>
-                    {option.label}
+                <MenuItem
+                    key={option.value}
+                    value={option.value}
+                    disabled={!!option.invalid}
+                    style={!!option.invalid ?
+                        { pointerEvents: 'auto', padding: 0 } :
+                        { padding: 0 }
+                    }
+                >
+                    {option.tooltip ?
+                        <LightTooltip
+                            title={option.tooltip}
+                            placement='top-start'
+                            interactive={!(typeof option.tooltip === 'string')}
+                            TransitionComponent={Zoom}
+                        >
+                            <div
+                                onClick={ev=>disableMenuItem(ev, !!option.invalid)}
+                                style={{padding: '8px 16px', width: '100%'}}
+                            >
+                                {option.label}
+                            </div>
+                        </LightTooltip> :
+                        option.label
+                    }
                 </MenuItem>
             ))}
         </TextField>
@@ -385,6 +414,7 @@ interface IAnnotationInput {
     annotationIdx: number,
     label: string,
     cannotBeDeleted?: boolean,
+    rokAvailable?: boolean,
 }
 
 export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props) => {
@@ -406,7 +436,7 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props
         props.updateValue({...props.annotation, value: value}, props.volumeIdx, props.annotationIdx)
     };
 
-    const valueField = (props.annotation.key === 'rok/origin') ?
+    const valueField = (props.rokAvailable && props.annotation.key === 'rok/origin') ?
         <RokInput
             updateValue={updateValue}
             value={props.annotation.value}
@@ -450,3 +480,12 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = (props
         }
     </div>
 };
+
+export const LightTooltip = withStyles((theme: Theme) => ({
+    tooltip: {
+        backgroundColor: theme.palette.common.white,
+        color: 'rgba(0, 0, 0, 0.87)',
+        boxShadow: theme.shadows[1],
+        fontSize: 'var(--jp-ui-font-size1)',
+    },
+}))(Tooltip);

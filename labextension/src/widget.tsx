@@ -25,7 +25,7 @@ import '../style/index.css';
 
 import {KubeflowKaleLeftPanel} from './components/LeftPanelWidget'
 import NotebookUtils from "./utils/NotebookUtils";
-import { executeRpc, globalUnhandledRejection, BaseError } from "./utils/RPCUtils";
+import { executeRpc, globalUnhandledRejection, BaseError, IRPCError, RPCError, RPC_CALL_STATUS } from "./utils/RPCUtils";
 import { Kernel } from "@jupyterlab/services";
 
 
@@ -66,6 +66,7 @@ async function activate(
     // TODO: backend can become an Enum that indicates the type of
     //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
     const backend = await getBackend(kernel);
+    let rokError: IRPCError = null;
     if (backend) {
         try {
             await executeRpc(kernel, 'log.setup_logging');
@@ -73,6 +74,33 @@ async function activate(
             globalUnhandledRejection({reason: error});
             throw error;
         }
+
+        try {
+            await executeRpc(kernel, 'rok.check_rok_availability');
+        } catch (error) {
+            const unexpectedErrorCodes = [
+                RPC_CALL_STATUS.EncodingError,
+                RPC_CALL_STATUS.ImportError,
+                RPC_CALL_STATUS.UnhandledError,
+            ];
+            if ((error instanceof RPCError) && (!unexpectedErrorCodes.includes(error.error.code))) {
+                rokError = error.error;
+                console.warn('Rok is not available', rokError);
+            } else {
+                globalUnhandledRejection({reason: error});
+                throw error;
+            }
+        }
+    } else {
+        rokError = {
+            rpc: 'rok.check_rok_availability',
+            code: RPC_CALL_STATUS.ImportError,
+            err_message: 'Rok is not available',
+            err_details: 'To use this Rok feature you first need Kale running' +
+                         ' in the backend.',
+            err_cls: 'importError',
+        };
+        console.warn('Rok is not available', rokError);
     }
 
     /**
@@ -127,6 +155,7 @@ async function activate(
                 docManager={docManager}
                 backend={backend}
                 kernel={kernel}
+                rokError={rokError}
             />
         );
         widget.id = "kubeflow-kale/kubeflowDeployment";

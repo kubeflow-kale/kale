@@ -1,10 +1,11 @@
 import * as React from "react";
-import {Button} from "@material-ui/core";
+import {Button, Tooltip, Zoom} from "@material-ui/core";
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
-import {AnnotationInput, MaterialInput, MaterialSelect} from "./Components";
-import {IVolumeMetadata} from "./LeftPanelWidget";
+import {AnnotationInput, MaterialInput, MaterialSelect, LightTooltip} from "./Components";
+import {IVolumeMetadata, ISelectVolumeTypes} from "./LeftPanelWidget";
 import Switch from "react-switch";
+import { IRPCError, rokErrorTooltip } from "../utils/RPCUtils";
 
 interface IProps {
     volumes: IVolumeMetadata[],
@@ -22,11 +23,12 @@ interface IProps {
     deleteAnnotation: Function,
     notebookMountPoints: {label: string, value: string}[],
     selectVolumeSizeTypes: {label: string, value: string, base: number}[],
-    selectVolumeTypes: {label: string, value: string}[],
+    selectVolumeTypes: ISelectVolumeTypes[],
     useNotebookVolumes: boolean,
     updateVolumesSwitch: Function,
     autosnapshot: boolean,
     updateAutosnapshotSwitch: Function,
+    rokError: IRPCError,
 }
 
 export class VolumesPanel extends React.Component<IProps, any> {
@@ -108,6 +110,7 @@ export class VolumesPanel extends React.Component<IProps, any> {
                                             deleteValue={this.props.deleteAnnotation}
                                             annotation={a}
                                             cannotBeDeleted={(v.type === 'snap' && a_idx === 0)}
+                                            rokAvailable={!this.props.rokError}
                                         />)
                                 })
                             : null}
@@ -221,44 +224,68 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 </Button>
             </div>;
         const useNotebookVolumesSwitch =
-            <div className='toolbar input-container'>
-                <div className='switch-label'>Use this notebook's volumes</div>
-                <Switch
-                    checked={this.props.useNotebookVolumes}
-                    disabled={this.props.notebookMountPoints.length === 0}
-                    onChange={_ => this.props.updateVolumesSwitch()}
-                    onColor='#599EF0'
-                    onHandleColor='#477EF0'
-                    handleDiameter={18}
-                    uncheckedIcon={false}
-                    checkedIcon={false}
-                    boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
-                    activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
-                    height={10}
-                    width={20}
-                    className='skip-switch'
-                    id='nb-volumes-switch'
-                />
+            <div className='input-container'>
+                <LightTooltip
+                    title={this.props.rokError ?
+                        rokErrorTooltip(this.props.rokError) :
+                        "Enable this option to mount clones of this notebook's volumes on your pipeline steps"
+                    }
+                    placement='top-start'
+                    interactive={this.props.rokError ? true : false}
+                    TransitionComponent={Zoom}
+                >
+                    <div className='toolbar'>
+                        <div className='switch-label'>Use this notebook's volumes</div>
+                        <Switch
+                            checked={this.props.useNotebookVolumes}
+                            disabled={!!this.props.rokError || this.props.notebookMountPoints.length === 0}
+                            onChange={_ => this.props.updateVolumesSwitch()}
+                            onColor='#599EF0'
+                            onHandleColor='#477EF0'
+                            handleDiameter={18}
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
+                            activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
+                            height={10}
+                            width={20}
+                            className='skip-switch'
+                            id='nb-volumes-switch'
+                        />
+                    </div>
+                </LightTooltip>
             </div>;
         const autoSnapshotSwitch =
-            <div className='toolbar input-container'>
-                <div className='switch-label'>Take Rok snapshots before each step</div>
-                <Switch
-                    checked={this.props.autosnapshot}
-                    disabled={this.props.volumes.length === 0}
-                    onChange={_ => this.props.updateAutosnapshotSwitch()}
-                    onColor='#599EF0'
-                    onHandleColor='#477EF0'
-                    handleDiameter={18}
-                    uncheckedIcon={false}
-                    checkedIcon={false}
-                    boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
-                    activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
-                    height={10}
-                    width={20}
-                    className='skip-switch'
-                    id='autosnapshot-switch'
-                />
+            <div className='input-container'>
+                <LightTooltip
+                    title={this.props.rokError ?
+                        rokErrorTooltip(this.props.rokError) :
+                        'Enable this option to take Rok snapshots of your steps during pipeline execution'
+                    }
+                    placement='top-start'
+                    interactive={this.props.rokError ? true : false}
+                    TransitionComponent={Zoom}
+                >
+                    <div className='toolbar'>
+                        <div className='switch-label'>Take Rok snapshots before each step</div>
+                        <Switch
+                            checked={this.props.autosnapshot}
+                            disabled={!!this.props.rokError || this.props.volumes.length === 0}
+                            onChange={_ => this.props.updateAutosnapshotSwitch()}
+                            onColor='#599EF0'
+                            onHandleColor='#477EF0'
+                            handleDiameter={18}
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            boxShadow='0px 1px 5px rgba(0, 0, 0, 0.6)'
+                            activeBoxShadow='0px 0px 1px 7px rgba(0, 0, 0, 0.2)'
+                            height={10}
+                            width={20}
+                            className='skip-switch'
+                            id='autosnapshot-switch'
+                        />
+                    </div>
+                </LightTooltip>
             </div>;
 
         return (
