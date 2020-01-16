@@ -100,17 +100,20 @@ def check_rok_availability(request):
         rok = _get_client()
     except ImportError:
         log.exception("Failed to import RokClient")
-        raise RPCNotFoundError(details="Rok Gateway Client module not found")
+        raise RPCNotFoundError(details="Rok Gateway Client module not found",
+                               trans_id=request.trans_id)
     except Exception:
         log.exception("Failed to initialize RokClient")
         raise RPCServiceUnavailableError(details=("Failed to initialize"
-                                                  " RokClient"))
+                                                  " RokClient"),
+                                         trans_id=request.trans_id)
 
     try:
         rok.account_info()
     except Exception:
         log.exception("Failed to retrieve account information")
-        raise RPCServiceUnavailableError(details="Failed to access Rok")
+        raise RPCServiceUnavailableError(details="Failed to access Rok",
+                                         trans_id=request.trans_id)
 
     name = pod_utils.get_pod_name()
     namespace = pod_utils.get_namespace()
@@ -124,9 +127,11 @@ def check_rok_availability(request):
         message = "%s: %s" % (e.__class__.__name__, e)
         raise RPCServiceUnavailableError(message=message,
                                          details=("Rok cannot list notebooks"
-                                                  " in this namespace"))
+                                                  " in this namespace"),
+                                         trans_id=request.trans_id)
 
     if not any(s["value"] == name for s in suggestions):
         log.error("Could not find notebook '%s' in list of suggestions", name)
         raise RPCNotFoundError(details=("Could not find this notebook in"
-                                        " notebooks listed by Rok"))
+                                        " notebooks listed by Rok"),
+                               trans_id=request.trans_id)
