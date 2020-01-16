@@ -3,9 +3,10 @@ import logging
 import importlib
 
 from kale.rpc import errors, utils
+from kale.rpc.log import create_adapter
 
 
-log = logging.getLogger(__name__)
+log = create_adapter(logging.getLogger(__name__))
 
 
 def import_func(import_func_str):
