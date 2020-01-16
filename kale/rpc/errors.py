@@ -20,16 +20,20 @@ class _RPCError(Exception):
     name = "rpcError"
     message = "RPC error"
     details = "You can find more information under %s" % KALE_LOG_FILE
+    trans_id = -1
 
-    def __init__(self, message=None, details=None):
+    def __init__(self, message=None, details=None, trans_id=None):
         if message:
             self.message = message
         if details:
             self.details = details
+        if trans_id:
+            self.trans_id = trans_id
 
     def to_dict(self):
         return {"code": self.code.value, "err_message": self.message,
-                "err_details": self.details, "err_cls": self.name}
+                "err_details": self.details, "err_cls": self.name,
+                "trans_id": self.trans_id}
 
     def serialize(self):
         return serialize(self.to_dict())
