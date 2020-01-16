@@ -57,14 +57,7 @@ def compile_notebook(request, source_notebook_path,
     instance = Kale(source_notebook_path, notebook_metadata_overrides,
                     debug, auto_snapshot)
     instance.logger = request.log if hasattr(request, "log") else logger
-    stream_handlers = [h for h in instance.logger.handlers
-                       if isinstance(h, logging.StreamHandler)]
-    if debug:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
-    for stream_handler in stream_handlers:
-        stream_handler.setLevel(log_level)
+
     pipeline_graph, pipeline_parameters = instance.notebook_to_graph()
     script_path = instance.generate_kfp_executable(pipeline_graph,
                                                    pipeline_parameters)
