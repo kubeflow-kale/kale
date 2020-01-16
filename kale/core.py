@@ -37,7 +37,7 @@ METADATA_REQUIRED_KEYS = [
 ]
 
 
-def _random_string(size=5, chars=string.ascii_lowercase + string.digits):
+def random_string(size=5, chars=string.ascii_lowercase + string.digits):
     """Generate random string."""
     return "".join(random.choice(chars) for _ in range(size))
 
@@ -64,7 +64,7 @@ class Kale:
                                       **{k: v for k, v in notebook_metadata_overrides.items() if v}}
 
         pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
-                                   _random_string())
+                                   random_string())
         self.pipeline_metadata['pipeline_name'] = pipeline_name
         self.validate_metadata()
         self.detect_environment()

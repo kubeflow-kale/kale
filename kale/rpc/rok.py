@@ -18,7 +18,7 @@ and use them to spawn a Kubeflow pipeline.\
 
 
 _client = None
-log = create_adapter(logging.getLogger(__name__))
+logger = create_adapter(logging.getLogger(__name__))
 
 
 def _get_client():
@@ -32,12 +32,12 @@ def _get_client():
     return _client
 
 
-def get_task(task_id, bucket=DEFAULT_BUCKET):
+def get_task(request, task_id, bucket=DEFAULT_BUCKET):
     rok = _get_client()
     return rok.task_get(bucket, task_id)
 
 
-def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
+def snapshot_notebook(request, bucket=DEFAULT_BUCKET, obj=None):
     rok = _get_client()
     hostname = os.getenv("HOSTNAME")
     namespace = pod_utils.get_namespace()
@@ -81,7 +81,7 @@ def _get_cloned_volume(volume, obj_name, members):
     raise ValueError(msg)
 
 
-def replace_cloned_volumes(bucket, obj, version, volumes):
+def replace_cloned_volumes(request, bucket, obj, version, volumes):
     rok = _get_client()
     version_info = rok.version_info(bucket, obj, version)
     members = _get_group_members(version_info)
@@ -94,7 +94,8 @@ def replace_cloned_volumes(bucket, obj, version, volumes):
     return _volumes
 
 
-def check_rok_availability():
+def check_rok_availability(request):
+    log = request.log if hasattr(request, "log") else logger
     try:
         rok = _get_client()
     except ImportError:

@@ -12,10 +12,10 @@ KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
 
 
-log = create_adapter(logging.getLogger(__name__))
+logger = create_adapter(logging.getLogger(__name__))
 
 
-def resume_notebook_path():
+def resume_notebook_path(request):
     p = os.environ.get("KALE_NOTEBOOK_PATH")
     if p and not os.path.isfile(p):
         raise RuntimeError("env path KALE_NOTEBOOK_PATH=%s is not a file" % p)
@@ -35,7 +35,7 @@ def resume_notebook_path():
         return p
 
 
-def list_volumes():
+def list_volumes(request):
     volumes = pod_utils.list_volumes()
     volumes_out = [{"type": "clone",
                     "name": volume.name,
@@ -47,15 +47,16 @@ def list_volumes():
     return volumes_out
 
 
-def get_base_image():
+def get_base_image(request):
     return pod_utils.get_docker_base_image()
 
 
-def compile_notebook(source_notebook_path, notebook_metadata_overrides=None,
-                     debug=False, auto_snapshot=False):
+def compile_notebook(request, source_notebook_path,
+                     notebook_metadata_overrides=None, debug=False,
+                     auto_snapshot=False):
     instance = Kale(source_notebook_path, notebook_metadata_overrides,
                     debug, auto_snapshot)
-    instance.logger = log
+    instance.logger = request.log if hasattr(request, "log") else logger
     stream_handlers = [h for h in instance.logger.handlers
                        if isinstance(h, logging.StreamHandler)]
     if debug:
@@ -82,7 +83,7 @@ def _get_kale_marshal_dir(source_notebook_path):
     return os.path.realpath(os.path.join(nb_dir_name, kale_marshal_dir_name))
 
 
-def unmarshal_data(source_notebook_path):
+def unmarshal_data(request, source_notebook_path):
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if not os.path.exists(kale_marshal_dir):
         return {}
@@ -95,7 +96,7 @@ def unmarshal_data(source_notebook_path):
             for f in load_file_names}
 
 
-def explore_notebook(source_notebook_path):
+def explore_notebook(request, source_notebook_path):
     step_name = os.getenv(KALE_PIPELINE_STEP_ENV, None)
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
 
@@ -106,7 +107,7 @@ def explore_notebook(source_notebook_path):
             "step_name": ""}
 
 
-def remove_marshal_dir(source_notebook_path):
+def remove_marshal_dir(request, source_notebook_path):
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if os.path.exists(kale_marshal_dir):
         shutil.rmtree(kale_marshal_dir)
