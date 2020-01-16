@@ -27,9 +27,10 @@ def import_func(request, import_func_str):
                           (func_str, mod_str, e))
 
 
-def format_success(result):
+def format_success(result, trans_id):
     return utils.serialize({"code": errors.Code.OK.value,
-                            "result": result})
+                            "result": result,
+                            "trans_id": trans_id})
 
 
 class KaleRPCRequest(object):
@@ -61,7 +62,8 @@ def run(func, kwargs, ctx):
     except Exception:
         exc_info = sys.exc_info()
         request.log.exception("Failed to decode ctx: %s", ctx)
-        return errors.RPCEncodingError(message=str(exc_info[1])).serialize()
+        return errors.RPCEncodingError(message=str(exc_info[1]),
+                                       trans_id=request.trans_id).serialize()
     # Sanitize ctx and renew the request obj
     ctx = sanitize_ctx(request, ctx)
     request = KaleRPCRequest(request.trans_id, **ctx)
@@ -72,7 +74,8 @@ def run(func, kwargs, ctx):
     except Exception:
         exc_info = sys.exc_info()
         request.log.exception("Failed to decode kwargs: %s", kwargs)
-        return errors.RPCEncodingError(message=str(exc_info[1])).serialize()
+        return errors.RPCEncodingError(message=str(exc_info[1]),
+                                       trans_id=request.trans_id).serialize()
 
     request.log.debug("Importing RPC function '%s'", func)
     try:
@@ -80,13 +83,14 @@ def run(func, kwargs, ctx):
     except ImportError as e:
         exc_info = sys.exc_info()
         request.log.exception("Failed to import RPC function '%s'", func)
-        return errors.RPCImportError(message=str(e)).serialize()
+        return errors.RPCImportError(message=str(e),
+                                     trans_id=request.trans_id).serialize()
 
     request.log.info("Executing RPC function '%s(%s)'", func.__name__,
                      ", ".join("%s=%s" % i for i in kwargs.items()))
     try:
         result = func(request, **kwargs)
-        return format_success(result)
+        return format_success(result, request.trans_id)
     except errors._RPCError as e:
         request.log.exception("RPC function '%s' raised an RPCError",
                               func.__name__)
@@ -95,4 +99,5 @@ def run(func, kwargs, ctx):
         exc_info = sys.exc_info()
         request.log.exception(("RPC function '%s' raised an unhandled"
                                " exception"), func.__name__)
-        return errors.RPCUnhandledError(message=str(exc_info[1])).serialize()
+        return errors.RPCUnhandledError(message=str(exc_info[1]),
+                                        trans_id=request.trans_id).serialize()
