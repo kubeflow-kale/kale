@@ -14,7 +14,7 @@ def _get_client(host=None):
     return _client
 
 
-def list_experiments():
+def list_experiments(request):
     c = _get_client()
     experiments = [{"name": e.name,
                     "id": e.id}
@@ -37,7 +37,8 @@ def _get_pipeline_id(pipeline_name):
     return pipeline_id
 
 
-def upload_pipeline(pipeline_package_path, pipeline_metadata, overwrite=False):
+def upload_pipeline(request, pipeline_package_path, pipeline_metadata,
+                    overwrite=False):
     client = _get_client()
     pipeline_name = pipeline_metadata["pipeline_name"]
     try:
@@ -65,7 +66,7 @@ def upload_pipeline(pipeline_package_path, pipeline_metadata, overwrite=False):
             raise
 
 
-def run_pipeline(pipeline_package_path, pipeline_metadata):
+def run_pipeline(request, pipeline_package_path, pipeline_metadata):
     client = _get_client(pipeline_metadata.get("kfp_host", None))
     experiment = client.create_experiment(pipeline_metadata["experiment_name"])
     run_name = pipeline_metadata["pipeline_name"] + "_run"
@@ -73,7 +74,7 @@ def run_pipeline(pipeline_package_path, pipeline_metadata):
     return {"id": run.id, "name": run.name, "status": run.status}
 
 
-def get_run(run_id):
+def get_run(request, run_id):
     client = _get_client()
     run = client.get_run(run_id).run
     return {"id": run.id, "name": run.name, "status": run.status}

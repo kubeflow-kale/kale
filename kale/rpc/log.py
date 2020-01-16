@@ -24,7 +24,7 @@ def create_adapter(logger, trans_id=None, nb_path=None):
     return logging.LoggerAdapter(logger, extras)
 
 
-def setup_logging():
+def setup_logging(request):
     # Setup root logger
     root_stream_handler = logging.StreamHandler()
     configure_handler(root_stream_handler, "%(message)s")
