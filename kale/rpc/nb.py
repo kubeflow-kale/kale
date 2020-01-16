@@ -5,13 +5,14 @@ import logging
 from kale.core import Kale
 from kale.utils import pod_utils, kfp_utils
 from kale.marshal import resource_load
+from kale.rpc.log import create_adapter
 
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
 
 
-log = logging.getLogger(__name__)
+log = create_adapter(logging.getLogger(__name__))
 
 
 def resume_notebook_path():
