@@ -4,6 +4,7 @@ import logging
 
 from kale.utils import pod_utils
 from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
+from kale.rpc.log import create_adapter
 
 
 DEFAULT_BUCKET = "notebooks"
@@ -17,7 +18,7 @@ and use them to spawn a Kubeflow pipeline.\
 
 
 _client = None
-log = logging.getLogger(__name__)
+log = create_adapter(logging.getLogger(__name__))
 
 
 def _get_client():
