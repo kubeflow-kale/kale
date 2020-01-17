@@ -461,3 +461,13 @@ a {
   width: 100%;
   border-right: none;
 }
+
+.MuiButtonBase-root.Mui-disabled.menu-item-tooltip {
+  pointer-events: auto;
+  padding: 0;
+}
+
+.MuiButtonBase-root.Mui-disabled.menu-item-tooltip .menu-item-label {
+  padding: 8px 16px;
+  width: 100%;
+}

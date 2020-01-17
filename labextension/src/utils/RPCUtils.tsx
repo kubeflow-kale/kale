@@ -59,7 +59,7 @@ const getRpcCodeName = (code: number) => {
 
 export const rokErrorTooltip = (rokError: IRPCError) => {
     return <React.Fragment>
-        <div className='toolbar'>
+        <div>
             This feature requires Rok. <a onClick={_ => showRpcError(rokError)}>More info...</a>
         </div>
     </React.Fragment>;

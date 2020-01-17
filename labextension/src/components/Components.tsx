@@ -179,6 +179,14 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
         }
     }
 
+    const getOptionClassNames = (option: any) => {
+        const classNames: string[] = [];
+        if (option.tooltip) {
+            classNames.push('menu-item-tooltip');
+        }
+        return classNames.join(' ');
+    }
+
     return <ThemeProvider theme={theme}>
         <TextField
             select
@@ -221,10 +229,7 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
                     key={option.value}
                     value={option.value}
                     disabled={!!option.invalid}
-                    style={!!option.invalid ?
-                        { pointerEvents: 'auto', padding: 0 } :
-                        { padding: 0 }
-                    }
+                    className={getOptionClassNames(option)}
                 >
                     {option.tooltip ?
                         <LightTooltip
@@ -233,9 +238,8 @@ export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = (props) 
                             interactive={!(typeof option.tooltip === 'string')}
                             TransitionComponent={Zoom}
                         >
-                            <div
+                            <div className='menu-item-label'
                                 onClick={ev=>disableMenuItem(ev, !!option.invalid)}
-                                style={{padding: '8px 16px', width: '100%'}}
                             >
                                 {option.label}
                             </div>
