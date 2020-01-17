@@ -17,11 +17,31 @@ ENV SHELL /bin/bash
 COPY bashrc /etc/bash.bashrc
 RUN echo "set background=dark" >> /etc/vim/vimrc.local
 
-# Install latest KFP SDK & Kale & JupyterLab Extension
+# Install latest KFP SDK
 RUN pip3 install --upgrade pip && \
-    pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade && \
-    pip3 install kubeflow-kale && \
-    jupyter labextension install kubeflow-kale-launcher
+    pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade
+
+# Install Kale from KALE_BRANCH (defaults to "master")
+ARG KALE_BRANCH="master"
+WORKDIR /
+RUN git clone -b ${KALE_BRANCH} https://github.com/kubeflow-kale/kale && \
+    cd /kale && \
+    python setup.py install && \
+    cd / && \
+    rm -rf /kale
+
+# Install JupyterLab Extension from KALE_EXT_BRANCH (defaults to "master")
+ARG KALE_EXT_BRANCH="master"
+WORKDIR /
+RUN git clone -b ${KALE_EXT_BRANCH} https://github.com/kubeflow-kale/jupyterlab-kubeflow-kale && \
+    cd /jupyterlab-kubeflow-kale && \
+    jlpm install && \
+    jlpm run build && \
+    jupyter labextension install . && \
+    cd / && \
+    rm -rf /jupyterlab-kubeflow-kale
+
+RUN jupyter lab build --dev-build=False
 
 RUN echo "jovyan ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/jovyan
 WORKDIR /home/jovyan

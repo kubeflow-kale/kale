@@ -1,26 +1,17 @@
 # Use tensorflow-1.14.0 as a base image, allowing the user to
 # speficy if they want GPU support, by setting IMAGE_TYPE to "gpu".
-ARG IMAGE_TYPE="cpu"
-FROM gcr.io/kubeflow-images-public/tensorflow-1.14.0-notebook-${IMAGE_TYPE}:v0.7.0
+FROM gcr.io/arrikto-public/tensorflow-1.14.0-notebook-cpu:kubecon-workshop
 
 USER root
 
-# Install basic dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates bash-completion tar less \
-        python-pip python-setuptools build-essential python-dev \
-        python3-pip python3-wheel && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV SHELL /bin/bash
-COPY bashrc /etc/bash.bashrc
-RUN echo "set background=dark" >> /etc/vim/vimrc.local
+RUN echo 'alias grep="grep --color=auto' >> /etc/bash.bashrc && \
+    echo 'alias ls="ls --color=auto' >> /etc/bash.bashrc
 
 # Install latest KFP SDK & Kale & JupyterLab Extension
 RUN pip3 install --upgrade pip && \
     pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade && \
     pip3 install kubeflow-kale && \
+    pip3 install jupyterlab==1.1.4 --upgrade && \
     jupyter labextension install kubeflow-kale-launcher
 
 RUN echo "jovyan ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/jovyan
