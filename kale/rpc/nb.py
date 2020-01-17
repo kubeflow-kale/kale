@@ -76,7 +76,7 @@ def _get_kale_marshal_dir(source_notebook_path):
     return os.path.realpath(os.path.join(nb_dir_name, kale_marshal_dir_name))
 
 
-def unmarshal_data(request, source_notebook_path):
+def unmarshal_data(source_notebook_path):
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if not os.path.exists(kale_marshal_dir):
         return {}
