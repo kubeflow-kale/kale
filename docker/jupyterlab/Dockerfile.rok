@@ -1,5 +1,4 @@
-# Use tensorflow-1.14.0 as a base image, allowing the user to
-# speficy if they want GPU support, by setting IMAGE_TYPE to "gpu".
+# Use tensorflow-1.14.0 based image with Rok as a base image
 FROM gcr.io/arrikto-public/tensorflow-1.14.0-notebook-cpu:kubecon-workshop
 
 USER root
