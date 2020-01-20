@@ -995,6 +995,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     onMetadataEnable = (isEnabled: boolean) => {
         this.setState({ isEnabled });
+        // When drawing cell metadata on Kale enable/disable, the targetted
+        // cell may be lost. Therefore, we select and scroll to the active
+        // cell.
+        if (this.state.activeNotebook && this.state.activeCell && this.state.activeCellIndex) {
+            setTimeout(
+                this.selectAndScrollToCell,
+                200,
+                this.state.activeNotebook,
+                {cell: this.state.activeCell, index: this.state.activeCellIndex}
+            );
+        }
     }
 
     render() {
