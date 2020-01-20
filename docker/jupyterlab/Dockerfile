@@ -19,6 +19,7 @@ RUN echo "set background=dark" >> /etc/vim/vimrc.local
 
 # Install latest KFP SDK & Kale & JupyterLab Extension
 RUN pip3 install --upgrade pip && \
+    pip3 install --upgrade "jupyterlab<2.0.0" && \
     pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade && \
     pip3 install kubeflow-kale && \
     jupyter labextension install kubeflow-kale-launcher
@@ -27,4 +28,7 @@ RUN echo "jovyan ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/jovyan
 WORKDIR /home/jovyan
 USER jovyan
 
-CMD ["sh", "-c", "jupyter lab --notebook-dir=/home/jovyan --ip=0.0.0.0 --no-browser --allow-root --port=8888 --LabApp.token='' --LabApp.password='' --LabApp.allow_origin='*' --LabApp.base_url=${NB_PREFIX}"]
+CMD ["sh", "-c", \
+     "jupyter lab --notebook-dir=/home/jovyan --ip=0.0.0.0 --no-browser \
+      --allow-root --port=8888 --LabApp.token='' --LabApp.password='' \
+      --LabApp.allow_origin='*' --LabApp.base_url=${NB_PREFIX}"]
