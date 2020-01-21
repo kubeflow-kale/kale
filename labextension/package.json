@@ -1,6 +1,6 @@
 {
   "name": "kubeflow-kale-launcher",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Deployment interface for Kubeflow Pipelines.",
   "keywords": [
     "jupyter",
@@ -33,16 +33,17 @@
     "watch": "tsc -w --listEmittedFiles"
   },
   "dependencies": {
-    "@jupyterlab/application": ">=1.1.0 <1.2.0",
-    "@jupyterlab/apputils": ">=1.1.0 <1.2.0",
-    "@jupyterlab/coreutils": ">=3.1.0 <3.2.0",
-    "@jupyterlab/notebook": "^1.0.0-alpha.6",
+    "@jupyterlab/application": ">=1.1.0 <2.0.0",
+    "@jupyterlab/apputils": "^1.1.0",
+    "@jupyterlab/coreutils": "^3.1.0",
+    "@jupyterlab/notebook": "^1.1.0",
     "@material-ui/core": "^4.4.3",
     "@material-ui/icons": "^4.4.3",
     "@phosphor/widgets": "^1.8.0",
     "@types/node": "^11.13.8",
     "@types/react-dom": "^16.9.1",
     "react": "16.8.4",
+    "react-dom": "^16.8.0",
     "react-switch": "^5.0.1",
     "use-debounce": "^3.0.1"
   },
