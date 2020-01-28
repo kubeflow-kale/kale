@@ -11,8 +11,6 @@ from kale.static_analysis.dependencies import pyflakes_report
     ('foo(b)', ['foo', 'b'])
 ])
 def test_pyflakes_report(code, target):
-    """Tests the get_all_names function to detect the correct names from
-    a code snippet
-    """
+    """Tests pyflakes_report function."""
     res = pyflakes_report(code)
     assert sorted(res) == sorted(target)

@@ -58,16 +58,13 @@ def fun()
     (_ctx_mngr_snippet, ['my_context', 'param', 'res', 'ctx'])
 ])
 def test_get_all_names(code, target):
-    """Tests the get_all_names function to detect the correct names from
-    a code snippet
-    """
+    """Tests get_all_names function."""
     res = get_all_names(code)
     assert sorted(res) == sorted(target)
 
 
 def test_get_all_names_exc():
-    """Tests exception when passing a wrong code snippet to get_all_names
-    """
+    """Tests exception when passing a wrong code snippet to get_all_names."""
     with pytest.raises(SyntaxError):
         get_all_names(_wrong_code_snippet)
 
@@ -81,6 +78,7 @@ def test_get_all_names_exc():
     ('[a,[b,]]', ['a', 'b']),
 ])
 def test_get_list_tuple_names(code, target):
+    """Test list_tuple_names function."""
     tree = ast.parse(code)
     res = get_list_tuple_names(tree.body[0].value)
     assert sorted(res) == sorted(target)
@@ -92,6 +90,7 @@ def test_get_list_tuple_names(code, target):
     (_class_snippet, ['__init__', 'foo', 'test'])
 ])
 def test_get_function_and_class_names(code, target):
+    """Test get_function_and_class_names function."""
     res = get_function_and_class_names(code)
     assert sorted(res) == sorted(target)
 
@@ -104,6 +103,7 @@ def test_get_function_and_class_names(code, target):
     ('a = True', {'a': (type(True).__name__, True)}),
 ])
 def test_parse_assignments_expressions(code, target):
+    """Test parse_assignments_expressions function."""
     res = parse_assignments_expressions(code)
     compare(res, target)
 
@@ -117,5 +117,6 @@ def test_parse_assignments_expressions(code, target):
     'a = b',
 ])
 def test_parse_assignments_expressions_exc(code):
+    """Test parse_assignments_expressions function."""
     with pytest.raises(ValueError):
         parse_assignments_expressions(code)

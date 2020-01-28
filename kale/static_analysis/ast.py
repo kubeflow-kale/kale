@@ -20,8 +20,8 @@ _BUILT_INS_ = ["abs", "delattr", "hash", "memoryview", "set",
 
 
 def walk(node, skip_nodes=tuple()):
-    """
-    Walk through the children of an ast node
+    """Walk through the children of an ast node.
+
     Args:
         node: an ast node
         skip_nodes: stop traversing through these nodes
@@ -40,8 +40,8 @@ def walk(node, skip_nodes=tuple()):
 
 
 def get_list_tuple_names(node):
-    """
-    Get all names of a tuple or list. Recursive method.
+    """Get all names of a tuple or list. Recursive method.
+
     Args:
         node: a ast.Tuple or ast.List node
 
@@ -60,9 +60,9 @@ def get_list_tuple_names(node):
 
 
 def get_all_names(code):
-    """
-    Walk through the ast tree of the code block and detect all names of
-    the matching nodes:
+    """Get all matching nodes from the ast of the input code block.
+
+    Matching nodes:
 
         - ast.Name
         - ast.FunctionDef
@@ -83,7 +83,6 @@ def get_all_names(code):
         code: multiple string representing Python code
 
     Returns: a list of string names
-
     """
     names = set()
     tree = ast.parse(code)
@@ -105,15 +104,15 @@ def get_all_names(code):
 
 
 def get_function_and_class_names(code):
-    """
+    """Get all function and class names of the code block.
+
     Inspects the code walking through its AST and returns all
-    the functions and classes names
+    the names of nodes matching ast.FunctionDef or ast.ClassDef.
 
     Args:
         code: Multiline string representing Python code
 
     Returns: List of string names
-
     """
     names = set()
     tree = ast.parse(code)
@@ -125,8 +124,8 @@ def get_function_and_class_names(code):
 
 
 def parse_assignments_expressions(code):
-    """
-    Parse a code block composed of variable assignments
+    """Parse a code block composed of variable assignments.
+
     Args:
         code: Multiline string representing Python code
 

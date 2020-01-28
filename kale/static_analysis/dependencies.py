@@ -25,8 +25,8 @@ class StreamList:
 
 
 def pyflakes_report(code):
-    """
-    Inspect code using PyFlakes to detect any 'missing name' report.
+    """Inspect code using PyFlakes to detect any 'missing name' report.
+
     Args:
         code: A multiline string representing Python code
 
@@ -55,8 +55,8 @@ def pyflakes_report(code):
 
 
 def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
-    """
-    Detect missing names from the code blocks in the graph
+    """Detect missing names from the code blocks in the graph.
+
     Args:
         nb_graph: nx DiGraph with pipeline code blocks
         ignore_symbols: names to be ignored from the report
@@ -72,13 +72,12 @@ def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
 
 
 def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
-    """
-    Detect the 'out' dependencies of each code block. These deps represent the
-    variables that each code block must marshal to child steps of the pipeline.
+    """Detect the 'out' dependencies of each code block.
 
-    Out deps are detecting by cycling though all the ancestors of each block.
-    By knowing the 'ins' deps (e.g. missing names) of the current block,
-    we can get the blocks were those names were declared.
+    These deps represent the variables that each code block must marshal to
+    child steps of the pipeline. Out deps are detected by cycling though all
+    the ancestors of each block. By knowing the 'ins' deps (e.g. missing names)
+    of the current block, we can get the blocks were those names were declared.
     If an ancestor matches the `ins` entry then it will have a matching `outs`.
 
     Args:
@@ -105,8 +104,8 @@ def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
 
 
 def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
-    """
-    Analyze the code blocks in the graph and detect the missing names
+    """Analyze the code blocks in the graph and detect the missing names.
+
     in each code block, annotating the nodes with `in` and `out` dependencies
     based in the topology of the graph.
 
@@ -115,7 +114,6 @@ def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
         ignore_symbols: names to be ignored
 
     Returns: annotated graph
-
     """
     # First get all the names of each code block
     for block in nb_graph:
