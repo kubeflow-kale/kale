@@ -6,7 +6,7 @@ _TAGS_LANGUAGE = [r'^imports$',
                   r'^functions$',
                   r'^pipeline-parameters$',
                   r'^skip$',
-                  # Extension may end up with 'block:' as a tag.  We handle
+                  # Extension may end up with 'block:' as a tag. We handle
                   # that as if it was empty.
                   r'^block:([_a-z]([_a-z0-9]*)?)?$',
                   r'^prev:[_a-z]([_a-z0-9]*)?$']
@@ -26,7 +26,7 @@ def parse_metadata(metadata):
     """
     parsed_tags = dict()
 
-    # `block_names` is a list because a notebook cell might be assigned to more
+    # `step_names` is a list because a notebook cell might be assigned to more
     # than one Pipeline step.
     parsed_tags['step_names'] = list()
     parsed_tags['prev_steps'] = list()
@@ -43,21 +43,17 @@ def parse_metadata(metadata):
         if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
             raise ValueError(f"Unrecognized tag: {t}")
 
-        if t == "skip":
-            parsed_tags['step_names'] = ['skip']
-            return parsed_tags
-
-        if t == "pipeline-parameters":
-            parsed_tags['step_names'] = ['pipeline-parameters']
-            return parsed_tags
-
-        # `imports` and `functions` are special tags that make a code cell
-        # belong to every Pipeline step Specifically:
+        # Special tags have a specific effect on the cell they belong to.
+        # Specifically:
+        #  - skip: ignore the notebook cell
+        #  - pipeline-parameters: use the cell to populate Pipeline
+        #       parameters. The cell must contain only assignment expressions
         #  - imports: the code of the corresponding cell(s) will be prepended
-        #             to every Pipeline step
+        #       to every Pipeline step
         #  - functions: same as imports, but the corresponding code is placed
-        #               **after** `imports`
-        if t in ['imports', 'functions']:
+        #       **after** `imports`
+        special_tags = ['skip', 'pipeline-parameters', 'imports', 'functions']
+        if t in special_tags:
             parsed_tags['step_names'] = [t]
             return parsed_tags
 
@@ -174,8 +170,8 @@ def parse_notebook(notebook):
             if step_name not in nb_graph.nodes:
                 nb_graph.add_node(step_name, source=[c.source],
                                   ins=set(), outs=set())
-                for _prev_step_name in tags['prev_steps']:
-                    nb_graph.add_edge(_prev_step_name, step_name)
+                for _prev_step in tags['prev_steps']:
+                    nb_graph.add_edge(_prev_step, step_name)
             else:
                 merge_code(nb_graph, step_name, c.source)
 
@@ -184,10 +180,8 @@ def parse_notebook(notebook):
     # Prepend any `imports` and `functions` cells to every Pipeline step
     for step in nb_graph:
         step_source = nb_graph.nodes(data=True)[step]['source']
-        nx.set_node_attributes(
-            nb_graph,
-            {step: {
-                'source': imports_block + functions_block + step_source}})
+        step_source = imports_block + functions_block + step_source
+        nx.set_node_attributes(nb_graph, {step: {'source': step_source}})
 
     # merge together pipeline parameters
     pipeline_parameters = '\n'.join(pipeline_parameters)
@@ -196,8 +190,7 @@ def parse_notebook(notebook):
     # NOTICE: this is temporary, waiting for the artifacts-viz-feature
     for step in nb_graph:
         step_source = nb_graph.nodes(data=True)[step]['source']
-        nx.set_node_attributes(
-            nb_graph,
-            {step: {'source': '\n'.join(step_source)}})
+        nx.set_node_attributes(nb_graph,
+                               {step: {'source': '\n'.join(step_source)}})
 
     return nb_graph, pipeline_parameters
