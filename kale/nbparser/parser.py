@@ -107,39 +107,19 @@ def parse_metadata(metadata: dict):
     return parsed_tags
 
 
-def merge_code(nb_graph, dst, tags, code):
-    """
+def merge_code(nb_graph, dst, code):
+    """Add a new code block to an existing graph node.
+
+    Note: Updates inplace the input graph.
 
     Args:
-        nb_graph: nx.DiGraph
-                The graph defined by the notebook's tags
-        dst: string
-                Name id of the destination node
-        tags: dict
-                Parsed tags related to input code
-        code: string
-                Python source code to be appended to dst node
-
-    Returns:
-        A graph with `code` merged into one of the original graph nodes
+        nb_graph (nx.DiGraph): Pipeline graph
+        dst (str): Name id of the destination node
+        code (str): Python source code to be appended to dst node
     """
-    # add code to existing block
     source_code = nb_graph.nodes(data=True)[dst]['source']
-    existing_tags = nb_graph.nodes(data=True)[dst]['tags']
-    # use `set` operation to make unique list
-    if len(tags['in']) > 0:
-        existing_tags['in'].extend(tags['in'])
-        existing_tags['in'] = list(set(existing_tags['in']))
-    if len(tags['out']) > 0:
-        existing_tags['out'].extend(tags['out'])
-        existing_tags['out'] = list(set(existing_tags['out']))
-    source_code += "\n" + code
     # update pipeline block source code
-    nx.set_node_attributes(nb_graph, {dst: {'source': source_code,
-                                            'tags': existing_tags,
-                                            'ins': set(),
-                                            'outs': set()}})
-    return nb_graph
+    nx.set_node_attributes(nb_graph, {dst: {'source': source_code + [code]}})
 
 
 def parse_notebook(notebook):
@@ -210,7 +190,7 @@ def parse_notebook(notebook):
                 pipeline_parameters += '\n' + c.source
             else:
                 assert current_block is not None
-                nb_graph = merge_code(nb_graph, current_block, tags, c.source)
+                merge_code(nb_graph, current_block, c.source)
         else:
             current_block_global = False
             current_block_pipeline_parameters = False
@@ -221,17 +201,19 @@ def parse_notebook(notebook):
                 if block_name not in nb_graph.nodes:
                     _tags = _copy_tags(tags)
                     _tags.block_name = block_name
-                    nb_graph.add_node(block_name, tags=_tags, source=c.source, ins=set(), outs=set())
+                    nb_graph.add_node(block_name, tags=_tags, source=c.source,
+                                      ins=set(), outs=set())
                     if tags.previous_blocks:
                         for block in tags.previous_blocks:
                             nb_graph.add_edge(block, block_name)
                 else:
-                    nb_graph = merge_code(nb_graph, block_name, tags, c.source)
+                    merge_code(nb_graph, block_name, c.source)
 
     # Prepend all global code blocks before every other one
     if global_block != "":
         for block in nb_graph:
             block_data = nb_graph.nodes(data=True)[block]
-            nx.set_node_attributes(nb_graph, {block: {'source': global_block + '\n\n' + block_data['source']}})
+            nx.set_node_attributes(nb_graph, {block: {
+                'source': global_block + '\n\n' + block_data['source']}})
 
     return nb_graph, pipeline_parameters
