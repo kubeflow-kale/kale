@@ -176,7 +176,7 @@ def parse_notebook(notebook):
             else:
                 merge_code(nb_graph, step_name, c.source)
 
-        prev_step_name = step_name
+            prev_step_name = step_name
 
     # Prepend any `imports` and `functions` cells to every Pipeline step
     for step in nb_graph:
