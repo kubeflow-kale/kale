@@ -286,6 +286,15 @@ class Kale:
             print("-------------------------------")
             print()
 
+    def to_dot(self, graph, dot_path):
+        """Write the graph to a dot file.
+
+        Args:
+            graph: NetworkX graph instance
+            dot_path: Path to .dot file location
+        """
+        nx.drawing.nx_pydot.write_dot(graph, dot_path)
+
     def save_pipeline(self, pipeline_code, output_path):
         # save pipeline code to temp directory
         # tmp_dir = tempfile.mkdtemp()

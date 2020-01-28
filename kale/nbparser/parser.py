@@ -1,12 +1,7 @@
-import os
 import re
 import copy
-import tempfile
 
-import nbformat as nb
 import networkx as nx
-
-from graphviz import Source
 
 # Kale custom tagging language
 GLOBAL_BLOCKS = ['imports',
@@ -50,29 +45,6 @@ def _copy_tags(tags):
         else:
             new_tags[k] = copy.deepcopy(tags[k])
     return new_tags
-
-
-def plot_pipeline(graph, dot_path=None):
-    """
-    Dump the graph to a dot file and visualize it using Graphviz
-
-    Args:
-        graph: NetworkX graph instance
-        dot_path: Path to .dot file location
-
-    """
-    rm_path = False
-    if dot_path is None:
-        # crete temp dir to store the .dot file
-        dot_path = tempfile.mkstemp()
-        rm_path = True
-
-    nx.drawing.nx_pydot.write_dot(graph, dot_path)
-    s = Source.from_file(dot_path)
-    s.view()
-
-    if rm_path:
-        os.remove(dot_path)
 
 
 def parse_metadata(metadata: dict):
