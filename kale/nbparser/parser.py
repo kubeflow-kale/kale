@@ -65,6 +65,10 @@ def parse_metadata(metadata):
         # name(s) of the father Pipeline step(s)
         if tag_name == "prev":
             parsed_tags['prev_steps'].append(value)
+
+    if not parsed_tags['step_names'] and parsed_tags['prev_steps']:
+        raise ValueError("A cell can not provide `prev` annotations without "
+                         "providing a `block` annotation as well")
     return parsed_tags
 
 
@@ -143,13 +147,6 @@ def parse_notebook(notebook):
         # if none of the above apply, then we are parsing a code cell with
         # a block names and (possibly) some dependencies
 
-        # check existence of prev steps. They must already exist in the graph
-        for prev in tags['prev_steps']:
-            if prev not in nb_graph.nodes:
-                raise ValueError("Block %s does not exist. "
-                                 "It was defined as previous block of %s"
-                                 % (prev, tags['step_names']))
-
         # if the cell was not tagged with a step name,
         # add the code to the previous cell
         if not step_name:
@@ -171,6 +168,10 @@ def parse_notebook(notebook):
                 nb_graph.add_node(step_name, source=[c.source],
                                   ins=set(), outs=set())
                 for _prev_step in tags['prev_steps']:
+                    if _prev_step not in nb_graph.nodes:
+                        raise ValueError("Block %s does not exist. It was "
+                                         "defined as previous block of %s"
+                                         % (_prev_step, tags['step_names']))
                     nb_graph.add_edge(_prev_step, step_name)
             else:
                 merge_code(nb_graph, step_name, c.source)
