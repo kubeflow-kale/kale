@@ -23,63 +23,63 @@ def _copy_tags(tags):
     return new_tags
 
 
-def parse_metadata(metadata: dict):
-    """
+def parse_metadata(metadata):
+    """Parse a notebook's cell's metadata field.
+
+    The Kale UI writes Kale specific tags inside the 'tags' field, as a list
+    of string tags. Supported tags are defined by _TAGS_LANGUAGE.
 
     Args:
-        metadata:
+        metadata (dict): a dictionary containing a notebook's cell's metadata
 
-    Returns:
+    Returns (dict): parsed tags based on Kale tagging language
 
     """
     parsed_tags = dict()
 
-    # block_names is a list because a cell block might be assigned to more
-    # than one pipeline block.
-    parsed_tags['block_names'] = list()
-    parsed_tags['previous_blocks'] = list()
-    parsed_tags['in'] = list()
-    parsed_tags['out'] = list()
+    # `block_names` is a list because a notebook cell might be assigned to more
+    # than one Pipeline step.
+    parsed_tags['step_names'] = list()
+    parsed_tags['prev_steps'] = list()
 
-    # the cell was not tagged
+    # the notebook cell was not tagged
     if 'tags' not in metadata or len(metadata['tags']) == 0:
         return parsed_tags
 
     for t in metadata['tags']:
-
-        # Check that the tag is defined by the language
+        if not isinstance(t, str):
+            raise ValueError("Tags must be string. Found tag %s of type %s"
+                             % (t, type(t)))
+        # Check that the tag is defined by the Kale tagging language
         if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
             raise ValueError(f"Unrecognized tag: {t}")
 
         if t == "skip":
-            return None
+            parsed_tags['step_names'] = ['skip']
+            return parsed_tags
 
         if t == "pipeline-parameters":
-            parsed_tags['block_names'] = ['pipeline-parameters']
+            parsed_tags['step_names'] = ['pipeline-parameters']
             return parsed_tags
 
+        # `imports` and `functions` are special tags that make a code cell
+        # belong to every Pipeline step Specifically:
+        #  - imports: the code of the corresponding cell(s) will be prepended
+        #             to every Pipeline step
+        #  - functions: same as imports, but the corresponding code is placed
+        #               **after** `imports`
         if t in ['imports', 'functions']:
-            parsed_tags['block_names'] = ['global']
+            parsed_tags['step_names'] = [t]
             return parsed_tags
 
-        elems = t.split(':')
-        radix = elems[0]
-        value = elems[1] if len(elems) > 1 else None
-        # in the future we could define tags that have optional arguments
-        args = elems[2:] if len(elems) > 2 else None
-
-        # name of the current pipeline step
-        if radix == "block" and value:
-            parsed_tags['block_names'].append(value)
-        # names of the [possible] previous [dependencies] steps
-        if radix == "prev":
-            parsed_tags['previous_blocks'].append(value)
-        # variables to be read from previous step
-        if radix == "in":
-            parsed_tags['in'].append(value)
-        # variables to be saved for later steps
-        if radix == "out":
-            parsed_tags['out'].append(value)
+        # now only `block` and `prev` tags remain to be parsed.
+        tag_name, value = t.split(':')
+        # name of the future Pipeline step
+        if tag_name == "block" and value:
+            parsed_tags['step_names'].append(value)
+        # name(s) of the father Pipeline step(s)
+        if tag_name == "prev":
+            parsed_tags['prev_steps'].append(value)
     return parsed_tags
 
 
