@@ -8,7 +8,11 @@ _TAGS_LANGUAGE = [r'^imports$',
                   r'^skip$',
                   # Extension may end up with 'block:' as a tag. We handle
                   # that as if it was empty.
+                  # TODO: Deprecate `block` tag in future release
                   r'^block:([_a-z]([_a-z0-9]*)?)?$',
+                  # `step` has the same functionality as `block` and is
+                  # supposed to be the new name
+                  r'^step:([_a-z]([_a-z0-9]*)?)?$',
                   r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
@@ -57,10 +61,11 @@ def parse_metadata(metadata):
             parsed_tags['step_names'] = [t]
             return parsed_tags
 
-        # now only `block` and `prev` tags remain to be parsed.
+        # now only `block|step` and `prev` tags remain to be parsed.
         tag_name, value = t.split(':')
         # name of the future Pipeline step
-        if tag_name == "block" and value:
+        # TODO: Deprecate `block` in future release
+        if tag_name in ["block", "step"] and value:
             parsed_tags['step_names'].append(value)
         # name(s) of the father Pipeline step(s)
         if tag_name == "prev":
