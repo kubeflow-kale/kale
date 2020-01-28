@@ -13,17 +13,8 @@ _TAGS_LANGUAGE = [r'^imports$',
                   r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
-class _dotdict(dict):
-    """
-    dot.notation access to dictionary attributes
-    """
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-
 def _copy_tags(tags):
-    new_tags = _dotdict()
+    new_tags = dict()
     for k, v in tags.items():
         if type(v) == list and len(v) == 0:
             new_tags[k] = list()
@@ -41,7 +32,7 @@ def parse_metadata(metadata: dict):
     Returns:
 
     """
-    parsed_tags = _dotdict()
+    parsed_tags = dict()
 
     # block_names is a list because a cell block might be assigned to more
     # than one pipeline block.
@@ -161,14 +152,14 @@ def parse_notebook(notebook):
             continue
 
         # check that the previous block already exists in the graph if the prev tag is used
-        for p in tags.previous_blocks:
+        for p in tags['previous_blocks']:
             if p not in nb_graph.nodes:
                 raise ValueError(
-                    f"Block `{p}` does not exist. It was defined as previous block of `{tags.block_names}`")
+                    f"Block `{p}` does not exist. It was defined as previous block of `{tags['block_names']}`")
 
         # if the block was not tagged with a name,
         # add the source code to the block defined by the previous(es) cell(s)
-        if len(tags.block_names) == 0:
+        if len(tags['block_names']) == 0:
             if current_block_global:
                 global_block += '\n' + c.source
             elif current_block_pipeline_parameters:
@@ -180,16 +171,16 @@ def parse_notebook(notebook):
             current_block_global = False
             current_block_pipeline_parameters = False
             # TODO: Taking by default first block name tag. Need specific behavior
-            current_block = tags.block_names[0]
-            for block_name in tags.block_names:
+            current_block = tags['block_names'][0]
+            for block_name in tags['block_names']:
                 # add node to DAG, adding tags and source code of notebook cell
                 if block_name not in nb_graph.nodes:
                     _tags = _copy_tags(tags)
                     _tags.block_name = block_name
                     nb_graph.add_node(block_name, tags=_tags, source=c.source,
                                       ins=set(), outs=set())
-                    if tags.previous_blocks:
-                        for block in tags.previous_blocks:
+                    if tags['previous_blocks']:
+                        for block in tags['previous_blocks']:
                             nb_graph.add_edge(block, block_name)
                 else:
                     merge_code(nb_graph, block_name, c.source)
