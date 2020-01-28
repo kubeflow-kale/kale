@@ -13,16 +13,6 @@ _TAGS_LANGUAGE = [r'^imports$',
                   r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
-def _copy_tags(tags):
-    new_tags = dict()
-    for k, v in tags.items():
-        if type(v) == list and len(v) == 0:
-            new_tags[k] = list()
-        else:
-            new_tags[k] = copy.deepcopy(tags[k])
-    return new_tags
-
-
 def parse_metadata(metadata):
     """Parse a notebook's cell's metadata field.
 
@@ -175,7 +165,7 @@ def parse_notebook(notebook):
             for block_name in tags['block_names']:
                 # add node to DAG, adding tags and source code of notebook cell
                 if block_name not in nb_graph.nodes:
-                    _tags = _copy_tags(tags)
+                    _tags = copy.deepcopy(tags)
                     _tags.block_name = block_name
                     nb_graph.add_node(block_name, tags=_tags, source=c.source,
                                       ins=set(), outs=set())
