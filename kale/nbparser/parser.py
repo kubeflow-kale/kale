@@ -3,29 +3,14 @@ import copy
 
 import networkx as nx
 
-# Kale custom tagging language
-GLOBAL_BLOCKS = ['imports',
-                 'functions',
-                 # in case use are using Papermill to generate multiple notebooks
-                 # the parameters at the beginning of the notebook must be added
-                 # to every step of the pipeline.
-                 'parameters',
-                 # TODO: remove `parameters` code block if `injected-parameters` is found
-                 'injected-parameters'
-                 ]
-
-TAGS_LANGUAGE = [r'^imports$',
-                 r'^functions$',
-                 r'^pipeline-parameters$',
-                 r'^parameters$',
-                 r'^injected-parameters$',
-                 r'^skip$',
-                 r'^in$',
-                 r'^out$',
-                 # Extension may end up with 'block:' as a tag.  We handle that
-                 # as if it was empty.
-                 r'^block:([_a-z]([_a-z0-9]*)?)?$',
-                 r'^prev:[_a-z]([_a-z0-9]*)?$']
+_TAGS_LANGUAGE = [r'^imports$',
+                  r'^functions$',
+                  r'^pipeline-parameters$',
+                  r'^skip$',
+                  # Extension may end up with 'block:' as a tag.  We handle
+                  # that as if it was empty.
+                  r'^block:([_a-z]([_a-z0-9]*)?)?$',
+                  r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
 class _dotdict(dict):
@@ -72,7 +57,7 @@ def parse_metadata(metadata: dict):
     for t in metadata['tags']:
 
         # Check that the tag is defined by the language
-        if any(re.match(_t, t) for _t in TAGS_LANGUAGE) is False:
+        if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
             raise ValueError(f"Unrecognized tag: {t}")
 
         if t == "skip":
@@ -82,7 +67,7 @@ def parse_metadata(metadata: dict):
             parsed_tags['block_names'] = ['pipeline-parameters']
             return parsed_tags
 
-        if t in GLOBAL_BLOCKS:
+        if t in ['imports', 'functions']:
             parsed_tags['block_names'] = ['global']
             return parsed_tags
 
