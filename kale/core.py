@@ -35,6 +35,20 @@ METADATA_REQUIRED_KEYS = [
     'pipeline_name',
 ]
 
+DEFAULT_METADATA = {
+    'experiment_name': '',
+    'pipeline_name': '',
+    'pipeline_description': '',
+    'pipeline_args': '',
+    'pipeline_args_names': '',
+    'docker_image': '',
+    'volumes': [],
+    'abs_working_dir': None,
+    'marshal_volume': False,
+    'marshal_path': '',
+    'auto_snapshot': False
+}
+
 
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
     """Generate random string."""
@@ -56,10 +70,11 @@ class Kale:
         self.notebook = nb.read(self.source_path.__str__(),
                                 as_version=nb.NO_CONVERT)
 
+        self.pipeline_metadata = DEFAULT_METADATA.copy()
         # read Kale notebook metadata.
         # In case it is not specified get an empty dict
-        self.pipeline_metadata = self.notebook.metadata.get(
-            KALE_NOTEBOOK_METADATA_KEY, dict())
+        self.pipeline_metadata.update(
+            self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict()))
         # override notebook metadata with provided arguments
         if notebook_metadata_overrides:
             self.pipeline_metadata = {**self.pipeline_metadata,
