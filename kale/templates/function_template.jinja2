@@ -7,7 +7,7 @@ def {{ step_name }}({{ function_args }}):
     from kale.marshal import resource_load as _kale_resource_load
 
     _kale_data_directory = "{{ marshal_path }}"
-    {# Verify directory exists #}
+    {#- Verify directory exists #}
     if not os.path.isdir(_kale_data_directory):
         os.makedirs(_kale_data_directory, exist_ok=True)
 
@@ -26,11 +26,11 @@ def {{ step_name }}({{ function_args }}):
     ]
 
 {%- for in_var in in_variables %}
-    {# First check that the variable exists in the path #}
+    {#- First check that the variable exists in the path #}
     if "{{ in_var }}" not in _kale_directory_file_names:
         raise ValueError("{{ in_var }}" + " does not exists in directory")
 
-    {# Load variable -#}
+    {#- Load variable #}
     _kale_load_file_name = [
         f
         for f in os.listdir(_kale_data_directory)
@@ -44,11 +44,9 @@ def {{ step_name }}({{ function_args }}):
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
 {%- endif %}
-
-
-{% for block in function_body %}
+{%- for block in function_body %}
 {{block|indent(4, True)}}
-{% endfor %}
+{%- endfor %}
 {%- if out_variables|length > 0 %}
     # -----------------------DATA SAVING START---------------------------------
 {%- for out_var in out_variables %}
