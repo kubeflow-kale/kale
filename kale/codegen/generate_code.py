@@ -119,6 +119,21 @@ def get_args(pipeline_parameters):
     }
 
 
+def pipeline_dependencies_tasks(g):
+    """Generate a dictionary of Pipeline dependencies.
+
+    Args:
+        g: Pipeline graph
+
+    Returns (dict): k: step_name, v: list of predecessors
+    """
+    deps = dict()
+    for step_name in nx.topological_sort(g):
+        deps[step_name] = [f"{pred}_task" for pred in
+                           g.predecessors(step_name)]
+    return deps
+
+
 def generate_lightweight_component(template, step_name, pipeline_name,
                                    step_data, function_args, marshal_path,
                                    auto_snapshot, nb_path):
@@ -167,8 +182,6 @@ def gen_kfp_code(nb_graph,
     function_blocks = list()
     # List of names of components
     function_names = list()
-    # Dictionary of steps defining the dependency graph
-    function_prevs = dict()
 
     # Convert volume annotations to a dictionary
     volumes, volume_parameters = convert_volume_annotations(
@@ -186,14 +199,6 @@ def gen_kfp_code(nb_graph,
         function_template = template_env.get_template('function_template.txt')
         block_data = nb_graph.nodes(data=True)[block_name]
 
-        # check if the block has any ancestors
-        predecessors = list(nb_graph.predecessors(block_name))
-        args = list()
-        if len(predecessors) > 0:
-            for a in predecessors:
-                args.append(f"{a}_task")
-        function_prevs[block_name] = args
-
         function_blocks.append(
             generate_lightweight_component(function_template, block_name,
                                            metadata['pipeline_name'],
@@ -203,6 +208,8 @@ def gen_kfp_code(nb_graph,
         function_names.append(block_name)
 
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
+
+    function_prevs = pipeline_dependencies_tasks(nb_graph)
 
     if auto_snapshot:
         final_auto_snapshot_name = 'final_auto_snapshot'
