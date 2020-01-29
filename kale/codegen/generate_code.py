@@ -7,6 +7,44 @@ from jinja2 import Environment, PackageLoader
 from kale.utils.pod_utils import is_workspace_dir
 
 
+def get_marshal_data(wd, volumes, nb_path):
+    """Get the marshal volume path, if needed.
+
+    Check the current volumes, in case the current working directory is a
+    subpath of one the mounted volumes, then use the current working directory
+    as the place for the marshal directory. Otherwise, write all marshal data
+    to /marshal.
+
+    Args:
+        wd: current working directory. Can be None
+        volumes: volumes dictionary
+        nb_path: path to the notebook file
+
+    Returns: (dict): a dict composed of
+        - 'marshal_volume' (bool): True if we use a custom marshal volume
+        - 'marshal_path' (str): path to the volume, if `marshal_volume` is True
+    """
+    marshal_volume = True
+    marshal_path = "/marshal"
+    # Check if the workspace directory is under a mounted volume.
+    # If so, marshal data into a folder in that volume,
+    # otherwise create a new volume and mount it at /marshal
+    if wd:
+        wd = os.path.realpath(wd)
+        # get the volumes for which the working directory is a subpath of
+        # the mount point
+        vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
+        # if we found any, then set marshal directory inside working directory
+        if len(vols) > 0:
+            marshal_volume = False
+            marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
+            marshal_path = os.path.join(wd, marshal_dir)
+    return {
+        'marshal_volume': marshal_volume,
+        'marshal_path': marshal_path
+    }
+
+
 def get_args(pipeline_parameters):
     """Generate pipeline and function parameter.
 
@@ -118,21 +156,8 @@ def gen_kfp_code(nb_graph,
     volumes = sorted(volumes, reverse=True,
                      key=lambda v: is_workspace_dir(v['mount_point']))
 
-    marshal_volume = True
-    marshal_path = "/marshal"
-    # Check if the workspace directory is under a mounted volume.
-    # If so, marshal data into a folder in that volume,
-    # otherwise create a new volume and mount it at /marshal
     wd = metadata.get('abs_working_dir', None)
-    if wd:
-        wd = os.path.realpath(wd)
-        # get the volumes for which the working directory is a subpath of the mount point
-        vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
-        # if we found any, then set marshal directory inside working directory
-        if len(vols) >= 1:
-            marshal_volume = False
-            marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
-            marshal_path = os.path.join(wd, marshal_dir)
+    marshal_dict = get_marshal_data(wd=wd, volumes=volumes, nb_path=nb_path)
 
     generated_args = get_args(pipeline_parameters)
 
@@ -154,7 +179,7 @@ def gen_kfp_code(nb_graph,
             generate_lightweight_component(function_template, block_name,
                                            metadata['pipeline_name'],
                                            block_data, generated_args['function_args'],
-                                           marshal_path, auto_snapshot,
+                                           marshal_dict['marshal_path'], auto_snapshot,
                                            nb_path))
         function_names.append(block_name)
 
@@ -169,7 +194,7 @@ def gen_kfp_code(nb_graph,
             function_blocks=[],
             in_variables=set(),
             out_variables=set(),
-            marshal_path=marshal_path,
+            marshal_path=marshal_dict['marshal_path'],
             auto_snapshot=auto_snapshot,
             nb_path=nb_path
         ))
@@ -191,8 +216,8 @@ def gen_kfp_code(nb_graph,
         volumes=volumes,
         leaf_nodes=leaf_nodes,
         working_dir=metadata.get('abs_working_dir', None),
-        marshal_volume=marshal_volume,
-        marshal_path=marshal_path,
+        marshal_volume=marshal_dict['marshal_volume'],
+        marshal_path=marshal_dict['marshal_path'],
         auto_snapshot=auto_snapshot
     )
 
