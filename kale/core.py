@@ -2,8 +2,6 @@ import os
 import copy
 import json
 import pprint
-import random
-import string
 
 import logging
 import subprocess
@@ -28,11 +26,6 @@ and use them to spawn a Kubeflow pipeline.\
 """
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
-
-
-def random_string(size=5, chars=string.ascii_lowercase + string.digits):
-    """Generate random string."""
-    return "".join(random.choice(chars) for _ in range(size))
 
 
 class Kale:

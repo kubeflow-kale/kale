@@ -1,7 +1,7 @@
 import re
 import copy
 
-from kale.core import random_string
+from kale.utils.utils import random_string
 from kale.utils.pod_utils import is_workspace_dir
 
 DEFAULT_METADATA = {
