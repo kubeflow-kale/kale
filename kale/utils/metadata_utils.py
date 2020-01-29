@@ -1,6 +1,22 @@
 import re
+import copy
 
+from kale.core import random_string
 from kale.utils.pod_utils import is_workspace_dir
+
+DEFAULT_METADATA = {
+    'experiment_name': '',
+    'pipeline_name': '',
+    'pipeline_description': '',
+    'pipeline_args': '',
+    'pipeline_args_names': '',
+    'docker_image': '',
+    'volumes': [],
+    'abs_working_dir': None,
+    'marshal_volume': False,
+    'marshal_path': '',
+    'auto_snapshot': False
+}
 
 METADATA_REQUIRED_KEYS = [
     'experiment_name',
@@ -17,18 +33,33 @@ volume_types = ['pv', 'pvc', 'new_pvc', 'clone']
 volume_required_fields = ['name', 'annotations', 'size', 'type', 'mount_point']
 
 
-def validate_metadata(metadata):
-    """Validate the Notebook's metadata and update it inplace when needed.
+def validate_metadata(notebook_metadata):
+    """Validate the Notebook's metadata and update it when needed.
 
     Args:
-        metadata (dict): metadata annotated by Kale. Refer to DEFAULT_METADATA
+        notebook_metadata (dict): metadata annotated by Kale.
+        Refer to DEFAULT_METADATA for defaults
+
+    Returns (dict): updated and validated metadata
     """
+    # check for required fields before adding all possible defaults
+    for required in METADATA_REQUIRED_KEYS:
+        if required not in notebook_metadata:
+            raise ValueError("Key {} not found. Add this field either on "
+                             "the notebook metadata or as an override"
+                             .format(required))
+
+    metadata = copy.deepcopy(DEFAULT_METADATA)
+    metadata.update(notebook_metadata)
     # check for required fields
     for required in METADATA_REQUIRED_KEYS:
         if required not in metadata:
             raise ValueError("Key %s not found. Add this field either on "
                              "the notebook metadata or as an override" %
                              required)
+    # update the pipeline name with a random string
+    random_pipeline_name = f"{metadata['pipeline_name']}-{random_string()}"
+    metadata['pipeline_name'] = random_pipeline_name
 
     if not re.match(kale_step_name_regex, metadata['pipeline_name']):
         raise ValueError("Pipeline name  %s" % kale_name_msg)
@@ -38,6 +69,7 @@ def validate_metadata(metadata):
         metadata.update({'volumes': _validate_volumes_metadata(volumes)})
     else:
         raise ValueError("Volumes spec must be a list")
+    return metadata
 
 
 def _validate_volumes_metadata(volumes):

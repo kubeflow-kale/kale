@@ -29,20 +29,6 @@ and use them to spawn a Kubeflow pipeline.\
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
 
-DEFAULT_METADATA = {
-    'experiment_name': '',
-    'pipeline_name': '',
-    'pipeline_description': '',
-    'pipeline_args': '',
-    'pipeline_args_names': '',
-    'docker_image': '',
-    'volumes': [],
-    'abs_working_dir': None,
-    'marshal_volume': False,
-    'marshal_path': '',
-    'auto_snapshot': False
-}
-
 
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
     """Generate random string."""
@@ -64,21 +50,16 @@ class Kale:
         self.notebook = nb.read(self.source_path,
                                 as_version=nb.NO_CONVERT)
 
-        self.pipeline_metadata = copy.deepcopy(DEFAULT_METADATA)
         # read Kale notebook metadata.
         # In case it is not specified get an empty dict
-        self.pipeline_metadata.update(
-            self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict()))
+        notebook_metadata = self.notebook.metadata.get(
+            KALE_NOTEBOOK_METADATA_KEY, dict())
         # override notebook metadata with provided arguments
         if notebook_metadata_overrides:
-            self.pipeline_metadata.update(notebook_metadata_overrides)
+            notebook_metadata.update(notebook_metadata_overrides)
 
-        pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
-                                   random_string())
-        self.pipeline_metadata['pipeline_name'] = pipeline_name
-
-        # validate metadata and update inplace when needed
-        validate_metadata(self.pipeline_metadata)
+        # validate metadata and apply transformations when needed
+        self.pipeline_metadata = validate_metadata(notebook_metadata)
 
         self.detect_environment()
 
