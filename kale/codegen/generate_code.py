@@ -4,7 +4,6 @@ import autopep8
 import networkx as nx
 
 from jinja2 import Environment, PackageLoader, FileSystemLoader
-from kale.utils.pod_utils import is_workspace_dir
 
 
 def _initialize_templating_env(templates_path=None):
@@ -18,27 +17,16 @@ def _initialize_templating_env(templates_path=None):
     return template_env
 
 
-def convert_volume_annotations(volumes):
-    """Validate and convert volume annotations.
-
-    Convert the input volumes coming from the notebook into a dictionary
-    and convert size to a string. This step is necessary to also create
-    appropriate pipeline parameters for mounting PVCs and Rok snapshots.
+def get_volume_parameters(volumes):
+    """Create pipeline parameters for volumes to be mounted on pipeline steps.
 
     Args:
-        volumes: a list of notebook volume annotation
+        volumes: a volume spec
 
-    Returns: a tuple (volumes, volume_parameters) where:
-        - volumes (dict): contains the parsed annotation data
-        - volume_parameters (dict): contains the volume pipeline parameters
+    Returns (dict): volume pipeline parameters
     """
     volume_parameters = dict()
     for v in volumes:
-        # Convert annotations to a dictionary
-        annotations = {a['key']: a['value'] for a in v['annotations'] or []
-                       if a['key'] != '' and a['value'] != ''}
-        v['annotations'] = annotations
-        v['size'] = str(v['size'])
         if v['type'] == 'pv':
             # FIXME: How should we handle existing PVs?
             continue
@@ -53,13 +41,7 @@ def convert_volume_annotations(volumes):
                 volume_parameters[par_name] = ('str', rok_url)
         else:
             raise ValueError(f"Unknown volume type: {v['type']}")
-
-    # The Jupyter Web App assumes the first volume of the notebook is the
-    # working directory, so we make sure to make it appear first in the spec.
-    volumes = sorted(volumes, reverse=True,
-                     key=lambda _v: is_workspace_dir(_v['mount_point']))
-
-    return volumes, volume_parameters
+    return volume_parameters
 
 
 def get_marshal_data(wd, volumes, nb_path):
@@ -208,9 +190,8 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
     template_env = _initialize_templating_env()
 
     # Convert volume annotations to a dictionary
-    volumes, volume_parameters = convert_volume_annotations(
-        metadata.get('volumes', []))
-    metadata.update({'volumes': volumes})
+    volumes = metadata.get('volumes')
+    volume_parameters = get_volume_parameters(volumes)
     pipeline_parameters.update(volume_parameters)
 
     wd = metadata.get('abs_working_dir', None)

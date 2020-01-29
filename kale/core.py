@@ -21,6 +21,7 @@ from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
+from kale.utils.pod_utils import is_workspace_dir
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -152,6 +153,22 @@ class Kale:
                         "Provide a valid snapshot resource name if you want to"
                         " snapshot a volume. Snapshot resource name %s" %
                         k8s_name_msg)
+
+                # Convert annotations to a dictionary
+                annotations = {a['key']: a['value'] for a in
+                               v['annotations'] or []
+                               if a['key'] != '' and a['value'] != ''}
+                v['annotations'] = annotations
+                v['size'] = str(v['size'])
+
+            # The Jupyter Web App assumes the first volume of the notebook
+            # is the working directory, so we make sure to make it appear
+            # first in the spec.
+            volumes = sorted(
+                volumes,
+                reverse=True,
+                key=lambda _v: is_workspace_dir(_v['mount_point']))
+            self.pipeline_metadata['volumes'] = volumes
         else:
             raise ValueError("Volumes must be a valid list of volumes spec")
 
