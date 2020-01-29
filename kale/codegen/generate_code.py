@@ -3,8 +3,19 @@ import autopep8
 
 import networkx as nx
 
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, PackageLoader, FileSystemLoader
 from kale.utils.pod_utils import is_workspace_dir
+
+
+def _initialize_templating_env(templates_path=None):
+    if templates_path:
+        loader = FileSystemLoader(templates_path)
+    else:
+        loader = PackageLoader('kale', 'templates')
+    template_env = Environment(loader=loader)
+    # add custom filters
+    template_env.filters['add_suffix'] = lambda s, suffix: s + suffix
+    return template_env
 
 
 def convert_volume_annotations(volumes):
@@ -194,8 +205,7 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
     Returns (str): A Python executable script
     """
     # initialize templating environment
-    template_env = Environment(loader=PackageLoader('kale', 'templates'))
-    template_env.filters['add_suffix'] = lambda s, suffix: s + suffix
+    template_env = _initialize_templating_env()
 
     # Convert volume annotations to a dictionary
     volumes, volume_parameters = convert_volume_annotations(
