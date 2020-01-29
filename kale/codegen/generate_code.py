@@ -135,7 +135,7 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
     step_marshal_out = step_data['outs']
 
     # TODO: Remove some parameters and pass them with **metadata
-    return template.render(
+    fn_code = template.render(
         step_name=step_name,
         function_body=[step_source],
         in_variables=step_marshal_in,
@@ -143,11 +143,13 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
         nb_path=nb_path,
         **metadata
     )
+    # fix code style using pep8 guidelines
+    return autopep8.fix_code(fn_code)
 
 
 def generate_pipeline(template, nb_graph, step_names, lightweight_components,
                       metadata):
-    """Use the pipeline template to generate Python code"""
+    """Use the pipeline template to generate Python code."""
     # All the Pipeline steps that do not have children
     leaf_steps = [x for x in nb_graph.nodes() if
                   nb_graph.out_degree(x) == 0]
@@ -160,7 +162,8 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_components,
         leaf_steps=leaf_steps,
         **metadata
     )
-    return pipeline_code
+    # fix code style using pep8 guidelines
+    return autopep8.fix_code(pipeline_code)
 
 
 def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
@@ -217,6 +220,4 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
     pipeline_template = template_env.get_template('pipeline_template.jinja2')
     pipeline_code = generate_pipeline(pipeline_template, nb_graph, step_names,
                                       lightweight_components, metadata)
-    # fix code style using pep8 guidelines
-    pipeline_code = autopep8.fix_code(pipeline_code)
     return pipeline_code
