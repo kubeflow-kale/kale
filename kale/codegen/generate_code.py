@@ -145,9 +145,9 @@ def generate_lightweight_component(template, step_name, pipeline_name,
     # TODO: Remove some parameters and pass them with **metadata
     return template.render(
         pipeline_name=pipeline_name,
-        function_name=step_name,
+        step_name=step_name,
         function_args=function_args,
-        function_blocks=[step_source],
+        function_body=[step_source],
         in_variables=step_marshal_in,
         out_variables=step_marshal_out,
         marshal_path=marshal_path,
@@ -156,7 +156,7 @@ def generate_lightweight_component(template, step_name, pipeline_name,
     )
 
 
-def generate_pipeline(template, nb_graph, step_names, lightweight_functions,
+def generate_pipeline(template, nb_graph, step_names, lightweight_components,
                       metadata):
     """Use the pipeline template to generate Python code"""
     # All the Pipeline steps that do not have children
@@ -165,18 +165,18 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_functions,
 
     # TODO: Pass arguments as **metadata.
     pipeline_code = template.render(
-        block_functions=lightweight_functions,
-        block_functions_names=step_names,
-        block_function_prevs=pipeline_dependencies_tasks(nb_graph),
-        leaf_nodes=leaf_steps,
+        lightweight_components=lightweight_components,
+        step_names=step_names,
+        step_prevs=pipeline_dependencies_tasks(nb_graph),
+        leaf_steps=leaf_steps,
         experiment_name=metadata.get('experiment_name'),
         pipeline_name=metadata.get('pipeline_name'),
         pipeline_description=metadata.get('pipeline_description', ''),
-        pipeline_arguments=metadata.get('pipeline_args'),
-        pipeline_arguments_names=metadata.get('pipeline_args_names'),
-        docker_base_image=metadata.get('docker_image', ''),
+        pipeline_args=metadata.get('pipeline_args'),
+        pipeline_args_names=metadata.get('pipeline_args_names'),
+        docker_image=metadata.get('docker_image', ''),
         volumes=metadata.get('volumes'),
-        working_dir=metadata.get('abs_working_dir', None),
+        abs_working_dir=metadata.get('abs_working_dir', None),
         marshal_volume=metadata.get('marshal_volume'),
         marshal_path=metadata.get('marshal_path'),
         auto_snapshot=metadata.get('auto_snapshot')
@@ -224,7 +224,7 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
     metadata.update({'auto_snapshot': auto_snapshot})
 
     # initialize the function template
-    function_template = template_env.get_template('function_template.txt')
+    function_template = template_env.get_template('function_template.jinja2')
     # Order the pipeline topologically to cycle through the DAG
     step_names = list(nx.topological_sort(nb_graph))
     # List of lightweight components generated code
@@ -238,7 +238,7 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
         for step_name in step_names
     ]
 
-    pipeline_template = template_env.get_template('pipeline_template.txt')
+    pipeline_template = template_env.get_template('pipeline_template.jinja2')
     pipeline_code = generate_pipeline(pipeline_template, nb_graph, step_names,
                                       lightweight_components, metadata)
     # fix code style using pep8 guidelines

@@ -1,4 +1,4 @@
-def {{ function_name }}({{ function_args }}):
+def {{ step_name }}({{ function_args }}):
 
     import os
     import shutil
@@ -13,7 +13,7 @@ def {{ function_name }}({{ function_args }}):
 
     {% if auto_snapshot -%}
     _kale_pod_utils.snapshot_pipeline_step("{{ pipeline_name }}",
-                                     "{{ function_name }}",
+                                     "{{ step_name }}",
                                      "{{ nb_path }}")
     {% endif -%}
 
@@ -46,7 +46,7 @@ def {{ function_name }}({{ function_args }}):
 {%- endif %}
 
 
-{% for block in function_blocks %}
+{% for block in function_body %}
 {{block|indent(4, True)}}
 {% endfor %}
 {%- if out_variables|length > 0 %}

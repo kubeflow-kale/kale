@@ -2,15 +2,15 @@ import kfp.components as comp
 from collections import OrderedDict
 from kubernetes import client as k8s_client
 
-{# PIPELINE FUNCTION BLOCKS #}
-{% for func in block_functions -%}
+{# PIPELINE LIGHTWEIGHT COMPONENTS #}
+{% for func in lightweight_components -%}
 {{func}}
 {% endfor -%}
 
 {# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
-{%- for name in block_functions_names -%}
-{% if docker_base_image != '' %}
-{{ name }}_op = comp.func_to_container_op({{ name }}, base_image='{{ docker_base_image }}')
+{%- for name in step_names -%}
+{% if docker_image != '' %}
+{{ name }}_op = comp.func_to_container_op({{ name }}, base_image='{{ docker_image }}')
 {% else %}
 {{ name }}_op = comp.func_to_container_op({{ name }})
 {% endif %}
@@ -22,7 +22,7 @@ import kfp.dsl as dsl
    name='{{ pipeline_name }}',
    description='{{ pipeline_description }}'
 )
-def auto_generated_pipeline({{ pipeline_arguments }}):
+def auto_generated_pipeline({{ pipeline_args }}):
     pvolumes_dict = OrderedDict()
 
     {% for vol in volumes -%}
@@ -91,12 +91,12 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
     pvolumes_dict['{{ marshal_path }}'] = marshal_vop.volume
     {% endif %}
 
-    {% for name in block_functions_names %}
+    {% for name in step_names %}
 
-    {{ name }}_task = {{ name }}_op({{ pipeline_arguments_names }})\
+    {{ name }}_task = {{ name }}_op({{ pipeline_args_names }})\
                             .add_pvolumes(pvolumes_dict)\
-                            .after({{ block_function_prevs[ name ]|join(', ') }})
-    {{ name }}_task.container.working_dir = "{{ working_dir }}"
+                            .after({{ step_prevs[ name ]|join(', ') }})
+    {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
     {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     {% if auto_snapshot -%}
     mlpipeline_ui_metadata = {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'}
@@ -111,7 +111,7 @@ def auto_generated_pipeline({{ pipeline_arguments }}):
     snapshot{{ loop.index }} = dsl.VolumeSnapshotOp(
         name='snapshot-volume-{{ loop.index }}',
         resource_name='{{ vol['snapshot_name'] }}',
-        volume=vop{{ loop.index }}.volume.after({{ leaf_nodes| map('add_suffix', '_task') | join(', ') }})
+        volume=vop{{ loop.index }}.volume.after({{ leaf_steps| map('add_suffix', '_task') | join(', ') }})
     )
     {% endif %}
     {% endfor %}
