@@ -140,7 +140,7 @@ def generate_lightweight_component(template, step_name, pipeline_name,
     """Use the function template to generate Python code."""
     step_source = step_data['source']
     step_marshal_in = step_data['ins']
-    step_marshal_out = step_data['out']
+    step_marshal_out = step_data['outs']
 
     # TODO: Remove some parameters and pass them with **metadata
     return template.render(
@@ -184,12 +184,10 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_functions,
     return pipeline_code
 
 
-def gen_kfp_code(nb_graph,
-                 nb_path,
-                 pipeline_parameters,
-                 metadata,
+def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
                  auto_snapshot):
-    """
+    """Generate a Python KFP DSL executable starting from the nx graph.
+
     Takes a NetworkX workflow graph with the following properties
 
     - node property 'code' contains the source code
@@ -198,6 +196,16 @@ def gen_kfp_code(nb_graph,
 
     and generated a standalone Python script in KFP DSL to deploy
     a KFP pipeline.
+
+    Args:
+        nb_graph (nx.DiGraph): Pipeline graph
+        nb_path (str): path to the notebook
+        pipeline_parameters (dict): pipeline parameters
+        metadata (dict): metadata to be passed to the Jinja templates
+        auto_snapshot (bool): True if pipeline runs auto snapshot at each
+            pipeline step
+
+    Returns (str): A Python executable script
     """
     # initialize templating environment
     template_env = Environment(loader=PackageLoader('kale', 'templates'))
