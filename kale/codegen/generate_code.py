@@ -156,9 +156,34 @@ def generate_lightweight_component(template, step_name, pipeline_name,
     )
 
 
-# TODO: Define most of this function parameters in a config file?
-#   Or extent the tagging language and provide defaults.
-#   Need to implement tag arguments first.
+def generate_pipeline(template, nb_graph, step_names, lightweight_functions,
+                      metadata):
+    """Use the pipeline template to generate Python code"""
+    # All the Pipeline steps that do not have children
+    leaf_steps = [x for x in nb_graph.nodes() if
+                  nb_graph.out_degree(x) == 0]
+
+    # TODO: Pass arguments as **metadata.
+    pipeline_code = template.render(
+        block_functions=lightweight_functions,
+        block_functions_names=step_names,
+        block_function_prevs=pipeline_dependencies_tasks(nb_graph),
+        leaf_nodes=leaf_steps,
+        experiment_name=metadata.get('experiment_name'),
+        pipeline_name=metadata.get('pipeline_name'),
+        pipeline_description=metadata.get('pipeline_description', ''),
+        pipeline_arguments=metadata.get('pipeline_args'),
+        pipeline_arguments_names=metadata.get('pipeline_args_names'),
+        docker_base_image=metadata.get('docker_image', ''),
+        volumes=metadata.get('volumes'),
+        working_dir=metadata.get('abs_working_dir', None),
+        marshal_volume=metadata.get('marshal_volume'),
+        marshal_path=metadata.get('marshal_path'),
+        auto_snapshot=metadata.get('auto_snapshot')
+    )
+    return pipeline_code
+
+
 def gen_kfp_code(nb_graph,
                  nb_path,
                  pipeline_parameters,
@@ -181,12 +206,14 @@ def gen_kfp_code(nb_graph,
     # Convert volume annotations to a dictionary
     volumes, volume_parameters = convert_volume_annotations(
         metadata.get('volumes', []))
+    metadata.update({'volumes': volumes})
     pipeline_parameters.update(volume_parameters)
 
     wd = metadata.get('abs_working_dir', None)
-    marshal_dict = get_marshal_data(wd=wd, volumes=volumes, nb_path=nb_path)
-
-    generated_args = get_args(pipeline_parameters)
+    metadata.update(get_marshal_data(wd=wd, volumes=volumes, nb_path=nb_path))
+    metadata.update(get_args(pipeline_parameters))
+    # TODO: Have this automatically inside metadata before calling gen_kfp_code
+    metadata.update({'auto_snapshot': auto_snapshot})
 
     # initialize the function template
     function_template = template_env.get_template('function_template.txt')
@@ -197,34 +224,15 @@ def gen_kfp_code(nb_graph,
         generate_lightweight_component(function_template, step_name,
                                        metadata['pipeline_name'],
                                        nb_graph.nodes(data=True)[step_name],
-                                       generated_args['function_args'],
-                                       marshal_dict['marshal_path'],
+                                       metadata['function_args'],
+                                       metadata['marshal_path'],
                                        auto_snapshot, nb_path)
         for step_name in step_names
     ]
 
-    leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
-
     pipeline_template = template_env.get_template('pipeline_template.txt')
-    pipeline_code = pipeline_template.render(
-        block_functions=lightweight_components,
-        block_functions_names=step_names,
-        block_function_prevs=pipeline_dependencies_tasks(nb_graph),
-        experiment_name=metadata['experiment_name'],
-        pipeline_name=metadata['pipeline_name'],
-        pipeline_description=metadata.get('pipeline_description', ''),
-        pipeline_arguments=generated_args['pipeline_args'],
-        pipeline_arguments_names=', '.join(
-            generated_args['pipeline_args_names']),
-        docker_base_image=metadata.get('docker_image', ''),
-        volumes=volumes,
-        leaf_nodes=leaf_nodes,
-        working_dir=metadata.get('abs_working_dir', None),
-        marshal_volume=marshal_dict['marshal_volume'],
-        marshal_path=marshal_dict['marshal_path'],
-        auto_snapshot=auto_snapshot
-    )
-
+    pipeline_code = generate_pipeline(pipeline_template, nb_graph, step_names,
+                                      lightweight_components, metadata)
     # fix code style using pep8 guidelines
     pipeline_code = autopep8.fix_code(pipeline_code)
     return pipeline_code
