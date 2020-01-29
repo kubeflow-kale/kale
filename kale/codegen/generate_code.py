@@ -7,6 +7,50 @@ from jinja2 import Environment, PackageLoader
 from kale.utils.pod_utils import is_workspace_dir
 
 
+def convert_volume_annotations(volumes):
+    """Validate and convert volume annotations.
+
+    Convert the input volumes coming from the notebook into a dictionary
+    and convert size to a string. This step is necessary to also create
+    appropriate pipeline parameters for mounting PVCs and Rok snapshots.
+
+    Args:
+        volumes: a list of notebook volume annotation
+
+    Returns: a tuple (volumes, volume_parameters) where:
+        - volumes (dict): contains the parsed annotation data
+        - volume_parameters (dict): contains the volume pipeline parameters
+    """
+    volume_parameters = dict()
+    for v in volumes:
+        # Convert annotations to a dictionary
+        annotations = {a['key']: a['value'] for a in v['annotations'] or []
+                       if a['key'] != '' and a['value'] != ''}
+        v['annotations'] = annotations
+        v['size'] = str(v['size'])
+        if v['type'] == 'pv':
+            # FIXME: How should we handle existing PVs?
+            continue
+
+        if v['type'] == 'pvc':
+            par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
+            volume_parameters[par_name] = ('str', v['name'])
+        elif v['type'] == 'new_pvc':
+            rok_url = v['annotations'].get("rok/origin")
+            if rok_url is not None:
+                par_name = f"rok_{v['name'].replace('-', '_')}_url"
+                volume_parameters[par_name] = ('str', rok_url)
+        else:
+            raise ValueError(f"Unknown volume type: {v['type']}")
+
+    # The Jupyter Web App assumes the first volume of the notebook is the
+    # working directory, so we make sure to make it appear first in the spec.
+    volumes = sorted(volumes, reverse=True,
+                     key=lambda _v: is_workspace_dir(_v['mount_point']))
+
+    return volumes, volume_parameters
+
+
 def get_marshal_data(wd, volumes, nb_path):
     """Get the marshal volume path, if needed.
 
@@ -126,35 +170,10 @@ def gen_kfp_code(nb_graph,
     # Dictionary of steps defining the dependency graph
     function_prevs = dict()
 
-    # Include all volumes as pipeline parameters
-    volumes = metadata.get('volumes', [])
-    # Convert annotations to a dictionary and convert size to a string
-    for v in volumes:
-        # Convert annotations to a dictionary
-        annotations = {a['key']: a['value'] for a in v['annotations'] or []
-                       if a['key'] != '' and a['value'] != ''}
-        v['annotations'] = annotations
-        v['size'] = str(v['size'])
-
-        if v['type'] == 'pv':
-            # FIXME: How should we handle existing PVs?
-            continue
-
-        if v['type'] == 'pvc':
-            par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
-            pipeline_parameters[par_name] = ('str', v['name'])
-        elif v['type'] == 'new_pvc':
-            rok_url = v['annotations'].get("rok/origin")
-            if rok_url is not None:
-                par_name = f"rok_{v['name'].replace('-', '_')}_url"
-                pipeline_parameters[par_name] = ('str', rok_url)
-        else:
-            raise ValueError(f"Unknown volume type: {v['type']}")
-
-    # The Jupyter Web App assumes the first volume of the notebook is the
-    # working directory, so we make sure to make it appear first in the spec.
-    volumes = sorted(volumes, reverse=True,
-                     key=lambda v: is_workspace_dir(v['mount_point']))
+    # Convert volume annotations to a dictionary
+    volumes, volume_parameters = convert_volume_annotations(
+        metadata.get('volumes', []))
+    pipeline_parameters.update(volume_parameters)
 
     wd = metadata.get('abs_working_dir', None)
     marshal_dict = get_marshal_data(wd=wd, volumes=volumes, nb_path=nb_path)
