@@ -7,6 +7,36 @@ from jinja2 import Environment, PackageLoader
 from kale.utils.pod_utils import is_workspace_dir
 
 
+def get_args(pipeline_parameters):
+    """Generate pipeline and function parameter.
+
+    The generated strings will be passed to the rendering template.
+
+    Args:
+        pipeline_parameters (dict): pipeline parameters as
+        {<name>:(<type>,<value>)}
+
+    Returns (dict): a dict composed of:
+        - 'pipeline_args_names': pipeline argument names as list
+        - 'pipeline_args': pipeline arguments as a comma separated string
+        - 'function_args': function arguments as a comma separated string
+    """
+    pipeline_args_names = ', '.join(list(pipeline_parameters.keys()))
+    # wrap in quotes every parameter - required by kfp
+    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
+                               for arg in pipeline_parameters])
+    # Arguments are the pipeline arguments. Since we don't know precisely in
+    # what pipeline steps they are needed, we just pass them to every one.
+    # We assume there variables were not re-assigned throughout the notebook
+    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}"
+                               for arg in pipeline_parameters])
+    return {
+        'pipeline_args_names': pipeline_args_names,
+        'pipeline_args': pipeline_args,
+        'function_args': function_args
+    }
+
+
 def generate_lightweight_component(template, step_name, pipeline_name,
                                    step_data, function_args, marshal_path,
                                    auto_snapshot, nb_path):
@@ -104,16 +134,7 @@ def gen_kfp_code(nb_graph,
             marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
             marshal_path = os.path.join(wd, marshal_dir)
 
-    pipeline_args_names = list(pipeline_parameters.keys())
-    # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
-                               for arg in pipeline_parameters])
-    # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
-    # steps they are needed we just pass them to every one. The assumption is that these variables
-    # were treated as constants notebook-wise.
-    function_args = ', '.join(
-        [f"{arg}: {pipeline_parameters[arg][0]}" for arg in
-         pipeline_parameters])
+    generated_args = get_args(pipeline_parameters)
 
     # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
@@ -132,7 +153,7 @@ def gen_kfp_code(nb_graph,
         function_blocks.append(
             generate_lightweight_component(function_template, block_name,
                                            metadata['pipeline_name'],
-                                           block_data, function_args,
+                                           block_data, generated_args['function_args'],
                                            marshal_path, auto_snapshot,
                                            nb_path))
         function_names.append(block_name)
@@ -144,7 +165,7 @@ def gen_kfp_code(nb_graph,
         function_blocks.append(function_template.render(
             pipeline_name=metadata['pipeline_name'],
             function_name=final_auto_snapshot_name,
-            function_args=function_args,
+            function_args=generated_args['function_args'],
             function_blocks=[],
             in_variables=set(),
             out_variables=set(),
@@ -164,8 +185,8 @@ def gen_kfp_code(nb_graph,
         experiment_name=metadata['experiment_name'],
         pipeline_name=metadata['pipeline_name'],
         pipeline_description=metadata.get('pipeline_description', ''),
-        pipeline_arguments=pipeline_args,
-        pipeline_arguments_names=', '.join(pipeline_args_names),
+        pipeline_arguments=generated_args['pipeline_args'],
+        pipeline_arguments_names=', '.join(generated_args['pipeline_args_names']),
         docker_base_image=metadata.get('docker_image', ''),
         volumes=volumes,
         leaf_nodes=leaf_nodes,
