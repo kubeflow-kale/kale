@@ -243,6 +243,13 @@ class Kale:
         dependencies.dependencies_detection(pipeline_graph,
                                             ignore_symbols=to_ignore)
 
+        # add an empty step at the end of the pipeline for final snapshot
+        if self.auto_snapshot:
+            pipeline_graph.add_node('final_auto_snapshot',
+                                    source='',
+                                    ins=set(),
+                                    outs=set())
+
         # TODO: Additional Step required:
         #  Run a static analysis over every step to check that pipeline
         #  parameters are not assigned with new values.
