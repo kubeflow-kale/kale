@@ -178,11 +178,6 @@ def gen_kfp_code(nb_graph,
     template_env = Environment(loader=PackageLoader('kale', 'templates'))
     template_env.filters['add_suffix'] = lambda s, suffix: s + suffix
 
-    # List of light-weight components generated code
-    function_blocks = list()
-    # List of names of components
-    function_names = list()
-
     # Convert volume annotations to a dictionary
     volumes, volume_parameters = convert_volume_annotations(
         metadata.get('volumes', []))
@@ -193,32 +188,34 @@ def gen_kfp_code(nb_graph,
 
     generated_args = get_args(pipeline_parameters)
 
+    # initialize the function template
+    function_template = template_env.get_template('function_template.txt')
     # Order the pipeline topologically to cycle through the DAG
-    for block_name in nx.topological_sort(nb_graph):
-        # first create the function
-        function_template = template_env.get_template('function_template.txt')
-        block_data = nb_graph.nodes(data=True)[block_name]
-
-        function_blocks.append(
-            generate_lightweight_component(function_template, block_name,
-                                           metadata['pipeline_name'],
-                                           block_data, generated_args['function_args'],
-                                           marshal_dict['marshal_path'], auto_snapshot,
-                                           nb_path))
-        function_names.append(block_name)
+    step_names = list(nx.topological_sort(nb_graph))
+    # List of lightweight components generated code
+    lightweight_components = [
+        generate_lightweight_component(function_template, step_name,
+                                       metadata['pipeline_name'],
+                                       nb_graph.nodes(data=True)[step_name],
+                                       generated_args['function_args'],
+                                       marshal_dict['marshal_path'],
+                                       auto_snapshot, nb_path)
+        for step_name in step_names
+    ]
 
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
 
     pipeline_template = template_env.get_template('pipeline_template.txt')
     pipeline_code = pipeline_template.render(
-        block_functions=function_blocks,
-        block_functions_names=function_names,
+        block_functions=lightweight_components,
+        block_functions_names=step_names,
         block_function_prevs=pipeline_dependencies_tasks(nb_graph),
         experiment_name=metadata['experiment_name'],
         pipeline_name=metadata['pipeline_name'],
         pipeline_description=metadata.get('pipeline_description', ''),
         pipeline_arguments=generated_args['pipeline_args'],
-        pipeline_arguments_names=', '.join(generated_args['pipeline_args_names']),
+        pipeline_arguments_names=', '.join(
+            generated_args['pipeline_args_names']),
         docker_base_image=metadata.get('docker_image', ''),
         volumes=volumes,
         leaf_nodes=leaf_nodes,
