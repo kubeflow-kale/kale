@@ -7,6 +7,28 @@ from jinja2 import Environment, PackageLoader
 from kale.utils.pod_utils import is_workspace_dir
 
 
+def generate_lightweight_component(template, step_name, pipeline_name,
+                                   step_data, function_args, marshal_path,
+                                   auto_snapshot, nb_path):
+    """Use the function template to generate Python code."""
+    step_source = step_data['source']
+    step_marshal_in = step_data['ins']
+    step_marshal_out = step_data['out']
+
+    # TODO: Remove some parameters and pass them with **metadata
+    return template.render(
+        pipeline_name=pipeline_name,
+        function_name=step_name,
+        function_args=function_args,
+        function_blocks=[step_source],
+        in_variables=step_marshal_in,
+        out_variables=step_marshal_out,
+        marshal_path=marshal_path,
+        auto_snapshot=auto_snapshot,
+        nb_path=nb_path
+    )
+
+
 # TODO: Define most of this function parameters in a config file?
 #   Or extent the tagging language and provide defaults.
 #   Need to implement tag arguments first.
@@ -27,7 +49,7 @@ def gen_kfp_code(nb_graph,
     """
     # initialize templating environment
     template_env = Environment(loader=PackageLoader('kale', 'templates'))
-    template_env.filters['add_suffix'] = lambda s, suffix: s+suffix
+    template_env.filters['add_suffix'] = lambda s, suffix: s + suffix
 
     # List of light-weight components generated code
     function_blocks = list()
@@ -89,7 +111,9 @@ def gen_kfp_code(nb_graph,
     # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
     # steps they are needed we just pass them to every one. The assumption is that these variables
     # were treated as constants notebook-wise.
-    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}" for arg in pipeline_parameters])
+    function_args = ', '.join(
+        [f"{arg}: {pipeline_parameters[arg][0]}" for arg in
+         pipeline_parameters])
 
     # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
@@ -105,17 +129,12 @@ def gen_kfp_code(nb_graph,
                 args.append(f"{a}_task")
         function_prevs[block_name] = args
 
-        function_blocks.append(function_template.render(
-            pipeline_name=metadata['pipeline_name'],
-            function_name=block_name,
-            function_args=function_args,
-            function_blocks=[block_data['source']],
-            in_variables=block_data['ins'],
-            out_variables=block_data['outs'],
-            marshal_path=marshal_path,
-            auto_snapshot=auto_snapshot,
-            nb_path=nb_path
-        ))
+        function_blocks.append(
+            generate_lightweight_component(function_template, block_name,
+                                           metadata['pipeline_name'],
+                                           block_data, function_args,
+                                           marshal_path, auto_snapshot,
+                                           nb_path))
         function_names.append(block_name)
 
     leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
