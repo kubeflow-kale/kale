@@ -77,10 +77,7 @@ class Kale:
             self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict()))
         # override notebook metadata with provided arguments
         if notebook_metadata_overrides:
-            self.pipeline_metadata = {**self.pipeline_metadata,
-                                      **{k: v for k, v in
-                                         notebook_metadata_overrides.items()
-                                         if v}}
+            self.pipeline_metadata.update(notebook_metadata_overrides)
 
         pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
                                    random_string())

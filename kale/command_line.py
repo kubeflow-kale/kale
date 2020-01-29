@@ -68,7 +68,8 @@ def main():
                parser._action_groups))
     # get the single args of that group
     mt_overrides_group_dict = {a.dest: getattr(args, a.dest, None)
-                               for a in mt_overrides_group._group_actions}
+                               for a in mt_overrides_group._group_actions
+                               if getattr(args, a.dest, None) is not None}
 
     kale = Kale(
         source_notebook_path=args.nb,
