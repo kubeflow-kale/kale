@@ -151,5 +151,5 @@ def test_generate_function(template, step_name, source, ins, outs, nb_path,
                                                        component_data,
                                                        nb_path,
                                                        metadata)
-    target = open(os.path.join(THIS_DIR, "../assets/", target)).read()
+    target = open(os.path.join(THIS_DIR, "../assets/functions", target)).read()
     assert target.strip() == res.strip()
