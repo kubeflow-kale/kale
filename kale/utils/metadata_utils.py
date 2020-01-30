@@ -49,20 +49,15 @@ def validate_metadata(notebook_metadata):
                              "the notebook metadata or as an override"
                              .format(required))
 
-    metadata = copy.deepcopy(DEFAULT_METADATA)
+    metadata = DEFAULT_METADATA.copy()
     metadata.update(notebook_metadata)
-    # check for required fields
-    for required in METADATA_REQUIRED_KEYS:
-        if required not in metadata:
-            raise ValueError("Key %s not found. Add this field either on "
-                             "the notebook metadata or as an override" %
-                             required)
-    # update the pipeline name with a random string
-    random_pipeline_name = f"{metadata['pipeline_name']}-{random_string()}"
-    metadata['pipeline_name'] = random_pipeline_name
 
     if not re.match(kale_step_name_regex, metadata['pipeline_name']):
         raise ValueError("Pipeline name  %s" % kale_name_msg)
+
+    # update the pipeline name with a random string
+    random_pipeline_name = f"{metadata['pipeline_name']}-{random_string()}"
+    metadata['pipeline_name'] = random_pipeline_name
 
     volumes = metadata.get('volumes', [])
     if volumes or isinstance(volumes, list):
