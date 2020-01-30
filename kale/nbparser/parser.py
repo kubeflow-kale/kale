@@ -1,6 +1,10 @@
 import re
+import warnings
 
 import networkx as nx
+
+warnings.filterwarnings("default", category=DeprecationWarning,
+                        module=__name__)
 
 _TAGS_LANGUAGE = [r'^imports$',
                   r'^functions$',
@@ -66,6 +70,10 @@ def parse_metadata(metadata):
         # name of the future Pipeline step
         # TODO: Deprecate `block` in future release
         if tag_name in ["block", "step"] and value:
+            if tag_name == "block":
+                warnings.warn("`block` tag will be deprecated in a future"
+                              " version, use `step` tag instead",
+                              DeprecationWarning)
             parsed_tags['step_names'].append(value)
         # name(s) of the father Pipeline step(s)
         if tag_name == "prev":
@@ -73,7 +81,7 @@ def parse_metadata(metadata):
 
     if not parsed_tags['step_names'] and parsed_tags['prev_steps']:
         raise ValueError("A cell can not provide `prev` annotations without "
-                         "providing a `block` annotation as well")
+                         "providing a `block` or `step` annotation as well")
     return parsed_tags
 
 
@@ -174,8 +182,8 @@ def parse_notebook(notebook):
                                   ins=set(), outs=set())
                 for _prev_step in tags['prev_steps']:
                     if _prev_step not in nb_graph.nodes:
-                        raise ValueError("Block %s does not exist. It was "
-                                         "defined as previous block of %s"
+                        raise ValueError("Step %s does not exist. It was "
+                                         "defined as previous step of %s"
                                          % (_prev_step, tags['step_names']))
                     nb_graph.add_edge(_prev_step, step_name)
             else:
