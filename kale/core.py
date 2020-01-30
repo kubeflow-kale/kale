@@ -16,7 +16,7 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
-from kale.utils.utils import random_string
+from kale.utils import utils
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
 
@@ -56,6 +56,9 @@ class Kale:
         # validate metadata and apply transformations when needed
         self.pipeline_metadata = parse_metadata(notebook_metadata)
 
+        # used to set container step working dir same as current environment
+        abs_working_dir = utils.get_abs_working_dir(self.source_path)
+        self.pipeline_metadata['abs_working_dir'] = abs_working_dir
         self.detect_environment()
 
         # setup logging
@@ -163,10 +166,6 @@ class Kale:
         Detect local configs to preserve reproducibility of
         dev env in pipeline steps
         """
-        # used to set container step working dir same as current environment
-        self.pipeline_metadata['abs_working_dir'] = os.path.dirname(
-            os.path.abspath(self.source_path))
-
         # When running inside a Kubeflow Notebook Server we can detect the
         # running docker image and use it as default in the pipeline steps.
         if not self.pipeline_metadata['docker_image']:
@@ -268,7 +267,7 @@ class Kale:
         if output_path is None:
             # create tmp path
             tmp_dir = tempfile.mkdtemp()
-            filename = f"kale_pipeline_code_{random_string(5)}.py"
+            filename = f"kale_pipeline_code_{utils.random_string(5)}.py"
             output_path = os.path.join(tmp_dir, filename)
 
         with open(output_path, "w") as f:
