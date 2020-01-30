@@ -2,6 +2,7 @@ import os
 import copy
 import json
 import pprint
+import tempfile
 
 import logging
 import subprocess
@@ -15,6 +16,7 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
+from kale.utils.utils import random_string
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
 
@@ -210,7 +212,8 @@ class Kale:
         #  parameters are not assigned with new values.
         return pipeline_graph, pipeline_parameters_dict
 
-    def generate_kfp_executable(self, pipeline_graph, pipeline_parameters):
+    def generate_kfp_executable(self, pipeline_graph, pipeline_parameters,
+                                save_to_tmp=False):
         self.logger.debug("------------- Kale Start Run -------------")
 
         # generate full kfp pipeline definition
@@ -220,12 +223,15 @@ class Kale:
                                               pipeline_parameters=pipeline_parameters,
                                               metadata=self.pipeline_metadata,
                                               auto_snapshot=self.auto_snapshot)
-        pipeline_name = self.pipeline_metadata['pipeline_name']
-        kale_file_name = "{}.kale.py".format(pipeline_name)
-        output_path = os.path.join(os.path.dirname(self.source_path),
-                                   kale_file_name)
+
+        if save_to_tmp:
+            output_path = None
+        else:
+            notebook_dir = os.path.dirname(self.source_path)
+            filename = f"{self.pipeline_metadata['pipeline_name']}.kale.py"
+            output_path = os.path.join(notebook_dir, filename)
         # save kfp generated code
-        self.save_pipeline(kfp_code, output_path)
+        output_path = self.save_pipeline(kfp_code, output_path)
         return output_path
 
     def print_pipeline(self, pipeline_graph):
@@ -258,14 +264,14 @@ class Kale:
         """
         nx.drawing.nx_pydot.write_dot(graph, dot_path)
 
-    def save_pipeline(self, pipeline_code, output_path):
-        # save pipeline code to temp directory
-        # tmp_dir = tempfile.mkdtemp()
-        # with open(tmp_dir + "/{}".format(filename), "w") as f:
-        #     f.write(pipeline_code)
-        # print("Pipeline code saved at {}/{}".format(tmp_dir, filename))
+    def save_pipeline(self, pipeline_code, output_path=None):
+        if output_path is None:
+            # create tmp path
+            tmp_dir = tempfile.mkdtemp()
+            filename = f"kale_pipeline_code_{random_string(5)}.py"
+            output_path = os.path.join(tmp_dir, filename)
 
-        # Save pipeline code in the notebook source directory
         with open(output_path, "w") as f:
             f.write(pipeline_code)
-        self.logger.info("Pipeline code saved at {}".format(output_path))
+        self.logger.info(f"Pipeline code saved at {output_path}")
+        return output_path
