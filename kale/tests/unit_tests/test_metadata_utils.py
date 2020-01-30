@@ -1,6 +1,7 @@
 import pytest
 
-from kale.utils.metadata_utils import _validate_volumes_metadata
+from unittest import mock
+from kale.utils import metadata_utils
 
 
 @pytest.mark.parametrize("volumes,target", [
@@ -37,23 +38,64 @@ from kale.utils.metadata_utils import _validate_volumes_metadata
      }])
 ])
 def test_validate_volumes_metadata(volumes, target):
-    """Tests that volumes are correctly converted from list into dict
-
-    """
-    assert target == _validate_volumes_metadata(volumes)
+    """Tests that volumes are correctly converted from list into dict."""
+    assert target == metadata_utils._validate_volumes_metadata(volumes)
 
 
-@pytest.mark.parametrize("volumes", [
-    {
+@pytest.mark.parametrize("volumes,match", [
+    ([{
         'annotations': [{'key': 'a1', 'value': 'v1'}],
         'size': 5,
         'type': 'pv',
         'mount_point': '/'
-    }
+    }], "Volume spec: missing name value"),
+    ([{
+        'name': 'v1',
+        'annotations': [{'wronkey': 'a1', 'value': 'v1'}],
+        'size': 5,
+        'type': 'pv',
+        'mount_point': '/'
+    }], "Volume spec: volume annotations must be a "
+        "list of {'key': k, 'value': v} dicts"),
+    ([{
+        'name': 'v1',
+        'annotations': {'key': 'a1', 'value': 'v1'},
+        'size': 5,
+        'type': 'pv',
+        'mount_point': '/'
+    }], "Volume spec: annotations must be a list"),
 ])
-def test_convert_volume_annotations_exc(volumes):
-    """Tests that volumes are correctly converted from list into dict
+def test_convert_volume_annotations_exc(volumes, match):
+    """Tests that volumes are correctly converted from list into dict."""
+    with pytest.raises(ValueError, match=match):
+        metadata_utils._validate_volumes_metadata(volumes)
 
-    """
-    with pytest.raises(ValueError):
-        _validate_volumes_metadata(volumes)
+
+@pytest.mark.parametrize("metadata,target", [
+    ({'pipeline_name': 'test',
+      'experiment_name': 'test'},
+     metadata_utils.DEFAULT_METADATA),
+    # ---
+    ({'pipeline_name': 'test',
+      'experiment_name': 'test'},
+     metadata_utils.DEFAULT_METADATA),
+
+])
+@mock.patch('kale.utils.metadata_utils.random_string')
+def test_validate_metadata(random_string, metadata, target):
+    """Tests metadata is parsed correctly."""
+    random_string.return_value = 'rnd'
+    # these are required fields that will always have to be present in the
+    # metadata dict
+    target.update({'pipeline_name': metadata['pipeline_name'] + '-rnd'})
+    target.update({'experiment_name': metadata['experiment_name']})
+    assert target == metadata_utils.validate_metadata(metadata)
+
+
+def test_validate_metadata_missing_required():
+    """Tests that required metadata keys are checked for."""
+    with pytest.raises(ValueError, match=r"Key experiment_name not found.*"):
+        metadata_utils.validate_metadata({})
+
+    with pytest.raises(ValueError, match=r"Key pipeline_name not found.*"):
+        metadata_utils.validate_metadata({'experiment_name': 'test'})
