@@ -68,7 +68,7 @@ def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
 
         if ignore_symbols:
             ins.difference_update(set(ignore_symbols))
-        nx.set_node_attributes(nb_graph, {block: {'ins': ins}})
+        nx.set_node_attributes(nb_graph, {block: {'ins': sorted(ins)}})
 
 
 def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
@@ -92,7 +92,7 @@ def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
             # Intersect the missing names of this father's child with all
             # the father's names. The intersection is the list of variables
             # that the father need to serialize
-            outs = ins.intersection(father_data['all_names'])
+            outs = set(ins).intersection(father_data['all_names'])
             # include previous `outs` in case this father has multiple
             # children steps
             outs.update(father_data['outs'])
@@ -100,7 +100,7 @@ def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
             if ignore_symbols:
                 ins.difference_update(set(ignore_symbols))
             # add to father the new `outs` variables
-            nx.set_node_attributes(nb_graph, {_a: {'outs': outs}})
+            nx.set_node_attributes(nb_graph, {_a: {'outs': sorted(outs)}})
 
 
 def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
