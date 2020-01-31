@@ -71,7 +71,7 @@ class Kale:
         self.notebook = nb.read(self.source_path.__str__(),
                                 as_version=nb.NO_CONVERT)
 
-        self.pipeline_metadata = DEFAULT_METADATA.copy()
+        self.pipeline_metadata = copy.deepcopy(DEFAULT_METADATA)
         # read Kale notebook metadata.
         # In case it is not specified get an empty dict
         self.pipeline_metadata.update(
@@ -155,8 +155,8 @@ class Kale:
                         k8s_name_msg)
 
                 # Convert annotations to a dictionary
-                annotations = {a['key']: a['value'] for a in
-                               v['annotations'] or []
+                annotations = {a['key']: a['value']
+                               for a in v['annotations'] or []
                                if a['key'] != '' and a['value'] != ''}
                 v['annotations'] = annotations
                 v['size'] = str(v['size'])
@@ -167,7 +167,7 @@ class Kale:
             volumes = sorted(
                 volumes,
                 reverse=True,
-                key=lambda _v: is_workspace_dir(_v['mount_point']))
+                key=lambda x: is_workspace_dir(x['mount_point']))
             self.pipeline_metadata['volumes'] = volumes
         else:
             raise ValueError("Volumes must be a valid list of volumes spec")

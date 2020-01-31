@@ -134,7 +134,6 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
     step_marshal_in = step_data.get('ins', [])
     step_marshal_out = step_data.get('outs', [])
 
-    # TODO: Remove some parameters and pass them with **metadata
     fn_code = template.render(
         step_name=step_name,
         function_body=[step_source],
@@ -151,10 +150,9 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_components,
                       metadata):
     """Use the pipeline template to generate Python code."""
     # All the Pipeline steps that do not have children
-    leaf_steps = [x for x in nb_graph.nodes() if
-                  nb_graph.out_degree(x) == 0]
+    leaf_steps = [x for x in nb_graph.nodes()
+                  if nb_graph.out_degree(x) == 0]
 
-    # TODO: Pass arguments as **metadata.
     pipeline_code = template.render(
         lightweight_components=lightweight_components,
         step_names=step_names,
