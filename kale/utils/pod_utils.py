@@ -25,6 +25,8 @@ K8S_SIZE_UNITS = {"E": 10 ** 18,
                   "Mi": 2 ** 20,
                   "Ki": 2 ** 10}
 
+KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
+
 logger = logging.getLogger("kubeflow-kale")
 
 
@@ -235,11 +237,13 @@ def get_run_uuid():
     workflow = co_client.get_namespaced_custom_object(api_group, api_version,
                                                       namespace, co_name,
                                                       workflow_name)
+    run_uuid = workflow["metadata"].get("labels", {}).get(KFP_RUN_ID_LABEL_KEY,
+                                                          None)
 
-    # FIXME: Currently workflows are not annotated with the Kubeflow pipeline
-    # run UUID, so there is no way to retrieve the run UUID from within a pod.
-    # For now we return the workflow UUID instead.
-    return workflow["metadata"]["uid"]
+    # KFP api-server adds run UUID as label to workflows for KFP>=0.1.26.
+    # Return run UUID if available. Else return workflow UUID to maintain
+    # backwards compatibility.
+    return run_uuid or workflow["metadata"]["uid"]
 
 
 def is_workspace_dir(directory):
