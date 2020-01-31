@@ -82,7 +82,7 @@ class Kale:
         stream_handler.setFormatter(formatter)
 
         self.log_dir_path = Path(".")
-        file_handler = logging.FileHandler(filename=self.log_dir_path / 'kale.log', mode='a')
+        file_handler = logging.FileHandler(filename=self.log_dir_path.__str__() + '/kale.log', mode='a')
         file_handler.setFormatter(formatter)
         file_handler.setLevel(logging.DEBUG)
 
@@ -204,7 +204,7 @@ class Kale:
         dev env in pipeline steps
         """
         # used to set container step working dir same as current environment
-        self.pipeline_metadata['abs_working_dir'] = os.path.dirname(os.path.abspath(self.source_path))
+        self.pipeline_metadata['abs_working_dir'] = os.path.dirname(os.path.abspath(self.source_path.__str__()))
 
         # When running inside a Kubeflow Notebook Server we can detect the running
         # docker image and use it as default in the pipeline steps.
@@ -240,12 +240,12 @@ class Kale:
 
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
-                                              nb_path=os.path.abspath(self.source_path),
+                                              nb_path=os.path.abspath(self.source_path.__str__()),
                                               pipeline_parameters=pipeline_parameters,
                                               metadata=self.pipeline_metadata,
                                               auto_snapshot=self.auto_snapshot)
 
-        output_path = os.path.join(os.path.dirname(self.source_path),
+        output_path = os.path.join(os.path.dirname(self.source_path.__str__()),
                                    "{}.kale.py".format(self.pipeline_metadata['pipeline_name']))
         # save kfp generated code
         self.save_pipeline(kfp_code, output_path)
