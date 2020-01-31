@@ -130,9 +130,9 @@ def pipeline_dependencies_tasks(g):
 def generate_lightweight_component(template, step_name, step_data, nb_path,
                                    metadata):
     """Use the function template to generate Python code."""
-    step_source = step_data['source']
-    step_marshal_in = step_data['ins']
-    step_marshal_out = step_data['outs']
+    step_source = step_data.get('source', [])
+    step_marshal_in = step_data.get('ins', [])
+    step_marshal_out = step_data.get('outs', [])
 
     # TODO: Remove some parameters and pass them with **metadata
     fn_code = template.render(

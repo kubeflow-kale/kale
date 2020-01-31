@@ -274,10 +274,15 @@ class Kale:
 
         # add an empty step at the end of the pipeline for final snapshot
         if self.auto_snapshot:
-            pipeline_graph.add_node('final_auto_snapshot',
-                                    source='',
-                                    ins=set(),
-                                    outs=set())
+            auto_snapshot_name = 'final_auto_snapshot'
+            # add a link from all the last steps of the pipeline to
+            # the final auto snapshot one.
+            leaf_steps = [x for x in pipeline_graph.nodes() if
+                          pipeline_graph.out_degree(x) == 0]
+            for node in leaf_steps:
+                pipeline_graph.add_edge(node, auto_snapshot_name)
+            data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
+            nx.set_node_attributes(pipeline_graph, data)
 
         # TODO: Additional Step required:
         #  Run a static analysis over every step to check that pipeline
