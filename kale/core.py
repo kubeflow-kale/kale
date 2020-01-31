@@ -51,7 +51,7 @@ class Kale:
         self.auto_snapshot = auto_snapshot
         self.source_path = Path(source_notebook_path)
         if not self.source_path.exists():
-            raise ValueError(f"Path {self.source_path} does not exist")
+            raise ValueError("Path {} does not exist".format(self.source_path))
 
         # read notebook
         self.notebook = nb.read(self.source_path.__str__(), as_version=nb.NO_CONVERT)
@@ -123,7 +123,7 @@ class Kale:
                 if 'name' not in v:
                     raise ValueError("Provide a valid name for every volume")
                 if not re.match(k8s_valid_name_regex, v['name']):
-                    raise ValueError(f"PV/PVC resource name {k8s_name_msg}")
+                    raise ValueError("PV/PVC resource name {}".format(k8s_name_msg))
                 if ('snapshot' in v and
                     v['snapshot'] and
                     (('snapshot_name' not in v) or
@@ -142,7 +142,7 @@ class Kale:
         out = p.stdout.read()
         err = p.stderr.read()
         if exit_code:
-            msg = f"Command '{cmd}' failed with exit code: {exit_code}"
+            msg = "Command '{}' failed with exit code: {}".format(cmd, exit_code)
             self.logger.error("{}:{}".format(msg, err))
             raise RuntimeError(msg)
 
@@ -157,7 +157,7 @@ class Kale:
                                           'value': snap['rok_url']}]
                 return volume
 
-        msg = f"Volume '{volume['name']}' not found in notebook snapshot"
+        msg = "Volume '{}' not found in notebook snapshot".format(volume['name'])
         raise ValueError(msg)
 
     def create_cloned_volumes(self, volumes):
@@ -169,14 +169,14 @@ class Kale:
         hostname = os.getenv("HOSTNAME")
         # FIXME: Import the Rok client instead of spawning external commands
         namespace = get_namespace()
-        commit_title = f"Snapshot of notebook {hostname}"
+        commit_title = "Snapshot of notebook {}".format(hostname)
         commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                                  namespace)
-        output = self.run_cmd(f"rok-gw -o json object-register jupyter"
-                              f" '{bucket_name}' '{hostname}' --no-interactive"
-                              f" --param namespace='{namespace}'"
-                              f" --param commit_title='{commit_title}'"
-                              f" --param commit_message='{commit_message}'")
+        output = self.run_cmd("rok-gw -o json object-register jupyter"
+                              + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
+                              + " --param namespace='{}'".format(namespace)
+                              + " --param commit_title='{}'".format(commit_title)
+                              + " --param commit_message='{}'".format(commit_message))
 
         output = json.loads(output)
         snapshot_volumes = output['result']['version']['group_members']
@@ -185,9 +185,9 @@ class Kale:
         for v in snapshot_volumes:
             obj_name = v["object_name"]
             version_name = v["version_name"]
-            output = self.run_cmd(f"rok-gw -o json object-show '{bucket_name}'"
-                                  f" '{obj_name}' --version '{version_name}'"
-                                  " --detail")
+            output = self.run_cmd("rok-gw -o json object-show '{}'".format(bucket_name)
+                                  + " '{}' --version '{}'".format(obj_name, version_name)
+                                  + " --detail")
             v["mount_point"] = json.loads(output)["metadata"]["mountpoint"]
 
         _volumes = []
@@ -246,7 +246,7 @@ class Kale:
                                               auto_snapshot=self.auto_snapshot)
 
         output_path = os.path.join(os.path.dirname(self.source_path),
-                                   f"{self.pipeline_metadata['pipeline_name']}.kale.py")
+                                   "{}.kale.py".format(self.pipeline_metadata['pipeline_name']))
         # save kfp generated code
         self.save_pipeline(kfp_code, output_path)
         return output_path
@@ -258,7 +258,7 @@ class Kale:
         for block_name in nx.topological_sort(pipeline_graph):
             block_data = pipeline_graph.nodes(data=True)[block_name]
 
-            print(f"Block: {block_name}")
+            print("Block: {}".format(block_name))
             print("Previous Blocks:")
             if 'previous_blocks' in block_data['tags']:
                 pprint.pprint(block_data['tags']['previous_blocks'], width=1)
@@ -275,11 +275,11 @@ class Kale:
     def save_pipeline(self, pipeline_code, output_path):
         # save pipeline code to temp directory
         # tmp_dir = tempfile.mkdtemp()
-        # with open(tmp_dir + f"/{filename}", "w") as f:
+        # with open(tmp_dir + "/{}".format(filename), "w") as f:
         #     f.write(pipeline_code)
-        # print(f"Pipeline code saved at {tmp_dir}/{filename}")
+        # print("Pipeline code saved at {}/{}".format(tmp_dir, filename))
 
         # Save pipeline code in the notebook source directory
         with open(output_path, "w") as f:
             f.write(pipeline_code)
-        self.logger.info(f"Pipeline code saved at {output_path}")
+        self.logger.info("Pipeline code saved at {}".format(output_path))

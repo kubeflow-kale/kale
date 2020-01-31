@@ -51,15 +51,15 @@ def gen_kfp_code(nb_graph,
             continue
 
         if v['type'] == 'pvc':
-            par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
+            par_name = "vol_{}".format(v['mount_point'].replace('/', '_').strip('_'))
             pipeline_parameters[par_name] = ('str', v['name'])
         elif v['type'] == 'new_pvc':
             rok_url = v['annotations'].get("rok/origin")
             if rok_url is not None:
-                par_name = f"rok_{v['name'].replace('-', '_')}_url"
+                par_name = "rok_{}_url".format(v['name'].replace('-', '_'))
                 pipeline_parameters[par_name] = ('str', rok_url)
         else:
-            raise ValueError(f"Unknown volume type: {v['type']}")
+            raise ValueError("Unknown volume type: {}".format(v['type']))
 
     # The Jupyter Web App assumes the first volume of the notebook is the
     # working directory, so we make sure to make it appear first in the spec.
@@ -79,17 +79,17 @@ def gen_kfp_code(nb_graph,
         # if we found any, then set marshal directory inside working directory
         if len(vols) >= 1:
             marshal_volume = False
-            marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
+            marshal_dir = ".{}.kale.marshal.dir".format(os.path.basename(nb_path))
             marshal_path = os.path.join(wd, marshal_dir)
 
     pipeline_args_names = list(pipeline_parameters.keys())
     # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
+    pipeline_args = ', '.join(["{}='{}'".format(arg, pipeline_parameters[arg][1])
                                for arg in pipeline_parameters])
     # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
     # steps they are needed we just pass them to every one. The assumption is that these variables
     # were treated as constants notebook-wise.
-    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}" for arg in pipeline_parameters])
+    function_args = ', '.join(["{}: {}".format(arg,pipeline_parameters[arg][0]) for arg in pipeline_parameters])
 
     # Order the pipeline topologically to cycle through the DAG
     for block_name in nx.topological_sort(nb_graph):
@@ -102,7 +102,7 @@ def gen_kfp_code(nb_graph,
         args = list()
         if len(predecessors) > 0:
             for a in predecessors:
-                args.append(f"{a}_task")
+                args.append("{}_task".format(a))
         function_prevs[block_name] = args
 
         function_blocks.append(function_template.render(
@@ -134,7 +134,7 @@ def gen_kfp_code(nb_graph,
             nb_path=nb_path
         ))
         function_names.append(final_auto_snapshot_name)
-        function_prevs[final_auto_snapshot_name] = [f"{x}_task"
+        function_prevs[final_auto_snapshot_name] = ["{}_task".format(x)
                                                     for x in leaf_nodes]
 
     pipeline_template = template_env.get_template('pipeline_template.txt')

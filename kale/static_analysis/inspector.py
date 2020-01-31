@@ -63,7 +63,7 @@ class CodeInspector:
                 # TODO: Handle this
                 pass
             else:
-                raise ValueError(f"__left_assign_value: Object type not recognized: {type(_t)}")
+                raise ValueError("__left_assign_value: Object type not recognized: {}".format(type(_t)))
         return values
 
     def __get_tuple_names(self, tuple_node):

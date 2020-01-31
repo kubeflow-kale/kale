@@ -41,7 +41,7 @@ def snapshot_notebook(request, bucket=DEFAULT_BUCKET, obj=None):
     rok = _get_client()
     hostname = os.getenv("HOSTNAME")
     namespace = pod_utils.get_namespace()
-    commit_title = f"Snapshot of notebook {hostname}"
+    commit_title = "Snapshot of notebook {}".format(hostname)
     commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                              namespace)
     params = {"namespace": namespace,
@@ -68,7 +68,7 @@ def _get_group_members(info):
 
 
 def _get_cloned_volume(volume, obj_name, members):
-    member_name = f"{obj_name}_{volume['name']}"
+    member_name = "{}_{}".format(obj_name, volume['name'])
     for member in members:
         if member['object'] == member_name:
             volume = copy.deepcopy(volume)
@@ -77,7 +77,7 @@ def _get_cloned_volume(volume, obj_name, members):
                                       'value': member['rok_url']}]
             return volume
 
-    msg = f"Volume '{volume['name']}' not found in group '{obj_name}'"
+    msg = "Volume '{}' not found in group '{}'".format(volume['name'], obj_name)
     raise ValueError(msg)
 
 

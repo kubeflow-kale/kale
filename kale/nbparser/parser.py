@@ -101,7 +101,7 @@ def parse_metadata(metadata: dict):
 
         # Check that the tag is defined by the language
         if any(re.match(_t, t) for _t in TAGS_LANGUAGE) is False:
-            raise ValueError(f"Unrecognized tag: {t}")
+            raise ValueError("Unrecognized tag: {}".format(t))
 
         if t == "skip":
             return None
@@ -227,7 +227,7 @@ def parse_notebook(notebook):
         for p in tags.previous_blocks:
             if p not in nb_graph.nodes:
                 raise ValueError(
-                    f"Block `{p}` does not exist. It was defined as previous block of `{tags.block_names}`")
+                    "Block `{}` does not exist. It was defined as previous block of `{}`".format(p,tags.block_names))
 
         # if the block was not tagged with a name,
         # add the source code to the block defined by the previous(es) cell(s)
