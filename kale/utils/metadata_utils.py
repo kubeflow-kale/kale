@@ -53,10 +53,11 @@ def validate_metadata(notebook_metadata):
     metadata.update(notebook_metadata)
 
     if not re.match(kale_step_name_regex, metadata['pipeline_name']):
-        raise ValueError("Pipeline name  %s" % kale_name_msg)
+        raise ValueError("Pipeline name  {}".format(kale_name_msg))
 
     # update the pipeline name with a random string
-    random_pipeline_name = f"{metadata['pipeline_name']}-{random_string()}"
+    random_pipeline_name = "{}-{}".format(metadata['pipeline_name'],
+                                          random_string())
     metadata['pipeline_name'] = random_pipeline_name
 
     volumes = metadata.get('volumes', [])
@@ -84,24 +85,24 @@ def _validate_volumes_metadata(volumes):
         for required in volume_required_fields:
             if required not in v:
                 raise ValueError(
-                    "Volume spec: missing %s value" % required)
+                    "Volume spec: missing {} value".format(required))
 
         if not re.match(k8s_valid_name_regex, v['name']):
-            raise ValueError(f"Volume spec: PV/PVC name {k8s_name_msg}")
+            raise ValueError(
+                "Volume spec: PV/PVC name {}".format(k8s_name_msg))
         if ('snapshot' in v and
                 v['snapshot'] and
                 (('snapshot_name' not in v) or
                  not re.match(k8s_valid_name_regex,
                               v['snapshot_name']))):
-            raise ValueError(
-                "Provide a valid snapshot resource name if you want to"
-                " snapshot a volume. Snapshot resource name %s" %
-                k8s_name_msg)
+            raise ValueError("Provide a valid snapshot resource name if you"
+                             " want to snapshot a volume. Snapshot resource"
+                             " name {}".format(k8s_name_msg))
 
         if not v['type'] in volume_types:
-            raise ValueError("Volume spec: volume type %s not recognized. "
-                             "Allowed volumes type: %s" %
-                             (v['type'], volume_types))
+            raise ValueError("Volume spec: volume type {} not recognized. "
+                             "Allowed volumes type: {}"
+                             .format(v['type'], volume_types))
 
         if not isinstance(v['annotations'], list):
             raise ValueError('Volume spec: annotations must be a list')
