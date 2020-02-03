@@ -122,8 +122,8 @@ def pipeline_dependencies_tasks(g):
     """
     deps = dict()
     for step_name in nx.topological_sort(g):
-        deps[step_name] = [f"{pred}_task" for pred in
-                           g.predecessors(step_name)]
+        deps[step_name] = [f"{pred}_task"
+                           for pred in g.predecessors(step_name)]
     return deps
 
 

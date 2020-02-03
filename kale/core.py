@@ -277,8 +277,8 @@ class Kale:
             auto_snapshot_name = 'final_auto_snapshot'
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
-            leaf_steps = [x for x in pipeline_graph.nodes() if
-                          pipeline_graph.out_degree(x) == 0]
+            leaf_steps = [x for x in pipeline_graph.nodes()
+                          if pipeline_graph.out_degree(x) == 0]
             for node in leaf_steps:
                 pipeline_graph.add_edge(node, auto_snapshot_name)
             data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
