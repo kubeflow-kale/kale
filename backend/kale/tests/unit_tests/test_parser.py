@@ -54,8 +54,6 @@ empty_tag = {'step_names': [], 'prev_steps': []}
      {'step_names': ['step1', 'step2'], 'prev_steps': []}),
     ({'tags': ['block:step1', 'prev:step2']},
      {'step_names': ['step1'], 'prev_steps': ['step2']}),
-    ({'tags': ['prev:step2']},
-     {'step_names': [], 'prev_steps': ['step2']}),
 ])
 def test_parse_metadata(metadata, target):
     """Test parse_metadata function."""
@@ -65,6 +63,7 @@ def test_parse_metadata(metadata, target):
 @pytest.mark.parametrize("metadata", [
     ({'tags': ["random_value"]}),
     ({'tags': [0]}),
+    ({'tags': ['prev:step2']}),
 ])
 def test_parse_metadata_exc(metadata):
     """Test parse_metadata exception cases."""

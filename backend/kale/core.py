@@ -21,6 +21,7 @@ from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
+from kale.utils.pod_utils import is_workspace_dir
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -34,6 +35,20 @@ METADATA_REQUIRED_KEYS = [
     'experiment_name',
     'pipeline_name',
 ]
+
+DEFAULT_METADATA = {
+    'experiment_name': '',
+    'pipeline_name': '',
+    'pipeline_description': '',
+    'pipeline_args': '',
+    'pipeline_args_names': '',
+    'docker_image': '',
+    'volumes': [],
+    'abs_working_dir': None,
+    'marshal_volume': False,
+    'marshal_path': '',
+    'auto_snapshot': False
+}
 
 
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
@@ -56,16 +71,14 @@ class Kale:
         self.notebook = nb.read(self.source_path.__str__(),
                                 as_version=nb.NO_CONVERT)
 
+        self.pipeline_metadata = copy.deepcopy(DEFAULT_METADATA)
         # read Kale notebook metadata.
         # In case it is not specified get an empty dict
-        self.pipeline_metadata = self.notebook.metadata.get(
-            KALE_NOTEBOOK_METADATA_KEY, dict())
+        self.pipeline_metadata.update(
+            self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict()))
         # override notebook metadata with provided arguments
         if notebook_metadata_overrides:
-            self.pipeline_metadata = {**self.pipeline_metadata,
-                                      **{k: v for k, v in
-                                         notebook_metadata_overrides.items()
-                                         if v}}
+            self.pipeline_metadata.update(notebook_metadata_overrides)
 
         pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
                                    random_string())
@@ -140,6 +153,22 @@ class Kale:
                         "Provide a valid snapshot resource name if you want to"
                         " snapshot a volume. Snapshot resource name %s" %
                         k8s_name_msg)
+
+                # Convert annotations to a dictionary
+                annotations = {a['key']: a['value']
+                               for a in v['annotations'] or []
+                               if a['key'] != '' and a['value'] != ''}
+                v['annotations'] = annotations
+                v['size'] = str(v['size'])
+
+            # The Jupyter Web App assumes the first volume of the notebook
+            # is the working directory, so we make sure to make it appear
+            # first in the spec.
+            volumes = sorted(
+                volumes,
+                reverse=True,
+                key=lambda x: is_workspace_dir(x['mount_point']))
+            self.pipeline_metadata['volumes'] = volumes
         else:
             raise ValueError("Volumes must be a valid list of volumes spec")
 
@@ -242,6 +271,18 @@ class Kale:
         to_ignore = set(pipeline_parameters_dict.keys())
         dependencies.dependencies_detection(pipeline_graph,
                                             ignore_symbols=to_ignore)
+
+        # add an empty step at the end of the pipeline for final snapshot
+        if self.auto_snapshot:
+            auto_snapshot_name = 'final_auto_snapshot'
+            # add a link from all the last steps of the pipeline to
+            # the final auto snapshot one.
+            leaf_steps = [x for x in pipeline_graph.nodes()
+                          if pipeline_graph.out_degree(x) == 0]
+            for node in leaf_steps:
+                pipeline_graph.add_edge(node, auto_snapshot_name)
+            data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
+            nx.set_node_attributes(pipeline_graph, data)
 
         # TODO: Additional Step required:
         #  Run a static analysis over every step to check that pipeline

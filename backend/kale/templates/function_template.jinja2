@@ -1,23 +1,23 @@
-def {{ function_name }}({{ function_args }}):
-
+def {{ step_name }}({{ function_args }}):
     import os
     import shutil
-    from kale.utils import pod_utils
+    from kale.utils import pod_utils as _kale_pod_utils
     from kale.marshal import resource_save as _kale_resource_save
     from kale.marshal import resource_load as _kale_resource_load
 
     _kale_data_directory = "{{ marshal_path }}"
-    {# Verify directory exists #}
+    {#- Verify directory exists #}
     if not os.path.isdir(_kale_data_directory):
         os.makedirs(_kale_data_directory, exist_ok=True)
 
     {% if auto_snapshot -%}
-    pod_utils.snapshot_pipeline_step("{{ pipeline_name }}",
-                                     "{{ function_name }}",
-                                     "{{ nb_path }}")
+    _kale_pod_utils.snapshot_pipeline_step(
+        "{{ pipeline_name }}",
+        "{{ step_name }}",
+        "{{ nb_path }}")
     {% endif -%}
 
-{%- if in_variables|length > 0 %}
+{%- if in_variables|length > 0 -%}
     # -----------------------DATA LOADING START--------------------------------
     _kale_directory_file_names = [
         os.path.splitext(f)[0]
@@ -25,36 +25,37 @@ def {{ function_name }}({{ function_args }}):
         if os.path.isfile(os.path.join(_kale_data_directory, f))
     ]
 
-{%- for in_var in in_variables %}
-    {# First check that the variable exists in the path #}
+{%- for in_var in in_variables -%}
+    {#- First check that the variable exists in the path #}
     if "{{ in_var }}" not in _kale_directory_file_names:
         raise ValueError("{{ in_var }}" + " does not exists in directory")
 
-    {# Load variable -#}
+    {#- Load variable #}
     _kale_load_file_name = [
         f
         for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f)) and
-           os.path.splitext(f)[0] == "{{ in_var }}"
+        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
+            os.path.splitext(f)[0] == "{{ in_var }}")
     ]
     if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name " + "{{ in_var }}" + ": " + str(_kale_load_file_name))
+        raise ValueError("Found multiple files with name %s: %s"
+                         % ("{{ in_var }}", str(_kale_load_file_name)))
     _kale_load_file_name = _kale_load_file_name[0]
-    {{ in_var }} = _kale_resource_load(os.path.join(_kale_data_directory, _kale_load_file_name))
+    {{ in_var }} = _kale_resource_load(
+        os.path.join(_kale_data_directory, _kale_load_file_name))
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
-{%- endif %}
-
-
-{% for block in function_blocks %}
+{%- endif -%}
+{%- for block in function_body %}
 {{block|indent(4, True)}}
-{% endfor %}
-{%- if out_variables|length > 0 %}
+{%- endfor %}
+{% if out_variables|length > 0 %}
     # -----------------------DATA SAVING START---------------------------------
 {%- for out_var in out_variables %}
     if "{{ out_var }}" in locals():
         {#-  `_kale_resource_save` will automatically add the correct extension #}
-        _kale_resource_save({{ out_var }}, os.path.join(_kale_data_directory, "{{ out_var }}"))
+        _kale_resource_save(
+            {{ out_var }}, os.path.join(_kale_data_directory, "{{ out_var }}"))
     else:
         print("_kale_resource_save: `{{ out_var }}` not found.")
 {%- endfor %}
