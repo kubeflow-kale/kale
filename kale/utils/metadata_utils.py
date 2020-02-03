@@ -23,12 +23,12 @@ METADATA_REQUIRED_KEYS = [
     'pipeline_name',
 ]
 kale_step_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-kale_name_msg = ("must consist of lower case alphanumeric characters "
-                 "or '-', and must start and end with an alphanumeric"
+kale_name_msg = ("must consist of lower case alphanumeric characters"
+                 " or '-', and must start and end with an alphanumeric"
                  " character.")
 k8s_valid_name_regex = r'^[\.\-a-z0-9]+$'
-k8s_name_msg = ("must consist of lower case alphanumeric characters, "
-                "'-' or '.'")
+k8s_name_msg = ("must consist of lower case alphanumeric characters,"
+                " '-' or '.'")
 volume_types = ['pv', 'pvc', 'new_pvc', 'clone']
 volume_required_fields = ['name', 'annotations', 'size', 'type', 'mount_point']
 
@@ -45,8 +45,8 @@ def validate_metadata(notebook_metadata):
     # check for required fields before adding all possible defaults
     for required in METADATA_REQUIRED_KEYS:
         if required not in notebook_metadata:
-            raise ValueError("Key {} not found. Add this field either on "
-                             "the notebook metadata or as an override"
+            raise ValueError("Key {} not found. Add this field either on"
+                             " the notebook metadata or as an override"
                              .format(required))
 
     metadata = DEFAULT_METADATA.copy()
@@ -100,8 +100,8 @@ def _validate_volumes_metadata(volumes):
                              " name {}".format(k8s_name_msg))
 
         if not v['type'] in volume_types:
-            raise ValueError("Volume spec: volume type {} not recognized. "
-                             "Allowed volumes type: {}"
+            raise ValueError("Volume spec: volume type {} not recognized."
+                             " Allowed volumes type: {}"
                              .format(v['type'], volume_types))
 
         if not isinstance(v['annotations'], list):
@@ -115,8 +115,8 @@ def _validate_volumes_metadata(volumes):
                            if a['key'] != '' and a['value'] != ''}
         except KeyError as e:
             if str(e) in ["'key'", "'value'"]:
-                raise ValueError("Volume spec: volume annotations must be a "
-                                 "list of {'key': k, 'value': v} dicts")
+                raise ValueError("Volume spec: volume annotations must be a"
+                                 " list of {'key': k, 'value': v} dicts")
             else:
                 raise e
 
