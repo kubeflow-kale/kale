@@ -6,7 +6,6 @@ from argparse import RawTextHelpFormatter
 from kale.core import Kale
 from kale.utils import kfp_utils
 
-
 ARGS_DESC = """
 KALE: Kubeflow Automated pipeLines Engine\n
 \n
@@ -27,42 +26,63 @@ will take precedence.\n
 """
 
 METADATA_GROUP_DESC = """
-Override the arguments provided in the Kale metadata section of the source Notebook
+Override the arguments of the source Notebook's Kale metadata section
 """
 
 
 def main():
-    parser = argparse.ArgumentParser(description=ARGS_DESC, formatter_class=RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(description=ARGS_DESC,
+                                     formatter_class=RawTextHelpFormatter)
     general_group = parser.add_argument_group('General')
-    general_group.add_argument('--nb', type=str, help='Path to source JupyterNotebook', required=True)
-    # use store_const instead of store_true because we None instead of False in case the flag is missing
-    general_group.add_argument('--upload_pipeline', action='store_const', const=True)
-    general_group.add_argument('--run_pipeline', action='store_const', const=True)
+    general_group.add_argument('--nb', type=str,
+                               help='Path to source JupyterNotebook',
+                               required=True)
+    # use store_const instead of store_true because we None instead of
+    # False in case the flag is missing
+    general_group.add_argument('--upload_pipeline', action='store_const',
+                               const=True)
+    general_group.add_argument('--run_pipeline', action='store_const',
+                               const=True)
     general_group.add_argument('--debug', action='store_true')
 
-    metadata_group = parser.add_argument_group('Notebook Metadata Overrides', METADATA_GROUP_DESC)
-    metadata_group.add_argument('--experiment_name', type=str, help='Name of the created experiment')
-    metadata_group.add_argument('--pipeline_name', type=str, help='Name of the deployed pipeline')
-    metadata_group.add_argument('--pipeline_description', type=str, help='Description of the deployed pipeline')
-    metadata_group.add_argument('--docker_image', type=str, help='Docker base image used to build the pipeline steps')
-    metadata_group.add_argument('--kfp_host', type=str, help='KFP endpoint. Provide address as <host>:<port>.')
+    metadata_group = parser.add_argument_group('Notebook Metadata Overrides',
+                                               METADATA_GROUP_DESC)
+    metadata_group.add_argument('--experiment_name', type=str,
+                                help='Name of the created experiment')
+    metadata_group.add_argument('--pipeline_name', type=str,
+                                help='Name of the deployed pipeline')
+    metadata_group.add_argument('--pipeline_description', type=str,
+                                help='Description of the deployed pipeline')
+    metadata_group.add_argument('--docker_image', type=str,
+                                help='Docker base image used to build the '
+                                     'pipeline steps')
+    metadata_group.add_argument('--kfp_host', type=str,
+                                help='KFP endpoint. Provide address as '
+                                     '<host>:<port>.')
 
     args = parser.parse_args()
 
     # get the notebook metadata args group
-    metadata_overrides_group = next(filter(lambda x: x.title == 'Notebook Metadata Overrides', parser._action_groups))
+    mt_overrides_group = next(
+        filter(lambda x: x.title == 'Notebook Metadata Overrides',
+               parser._action_groups))
     # get the single args of that group
-    metadata_overrides_group_dict = {a.dest: getattr(args, a.dest, None) for a in metadata_overrides_group._group_actions}
+    mt_overrides_group_dict = {a.dest: getattr(args, a.dest, None)
+                               for a in mt_overrides_group._group_actions
+                               if getattr(args, a.dest, None) is not None}
 
     kale = Kale(
         source_notebook_path=args.nb,
-        notebook_metadata_overrides=metadata_overrides_group_dict,
+        notebook_metadata_overrides=mt_overrides_group_dict,
         debug=args.debug
     )
     pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
-    script_path = kale.generate_kfp_executable(pipeline_graph, pipeline_parameters)
+    script_path = kale.generate_kfp_executable(pipeline_graph,
+                                               pipeline_parameters)
     # compile the pipeline to kfp tar package
-    pipeline_package_path = kfp_utils.compile_pipeline(script_path, kale.pipeline_metadata['pipeline_name'])
+    pipeline_name = kale.pipeline_metadata['pipeline_name']
+    pipeline_package_path = kfp_utils.compile_pipeline(script_path,
+                                                       pipeline_name)
 
     if args.upload_pipeline:
         kfp_utils.upload_pipeline(
