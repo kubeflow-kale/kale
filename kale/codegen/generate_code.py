@@ -106,7 +106,8 @@ def get_args(pipeline_parameters):
     # Arguments are the pipeline arguments. Since we don't know precisely in
     # what pipeline steps they are needed, we just pass them to every one.
     # We assume there variables were not re-assigned throughout the notebook
-    function_args = ', '.join(["{}: {}".format(arg, pipeline_parameters[arg][0])
+    function_args = ', '.join(["{}: {}".format(arg, 
+                                               pipeline_parameters[arg][0])
                                for arg in pipeline_parameters])
     return {
         'pipeline_args_names': pipeline_args_names,
