@@ -13,8 +13,6 @@ import logging.handlers
 import nbformat as nb
 import networkx as nx
 
-from pathlib import Path
-
 from kubernetes.config import ConfigException
 
 from kale.nbparser import parser
@@ -63,12 +61,12 @@ class Kale:
                  debug: bool = False,
                  auto_snapshot: bool = False):
         self.auto_snapshot = auto_snapshot
-        self.source_path = Path(source_notebook_path)
-        if not self.source_path.exists():
+        self.source_path = str(source_notebook_path)
+        if not os.path.exists(self.source_path):
             raise ValueError("Path {} does not exist".format(self.source_path))
 
         # read notebook
-        self.notebook = nb.read(self.source_path.__str__(),
+        self.notebook = nb.read(self.source_path,
                                 as_version=nb.NO_CONVERT)
 
         self.pipeline_metadata = copy.deepcopy(DEFAULT_METADATA)
@@ -100,9 +98,9 @@ class Kale:
             stream_handler.setLevel(logging.INFO)
         stream_handler.setFormatter(formatter)
 
-        self.log_dir_path = Path(".")
+        self.log_dir_path = "."
         file_handler = logging.FileHandler(
-            filename=self.log_dir_path.__str__() + '/kale.log', mode='a')
+            filename=self.log_dir_path + '/kale.log', mode='a')
         file_handler.setFormatter(formatter)
         file_handler.setLevel(logging.DEBUG)
 
@@ -180,7 +178,8 @@ class Kale:
         out = p.stdout.read()
         err = p.stderr.read()
         if exit_code:
-            msg = "Command '{}' failed with exit code: {}".format(cmd, exit_code)
+            msg = "Command '{}' failed with exit code: {}".format(cmd,
+                                                                  exit_code)
             self.logger.error("{}:{}".format(msg, err))
             raise RuntimeError(msg)
 
@@ -195,7 +194,8 @@ class Kale:
                                           'value': snap['rok_url']}]
                 return volume
 
-        msg = "Volume '{}' not found in notebook snapshot".format(volume['name'])
+        msg = "Volume '{}' not found in notebook snapshot"
+        msg = msg.format(volume['name'])
         raise ValueError(msg)
 
     def create_cloned_volumes(self, volumes):
@@ -210,11 +210,12 @@ class Kale:
         commit_title = "Snapshot of notebook {}".format(hostname)
         commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                                  namespace)
-        output = self.run_cmd("rok-gw -o json object-register jupyter"
-                              + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
-                              + " --param namespace='{}'".format(namespace)
-                              + " --param commit_title='{}'".format(commit_title)
-                              + " --param commit_message='{}'".format(commit_message))
+        output_cmd = ("rok-gw -o json object-register jupyter"
+            + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
+            + " --param namespace='{}'".format(namespace)
+            + " --param commit_title='{}'".format(commit_title)
+            + " --param commit_message='{}'".format(commit_message))
+        output = self.run_cmd(cmd)
 
         output = json.loads(output)
         snapshot_volumes = output['result']['version']['group_members']
@@ -223,9 +224,10 @@ class Kale:
         for v in snapshot_volumes:
             obj_name = v["object_name"]
             version_name = v["version_name"]
-            output = self.run_cmd("rok-gw -o json object-show '{}'".format(bucket_name)
-                                  + " '{}' --version '{}'".format(obj_name, version_name)
-                                  + " --detail")
+            output_cmd = ("rok-gw -o json object-show '{}'".format(bucket_name)
+                        + " '{}' --version '{}'".format(obj_name, version_name)
+                        + " --detail")
+            output = self.run_cmd(output_cmd)
             v["mount_point"] = json.loads(output)["metadata"]["mountpoint"]
 
         _volumes = []
@@ -243,7 +245,7 @@ class Kale:
         """
         # used to set container step working dir same as current environment
         self.pipeline_metadata['abs_working_dir'] = os.path.dirname(
-            os.path.abspath(self.source_path.__str__()))
+            os.path.abspath(self.source_path)
 
         # When running inside a Kubeflow Notebook Server we can detect the
         # running docker image and use it as default in the pipeline steps.
@@ -296,13 +298,14 @@ class Kale:
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
                                               nb_path=os.path.abspath(
-                                                  self.source_path.__str__()),
+                                                  self.source_path),
                                               pipeline_parameters=pipeline_parameters,
                                               metadata=self.pipeline_metadata,
                                               auto_snapshot=self.auto_snapshot)
-
-        output_path = os.path.join(os.path.dirname(self.source_path.__str__()),
-                                   "{}.kale.py".format(self.pipeline_metadata['pipeline_name']))
+        pipeline_name = self.pipeline_metadata['pipeline_name']
+        kale_file_name = "{}.kale.py".format(pipeline_name)
+        output_path = os.path.join(os.path.dirname(self.source_path),
+                                   kale_file_name)
         # save kfp generated code
         self.save_pipeline(kfp_code, output_path)
         return output_path
