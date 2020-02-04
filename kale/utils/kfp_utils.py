@@ -74,7 +74,8 @@ def upload_pipeline(pipeline_package_path, pipeline_name, overwrite=False, host=
         # The exception is a general 500 error.
         # The only way to check that it refers to the pipeline already existing
         # is by matching the error message
-        if overwrite and 'The name {} already exist'.format(pipeline_name) in str(e):
+        exc_msg = 'The name {} already exist'.format(pipeline_name)
+        if overwrite and exc_msg in str(e):
             # Get the id of the existing pipeline
             pipeline_id = get_pipeline_id(pipeline_name, host=host)
             # Delete the existing pipeline and upload the new one
@@ -105,5 +106,4 @@ def run_pipeline(run_name, experiment_name, pipeline_package_path, host=None):
     run = client.run_pipeline(experiment.id, run_name, pipeline_package_path, {})
     # return the run metadata
     return run
-
 
