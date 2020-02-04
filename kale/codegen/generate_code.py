@@ -100,7 +100,8 @@ def get_args(pipeline_parameters):
     """
     pipeline_args_names = ', '.join(list(pipeline_parameters.keys()))
     # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join(["{}='{}'".format(arg, pipeline_parameters[arg][1])
+    pipeline_args = ', '.join(["{}='{}'".format(arg, 
+                                                pipeline_parameters[arg][1])
                                for arg in pipeline_parameters])
     # Arguments are the pipeline arguments. Since we don't know precisely in
     # what pipeline steps they are needed, we just pass them to every one.
