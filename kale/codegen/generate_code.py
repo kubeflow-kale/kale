@@ -32,7 +32,8 @@ def get_volume_parameters(volumes):
             continue
 
         if v['type'] == 'pvc':
-            par_name = "vol_{}".format(v['mount_point'].replace('/', '_').strip('_'))
+            mount_point = v['mount_point'].replace('/', '_').strip('_')
+            par_name = "vol_{}".format(mount_point)
             volume_parameters[par_name] = ('str', v['name'])
         elif v['type'] == 'new_pvc':
             rok_url = v['annotations'].get("rok/origin")
