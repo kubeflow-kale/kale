@@ -143,7 +143,8 @@ class Kale:
                 if 'name' not in v:
                     raise ValueError("Provide a valid name for every volume")
                 if not re.match(k8s_valid_name_regex, v['name']):
-                    raise ValueError("PV/PVC resource name {}".format(k8s_name_msg))
+                    raise ValueError("PV/PVC resource name {}"
+                                     .format(k8s_name_msg))
                 if ('snapshot' in v and
                         v['snapshot'] and
                         (('snapshot_name' not in v) or
