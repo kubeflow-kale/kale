@@ -3,19 +3,171 @@ import autopep8
 
 import networkx as nx
 
-from jinja2 import Environment, PackageLoader
-from kale.utils.pod_utils import is_workspace_dir
+from jinja2 import Environment, PackageLoader, FileSystemLoader
 
 
-# TODO: Define most of this function parameters in a config file?
-#   Or extent the tagging language and provide defaults.
-#   Need to implement tag arguments first.
-def gen_kfp_code(nb_graph,
-                 nb_path,
-                 pipeline_parameters,
-                 metadata,
-                 auto_snapshot):
+def _initialize_templating_env(templates_path=None):
+    if templates_path:
+        loader = FileSystemLoader(templates_path)
+    else:
+        loader = PackageLoader('kale', 'templates')
+    template_env = Environment(loader=loader)
+    # add custom filters
+    template_env.filters['add_suffix'] = lambda s, suffix: s + suffix
+    return template_env
+
+
+def get_volume_parameters(volumes):
+    """Create pipeline parameters for volumes to be mounted on pipeline steps.
+
+    Args:
+        volumes: a volume spec
+
+    Returns (dict): volume pipeline parameters
     """
+    volume_parameters = dict()
+    for v in volumes:
+        if v['type'] == 'pv':
+            # FIXME: How should we handle existing PVs?
+            continue
+
+        if v['type'] == 'pvc':
+            par_name = "vol_{}".format(v['mount_point'].replace('/', '_').strip('_'))
+            volume_parameters[par_name] = ('str', v['name'])
+        elif v['type'] == 'new_pvc':
+            rok_url = v['annotations'].get("rok/origin")
+            if rok_url is not None:
+                par_name = "rok_{}_url".format(v['name'].replace('-', '_'))
+                volume_parameters[par_name] = ('str', rok_url)
+        else:
+            raise ValueError("Unknown volume type: {}".format(v['type']))
+    return volume_parameters
+
+
+def get_marshal_data(wd, volumes, nb_path):
+    """Get the marshal volume path, if needed.
+
+    Check the current volumes, in case the current working directory is a
+    subpath of one the mounted volumes, then use the current working directory
+    as the place for the marshal directory. Otherwise, write all marshal data
+    to /marshal.
+
+    Args:
+        wd: current working directory. Can be None
+        volumes: volumes dictionary
+        nb_path: path to the notebook file
+
+    Returns: (dict): a dict composed of
+        - 'marshal_volume' (bool): True if we use a custom marshal volume
+        - 'marshal_path' (str): path to the volume, if `marshal_volume` is True
+    """
+    marshal_volume = True
+    marshal_path = "/marshal"
+    # Check if the workspace directory is under a mounted volume.
+    # If so, marshal data into a folder in that volume,
+    # otherwise create a new volume and mount it at /marshal
+    if wd:
+        wd = os.path.realpath(wd)
+        # get the volumes for which the working directory is a subpath of
+        # the mount point
+        vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
+        # if we found any, then set marshal directory inside working directory
+        if len(vols) > 0:
+            marshal_volume = False
+            marshal_dir = ".{}.kale.marshal.dir".format(os.path.basename(nb_path))
+            marshal_path = os.path.join(wd, marshal_dir)
+    return {
+        'marshal_volume': marshal_volume,
+        'marshal_path': marshal_path
+    }
+
+
+def get_args(pipeline_parameters):
+    """Generate pipeline and function parameter.
+
+    The generated strings will be passed to the rendering template.
+
+    Args:
+        pipeline_parameters (dict): pipeline parameters as
+        {<name>:(<type>,<value>)}
+
+    Returns (dict): a dict composed of:
+        - 'pipeline_args_names': pipeline argument names as list
+        - 'pipeline_args': pipeline arguments as a comma separated string
+        - 'function_args': function arguments as a comma separated string
+    """
+    pipeline_args_names = ', '.join(list(pipeline_parameters.keys()))
+    # wrap in quotes every parameter - required by kfp
+    pipeline_args = ', '.join(["{}='{}'".format(arg, pipeline_parameters[arg][1])
+                               for arg in pipeline_parameters])
+    # Arguments are the pipeline arguments. Since we don't know precisely in
+    # what pipeline steps they are needed, we just pass them to every one.
+    # We assume there variables were not re-assigned throughout the notebook
+    function_args = ', '.join(["{}: {}".format(arg, pipeline_parameters[arg][0])
+                               for arg in pipeline_parameters])
+    return {
+        'pipeline_args_names': pipeline_args_names,
+        'pipeline_args': pipeline_args,
+        'function_args': function_args
+    }
+
+
+def pipeline_dependencies_tasks(g):
+    """Generate a dictionary of Pipeline dependencies.
+
+    Args:
+        g: Pipeline graph
+
+    Returns (dict): k: step_name, v: list of predecessors
+    """
+    deps = dict()
+    for step_name in nx.topological_sort(g):
+        deps[step_name] = ["{}_task".format(pred)
+                           for pred in g.predecessors(step_name)]
+    return deps
+
+
+def generate_lightweight_component(template, step_name, step_data, nb_path,
+                                   metadata):
+    """Use the function template to generate Python code."""
+    step_source = step_data.get('source', [])
+    step_marshal_in = step_data.get('ins', [])
+    step_marshal_out = step_data.get('outs', [])
+
+    fn_code = template.render(
+        step_name=step_name,
+        function_body=[step_source],
+        in_variables=step_marshal_in,
+        out_variables=step_marshal_out,
+        nb_path=nb_path,
+        **metadata
+    )
+    # fix code style using pep8 guidelines
+    return autopep8.fix_code(fn_code)
+
+
+def generate_pipeline(template, nb_graph, step_names, lightweight_components,
+                      metadata):
+    """Use the pipeline template to generate Python code."""
+    # All the Pipeline steps that do not have children
+    leaf_steps = [x for x in nb_graph.nodes()
+                  if nb_graph.out_degree(x) == 0]
+
+    pipeline_code = template.render(
+        lightweight_components=lightweight_components,
+        step_names=step_names,
+        step_prevs=pipeline_dependencies_tasks(nb_graph),
+        leaf_steps=leaf_steps,
+        **metadata
+    )
+    # fix code style using pep8 guidelines
+    return autopep8.fix_code(pipeline_code)
+
+
+def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
+                 auto_snapshot):
+    """Generate a Python KFP DSL executable starting from the nx graph.
+
     Takes a NetworkX workflow graph with the following properties
 
     - node property 'code' contains the source code
@@ -24,138 +176,46 @@ def gen_kfp_code(nb_graph,
 
     and generated a standalone Python script in KFP DSL to deploy
     a KFP pipeline.
+
+    Args:
+        nb_graph (nx.DiGraph): Pipeline graph
+        nb_path (str): path to the notebook
+        pipeline_parameters (dict): pipeline parameters
+        metadata (dict): metadata to be passed to the Jinja templates
+        auto_snapshot (bool): True if pipeline runs auto snapshot at each
+            pipeline step
+
+    Returns (str): A Python executable script
     """
     # initialize templating environment
-    template_env = Environment(loader=PackageLoader('kale', 'templates'))
-    template_env.filters['add_suffix'] = lambda s, suffix: s+suffix
+    template_env = _initialize_templating_env()
 
-    # List of light-weight components generated code
-    function_blocks = list()
-    # List of names of components
-    function_names = list()
-    # Dictionary of steps defining the dependency graph
-    function_prevs = dict()
+    # Convert volume annotations to a dictionary
+    volumes = metadata.get('volumes')
+    volume_parameters = get_volume_parameters(volumes)
+    pipeline_parameters.update(volume_parameters)
 
-    # Include all volumes as pipeline parameters
-    volumes = metadata.get('volumes', [])
-    # Convert annotations to a dictionary and convert size to a string
-    for v in volumes:
-        # Convert annotations to a dictionary
-        annotations = {a['key']: a['value'] for a in v['annotations'] or []
-                       if a['key'] != '' and a['value'] != ''}
-        v['annotations'] = annotations
-        v['size'] = str(v['size'])
-
-        if v['type'] == 'pv':
-            # FIXME: How should we handle existing PVs?
-            continue
-
-        if v['type'] == 'pvc':
-            par_name = "vol_{}".format(v['mount_point'].replace('/', '_').strip('_'))
-            pipeline_parameters[par_name] = ('str', v['name'])
-        elif v['type'] == 'new_pvc':
-            rok_url = v['annotations'].get("rok/origin")
-            if rok_url is not None:
-                par_name = "rok_{}_url".format(v['name'].replace('-', '_'))
-                pipeline_parameters[par_name] = ('str', rok_url)
-        else:
-            raise ValueError("Unknown volume type: {}".format(v['type']))
-
-    # The Jupyter Web App assumes the first volume of the notebook is the
-    # working directory, so we make sure to make it appear first in the spec.
-    volumes = sorted(volumes, reverse=True,
-                     key=lambda v: is_workspace_dir(v['mount_point']))
-
-    marshal_volume = True
-    marshal_path = "/marshal"
-    # Check if the workspace directory is under a mounted volume.
-    # If so, marshal data into a folder in that volume,
-    # otherwise create a new volume and mount it at /marshal
     wd = metadata.get('abs_working_dir', None)
-    if wd:
-        wd = os.path.realpath(wd)
-        # get the volumes for which the working directory is a subpath of the mount point
-        vols = list(filter(lambda x: wd.startswith(x['mount_point']), volumes))
-        # if we found any, then set marshal directory inside working directory
-        if len(vols) >= 1:
-            marshal_volume = False
-            marshal_dir = ".{}.kale.marshal.dir".format(os.path.basename(nb_path))
-            marshal_path = os.path.join(wd, marshal_dir)
+    # get 'marshal_path' and 'marshal_volume'
+    metadata.update(get_marshal_data(wd=wd, volumes=volumes, nb_path=nb_path))
+    # get 'function_args', 'pipeline_args' and 'pipeline_args_names'
+    metadata.update(get_args(pipeline_parameters))
+    # TODO: Have this automatically inside metadata before calling gen_kfp_code
+    metadata.update({'auto_snapshot': auto_snapshot})
 
-    pipeline_args_names = list(pipeline_parameters.keys())
-    # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join(["{}='{}'".format(arg, pipeline_parameters[arg][1])
-                               for arg in pipeline_parameters])
-    # arguments are actually the pipeline arguments. Since we don't know precisely in which pipeline
-    # steps they are needed we just pass them to every one. The assumption is that these variables
-    # were treated as constants notebook-wise.
-    function_args = ', '.join(["{}: {}".format(arg,pipeline_parameters[arg][0]) for arg in pipeline_parameters])
-
+    # initialize the function template
+    function_template = template_env.get_template('function_template.jinja2')
     # Order the pipeline topologically to cycle through the DAG
-    for block_name in nx.topological_sort(nb_graph):
-        # first create the function
-        function_template = template_env.get_template('function_template.txt')
-        block_data = nb_graph.nodes(data=True)[block_name]
+    step_names = list(nx.topological_sort(nb_graph))
+    # List of lightweight components generated code
+    lightweight_components = [
+        generate_lightweight_component(function_template, step_name,
+                                       nb_graph.nodes(data=True)[step_name],
+                                       nb_path, metadata)
+        for step_name in step_names
+    ]
 
-        # check if the block has any ancestors
-        predecessors = list(nb_graph.predecessors(block_name))
-        args = list()
-        if len(predecessors) > 0:
-            for a in predecessors:
-                args.append("{}_task".format(a))
-        function_prevs[block_name] = args
-
-        function_blocks.append(function_template.render(
-            pipeline_name=metadata['pipeline_name'],
-            function_name=block_name,
-            function_args=function_args,
-            function_blocks=[block_data['source']],
-            in_variables=block_data['ins'],
-            out_variables=block_data['outs'],
-            marshal_path=marshal_path,
-            auto_snapshot=auto_snapshot,
-            nb_path=nb_path
-        ))
-        function_names.append(block_name)
-
-    leaf_nodes = [x for x in nb_graph.nodes() if nb_graph.out_degree(x) == 0]
-
-    if auto_snapshot:
-        final_auto_snapshot_name = 'final_auto_snapshot'
-        function_blocks.append(function_template.render(
-            pipeline_name=metadata['pipeline_name'],
-            function_name=final_auto_snapshot_name,
-            function_args=function_args,
-            function_blocks=[],
-            in_variables=set(),
-            out_variables=set(),
-            marshal_path=marshal_path,
-            auto_snapshot=auto_snapshot,
-            nb_path=nb_path
-        ))
-        function_names.append(final_auto_snapshot_name)
-        function_prevs[final_auto_snapshot_name] = ["{}_task".format(x)
-                                                    for x in leaf_nodes]
-
-    pipeline_template = template_env.get_template('pipeline_template.txt')
-    pipeline_code = pipeline_template.render(
-        block_functions=function_blocks,
-        block_functions_names=function_names,
-        block_function_prevs=function_prevs,
-        experiment_name=metadata['experiment_name'],
-        pipeline_name=metadata['pipeline_name'],
-        pipeline_description=metadata.get('pipeline_description', ''),
-        pipeline_arguments=pipeline_args,
-        pipeline_arguments_names=', '.join(pipeline_args_names),
-        docker_base_image=metadata.get('docker_image', ''),
-        volumes=volumes,
-        leaf_nodes=leaf_nodes,
-        working_dir=metadata.get('abs_working_dir', None),
-        marshal_volume=marshal_volume,
-        marshal_path=marshal_path,
-        auto_snapshot=auto_snapshot
-    )
-
-    # fix code style using pep8 guidelines
-    pipeline_code = autopep8.fix_code(pipeline_code)
+    pipeline_template = template_env.get_template('pipeline_template.jinja2')
+    pipeline_code = generate_pipeline(pipeline_template, nb_graph, step_names,
+                                      lightweight_components, metadata)
     return pipeline_code

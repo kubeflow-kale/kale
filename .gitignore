@@ -30,3 +30,4 @@ _private/
 *.bundle.*
 lib/
 node_modules/
+.DS_Store

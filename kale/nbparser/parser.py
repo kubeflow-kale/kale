@@ -1,203 +1,126 @@
-import os
 import re
-import copy
-import tempfile
+import warnings
 
-import nbformat as nb
 import networkx as nx
 
-from graphviz import Source
+warnings.filterwarnings("default", category=DeprecationWarning,
+                        module=__name__)
 
-# Kale custom tagging language
-GLOBAL_BLOCKS = ['imports',
-                 'functions',
-                 # in case use are using Papermill to generate multiple notebooks
-                 # the parameters at the beginning of the notebook must be added
-                 # to every step of the pipeline.
-                 'parameters',
-                 # TODO: remove `parameters` code block if `injected-parameters` is found
-                 'injected-parameters'
-                 ]
-
-TAGS_LANGUAGE = [r'^imports$',
-                 r'^functions$',
-                 r'^pipeline-parameters$',
-                 r'^parameters$',
-                 r'^injected-parameters$',
-                 r'^skip$',
-                 r'^in$',
-                 r'^out$',
-                 # Extension may end up with 'block:' as a tag.  We handle that
-                 # as if it was empty.
-                 r'^block:([_a-z]([_a-z0-9]*)?)?$',
-                 r'^prev:[_a-z]([_a-z0-9]*)?$']
+_TAGS_LANGUAGE = [r'^imports$',
+                  r'^functions$',
+                  r'^pipeline-parameters$',
+                  r'^skip$',
+                  # Extension may end up with 'block:' as a tag. We handle
+                  # that as if it was empty.
+                  # TODO: Deprecate `block` tag in future release
+                  r'^block:([_a-z]([_a-z0-9]*)?)?$',
+                  # `step` has the same functionality as `block` and is
+                  # supposed to be the new name
+                  r'^step:([_a-z]([_a-z0-9]*)?)?$',
+                  r'^prev:[_a-z]([_a-z0-9]*)?$']
 
 
-class _dotdict(dict):
-    """
-    dot.notation access to dictionary attributes
-    """
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+def parse_metadata(metadata):
+    """Parse a notebook's cell's metadata field.
 
-
-def _copy_tags(tags):
-    new_tags = _dotdict()
-    for k, v in tags.items():
-        if type(v) == list and len(v) == 0:
-            new_tags[k] = list()
-        else:
-            new_tags[k] = copy.deepcopy(tags[k])
-    return new_tags
-
-
-def plot_pipeline(graph, dot_path=None):
-    """
-    Dump the graph to a dot file and visualize it using Graphviz
+    The Kale UI writes Kale specific tags inside the 'tags' field, as a list
+    of string tags. Supported tags are defined by _TAGS_LANGUAGE.
 
     Args:
-        graph: NetworkX graph instance
-        dot_path: Path to .dot file location
+        metadata (dict): a dictionary containing a notebook's cell's metadata
+
+    Returns (dict): parsed tags based on Kale tagging language
 
     """
-    rm_path = False
-    if dot_path is None:
-        # crete temp dir to store the .dot file
-        dot_path = tempfile.mkstemp()
-        rm_path = True
+    parsed_tags = dict()
 
-    nx.drawing.nx_pydot.write_dot(graph, dot_path)
-    s = Source.from_file(dot_path)
-    s.view()
+    # `step_names` is a list because a notebook cell might be assigned to more
+    # than one Pipeline step.
+    parsed_tags['step_names'] = list()
+    parsed_tags['prev_steps'] = list()
 
-    if rm_path:
-        os.remove(dot_path)
-
-
-def parse_metadata(metadata: dict):
-    """
-
-    Args:
-        metadata:
-
-    Returns:
-
-    """
-    parsed_tags = _dotdict()
-
-    # block_names is a list because a cell block might be assigned to more
-    # than one pipeline block.
-    parsed_tags['block_names'] = list()
-    parsed_tags['previous_blocks'] = list()
-    parsed_tags['in'] = list()
-    parsed_tags['out'] = list()
-
-    # the cell was not tagged
+    # the notebook cell was not tagged
     if 'tags' not in metadata or len(metadata['tags']) == 0:
         return parsed_tags
 
     for t in metadata['tags']:
-
-        # Check that the tag is defined by the language
-        if any(re.match(_t, t) for _t in TAGS_LANGUAGE) is False:
+        if not isinstance(t, str):
+            raise ValueError("Tags must be string. Found tag %s of type %s"
+                             % (t, type(t)))
+        # Check that the tag is defined by the Kale tagging language
+        if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
             raise ValueError("Unrecognized tag: {}".format(t))
 
-        if t == "skip":
-            return None
-
-        if t == "pipeline-parameters":
-            parsed_tags['block_names'] = ['pipeline-parameters']
+        # Special tags have a specific effect on the cell they belong to.
+        # Specifically:
+        #  - skip: ignore the notebook cell
+        #  - pipeline-parameters: use the cell to populate Pipeline
+        #       parameters. The cell must contain only assignment expressions
+        #  - imports: the code of the corresponding cell(s) will be prepended
+        #       to every Pipeline step
+        #  - functions: same as imports, but the corresponding code is placed
+        #       **after** `imports`
+        special_tags = ['skip', 'pipeline-parameters', 'imports', 'functions']
+        if t in special_tags:
+            parsed_tags['step_names'] = [t]
             return parsed_tags
 
-        if t in GLOBAL_BLOCKS:
-            parsed_tags['block_names'] = ['global']
-            return parsed_tags
+        # now only `block|step` and `prev` tags remain to be parsed.
+        tag_name, value = t.split(':')
+        # name of the future Pipeline step
+        # TODO: Deprecate `block` in future release
+        if tag_name in ["block", "step"] and value:
+            if tag_name == "block":
+                warnings.warn("`block` tag will be deprecated in a future"
+                              " version, use `step` tag instead",
+                              DeprecationWarning)
+            parsed_tags['step_names'].append(value)
+        # name(s) of the father Pipeline step(s)
+        if tag_name == "prev":
+            parsed_tags['prev_steps'].append(value)
 
-        elems = t.split(':')
-        radix = elems[0]
-        value = elems[1] if len(elems) > 1 else None
-        # in the future we could define tags that have optional arguments
-        args = elems[2:] if len(elems) > 2 else None
-
-        # name of the current pipeline step
-        if radix == "block" and value:
-            parsed_tags['block_names'].append(value)
-        # names of the [possible] previous [dependencies] steps
-        if radix == "prev":
-            parsed_tags['previous_blocks'].append(value)
-        # variables to be read from previous step
-        if radix == "in":
-            parsed_tags['in'].append(value)
-        # variables to be saved for later steps
-        if radix == "out":
-            parsed_tags['out'].append(value)
+    if not parsed_tags['step_names'] and parsed_tags['prev_steps']:
+        raise ValueError("A cell can not provide `prev` annotations without "
+                         "providing a `block` or `step` annotation as well")
     return parsed_tags
 
 
-def merge_code(nb_graph, dst, tags, code):
-    """
+def merge_code(nb_graph, dst, code):
+    """Add a new code block to an existing graph node.
+
+    Note: Updates inplace the input graph.
 
     Args:
-        nb_graph: nx.DiGraph
-                The graph defined by the notebook's tags
-        dst: string
-                Name id of the destination node
-        tags: dict
-                Parsed tags related to input code
-        code: string
-                Python source code to be appended to dst node
-
-    Returns:
-        A graph with `code` merged into one of the original graph nodes
+        nb_graph (nx.DiGraph): Pipeline graph
+        dst (str): Name id of the destination node
+        code (str): Python source code to be appended to dst node
     """
-    # add code to existing block
     source_code = nb_graph.nodes(data=True)[dst]['source']
-    existing_tags = nb_graph.nodes(data=True)[dst]['tags']
-    # use `set` operation to make unique list
-    if len(tags['in']) > 0:
-        existing_tags['in'].extend(tags['in'])
-        existing_tags['in'] = list(set(existing_tags['in']))
-    if len(tags['out']) > 0:
-        existing_tags['out'].extend(tags['out'])
-        existing_tags['out'] = list(set(existing_tags['out']))
-    source_code += "\n" + code
     # update pipeline block source code
-    nx.set_node_attributes(nb_graph, {dst: {'source': source_code,
-                                            'tags': existing_tags,
-                                            'ins': set(),
-                                            'outs': set()}})
-    return nb_graph
+    nx.set_node_attributes(nb_graph, {dst: {'source': source_code + [code]}})
 
 
 def parse_notebook(notebook):
-    """
-    Created a NetworkX graph based on the input notebook's tags
-    Cell's source code are embedded into the graph as node attributes
+    """Creates a NetworkX graph based on the input notebook's tags.
+
+    Cell's source code are embedded into the graph as node attributes.
+
+    Args:
+        notebook: nbformat's notebook object
     """
     # output graph
     nb_graph = nx.DiGraph()
 
-    # Used in case there some consecutive code block of the same pipeline block
-    # and only the first block is tagged with the block name
-    current_block = None
-    # if the current block is either imports or functions
-    current_block_global = False
-    # if the current block is pipeline-parameters
-    current_block_pipeline_parameters = False
+    # will be assigned at the end of each for loop
+    prev_step_name = None
 
-    # TODO: Add flag to know when the previous cell references multiple block names
-    #   In this way, if the next block has no block_name tag, kale can throuw an error
-    #   and say that in this case a block_name must be specified (cannot know which one of the previous
-    #   to use for merge)
-    multiple_parent_blocks = False
+    # All the code cells that have to be pre-pended to every pipeline step
+    # (i.e., imports and functions) are merged here
+    imports_block = list()
+    functions_block = list()
 
-    # All the code blocks that are to be pre-prended to every light-weight function (imports, functions, ...)
-    # are merged together in this variable and then pre-pended.
-    global_block = ""
-
-    # all the variables that will become pipeline parameters
-    pipeline_parameters = ""
+    # Variables that will become pipeline parameters
+    pipeline_parameters = list()
 
     # iterate over the notebook cells, from first to last
     for c in notebook.cells:
@@ -206,60 +129,82 @@ def parse_notebook(notebook):
             continue
 
         tags = parse_metadata(c.metadata)
-        if tags is None:
+
+        if len(tags['step_names']) > 1:
+            raise NotImplementedError("Kale does not yet support multiple "
+                                      "step names in a single notebook cell. "
+                                      "One notebook cell was found with %s "
+                                      "step names" % tags['step_names'])
+
+        step_name = tags['step_names'][0] \
+            if 0 < len(tags['step_names']) \
+            else None
+
+        if step_name == 'skip':
+            # when the cell is skipped, don't store `skip` as the previous
+            # active cell
+            continue
+        if step_name == 'pipeline-parameters':
+            pipeline_parameters.append(c.source)
+            prev_step_name = step_name
+            continue
+        if step_name == 'imports':
+            imports_block.append(c.source)
+            prev_step_name = step_name
+            continue
+        if step_name == 'functions':
+            functions_block.append(c.source)
+            prev_step_name = step_name
             continue
 
-        # this cell defines pipeline parameters
-        if 'pipeline-parameters' in tags['block_names']:
-            pipeline_parameters += '\n' + c.source
-            current_block_pipeline_parameters = True
-            current_block_global = False
-            continue
+        # if none of the above apply, then we are parsing a code cell with
+        # a block names and (possibly) some dependencies
 
-        # This cell is to be appended to every code block
-        if 'global' in tags['block_names']:
-            global_block += '\n' + c.source
-            current_block_global = True
-            current_block_pipeline_parameters = False
-            continue
-
-        # check that the previous block already exists in the graph if the prev tag is used
-        for p in tags.previous_blocks:
-            if p not in nb_graph.nodes:
-                raise ValueError(
-                    "Block `{}` does not exist. It was defined as previous block of `{}`".format(p,tags.block_names))
-
-        # if the block was not tagged with a name,
-        # add the source code to the block defined by the previous(es) cell(s)
-        if len(tags.block_names) == 0:
-            if current_block_global:
-                global_block += '\n' + c.source
-            elif current_block_pipeline_parameters:
-                pipeline_parameters += '\n' + c.source
-            else:
-                assert current_block is not None
-                nb_graph = merge_code(nb_graph, current_block, tags, c.source)
+        # if the cell was not tagged with a step name,
+        # add the code to the previous cell
+        if not step_name:
+            if prev_step_name == 'imports':
+                imports_block.append(c.source)
+            if prev_step_name == 'functions':
+                functions_block.append(c.source)
+            if prev_step_name == 'pipeline-parameters':
+                pipeline_parameters.append(c.source)
+            # current_block might be None in case the first cells of the
+            # notebooks have not been tagged.
+            if prev_step_name:
+                # this notebook cell will be merged to a previous one that
+                # specified a step name
+                merge_code(nb_graph, prev_step_name, c.source)
         else:
-            current_block_global = False
-            current_block_pipeline_parameters = False
-            # TODO: Taking by default first block name tag. Need specific behavior
-            current_block = tags.block_names[0]
-            for block_name in tags.block_names:
-                # add node to DAG, adding tags and source code of notebook cell
-                if block_name not in nb_graph.nodes:
-                    _tags = _copy_tags(tags)
-                    _tags.block_name = block_name
-                    nb_graph.add_node(block_name, tags=_tags, source=c.source, ins=set(), outs=set())
-                    if tags.previous_blocks:
-                        for block in tags.previous_blocks:
-                            nb_graph.add_edge(block, block_name)
-                else:
-                    nb_graph = merge_code(nb_graph, block_name, tags, c.source)
+            # add node to DAG, adding tags and source code of notebook cell
+            if step_name not in nb_graph.nodes:
+                nb_graph.add_node(step_name, source=[c.source],
+                                  ins=set(), outs=set())
+                for _prev_step in tags['prev_steps']:
+                    if _prev_step not in nb_graph.nodes:
+                        raise ValueError("Step %s does not exist. It was "
+                                         "defined as previous step of %s"
+                                         % (_prev_step, tags['step_names']))
+                    nb_graph.add_edge(_prev_step, step_name)
+            else:
+                merge_code(nb_graph, step_name, c.source)
 
-    # Prepend all global code blocks before every other one
-    if global_block != "":
-        for block in nb_graph:
-            block_data = nb_graph.nodes(data=True)[block]
-            nx.set_node_attributes(nb_graph, {block: {'source': global_block + '\n\n' + block_data['source']}})
+            prev_step_name = step_name
+
+    # Prepend any `imports` and `functions` cells to every Pipeline step
+    for step in nb_graph:
+        step_source = nb_graph.nodes(data=True)[step]['source']
+        step_source = imports_block + functions_block + step_source
+        nx.set_node_attributes(nb_graph, {step: {'source': step_source}})
+
+    # merge together pipeline parameters
+    pipeline_parameters = '\n'.join(pipeline_parameters)
+
+    # make the nodes' code a single multiline string
+    # NOTICE: this is temporary, waiting for the artifacts-viz-feature
+    for step in nb_graph:
+        step_source = nb_graph.nodes(data=True)[step]['source']
+        nx.set_node_attributes(nb_graph,
+                               {step: {'source': '\n'.join(step_source)}})
 
     return nb_graph, pipeline_parameters

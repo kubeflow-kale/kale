@@ -35,6 +35,14 @@ setup(
         'pyflakes >=2.1.1',
         'dill >=0.3, <0.4'
     ],
+    extras_require={
+        'dev': [
+            'pytest',
+            'pytest-clarity',
+            'testfixtures',
+            'pytest-cov'
+        ]
+    },
     entry_points={'console_scripts':
                   ['kale=kale.command_line:main',
                    'kale_server=kale.command_line:server',

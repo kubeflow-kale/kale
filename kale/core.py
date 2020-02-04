@@ -18,10 +18,10 @@ from pathlib import Path
 from kubernetes.config import ConfigException
 
 from kale.nbparser import parser
-from kale.static_analysis import dep_analysis
+from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
-
+from kale.utils.pod_utils import is_workspace_dir
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -35,6 +35,20 @@ METADATA_REQUIRED_KEYS = [
     'experiment_name',
     'pipeline_name',
 ]
+
+DEFAULT_METADATA = {
+    'experiment_name': '',
+    'pipeline_name': '',
+    'pipeline_description': '',
+    'pipeline_args': '',
+    'pipeline_args_names': '',
+    'docker_image': '',
+    'volumes': [],
+    'abs_working_dir': None,
+    'marshal_volume': False,
+    'marshal_path': '',
+    'auto_snapshot': False
+}
 
 
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
@@ -54,14 +68,17 @@ class Kale:
             raise ValueError("Path {} does not exist".format(self.source_path))
 
         # read notebook
-        self.notebook = nb.read(self.source_path.__str__(), as_version=nb.NO_CONVERT)
+        self.notebook = nb.read(self.source_path.__str__(),
+                                as_version=nb.NO_CONVERT)
 
-        # read Kale notebook metadata. In case it is not specified get an empty dict
-        self.pipeline_metadata = self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict())
+        self.pipeline_metadata = copy.deepcopy(DEFAULT_METADATA)
+        # read Kale notebook metadata.
+        # In case it is not specified get an empty dict
+        self.pipeline_metadata.update(
+            self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict()))
         # override notebook metadata with provided arguments
         if notebook_metadata_overrides:
-            self.pipeline_metadata = {**self.pipeline_metadata,
-                                      **{k: v for k, v in notebook_metadata_overrides.items() if v}}
+            self.pipeline_metadata.update(notebook_metadata_overrides)
 
         pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
                                    random_string())
@@ -71,7 +88,9 @@ class Kale:
 
         # setup logging
         self.logger = logging.getLogger("kubeflow-kale")
-        formatter = logging.Formatter('%(asctime)s | %(name)s |  %(levelname)s: %(message)s', datefmt='%m-%d %H:%M')
+        formatter = logging.Formatter(
+            '%(asctime)s | %(name)s |  %(levelname)s: %(message)s',
+            datefmt='%m-%d %H:%M')
         self.logger.setLevel(logging.DEBUG)
 
         stream_handler = logging.StreamHandler()
@@ -82,7 +101,8 @@ class Kale:
         stream_handler.setFormatter(formatter)
 
         self.log_dir_path = Path(".")
-        file_handler = logging.FileHandler(filename=self.log_dir_path.__str__() + '/kale.log', mode='a')
+        file_handler = logging.FileHandler(
+            filename=self.log_dir_path.__str__() + '/kale.log', mode='a')
         file_handler.setFormatter(formatter)
         file_handler.setLevel(logging.DEBUG)
 
@@ -125,13 +145,30 @@ class Kale:
                 if not re.match(k8s_valid_name_regex, v['name']):
                     raise ValueError("PV/PVC resource name {}".format(k8s_name_msg))
                 if ('snapshot' in v and
-                    v['snapshot'] and
-                    (('snapshot_name' not in v) or
-                     not re.match(k8s_valid_name_regex, v['snapshot_name']))):
+                        v['snapshot'] and
+                        (('snapshot_name' not in v) or
+                         not re.match(k8s_valid_name_regex,
+                                      v['snapshot_name']))):
                     raise ValueError(
                         "Provide a valid snapshot resource name if you want to"
                         " snapshot a volume. Snapshot resource name %s" %
                         k8s_name_msg)
+
+                # Convert annotations to a dictionary
+                annotations = {a['key']: a['value']
+                               for a in v['annotations'] or []
+                               if a['key'] != '' and a['value'] != ''}
+                v['annotations'] = annotations
+                v['size'] = str(v['size'])
+
+            # The Jupyter Web App assumes the first volume of the notebook
+            # is the working directory, so we make sure to make it appear
+            # first in the spec.
+            volumes = sorted(
+                volumes,
+                reverse=True,
+                key=lambda x: is_workspace_dir(x['mount_point']))
+            self.pipeline_metadata['volumes'] = volumes
         else:
             raise ValueError("Volumes must be a valid list of volumes spec")
 
@@ -204,10 +241,11 @@ class Kale:
         dev env in pipeline steps
         """
         # used to set container step working dir same as current environment
-        self.pipeline_metadata['abs_working_dir'] = os.path.dirname(os.path.abspath(self.source_path.__str__()))
+        self.pipeline_metadata['abs_working_dir'] = os.path.dirname(
+            os.path.abspath(self.source_path.__str__()))
 
-        # When running inside a Kubeflow Notebook Server we can detect the running
-        # docker image and use it as default in the pipeline steps.
+        # When running inside a Kubeflow Notebook Server we can detect the
+        # running docker image and use it as default in the pipeline steps.
         if not self.pipeline_metadata['docker_image']:
             try:
                 # will fail in case in cluster config is not found
@@ -222,13 +260,29 @@ class Kale:
 
     def notebook_to_graph(self):
         # convert notebook to nx graph
-        pipeline_graph, pipeline_parameters_code_block = parser.parse_notebook(self.notebook)
+        pipeline_graph, pipeline_parameters_source = parser.parse_notebook(
+            self.notebook)
 
-        pipeline_parameters_dict = dep_analysis.pipeline_parameters_detection(pipeline_parameters_code_block)
+        # get a dict from the 'pipeline parameters' cell source code
+        pipeline_parameters_dict = ast.parse_assignments_expressions(
+            pipeline_parameters_source)
 
         # run static analysis over the source code
-        dep_analysis.variables_dependencies_detection(pipeline_graph,
-                                                      ignore_symbols=set(pipeline_parameters_dict.keys()))
+        to_ignore = set(pipeline_parameters_dict.keys())
+        dependencies.dependencies_detection(pipeline_graph,
+                                            ignore_symbols=to_ignore)
+
+        # add an empty step at the end of the pipeline for final snapshot
+        if self.auto_snapshot:
+            auto_snapshot_name = 'final_auto_snapshot'
+            # add a link from all the last steps of the pipeline to
+            # the final auto snapshot one.
+            leaf_steps = [x for x in pipeline_graph.nodes()
+                          if pipeline_graph.out_degree(x) == 0]
+            for node in leaf_steps:
+                pipeline_graph.add_edge(node, auto_snapshot_name)
+            data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
+            nx.set_node_attributes(pipeline_graph, data)
 
         # TODO: Additional Step required:
         #  Run a static analysis over every step to check that pipeline
@@ -240,7 +294,8 @@ class Kale:
 
         # generate full kfp pipeline definition
         kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
-                                              nb_path=os.path.abspath(self.source_path.__str__()),
+                                              nb_path=os.path.abspath(
+                                                  self.source_path.__str__()),
                                               pipeline_parameters=pipeline_parameters,
                                               metadata=self.pipeline_metadata,
                                               auto_snapshot=self.auto_snapshot)
@@ -271,6 +326,15 @@ class Kale:
             print()
             print("-------------------------------")
             print()
+
+    def to_dot(self, graph, dot_path):
+        """Write the graph to a dot file.
+
+        Args:
+            graph: NetworkX graph instance
+            dot_path: Path to .dot file location
+        """
+        nx.drawing.nx_pydot.write_dot(graph, dot_path)
 
     def save_pipeline(self, pipeline_code, output_path):
         # save pipeline code to temp directory
