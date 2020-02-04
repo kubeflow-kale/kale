@@ -75,7 +75,8 @@ def get_marshal_data(wd, volumes, nb_path):
         # if we found any, then set marshal directory inside working directory
         if len(vols) > 0:
             marshal_volume = False
-            marshal_dir = ".{}.kale.marshal.dir".format(os.path.basename(nb_path))
+            basename = os.path.basename(nb_path)
+            marshal_dir = ".{}.kale.marshal.dir".format(basename)
             marshal_path = os.path.join(wd, marshal_dir)
     return {
         'marshal_volume': marshal_volume,
