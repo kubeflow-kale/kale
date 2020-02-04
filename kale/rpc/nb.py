@@ -72,7 +72,8 @@ def compile_notebook(request, source_notebook_path,
 def _get_kale_marshal_dir(source_notebook_path):
     nb_file_name = os.path.basename(source_notebook_path)
     nb_dir_name = os.path.dirname(source_notebook_path)
-    kale_marshal_dir_name = ".{}{}".format(nb_file_name, KALE_MARSHAL_DIR_POSTFIX)
+    kale_marshal_dir_name = ".{}{}".format(nb_file_name, 
+                                           KALE_MARSHAL_DIR_POSTFIX)
     return os.path.realpath(os.path.join(nb_dir_name, kale_marshal_dir_name))
 
 
