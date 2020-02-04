@@ -77,7 +77,8 @@ def _get_cloned_volume(volume, obj_name, members):
                                       'value': member['rok_url']}]
             return volume
 
-    msg = "Volume '{}' not found in group '{}'".format(volume['name'], obj_name)
+    msg = "Volume '{}' not found in group '{}'".format(volume['name'], 
+                                                       obj_name)
     raise ValueError(msg)
 
 
