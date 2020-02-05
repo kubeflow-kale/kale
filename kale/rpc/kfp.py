@@ -49,7 +49,7 @@ def upload_pipeline(request, pipeline_package_path, pipeline_metadata,
         # The exception is a general 500 error.
         # The only way to check that it refers to the pipeline already existing
         # is by matching the error message
-        if f"The name {pipeline_name} already exist" in str(e):
+        if "The name {} already exist".format(pipeline_name) in str(e):
             if overwrite:
                 # Get the id of the existing pipeline
                 pipeline_id = _get_pipeline_id(pipeline_name)

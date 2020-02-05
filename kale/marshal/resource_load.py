@@ -11,7 +11,7 @@ resource_load = PatternDispatcher('resource_load')
 
 @resource_load.register('.*', priority=1)
 def resource_all(uri, *args, **kwargs):
-    print(f"Loading general object: {uri}")
+    print("Loading general object: {}".format(uri))
     return dill.load(open(uri, "rb"))
 
 

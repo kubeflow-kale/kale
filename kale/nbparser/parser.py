@@ -49,7 +49,7 @@ def parse_metadata(metadata):
                              % (t, type(t)))
         # Check that the tag is defined by the Kale tagging language
         if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
-            raise ValueError(f"Unrecognized tag: {t}")
+            raise ValueError("Unrecognized tag: {}".format(t))
 
         # Special tags have a specific effect on the cell they belong to.
         # Specifically:

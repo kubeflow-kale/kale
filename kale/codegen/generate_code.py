@@ -32,15 +32,16 @@ def get_volume_parameters(volumes):
             continue
 
         if v['type'] == 'pvc':
-            par_name = f"vol_{v['mount_point'].replace('/', '_').strip('_')}"
+            mount_point = v['mount_point'].replace('/', '_').strip('_')
+            par_name = "vol_{}".format(mount_point)
             volume_parameters[par_name] = ('str', v['name'])
         elif v['type'] == 'new_pvc':
             rok_url = v['annotations'].get("rok/origin")
             if rok_url is not None:
-                par_name = f"rok_{v['name'].replace('-', '_')}_url"
+                par_name = "rok_{}_url".format(v['name'].replace('-', '_'))
                 volume_parameters[par_name] = ('str', rok_url)
         else:
-            raise ValueError(f"Unknown volume type: {v['type']}")
+            raise ValueError("Unknown volume type: {}".format(v['type']))
     return volume_parameters
 
 
@@ -74,7 +75,8 @@ def get_marshal_data(wd, volumes, nb_path):
         # if we found any, then set marshal directory inside working directory
         if len(vols) > 0:
             marshal_volume = False
-            marshal_dir = f".{os.path.basename(nb_path)}.kale.marshal.dir"
+            basename = os.path.basename(nb_path)
+            marshal_dir = ".{}.kale.marshal.dir".format(basename)
             marshal_path = os.path.join(wd, marshal_dir)
     return {
         'marshal_volume': marshal_volume,
@@ -98,12 +100,14 @@ def get_args(pipeline_parameters):
     """
     pipeline_args_names = ', '.join(list(pipeline_parameters.keys()))
     # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join([f"{arg}='{pipeline_parameters[arg][1]}'"
+    pipeline_args = ', '.join(["{}='{}'".format(arg, 
+                                                pipeline_parameters[arg][1])
                                for arg in pipeline_parameters])
     # Arguments are the pipeline arguments. Since we don't know precisely in
     # what pipeline steps they are needed, we just pass them to every one.
     # We assume there variables were not re-assigned throughout the notebook
-    function_args = ', '.join([f"{arg}: {pipeline_parameters[arg][0]}"
+    function_args = ', '.join(["{}: {}".format(arg, 
+                                               pipeline_parameters[arg][0])
                                for arg in pipeline_parameters])
     return {
         'pipeline_args_names': pipeline_args_names,
@@ -122,7 +126,7 @@ def pipeline_dependencies_tasks(g):
     """
     deps = dict()
     for step_name in nx.topological_sort(g):
-        deps[step_name] = [f"{pred}_task"
+        deps[step_name] = ["{}_task".format(pred)
                            for pred in g.predecessors(step_name)]
     return deps
 
