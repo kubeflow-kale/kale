@@ -16,7 +16,7 @@ def _get_obj_name(s):
 def resource_numpy_load(uri, **kwargs):
     try:
         import numpy as np
-        print(f"Loading numpy obj: {_get_obj_name(uri)}")
+        print("Loading numpy obj: {}".format(_get_obj_name(uri)))
         return np.load(uri)
     except ImportError:
         return fallback_load(uri, **kwargs)
@@ -26,7 +26,7 @@ def resource_numpy_load(uri, **kwargs):
 def resource_numpy_save(obj, path, **kwargs):
     try:
         import numpy as np
-        print(f"Saving numpy obj: {_get_obj_name(path)}")
+        print("Saving numpy obj: {}".format(_get_obj_name(path)))
         np.save(path + ".npy", obj)
     except ImportError:
         fallback_save(obj, path, **kwargs)
@@ -36,7 +36,7 @@ def resource_numpy_save(obj, path, **kwargs):
 def resource_pandas_load(uri, **kwargs):
     try:
         import pandas as pd
-        print(f"Loading pandas obj: {_get_obj_name(uri)}")
+        print("Loading pandas obj: {}".format(_get_obj_name(uri)))
         return pd.read_pickle(uri)
     except ImportError:
         return fallback_load(uri, **kwargs)
@@ -46,7 +46,7 @@ def resource_pandas_load(uri, **kwargs):
 def resource_pandas_save(obj, path, **kwargs):
     try:
         import pandas as pd
-        print(f"Saving pandas obj: {_get_obj_name(path)}")
+        print("Saving pandas obj: {}".format(_get_obj_name(path)))
         obj.to_pickle(path+'.pdpkl')
     except ImportError:
         fallback_save(obj, path, **kwargs)
@@ -56,7 +56,7 @@ def resource_pandas_save(obj, path, **kwargs):
 def resource_torch_load(uri, **kwargs):
     try:
         import torch
-        print(f"Loading PyTorch model: {_get_obj_name(uri)}")
+        print("Loading PyTorch model: {}".format(_get_obj_name(uri)))
         obj_torch = torch.load(uri, pickle_module=dill)
         if "nn.Module" in str(type(obj_torch)):
             # if the object is a Module we need to run eval
@@ -70,7 +70,7 @@ def resource_torch_load(uri, **kwargs):
 def resource_torch_save(obj, path, **kwargs):
     try:
         import torch
-        print(f"Saving PyTorch model: {_get_obj_name(path)}")
+        print("Saving PyTorch model: {}".format(_get_obj_name(path)))
         torch.save(obj, path + ".pt", pickle_module=dill)
     except ImportError:
         fallback_save(obj, path, **kwargs)

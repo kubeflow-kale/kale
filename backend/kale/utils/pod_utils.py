@@ -174,9 +174,9 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
 
     bucket = "pipelines"
     run_uuid = get_run_uuid()
-    obj = f"{pipeline}-{run_uuid}"
-    commit_title = f"Step: {step}"
-    commit_message = f"Step '{step}' of pipeline run '{run_uuid}'"
+    obj = "{}-{run_uuid}".format(pipeline)
+    commit_title = "Step: {}".format(step)
+    commit_message = "Step '{}' of pipeline run '{}'".format(step, run_uuid)
     environment = json.dumps({"KALE_PIPELINE_STEP": step,
                               "KALE_NOTEBOOK_PATH": nb_path})
     metadata = json.dumps({"environment": environment})
@@ -225,8 +225,8 @@ def get_run_uuid():
     labels = pod.metadata.labels
     workflow_name = labels.get("workflows.argoproj.io/workflow", None)
     if workflow_name is None:
-        msg = (f"Could not retrieve workflow name from pod"
-               f"{namespace}/{pod_name}")
+        msg = ("Could not retrieve workflow name from pod"
+               "{}/{}".format(namespace, pod_name))
         raise RuntimeError(msg)
 
     # Retrieve the Argo workflow
