@@ -245,7 +245,7 @@ class Kale:
         """
         # used to set container step working dir same as current environment
         self.pipeline_metadata['abs_working_dir'] = os.path.dirname(
-            os.path.abspath(self.source_path)
+            os.path.abspath(self.source_path))
 
         # When running inside a Kubeflow Notebook Server we can detect the
         # running docker image and use it as default in the pipeline steps.
