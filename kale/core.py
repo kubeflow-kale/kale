@@ -210,12 +210,13 @@ class Kale:
         commit_title = "Snapshot of notebook {}".format(hostname)
         commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                                  namespace)
-        output_cmd = ("rok-gw -o json object-register jupyter"
-            + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
-            + " --param namespace='{}'".format(namespace)
-            + " --param commit_title='{}'".format(commit_title)
-            + " --param commit_message='{}'".format(commit_message))
-        output = self.run_cmd(cmd)
+        output_cmd = (
+                "rok-gw -o json object-register jupyter"
+                + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
+                + " --param namespace='{}'".format(namespace)
+                + " --param commit_title='{}'".format(commit_title)
+                + " --param commit_message='{}'".format(commit_message))
+        output = self.run_cmd(output_cmd)
 
         output = json.loads(output)
         snapshot_volumes = output['result']['version']['group_members']
@@ -224,9 +225,10 @@ class Kale:
         for v in snapshot_volumes:
             obj_name = v["object_name"]
             version_name = v["version_name"]
-            output_cmd = ("rok-gw -o json object-show '{}'".format(bucket_name)
-                        + " '{}' --version '{}'".format(obj_name, version_name)
-                        + " --detail")
+            output_cmd = (
+                    "rok-gw -o json object-show '{}'".format(bucket_name)
+                    + " '{}' --version '{}'".format(obj_name, version_name)
+                    + " --detail")
             output = self.run_cmd(output_cmd)
             v["mount_point"] = json.loads(output)["metadata"]["mountpoint"]
 
