@@ -1,8 +1,10 @@
 import pytest
+import nbformat
 
 import networkx as nx
 
 from kale.nbparser.parser import merge_code, parse_metadata
+from kale.nbparser.parser import get_pipeline_parameters_source
 
 
 def test_merge_code():
@@ -69,3 +71,44 @@ def test_parse_metadata_exc(metadata):
     """Test parse_metadata exception cases."""
     with pytest.raises(ValueError):
         parse_metadata(metadata)
+
+
+def test_get_pipeline_parameters_source_simple():
+    """Test that the function gets the correct pipeline parameters source."""
+    notebook = nbformat.v4.new_notebook()
+    cells = [
+        ("0", {}),
+        ("0", {"tags": []}),
+        ("1", {"tags": ["pipeline-parameters"]}),
+        ("1", {}),
+    ]
+    notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m)
+                      for (s, m) in cells]
+    assert get_pipeline_parameters_source(notebook) == "1\n1"
+
+
+def test_get_pipeline_parameters_source_with_step():
+    """Test that the function gets the correct pipeline parameters source."""
+    notebook = nbformat.v4.new_notebook()
+    cells = [
+        ("1", {"tags": ["pipeline-parameters"]}),
+        ("0", {"tags": ["step:test"]}),
+        ("1", {"tags": ["pipeline-parameters"]}),
+    ]
+    notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m)
+                      for (s, m) in cells]
+    assert get_pipeline_parameters_source(notebook) == "1\n1"
+
+
+def test_get_pipeline_parameters_source_skip():
+    """Test that the function gets the correct pipeline parameters source."""
+    notebook = nbformat.v4.new_notebook()
+    cells = [
+        ("1", {"tags": ["pipeline-parameters"]}),
+        ("0", {"tags": ["skip"]}),
+        ("1", {"tags": ["pipeline-parameters"]}),
+        ("1", {"tags": []}),
+    ]
+    notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m)
+                      for (s, m) in cells]
+    assert get_pipeline_parameters_source(notebook) == "1\n1\n1"
