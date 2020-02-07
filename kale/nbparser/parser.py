@@ -3,21 +3,26 @@ import warnings
 
 import networkx as nx
 
-warnings.filterwarnings("default", category=DeprecationWarning,
-                        module=__name__)
 
-_TAGS_LANGUAGE = [r'^imports$',
-                  r'^functions$',
-                  r'^pipeline-parameters$',
-                  r'^skip$',
-                  # Extension may end up with 'block:' as a tag. We handle
-                  # that as if it was empty.
-                  # TODO: Deprecate `block` tag in future release
-                  r'^block:([_a-z]([_a-z0-9]*)?)?$',
-                  # `step` has the same functionality as `block` and is
-                  # supposed to be the new name
-                  r'^step:([_a-z]([_a-z0-9]*)?)?$',
-                  r'^prev:[_a-z]([_a-z0-9]*)?$']
+SKIP_TAG = r'^skip$'
+IMPORT_TAG = r'^imports$'
+FUNCTIONS_TAG = r'^functions$'
+PREV_TAG = r'^prev:[_a-z]([_a-z0-9]*)?$'
+# `step` has the same functionality as `block` and is
+# supposed to be the new name
+STEP_TAG = r'^step:([_a-z]([_a-z0-9]*)?)?$'
+# Extension may end up with 'block:' as a tag. We handle
+# that as if it was empty.
+# TODO: Deprecate `block` tag in future release
+BLOCK_TAG = r'^block:([_a-z]([_a-z0-9]*)?)?$'
+PIPELINE_PARAMETERS_TAG = r'^pipeline-parameters$'
+
+_TAGS_LANGUAGE = [SKIP_TAG,
+                  IMPORT_TAG,
+                  FUNCTIONS_TAG,
+                  PREV_TAG,
+                  BLOCK_TAG,
+                  PIPELINE_PARAMETERS_TAG]
 
 
 def parse_metadata(metadata):
@@ -105,8 +110,7 @@ def parse_notebook(notebook):
 
     Cell's source code are embedded into the graph as node attributes.
 
-    Args:
-        notebook: nbformat's notebook object
+    Args (nbformat.notebook): Notebook object
     """
     # output graph
     nb_graph = nx.DiGraph()
