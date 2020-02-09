@@ -61,7 +61,7 @@ def validate_metadata(notebook_metadata):
     metadata['pipeline_name'] = random_pipeline_name
 
     volumes = metadata.get('volumes', [])
-    if volumes or isinstance(volumes, list):
+    if isinstance(volumes, list):
         metadata.update({'volumes': _validate_volumes_metadata(volumes)})
     else:
         raise ValueError("Volumes spec must be a list")
