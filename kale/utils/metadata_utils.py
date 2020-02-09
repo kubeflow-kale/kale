@@ -49,7 +49,7 @@ def validate_metadata(notebook_metadata):
                              " the notebook metadata or as an override"
                              .format(required))
 
-    metadata = DEFAULT_METADATA.copy()
+    metadata = copy.deepcopy(DEFAULT_METADATA)
     metadata.update(notebook_metadata)
 
     if not re.match(kale_step_name_regex, metadata['pipeline_name']):
