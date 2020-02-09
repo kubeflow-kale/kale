@@ -38,7 +38,7 @@ from kale.utils import metadata_utils
      }])
 ])
 def test_validate_volumes_metadata(volumes, target):
-    """Tests that volumes are correctly converted from list into dict."""
+    """Tests volumes validation method."""
     assert target == metadata_utils._validate_volumes_metadata(volumes)
 
 
@@ -66,7 +66,7 @@ def test_validate_volumes_metadata(volumes, target):
     }], "Volume spec: annotations must be a list"),
 ])
 def test_convert_volume_annotations_exc(volumes, match):
-    """Tests that volumes are correctly converted from list into dict."""
+    """Tests that volume spec errors are caught."""
     with pytest.raises(ValueError, match=match):
         metadata_utils._validate_volumes_metadata(volumes)
 
