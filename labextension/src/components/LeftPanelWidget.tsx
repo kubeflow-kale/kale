@@ -10,7 +10,6 @@ import {
     CollapsablePanel,
     MaterialInput
 } from "./Components";
-import {CellTags} from "./CellTags";
 import {Cell, isCodeCellModel, CodeCell, CodeCellModel} from "@jupyterlab/cells";
 import { InlineCellsMetadata } from "./cell-metadata/InlineCellMetadata";
 import {VolumesPanel} from "./VolumesPanel";
@@ -18,9 +17,10 @@ import {SplitDeployButton} from "./DeployButton";
 import { KernelMessage, Kernel } from "@jupyterlab/services";
 import {ExperimentInput} from "./ExperimentInput";
 import { DeploysProgress, DeployProgressState } from "./deploys-progress/DeploysProgress";
-import { RESERVED_CELL_NAMES } from "./CellTags";
+import { RESERVED_CELL_NAMES } from "./cell-metadata/CellMetadataEditor";
 import {JupyterFrontEnd} from "@jupyterlab/application";
 import {IDocumentManager} from "@jupyterlab/docmanager";
+
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -1112,16 +1112,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                         </div>
                     </div>
 
-
-                    {/*  CELLTAGS PANEL  */}
-                    {/* <div className="kale-component"> */}
-                    {/* <CellTags
-                            notebook={this.state.activeNotebook}
-                            activeCellIndex={this.state.activeCellIndex}
-                            activeCell={this.state.activeCell}
-                        /> */}
-                    {/* </div> */}
-                    {/*  --------------  */}
 
                     <div className={this.state.isEnabled ? '' : 'hidden'}>
                         {volsPanel}
