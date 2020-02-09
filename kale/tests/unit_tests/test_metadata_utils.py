@@ -1,3 +1,4 @@
+import copy
 import pytest
 
 from unittest import mock
@@ -73,13 +74,9 @@ def test_convert_volume_annotations_exc(volumes, match):
 
 @pytest.mark.parametrize("metadata,target", [
     ({'pipeline_name': 'test',
-      'experiment_name': 'test'},
-     metadata_utils.DEFAULT_METADATA),
-    # ---
-    ({'pipeline_name': 'test',
-      'experiment_name': 'test'},
-     metadata_utils.DEFAULT_METADATA),
-
+      'experiment_name': 'test',
+      'volumes': []},
+     copy.deepcopy(metadata_utils.DEFAULT_METADATA)),
 ])
 @mock.patch('kale.utils.metadata_utils.random_string')
 def test_validate_metadata(random_string, metadata, target):
