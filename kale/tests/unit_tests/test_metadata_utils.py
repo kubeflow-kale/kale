@@ -9,14 +9,14 @@ from kale.utils import metadata_utils
     ([], []),
     # ---
     ([{
-        'name': 'v1',
+        'name': 'v',
         'annotations': [{'key': 'a1', 'value': 'v1'}],
         'size': 5,
         'type': 'pv',
         'mount_point': '/'
     }],
      [{
-         'name': 'v1',
+         'name': 'v',
          'annotations': {'a1': 'v1'},
          'size': '5',
          'type': 'pv',
@@ -24,14 +24,14 @@ from kale.utils import metadata_utils
      }]),
     # ---
     ([{
-        'name': 'v1',
+        'name': 'v',
         'annotations': [{'key': 'a1', 'value': 'v1'}],
         'size': 5,
         'type': 'pvc',
         'mount_point': '/'
     }],
      [{
-         'name': 'v1',
+         'name': 'v',
          'annotations': {'a1': 'v1'},
          'size': '5',
          'type': 'pvc',
@@ -51,7 +51,7 @@ def test_validate_volumes_metadata(volumes, target):
         'mount_point': '/'
     }], "Volume spec: missing name value"),
     ([{
-        'name': 'v1',
+        'name': 'v',
         'annotations': [{'wronkey': 'a1', 'value': 'v1'}],
         'size': 5,
         'type': 'pv',
@@ -59,7 +59,7 @@ def test_validate_volumes_metadata(volumes, target):
     }], "Volume spec: volume annotations must be a "
         "list of {'key': k, 'value': v} dicts"),
     ([{
-        'name': 'v1',
+        'name': 'v',
         'annotations': {'key': 'a1', 'value': 'v1'},
         'size': 5,
         'type': 'pv',
