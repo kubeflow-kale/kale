@@ -40,7 +40,7 @@ from kale.utils import metadata_utils
 ])
 def test_validate_volumes_metadata(volumes, target):
     """Tests volumes validation method."""
-    assert target == metadata_utils._validate_volumes_metadata(volumes)
+    assert target == metadata_utils._parse_volumes_metadata(volumes)
 
 
 @pytest.mark.parametrize("volumes,match", [
@@ -69,7 +69,7 @@ def test_validate_volumes_metadata(volumes, target):
 def test_convert_volume_annotations_exc(volumes, match):
     """Tests that volume spec errors are caught."""
     with pytest.raises(ValueError, match=match):
-        metadata_utils._validate_volumes_metadata(volumes)
+        metadata_utils._parse_volumes_metadata(volumes)
 
 
 @pytest.mark.parametrize("metadata,target", [
@@ -86,13 +86,13 @@ def test_validate_metadata(random_string, metadata, target):
     # metadata dict
     target.update({'pipeline_name': metadata['pipeline_name'] + '-rnd'})
     target.update({'experiment_name': metadata['experiment_name']})
-    assert target == metadata_utils.validate_metadata(metadata)
+    assert target == metadata_utils.parse_metadata(metadata)
 
 
 def test_validate_metadata_missing_required():
     """Tests that required metadata keys are checked for."""
     with pytest.raises(ValueError, match=r"Key experiment_name not found.*"):
-        metadata_utils.validate_metadata({})
+        metadata_utils.parse_metadata({})
 
     with pytest.raises(ValueError, match=r"Key pipeline_name not found.*"):
-        metadata_utils.validate_metadata({'experiment_name': 'test'})
+        metadata_utils.parse_metadata({'experiment_name': 'test'})

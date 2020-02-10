@@ -33,8 +33,8 @@ VOLUME_TYPES = ('pv', 'pvc', 'new_pvc', 'clone')
 VOLUME_REQUIRED_FIELDS = ('name', 'annotations', 'size', 'type', 'mount_point')
 
 
-def validate_metadata(notebook_metadata):
-    """Validate the Notebook's metadata and update it when needed.
+def parse_metadata(notebook_metadata):
+    """Parse the Notebook's metadata and update it when needed.
 
     Args:
         notebook_metadata (dict): metadata annotated by Kale.
@@ -62,14 +62,14 @@ def validate_metadata(notebook_metadata):
 
     volumes = metadata.get('volumes', [])
     if isinstance(volumes, list):
-        metadata.update({'volumes': _validate_volumes_metadata(volumes)})
+        metadata.update({'volumes': _parse_volumes_metadata(volumes)})
     else:
         raise ValueError("Volumes spec must be a list")
     return metadata
 
 
-def _validate_volumes_metadata(volumes):
-    """Validate the volume spec and transform it inplace.
+def _parse_volumes_metadata(volumes):
+    """Parse the volume spec.
 
     The transformations applied are the following:
         - The annotations dict from a list of {'key': k, 'value': v} to {k: v}
@@ -79,7 +79,7 @@ def _validate_volumes_metadata(volumes):
     Args:
         volumes: Volume spec
 
-    Returns: Update and validated volume spec
+    Returns: Updated and validated volume spec
     """
     for v in volumes:
         for required in VOLUME_REQUIRED_FIELDS:

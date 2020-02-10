@@ -16,7 +16,7 @@ from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
-from kale.utils.metadata_utils import validate_metadata
+from kale.utils.metadata_utils import parse_metadata
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -52,7 +52,7 @@ class Kale:
             notebook_metadata.update(notebook_metadata_overrides)
 
         # validate metadata and apply transformations when needed
-        self.pipeline_metadata = validate_metadata(notebook_metadata)
+        self.pipeline_metadata = parse_metadata(notebook_metadata)
 
         self.detect_environment()
 
