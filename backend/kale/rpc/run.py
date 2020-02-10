@@ -2,7 +2,7 @@ import sys
 import logging
 import importlib
 
-from kale.core import random_string
+from kale.utils.utils import random_string
 from kale.rpc import errors, utils
 from kale.rpc.log import create_adapter
 

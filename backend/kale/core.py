@@ -1,10 +1,7 @@
 import os
-import re
 import copy
 import json
 import pprint
-import random
-import string
 
 import logging
 import subprocess
@@ -19,7 +16,7 @@ from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
-from kale.utils.pod_utils import is_workspace_dir
+from kale.utils.metadata_utils import parse_metadata
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -29,29 +26,6 @@ and use them to spawn a Kubeflow pipeline.\
 """
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
-METADATA_REQUIRED_KEYS = [
-    'experiment_name',
-    'pipeline_name',
-]
-
-DEFAULT_METADATA = {
-    'experiment_name': '',
-    'pipeline_name': '',
-    'pipeline_description': '',
-    'pipeline_args': '',
-    'pipeline_args_names': '',
-    'docker_image': '',
-    'volumes': [],
-    'abs_working_dir': None,
-    'marshal_volume': False,
-    'marshal_path': '',
-    'auto_snapshot': False
-}
-
-
-def random_string(size=5, chars=string.ascii_lowercase + string.digits):
-    """Generate random string."""
-    return "".join(random.choice(chars) for _ in range(size))
 
 
 class Kale:
@@ -69,19 +43,17 @@ class Kale:
         self.notebook = nb.read(self.source_path,
                                 as_version=nb.NO_CONVERT)
 
-        self.pipeline_metadata = copy.deepcopy(DEFAULT_METADATA)
         # read Kale notebook metadata.
         # In case it is not specified get an empty dict
-        self.pipeline_metadata.update(
-            self.notebook.metadata.get(KALE_NOTEBOOK_METADATA_KEY, dict()))
+        notebook_metadata = self.notebook.metadata.get(
+            KALE_NOTEBOOK_METADATA_KEY, dict())
         # override notebook metadata with provided arguments
         if notebook_metadata_overrides:
-            self.pipeline_metadata.update(notebook_metadata_overrides)
+            notebook_metadata.update(notebook_metadata_overrides)
 
-        pipeline_name = "%s-%s" % (self.pipeline_metadata['pipeline_name'],
-                                   random_string())
-        self.pipeline_metadata['pipeline_name'] = pipeline_name
-        self.validate_metadata()
+        # validate metadata and apply transformations when needed
+        self.pipeline_metadata = parse_metadata(notebook_metadata)
+
         self.detect_environment()
 
         # setup logging
@@ -114,62 +86,6 @@ class Kale:
         volumes = self.pipeline_metadata['volumes'][:] \
             if self.pipeline_metadata['volumes'] else []
         self.pipeline_metadata['volumes'] = self.create_cloned_volumes(volumes)
-
-    def validate_metadata(self):
-        kale_block_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-        kale_name_msg = ("must consist of lower case alphanumeric characters "
-                         "or '-', and must start and end with an alphanumeric"
-                         " character.")
-        k8s_valid_name_regex = r'^[\.\-a-z0-9]+$'
-        k8s_name_msg = ("must consist of lower case alphanumeric characters, "
-                        "'-' or '.'")
-
-        # check for required fields
-        for required in METADATA_REQUIRED_KEYS:
-            if required not in self.pipeline_metadata:
-                raise ValueError("Key %s not found. Add this field either on "
-                                 "the notebook metadata or as an override" %
-                                 required)
-
-        if not re.match(kale_block_name_regex,
-                        self.pipeline_metadata['pipeline_name']):
-            raise ValueError("Pipeline name  %s" % kale_name_msg)
-
-        volumes = self.pipeline_metadata.get('volumes', [])
-        if volumes or isinstance(volumes, list):
-            for v in volumes:
-                if 'name' not in v:
-                    raise ValueError("Provide a valid name for every volume")
-                if not re.match(k8s_valid_name_regex, v['name']):
-                    raise ValueError("PV/PVC resource name {}"
-                                     .format(k8s_name_msg))
-                if ('snapshot' in v and
-                        v['snapshot'] and
-                        (('snapshot_name' not in v) or
-                         not re.match(k8s_valid_name_regex,
-                                      v['snapshot_name']))):
-                    raise ValueError(
-                        "Provide a valid snapshot resource name if you want to"
-                        " snapshot a volume. Snapshot resource name %s" %
-                        k8s_name_msg)
-
-                # Convert annotations to a dictionary
-                annotations = {a['key']: a['value']
-                               for a in v['annotations'] or []
-                               if a['key'] != '' and a['value'] != ''}
-                v['annotations'] = annotations
-                v['size'] = str(v['size'])
-
-            # The Jupyter Web App assumes the first volume of the notebook
-            # is the working directory, so we make sure to make it appear
-            # first in the spec.
-            volumes = sorted(
-                volumes,
-                reverse=True,
-                key=lambda x: is_workspace_dir(x['mount_point']))
-            self.pipeline_metadata['volumes'] = volumes
-        else:
-            raise ValueError("Volumes must be a valid list of volumes spec")
 
     def run_cmd(self, cmd):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
