@@ -9,6 +9,7 @@ from kale.static_analysis import ast
 from kale.utils import pod_utils, kfp_utils
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
+from kale.rpc.errors import RPCInternalError
 
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
@@ -75,14 +76,20 @@ def compile_notebook(request, source_notebook_path,
 def get_pipeline_parameters(request, source_notebook_path):
     """Get the pipeline parameters tagged in the notebook."""
     # read notebook
-    notebook = nbformat.read(source_notebook_path,
-                             as_version=nbformat.NO_CONVERT)
-    params_source = parser.get_pipeline_parameters_source(notebook)
-    if params_source == '':
-        raise ValueError("No pipeline parameters found. Please tag a cell of"
-                         " the notebook with the `pipeline-parameters` tag.")
-    # get a dict from the 'pipeline parameters' cell source code
-    params_dict = ast.parse_assignments_expressions(params_source)
+    log = request.log if hasattr(request, "log") else logger
+    try:
+        notebook = nbformat.read(source_notebook_path,
+                                 as_version=nbformat.NO_CONVERT)
+        params_source = parser.get_pipeline_parameters_source(notebook)
+        if params_source == '':
+            raise ValueError("No pipeline parameters found. Please tag a cell"
+                             " of the notebook with the `pipeline-parameters`"
+                             " tag.")
+        # get a dict from the 'pipeline parameters' cell source code
+        params_dict = ast.parse_assignments_expressions(params_source)
+    except ValueError as e:
+        log.exception("Value Error during parsing of pipeline parameters")
+        raise RPCInternalError(details=str(e), trans_id=request.trans_id)
     # convert dict in list so its easier to parse in js
     return [[k, *v] for k, v in params_dict.items()]
 
