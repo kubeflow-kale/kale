@@ -43,14 +43,15 @@ def parse_metadata(notebook_metadata):
     Returns (dict): updated and validated metadata
     """
     # check for required fields before adding all possible defaults
+    validated_notebook_metadata = copy.deepcopy(notebook_metadata)
     for required in METADATA_REQUIRED_KEYS:
-        if required not in notebook_metadata:
+        if required not in validated_notebook_metadata:
             raise ValueError("Key {} not found. Add this field either on"
                              " the notebook metadata or as an override"
                              .format(required))
 
     metadata = copy.deepcopy(DEFAULT_METADATA)
-    metadata.update(notebook_metadata)
+    metadata.update(validated_notebook_metadata)
 
     if not re.match(KALE_STEP_NAME_REGEX, metadata['pipeline_name']):
         raise ValueError("Pipeline name  {}".format(KALE_NAME_MSG))
@@ -81,7 +82,8 @@ def _parse_volumes_metadata(volumes):
 
     Returns: Updated and validated volume spec
     """
-    for v in volumes:
+    validated_volumes = copy.deepcopy(volumes)
+    for v in validated_volumes:
         for required in VOLUME_REQUIRED_FIELDS:
             if required not in v:
                 raise ValueError(
@@ -125,7 +127,8 @@ def _parse_volumes_metadata(volumes):
 
     # The Jupyter Web App assumes the first volume of the notebook is the
     # working directory, so we make sure to make it appear first in the spec.
-    volumes = sorted(volumes,
-                     reverse=True,
-                     key=lambda _v: is_workspace_dir(_v['mount_point']))
-    return volumes
+    validated_volumes = sorted(validated_volumes,
+                               reverse=True,
+                               key=lambda _v: is_workspace_dir(
+                                   _v['mount_point']))
+    return validated_volumes
