@@ -18,19 +18,19 @@ DEFAULT_METADATA = {
     'auto_snapshot': False
 }
 
-METADATA_REQUIRED_KEYS = [
+METADATA_REQUIRED_KEYS = (
     'experiment_name',
     'pipeline_name',
-]
-kale_step_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-kale_name_msg = ("must consist of lower case alphanumeric characters"
+)
+KALE_STEP_NAME_REGEX = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+KALE_NAME_MSG = ("must consist of lower case alphanumeric characters"
                  " or '-', and must start and end with an alphanumeric"
                  " character.")
-k8s_valid_name_regex = r'^[a-z]([a-z0-9-.]*[a-z])?$'
-k8s_name_msg = ("must consist of lower case alphanumeric characters,"
+K8S_VALID_NAME_REGEX = r'^[a-z]([a-z0-9-.]*[a-z])?$'
+K8S_NAME_MSG = ("must consist of lower case alphanumeric characters,"
                 " '-' or '.', and must start and end with a character.")
-volume_types = ['pv', 'pvc', 'new_pvc', 'clone']
-volume_required_fields = ['name', 'annotations', 'size', 'type', 'mount_point']
+VOLUME_TYPES = ('pv', 'pvc', 'new_pvc', 'clone')
+VOLUME_REQUIRED_FIELDS = ('name', 'annotations', 'size', 'type', 'mount_point')
 
 
 def validate_metadata(notebook_metadata):
@@ -52,8 +52,8 @@ def validate_metadata(notebook_metadata):
     metadata = copy.deepcopy(DEFAULT_METADATA)
     metadata.update(notebook_metadata)
 
-    if not re.match(kale_step_name_regex, metadata['pipeline_name']):
-        raise ValueError("Pipeline name  {}".format(kale_name_msg))
+    if not re.match(KALE_STEP_NAME_REGEX, metadata['pipeline_name']):
+        raise ValueError("Pipeline name  {}".format(KALE_NAME_MSG))
 
     # update the pipeline name with a random string
     random_pipeline_name = "{}-{}".format(metadata['pipeline_name'],
@@ -82,27 +82,27 @@ def _validate_volumes_metadata(volumes):
     Returns: Update and validated volume spec
     """
     for v in volumes:
-        for required in volume_required_fields:
+        for required in VOLUME_REQUIRED_FIELDS:
             if required not in v:
                 raise ValueError(
                     "Volume spec: missing {} value".format(required))
 
-        if not re.match(k8s_valid_name_regex, v['name']):
+        if not re.match(K8S_VALID_NAME_REGEX, v['name']):
             raise ValueError(
-                "Volume spec: PV/PVC name {}".format(k8s_name_msg))
+                "Volume spec: PV/PVC name {}".format(K8S_NAME_MSG))
         if ('snapshot' in v and
                 v['snapshot'] and
                 (('snapshot_name' not in v) or
-                 not re.match(k8s_valid_name_regex,
+                 not re.match(K8S_VALID_NAME_REGEX,
                               v['snapshot_name']))):
             raise ValueError("Provide a valid snapshot resource name if you"
                              " want to snapshot a volume. Snapshot resource"
-                             " name {}".format(k8s_name_msg))
+                             " name {}".format(K8S_NAME_MSG))
 
-        if not v['type'] in volume_types:
+        if not v['type'] in VOLUME_TYPES:
             raise ValueError("Volume spec: volume type {} not recognized."
                              " Allowed volumes type: {}"
-                             .format(v['type'], volume_types))
+                             .format(v['type'], VOLUME_TYPES))
 
         if not isinstance(v['annotations'], list):
             raise ValueError('Volume spec: annotations must be a list')
