@@ -26,9 +26,9 @@ kale_step_name_regex = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
 kale_name_msg = ("must consist of lower case alphanumeric characters"
                  " or '-', and must start and end with an alphanumeric"
                  " character.")
-k8s_valid_name_regex = r'^[\.\-a-z0-9]+$'
+k8s_valid_name_regex = r'^[a-z]([a-z0-9-.]*[a-z])?$'
 k8s_name_msg = ("must consist of lower case alphanumeric characters,"
-                " '-' or '.'")
+                " '-' or '.', and must start and end with a character.")
 volume_types = ['pv', 'pvc', 'new_pvc', 'clone']
 volume_required_fields = ['name', 'annotations', 'size', 'type', 'mount_point']
 
