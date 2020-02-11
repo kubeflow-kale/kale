@@ -227,7 +227,8 @@ class Kale:
             output_path = None
         else:
             notebook_dir = os.path.dirname(self.source_path)
-            filename = f"{self.pipeline_metadata['pipeline_name']}.kale.py"
+            filename = "{}.kale.py".format(
+                self.pipeline_metadata['pipeline_name'])
             output_path = os.path.join(notebook_dir, filename)
         # save kfp generated code
         output_path = self.save_pipeline(kfp_code, output_path)
@@ -267,10 +268,11 @@ class Kale:
         if output_path is None:
             # create tmp path
             tmp_dir = tempfile.mkdtemp()
-            filename = f"kale_pipeline_code_{utils.random_string(5)}.py"
+            filename = "kale_pipeline_code_{}.py".format(
+                utils.random_string(5))
             output_path = os.path.join(tmp_dir, filename)
 
         with open(output_path, "w") as f:
             f.write(pipeline_code)
-        self.logger.info(f"Pipeline code saved at {output_path}")
+        self.logger.info("Pipeline code saved at {}".format(output_path))
         return output_path
