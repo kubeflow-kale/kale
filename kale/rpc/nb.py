@@ -3,6 +3,8 @@ import shutil
 import logging
 import nbformat
 
+from tabulate import tabulate
+
 from kale.core import Kale
 from kale.nbparser import parser
 from kale.static_analysis import ast
@@ -91,7 +93,11 @@ def get_pipeline_parameters(request, source_notebook_path):
         log.exception("Value Error during parsing of pipeline parameters")
         raise RPCInternalError(details=str(e), trans_id=request.trans_id)
     # convert dict in list so its easier to parse in js
-    return [[k, *v] for k, v in params_dict.items()]
+    params = [[k, *v] for k, v in params_dict.items()]
+    log.info("Pipeline parameters:")
+    for ln in tabulate(params, headers=["name", "type", "value"]).split("\n"):
+        log.info(ln)
+    return params
 
 
 def _get_kale_marshal_dir(source_notebook_path):
