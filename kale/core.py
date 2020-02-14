@@ -182,8 +182,9 @@ class Kale:
 
     def notebook_to_graph(self):
         # convert notebook to nx graph
-        pipeline_graph, pipeline_parameters_source = parser.parse_notebook(
-            self.notebook)
+        (pipeline_graph,
+         pipeline_parameters_source,
+         pipeline_metrics_source) = parser.parse_notebook(self.notebook)
 
         # get a dict from the 'pipeline parameters' cell source code
         pipeline_parameters_dict = ast.parse_assignments_expressions(
