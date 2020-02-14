@@ -98,7 +98,7 @@ def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
             outs.update(father_data['outs'])
             # remove symbols to ignore
             if ignore_symbols:
-                ins.difference_update(set(ignore_symbols))
+                ins = list(set(ins) - set(ignore_symbols))
             # add to father the new `outs` variables
             nx.set_node_attributes(nb_graph, {_a: {'outs': sorted(outs)}})
 
