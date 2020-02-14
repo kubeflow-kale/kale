@@ -26,7 +26,7 @@ KALE_STEP_NAME_REGEX = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
 KALE_NAME_MSG = ("must consist of lower case alphanumeric characters"
                  " or '-', and must start and end with an alphanumeric"
                  " character.")
-K8S_VALID_NAME_REGEX = r'^[a-z]([a-z0-9-.]*[a-z])?$'
+K8S_VALID_NAME_REGEX = r'^[a-z]([a-z0-9-.]*[a-z0-9])?$'
 K8S_NAME_MSG = ("must consist of lower case alphanumeric characters,"
                 " '-' or '.', and must start and end with a character.")
 VOLUME_TYPES = ('pv', 'pvc', 'new_pvc', 'clone')
