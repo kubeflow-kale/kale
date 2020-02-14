@@ -174,7 +174,7 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
 
     bucket = "pipelines"
     run_uuid = get_run_uuid()
-    obj = "{}-{run_uuid}".format(pipeline)
+    obj = "{}-{}".format(pipeline, run_uuid)
     commit_title = "Step: {}".format(step)
     commit_message = "Step '{}' of pipeline run '{}'".format(step, run_uuid)
     environment = json.dumps({"KALE_PIPELINE_STEP": step,
