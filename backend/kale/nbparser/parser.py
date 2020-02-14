@@ -3,21 +3,26 @@ import warnings
 
 import networkx as nx
 
-warnings.filterwarnings("default", category=DeprecationWarning,
-                        module=__name__)
 
-_TAGS_LANGUAGE = [r'^imports$',
-                  r'^functions$',
-                  r'^pipeline-parameters$',
-                  r'^skip$',
-                  # Extension may end up with 'block:' as a tag. We handle
-                  # that as if it was empty.
-                  # TODO: Deprecate `block` tag in future release
-                  r'^block:([_a-z]([_a-z0-9]*)?)?$',
-                  # `step` has the same functionality as `block` and is
-                  # supposed to be the new name
-                  r'^step:([_a-z]([_a-z0-9]*)?)?$',
-                  r'^prev:[_a-z]([_a-z0-9]*)?$']
+SKIP_TAG = r'^skip$'
+IMPORT_TAG = r'^imports$'
+FUNCTIONS_TAG = r'^functions$'
+PREV_TAG = r'^prev:[_a-z]([_a-z0-9]*)?$'
+# `step` has the same functionality as `block` and is
+# supposed to be the new name
+STEP_TAG = r'^step:([_a-z]([_a-z0-9]*)?)?$'
+# Extension may end up with 'block:' as a tag. We handle
+# that as if it was empty.
+# TODO: Deprecate `block` tag in future release
+BLOCK_TAG = r'^block:([_a-z]([_a-z0-9]*)?)?$'
+PIPELINE_PARAMETERS_TAG = r'^pipeline-parameters$'
+
+_TAGS_LANGUAGE = [SKIP_TAG,
+                  IMPORT_TAG,
+                  FUNCTIONS_TAG,
+                  PREV_TAG,
+                  BLOCK_TAG,
+                  PIPELINE_PARAMETERS_TAG]
 
 
 def parse_metadata(metadata):
@@ -100,13 +105,50 @@ def merge_code(nb_graph, dst, code):
     nx.set_node_attributes(nb_graph, {dst: {'source': source_code + [code]}})
 
 
+def get_pipeline_parameters_source(notebook):
+    """Get just pipeline parameters cells from the notebook.
+
+    Args (nbformat.notebook): Notebook object
+
+    Returns (str): pipeline parameters source code
+    """
+    detected = False
+    pipeline_parameters = ''
+    for c in notebook.cells:
+        # parse only source code cells
+        if c.cell_type != "code":
+            continue
+        # in case the previous cell was a pipeline-parameter cell and this
+        # cell either:
+        #  - does not have tags
+        #  - does not have any `block` or `step` tags
+        #  - is not a skip tag
+        if ((('tags' not in c.metadata
+              or len(c.metadata['tags']) == 0)
+             or (not any(re.match(BLOCK_TAG, t) for t in c.metadata['tags'])
+                 and not any(re.match(STEP_TAG, t)
+                             for t in c.metadata['tags'])
+                 and not any(re.match(SKIP_TAG, t)
+                             for t in c.metadata['tags'])))
+                and detected):
+            pipeline_parameters += '\n' + c.source
+        elif (('tags' in c.metadata
+               and len(c.metadata['tags']) > 0
+               and any(re.match(PIPELINE_PARAMETERS_TAG, t)
+                       for t in c.metadata['tags']))):
+            pipeline_parameters += '\n' + c.source
+            detected = True
+        else:
+            detected = False
+    return pipeline_parameters.strip()
+
+
 def parse_notebook(notebook):
     """Creates a NetworkX graph based on the input notebook's tags.
 
     Cell's source code are embedded into the graph as node attributes.
 
-    Args:
-        notebook: nbformat's notebook object
+    Args (nbformat.notebook): Notebook object
     """
     # output graph
     nb_graph = nx.DiGraph()

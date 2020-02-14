@@ -1,11 +1,17 @@
 import os
 import shutil
 import logging
+import nbformat
+
+from tabulate import tabulate
 
 from kale.core import Kale
+from kale.nbparser import parser
+from kale.static_analysis import ast
 from kale.utils import pod_utils, kfp_utils
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
+from kale.rpc.errors import RPCInternalError
 
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
@@ -67,6 +73,31 @@ def compile_notebook(request, source_notebook_path,
 
     return {"pipeline_package_path": package_path,
             "pipeline_metadata": instance.pipeline_metadata}
+
+
+def get_pipeline_parameters(request, source_notebook_path):
+    """Get the pipeline parameters tagged in the notebook."""
+    # read notebook
+    log = request.log if hasattr(request, "log") else logger
+    try:
+        notebook = nbformat.read(source_notebook_path,
+                                 as_version=nbformat.NO_CONVERT)
+        params_source = parser.get_pipeline_parameters_source(notebook)
+        if params_source == '':
+            raise ValueError("No pipeline parameters found. Please tag a cell"
+                             " of the notebook with the `pipeline-parameters`"
+                             " tag.")
+        # get a dict from the 'pipeline parameters' cell source code
+        params_dict = ast.parse_assignments_expressions(params_source)
+    except ValueError as e:
+        log.exception("Value Error during parsing of pipeline parameters")
+        raise RPCInternalError(details=str(e), trans_id=request.trans_id)
+    # convert dict in list so its easier to parse in js
+    params = [[k, *v] for k, v in params_dict.items()]
+    log.info("Pipeline parameters:")
+    for ln in tabulate(params, headers=["name", "type", "value"]).split("\n"):
+        log.info(ln)
+    return params
 
 
 def _get_kale_marshal_dir(source_notebook_path):
