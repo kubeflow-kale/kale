@@ -190,6 +190,10 @@ class Kale:
         pipeline_parameters_dict = ast.parse_assignments_expressions(
             pipeline_parameters_source)
 
+        # get a list of variables that need to be logged as pipeline metrics
+        pipeline_metrics = ast.parse_metrics_print_statements(
+            pipeline_metrics_source)
+
         # run static analysis over the source code
         to_ignore = set(pipeline_parameters_dict.keys())
         dependencies.dependencies_detection(pipeline_graph,

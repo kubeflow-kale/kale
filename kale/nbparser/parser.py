@@ -233,8 +233,8 @@ def parse_notebook(notebook):
             # in this branch we are sure that we are reading a code cell with
             # a step tag, so we must not allow for pipeline-metrics
             if prev_step_name == 'pipeline-metrics':
-                raise ValueError("Tag pipeline-metrics must be placed on a "
-                                 "cell at the end of the Notebook."
+                raise ValueError("Tag pipeline-metrics must be placed on a"
+                                 " cell at the end of the Notebook."
                                  " Pipeline metrics should be considered as a"
                                  " result of the pipeline execution and not of"
                                  " single steps.")
