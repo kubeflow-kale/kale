@@ -102,7 +102,9 @@ def auto_generated_pipeline({{ pipeline_args }}):
     mlpipeline_ui_metadata = {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'}
     {{ name }}_task.output_artifact_paths.update(mlpipeline_ui_metadata)
     {% endif -%}
-
+    {% if name == "pipeline_metrics" -%}
+    {{ name }}_task.output_artifact_paths.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+    {% endif -%}
     {% endfor %}
 
     {# Snaphosts #}

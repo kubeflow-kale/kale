@@ -19,6 +19,7 @@ from kale.codegen import generate_code
 from kale.utils import utils
 from kale.utils.pod_utils import get_namespace, get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
+from kale.codegen.generate_code import _initialize_templating_env
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -193,6 +194,29 @@ class Kale:
         # get a list of variables that need to be logged as pipeline metrics
         pipeline_metrics = ast.parse_metrics_print_statements(
             pipeline_metrics_source)
+
+        # if there are some pipeline metrics, create an additional step at the
+        # end of the pipeline to log them.
+        # By adding this step before dependencies detection, we make sure that
+        # the necessary variables are marshalled at the beginning of the step.
+        if len(pipeline_metrics):
+            pipeline_metrics_name = "pipeline_metrics"
+            # add a link from all the last steps of the pipeline to
+            # the final auto snapshot one.
+            leaf_steps = [x for x in pipeline_graph.nodes()
+                          if pipeline_graph.out_degree(x) == 0]
+            for node in leaf_steps:
+                pipeline_graph.add_edge(node, pipeline_metrics_name)
+            # generate the code that dumps the pipeline metrics to file
+            template_env = _initialize_templating_env()
+            metrics_template = template_env.get_template(
+                'pipeline_metrics_template.jinja2')
+            metrics_source = metrics_template.render(
+                pipeline_metrics=pipeline_metrics)
+            data = {pipeline_metrics_name: {'source': metrics_source,
+                                            'ins': [],
+                                            'outs': []}}
+            nx.set_node_attributes(pipeline_graph, data)
 
         # run static analysis over the source code
         to_ignore = set(pipeline_parameters_dict.keys())
