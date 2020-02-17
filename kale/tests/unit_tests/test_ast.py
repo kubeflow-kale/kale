@@ -2,8 +2,7 @@ import ast
 import pytest
 from testfixtures import compare
 
-from kale.static_analysis.ast import get_all_names, get_list_tuple_names, \
-    get_function_and_class_names, parse_assignments_expressions
+from kale.static_analysis import ast as kale_ast
 
 
 _numpy_snippet = '''
@@ -59,14 +58,14 @@ def fun()
 ])
 def test_get_all_names(code, target):
     """Tests get_all_names function."""
-    res = get_all_names(code)
+    res = kale_ast.get_all_names(code)
     assert sorted(res) == sorted(target)
 
 
 def test_get_all_names_exc():
     """Tests exception when passing a wrong code snippet to get_all_names."""
     with pytest.raises(SyntaxError):
-        get_all_names(_wrong_code_snippet)
+        kale_ast.get_all_names(_wrong_code_snippet)
 
 
 @pytest.mark.parametrize("code,target", [
@@ -80,7 +79,7 @@ def test_get_all_names_exc():
 def test_get_list_tuple_names(code, target):
     """Test list_tuple_names function."""
     tree = ast.parse(code)
-    res = get_list_tuple_names(tree.body[0].value)
+    res = kale_ast.get_list_tuple_names(tree.body[0].value)
     assert sorted(res) == sorted(target)
 
 
@@ -91,7 +90,7 @@ def test_get_list_tuple_names(code, target):
 ])
 def test_get_function_and_class_names(code, target):
     """Test get_function_and_class_names function."""
-    res = get_function_and_class_names(code)
+    res = kale_ast.get_function_and_class_names(code)
     assert sorted(res) == sorted(target)
 
 
@@ -104,7 +103,7 @@ def test_get_function_and_class_names(code, target):
 ])
 def test_parse_assignments_expressions(code, target):
     """Test parse_assignments_expressions function."""
-    res = parse_assignments_expressions(code)
+    res = kale_ast.parse_assignments_expressions(code)
     compare(res, target)
 
 
@@ -119,4 +118,31 @@ def test_parse_assignments_expressions(code, target):
 def test_parse_assignments_expressions_exc(code):
     """Test parse_assignments_expressions function."""
     with pytest.raises(ValueError):
-        parse_assignments_expressions(code)
+        kale_ast.parse_assignments_expressions(code)
+
+
+@pytest.mark.parametrize("code, target", [
+    ('', {}),
+    ('   ', {}),
+    ('print(a)', {'a': 'a'}),
+    ('print(a)\nprint(var)\nprint(test_var)', {'a': 'a',
+                                               'var': 'var',
+                                               'test-var': 'test_var'}),
+])
+def test_parse_metrics_print_statements(code, target):
+    """Tests parse_metrics_print_statements function."""
+    res = kale_ast.parse_metrics_print_statements(code)
+    assert res == target
+
+
+@pytest.mark.parametrize("code", [
+    'print(foo())',
+    'def',
+    'variable',
+    'print(var)\nname',
+    '_variable'
+])
+def test_parse_metrics_print_statements_exc(code):
+    """Tests a exception cases for parse_metrics_print_statements function."""
+    with pytest.raises(ValueError):
+        kale_ast.parse_metrics_print_statements(code)
