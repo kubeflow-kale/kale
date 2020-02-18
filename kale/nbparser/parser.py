@@ -110,6 +110,50 @@ def merge_code(nb_graph, dst, code):
     nx.set_node_attributes(nb_graph, {dst: {'source': source_code + [code]}})
 
 
+def _get_reserved_tag_source(notebook, search_tag):
+    """Get just the specific tag's source code.
+
+    When searching for tag x, will return all cells that are tagged with x
+    and, if untagged, follow cells with tag x. The result is a multiline
+    string containing all the python code associated to x.
+    Note: This is designed for `special` tags, as the STEP_TAG and BLOCK_TAG
+    are excluded from the match.
+
+    Args:
+        notebook: Notebook object
+        search_tag (str): the target tag
+
+    Returns: the unified code of all the cells belonging to `search_tag`
+    """
+    detected = False
+    source = ''
+
+    language = _TAGS_LANGUAGE[:]
+    language.remove(search_tag)
+
+    for c in notebook.cells:
+        # parse only source code cells
+        if c.cell_type != "code":
+            continue
+        # in case the previous cell was a `search_tag` cell and this
+        # cell is not any other tag of the tag language:
+        if ((('tags' not in c.metadata
+              or len(c.metadata['tags']) == 0)
+             or all([not any(re.match(tag, t) for t in c.metadata['tags'])
+                     for tag in language]))
+                and detected):
+            source += '\n' + c.source
+        elif (('tags' in c.metadata
+               and len(c.metadata['tags']) > 0
+               and any(re.match(search_tag, t)
+                       for t in c.metadata['tags']))):
+            source += '\n' + c.source
+            detected = True
+        else:
+            detected = False
+    return source.strip()
+
+
 def get_pipeline_parameters_source(notebook):
     """Get just pipeline parameters cells from the notebook.
 
@@ -117,33 +161,48 @@ def get_pipeline_parameters_source(notebook):
 
     Returns (str): pipeline parameters source code
     """
-    detected = False
-    pipeline_parameters = ''
+    return _get_reserved_tag_source(notebook, PIPELINE_PARAMETERS_TAG)
 
-    language = _TAGS_LANGUAGE[:]
-    language.remove(PIPELINE_PARAMETERS_TAG)
+
+def get_pipeline_metrics_source(notebook):
+    """Get just pipeline metrics cells from the notebook.
+
+    Args (nbformat.notebook): Notebook object
+
+    Returns (str): pipeline metrics source code
+    """
+    # check that the pipeline metrics tag is only assigned to cells at
+    # the end of the notebook
+    detected = False
+    tags = _TAGS_LANGUAGE[:]
+    tags.remove(PIPELINE_METRICS_TAG)
 
     for c in notebook.cells:
         # parse only source code cells
         if c.cell_type != "code":
             continue
-        # in case the previous cell was a pipeline-parameter cell and this
-        # cell is not any other tag of the tag language:
-        if ((('tags' not in c.metadata
-              or len(c.metadata['tags']) == 0)
-             or all([not any(re.match(tag, t) for t in c.metadata['tags'])
-                     for tag in language]))
-                and detected):
-            pipeline_parameters += '\n' + c.source
-        elif (('tags' in c.metadata
-               and len(c.metadata['tags']) > 0
-               and any(re.match(PIPELINE_PARAMETERS_TAG, t)
-                       for t in c.metadata['tags']))):
-            pipeline_parameters += '\n' + c.source
+
+        # if we see a pipeline-metrics tag, set the flag
+        if (('tags' in c.metadata
+             and len(c.metadata['tags']) > 0
+             and any(re.match(PIPELINE_METRICS_TAG, t)
+                     for t in c.metadata['tags']))):
             detected = True
-        else:
-            detected = False
-    return pipeline_parameters.strip()
+            continue
+
+        # if we have the flag set and we detect any other tag from the tags
+        # language, then raise error
+        if ('tags' in c.metadata
+                and len(c.metadata['tags']) > 0
+                and any([any(re.match(tag, t) for t in c.metadata['tags'])
+                         for tag in tags])
+                and detected):
+            raise ValueError("Tag pipeline-metrics tag must be placed on a "
+                             "cell at the end of the Notebook."
+                             " Pipeline metrics should be considered as a"
+                             " result of the pipeline execution and not of"
+                             " single steps.")
+    return _get_reserved_tag_source(notebook, PIPELINE_METRICS_TAG)
 
 
 def parse_notebook(notebook):

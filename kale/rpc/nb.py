@@ -100,6 +100,27 @@ def get_pipeline_parameters(request, source_notebook_path):
     return params
 
 
+def get_pipeline_metrics(request, source_notebook_path):
+    """Get the pipeline metrics tagged in the notebook."""
+    # read notebook
+    log = request.log if hasattr(request, "log") else logger
+    try:
+        notebook = nbformat.read(source_notebook_path,
+                                 as_version=nbformat.NO_CONVERT)
+        metrics_source = parser.get_pipeline_metrics_source(notebook)
+        if metrics_source == '':
+            raise ValueError("No pipeline metrics found. Please tag a cell"
+                             " of the notebook with the `pipeline-metrics`"
+                             " tag.")
+        # get a dict from the 'pipeline parameters' cell source code
+        metrics = ast.parse_metrics_print_statements(metrics_source)
+    except ValueError as e:
+        log.exception("Failed to parse pipeline metrics")
+        raise RPCInternalError(details=str(e), trans_id=request.trans_id)
+    log.info("Pipeline metrics: {}".format(metrics))
+    return metrics
+
+
 def _get_kale_marshal_dir(source_notebook_path):
     nb_file_name = os.path.basename(source_notebook_path)
     nb_dir_name = os.path.dirname(source_notebook_path)
