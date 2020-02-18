@@ -22,6 +22,7 @@ _TAGS_LANGUAGE = [SKIP_TAG,
                   FUNCTIONS_TAG,
                   PREV_TAG,
                   BLOCK_TAG,
+                  STEP_TAG,
                   PIPELINE_PARAMETERS_TAG,
                   PIPELINE_METRICS_TAG]
 
@@ -118,22 +119,20 @@ def get_pipeline_parameters_source(notebook):
     """
     detected = False
     pipeline_parameters = ''
+
+    language = _TAGS_LANGUAGE[:]
+    language.remove(PIPELINE_PARAMETERS_TAG)
+
     for c in notebook.cells:
         # parse only source code cells
         if c.cell_type != "code":
             continue
         # in case the previous cell was a pipeline-parameter cell and this
-        # cell either:
-        #  - does not have tags
-        #  - does not have any `block` or `step` tags
-        #  - is not a skip tag
+        # cell is not any other tag of the tag language:
         if ((('tags' not in c.metadata
               or len(c.metadata['tags']) == 0)
-             or (not any(re.match(BLOCK_TAG, t) for t in c.metadata['tags'])
-                 and not any(re.match(STEP_TAG, t)
-                             for t in c.metadata['tags'])
-                 and not any(re.match(SKIP_TAG, t)
-                             for t in c.metadata['tags'])))
+             or all([not any(re.match(tag, t) for t in c.metadata['tags'])
+                     for tag in language]))
                 and detected):
             pipeline_parameters += '\n' + c.source
         elif (('tags' in c.metadata
