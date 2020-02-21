@@ -962,6 +962,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             // and all consequent cells getting merged to that one
             if (blockName !== 'skip' && RESERVED_CELL_NAMES.includes(blockName)) {
                 while (i < notebook.model.cells.length) {
+                    if (!isCodeCellModel(notebook.model.cells.get(i))) {
+                        i++;
+                        continue;
+                    }
                     const cellName = this.getStepName(notebook, i);
                     if (cellName !== blockName && cellName !== '') {
                         break;
