@@ -1,3 +1,4 @@
+import {RESERVED_CELL_NAMES_CHIP_COLOR} from './CellMetadataEditor'
 
 const colorPool = [
     '#695181',
@@ -15,7 +16,7 @@ const colorPool = [
 export default class ColorUtils { 
 
     public static intToRGB(i: number) {
-            var c = (i & 0x00FFFFFF)
+            const c = (i & 0x00FFFFFF)
                 .toString(16)
                 .toUpperCase();
             return "00000".substring(0, 6 - c.length) + c;
@@ -40,6 +41,10 @@ export default class ColorUtils {
     public static getColor(value: string): string {
         if (!value) {
             return '';
+        }
+
+        if (value in RESERVED_CELL_NAMES_CHIP_COLOR){
+            return  RESERVED_CELL_NAMES_CHIP_COLOR[value];
         }
         return this.intToRGB(this.hashString(value))
     }

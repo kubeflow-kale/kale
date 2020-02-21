@@ -449,7 +449,7 @@ a {
 }
 
 .kale-reserved-cell {
-  font-style: italic;
+  border-radius: 0 !important;
 }
 
 .kale-chip.MuiChip-root {

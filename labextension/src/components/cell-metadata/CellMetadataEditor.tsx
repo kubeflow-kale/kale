@@ -19,11 +19,17 @@ const CELL_TYPES = [
 ];
 
 export const RESERVED_CELL_NAMES = ['imports', 'functions', 'pipeline-parameters', 'skip'];
-const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string; } = {
+export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string; } = {
     "imports": "The code in this cell will be pre-pended to every step of the pipeline.",
     "functions": "The code in this cell will be pre-pended to every step of the pipeline, after `imports`.",
     "pipeline-parameters": "The variables in this cell will be transformed into pipeline parameters, preserving the current values as defaults.",
     "skip": "This cell will be skipped and excluded from pipeline steps"
+};
+export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string; } = {
+    "skip": "a9a9a9",
+    "pipeline-parameters": "ee7a1a",
+    "imports": "a32626",
+    "functions": "a32626",
 };
 
 const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric characters or \'_\', and can not start with a digit.`

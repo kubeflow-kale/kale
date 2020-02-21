@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Chip, Tooltip } from '@material-ui/core';
 import ColorUtils from './ColorUtils';
-import { RESERVED_CELL_NAMES } from './CellMetadataEditor';
+import { RESERVED_CELL_NAMES, RESERVED_CELL_NAMES_HELP_TEXT } from './CellMetadataEditor';
 
 interface InlineMetadata {
     blockName: string;
@@ -22,9 +22,9 @@ export const InlineMetadata: React.FunctionComponent<InlineMetadata> = (props) =
     const [cellTypeClass, setCellTypeClass] = React.useState('');
 
     React.useEffect(() => {
-        updateClassName()
+        updateClassName();
         checkIfReservedName();
-        updateStyles()
+        updateStyles();
         updateDependencies();
         moveElement();
     }, [props.blockName, props.parentBlockName, props.prevBlockNames, props.cellElement]);
@@ -35,7 +35,7 @@ export const InlineMetadata: React.FunctionComponent<InlineMetadata> = (props) =
             const cellElement = props.cellElement;
             cellElement.classList.remove('kale-merged-cell');
 
-            const codeMirrorElem = cellElement.querySelector('.CodeMirror')
+            const codeMirrorElem = cellElement.querySelector('.CodeMirror');
             if (codeMirrorElem) {
                 codeMirrorElem.style.border = ''
             }
@@ -52,14 +52,14 @@ export const InlineMetadata: React.FunctionComponent<InlineMetadata> = (props) =
             c = c + ' hidden'
         }
         setClassName(c)
-    }
+    };
 
     const updateStyles = () => {
         const name = props.blockName || props.parentBlockName;
         if (!name) {
             return;
         }
-        const rgb = getColorFromName(name)
+        const rgb = getColorFromName(name);
         setColor(rgb);
 
         const cellElement = props.cellElement;
@@ -71,11 +71,11 @@ export const InlineMetadata: React.FunctionComponent<InlineMetadata> = (props) =
         if (props.parentBlockName) {
             cellElement.classList.add('kale-merged-cell');
         }
-    }
+    };
 
     const updateDependencies = () => {
         setDependencies(props.prevBlockNames.map((name, i) => {
-            const rgb = getColorFromName(name)
+            const rgb = getColorFromName(name);
             return (
                 <Tooltip
                     placement="top"
@@ -89,7 +89,7 @@ export const InlineMetadata: React.FunctionComponent<InlineMetadata> = (props) =
                     </div>
                 </Tooltip>)
         }))
-    }
+    };
 
     const checkIfReservedName = () => {
         if (RESERVED_CELL_NAMES.includes(props.blockName)) {
@@ -97,29 +97,47 @@ export const InlineMetadata: React.FunctionComponent<InlineMetadata> = (props) =
         } else {
             setCellTypeClass('')
         }
-    }
+    };
 
     const moveElement = () => {
         if ((props.blockName || props.parentBlockName) && wrapperRef && !wrapperRef.classList.contains('moved')) {
             wrapperRef.classList.add('moved');
             props.cellElement.insertAdjacentElement('afterbegin', wrapperRef);
         }
-    }
+    };
 
     const getColorFromName = (name: string) => {
         return ColorUtils.getColor(name);
-    }
+    };
 
     return (
         <div>
             <div className={className} ref={(elem) => {
                 if (elem) wrapperRef = elem;
             }} >
-                <Chip
-                    className={`kale-chip ${cellTypeClass}`}
-                    style={{ backgroundColor: `#${color}` }}
-                    key={props.blockName}
-                    label={props.blockName} />
+                {/* Add a `step: ` string before the Chip in case the chip belongs to a pipeline step*/}
+                {RESERVED_CELL_NAMES.includes(props.blockName) ?
+                    "" :
+                    <p style={{fontStyle: "italic", marginRight: "5px"}}>step:  </p>}
+
+                <Tooltip
+                    placement="top"
+                    key={props.blockName + 'tooltip'}
+                    title={RESERVED_CELL_NAMES.includes(props.blockName) ?
+                        RESERVED_CELL_NAMES_HELP_TEXT[props.blockName] :
+                        "This cell starts the pipeline step: " + props.blockName}>
+                    <Chip
+                        className={`kale-chip ${cellTypeClass}`}
+                        style={{ backgroundColor: `#${color}` }}
+                        key={props.blockName}
+                        label={props.blockName}
+                    />
+                </Tooltip>
+
+                {/* Add a `depends on: ` string before the deps dots in case there are some*/}
+                {dependencies.length > 0 ?
+                    <p style={{fontStyle: "italic", margin: "0 5px"}}>depends on:  </p> :
+                    ""}
                 {dependencies}
             </div>
         </div>
