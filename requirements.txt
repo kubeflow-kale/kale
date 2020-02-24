@@ -3,7 +3,7 @@ argo-models==2.2.1a0
 asn1crypto==1.0.1
 attrs==19.2.0
 autopep8==1.4.4
-bleach==3.1.0
+bleach==3.1.1
 cachetools==3.1.1
 certifi==2019.9.11
 cffi==1.12.3
