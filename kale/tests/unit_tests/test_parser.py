@@ -5,6 +5,7 @@ import networkx as nx
 
 from kale.nbparser.parser import merge_code, parse_metadata
 from kale.nbparser.parser import get_pipeline_parameters_source
+from kale.nbparser.parser import get_pipeline_metrics_source
 
 
 def test_merge_code():
@@ -112,3 +113,32 @@ def test_get_pipeline_parameters_source_skip():
     notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m)
                       for (s, m) in cells]
     assert get_pipeline_parameters_source(notebook) == "1\n1\n1"
+
+
+def test_get_pipeline_parameters_source_followed_reserved():
+    """Test that the function gets the correct pipeline parameters source."""
+    notebook = nbformat.v4.new_notebook()
+    cells = [
+        ("1", {"tags": ["pipeline-parameters"]}),
+        ("0", {"tags": ["imports"]}),
+        ("1", {"tags": ["pipeline-parameters"]}),
+        ("1", {"tags": []}),
+    ]
+    notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m)
+                      for (s, m) in cells]
+    assert get_pipeline_parameters_source(notebook) == "1\n1\n1"
+
+
+def test_get_pipeline_metrics_source_raises():
+    """Test exception when pipeline metrics isn't at the end of notebook."""
+    notebook = nbformat.v4.new_notebook()
+    cells = [
+        ("1", {"tags": ["pipeline-metrics"]}),
+        ("0", {"tags": ["imports"]}),
+    ]
+    notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m)
+                      for (s, m) in cells]
+    with pytest.raises(ValueError, match=r"Tag pipeline-metrics tag must be"
+                                         r" placed on a cell at the end of"
+                                         r" the Notebook\..*"):
+        get_pipeline_metrics_source(notebook)
