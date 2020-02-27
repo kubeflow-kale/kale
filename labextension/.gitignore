@@ -4,6 +4,5 @@ yarn-error.log
 **/.ipynb_checkpoints
 *.tsbuildinfo
 package-lock.json
-yarn.lock
 
 .idea
