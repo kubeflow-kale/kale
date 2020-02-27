@@ -1,3 +1,4 @@
+import re
 import ast
 
 from collections import deque
@@ -165,3 +166,48 @@ def parse_assignments_expressions(code):
                 "(int, float, str, bool)")
         variables[target] = (var_type, value)
     return variables
+
+
+def parse_metrics_print_statements(code):
+    """Parse a list of print statements that must contain a variable.
+
+    In terms of python's ast, the print argument must be an Expr node with
+    Name node as value. Any line that does not respect the `print(<name>)`
+    format will raise a ValueError.
+
+    Args:
+        code: Multiline string representing Python code
+
+    Returns: a list of variable names
+    """
+    err_msg = ("Must provide just print statements of variables in the metrics"
+               " cell. A variable name must be 64 chars long, have lowercase"
+               " characters, digits or '-', and must start with a lowercase"
+               " character and end with a lowercase character or digit.")
+    code = code.strip()
+    # remove empty lines
+    if code == "":
+        return {}
+    code = '\n'.join(list(filter(str.strip, code.splitlines())))
+
+    # Note the parenthesis around the pattern, so that it becomes a group
+    # The ?: will make the 2nd group not be captured when using re.find()
+    # https://www.regular-expressions.info/brackets.html
+    var_name_pattern = "([a-z](?:[_a-z0-9]{0,62}[a-z0-9])?)"
+    match_print = re.compile(r"^print\(%s\)$" % var_name_pattern,
+                             re.MULTILINE)
+    if not all(re.match(match_print, c) for c in code.splitlines()):
+        raise ValueError(err_msg)
+    # remove the leading "print(" and ending ")"
+    variables = re.findall(match_print, code)
+    if not all(v.isidentifier() for v in variables):
+        raise ValueError(err_msg)
+
+    # check that every remaining statement is a Name node
+    tree = ast.parse('\n'.join(variables))
+    for block in tree.body:
+        if (not isinstance(block, ast.Expr)
+                or not isinstance(block.value, ast.Name)):
+            raise ValueError(err_msg)
+
+    return {re.sub("_", "-", v): v for v in variables}

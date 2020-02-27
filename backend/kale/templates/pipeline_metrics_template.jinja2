@@ -1,0 +1,28 @@
+import json
+
+metrics_metadata = list()
+metrics = {
+{% for metric in pipeline_metrics -%}
+    "{{ metric }}": {{ pipeline_metrics[metric] }},
+{% endfor -%}
+}
+
+for k in metrics:
+    if isinstance(metrics[k], (int, float)):
+        metric = metrics[k]
+    else:
+        try:
+            metric = float(metrics[k])
+        except ValueError:
+            print("Variable {} with type {} not supported as pipeline"
+                  " metric. Can only write `int` or `float` types as"
+                  " pipeline metrics".format(k, type(k)))
+            continue
+    metrics_metadata.append({
+                'name': k,
+                'numberValue': metric,
+                'format': "RAW",
+            })
+
+with open('/mlpipeline-metrics.json', 'w') as f:
+    json.dump({'metrics': metrics_metadata}, f)
