@@ -27,7 +27,7 @@ ARG KALE_BRANCH="master"
 WORKDIR /
 RUN git clone -b ${KALE_BRANCH} https://github.com/kubeflow-kale/kale && \
     cd /kale && \
-    python setup.py install && \
+    pip3 install -U . && \
     cd / && \
     rm -rf /kale
 
