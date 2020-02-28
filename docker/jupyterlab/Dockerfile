@@ -21,7 +21,7 @@ RUN echo "set background=dark" >> /etc/vim/vimrc.local
 RUN pip3 install --upgrade pip && \
     pip3 install --upgrade "jupyterlab<2.0.0" && \
     pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade && \
-    pip3 install kubeflow-kale && \
+    pip3 install -U kubeflow-kale && \
     jupyter labextension install kubeflow-kale-launcher
 
 RUN echo "jovyan ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/jovyan
