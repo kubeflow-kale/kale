@@ -127,20 +127,21 @@ def template():
 
 
 @pytest.mark.parametrize('step_name,source,ins,outs,nb_path,metadata,target', [
-    ('test', '', '', '', '', {}, 'func01.out.py'),
+    ('test', [], '', '', '', {}, 'func01.out.py'),
     # ---
-    ('test', '', '', '', '', {'function_args': 'arg1, arg2, arg3'},
+    ('test', [], '', '', '', {'function_args': 'arg1, arg2, arg3'},
      'func02.out.py'),
     # ---
-    ('test', '', '', '', '/path/to/nb',
+    ('test', [], '', '', '/path/to/nb',
      {'marshal_path': '/path', 'auto_snapshot': True, 'pipeline_name': 'T'},
      'func03.out.py'),
     # ---
-    ('test', '', ['v1'], '', '', {}, 'func04.out.py'),
+    ('test', [], ['v1'], '', '', {}, 'func04.out.py'),
     # ---
-    ('test', 'v1 = "Hello"\nprint(v1)', '', ['v1'], '', {}, 'func05.out.py'),
+    ('test', ['v1 = "Hello"', 'print(v1)'], '', ['v1'], '', {},
+     'func05.out.py'),
     # ---
-    ('test', 'print("hello")', '', '', '', {}, 'func06.out.py')
+    ('test', ['print("hello")'], '', '', '', {}, 'func06.out.py')
 ])
 def test_generate_function(template, step_name, source, ins, outs, nb_path,
                            metadata, target):
