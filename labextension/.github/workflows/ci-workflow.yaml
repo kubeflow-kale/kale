@@ -16,4 +16,16 @@ jobs:
       - name: Run format:check against master
         uses: borales/actions-yarn@v2.1.0
         with:
-          cmd: format:check -- --branch origin/master
+          cmd: format -- --check --branch origin/master
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        uses: borales/actions-yarn@v2.1.0
+        with:
+          cmd: install
+      - name: Build extension
+        uses: borales/actions-yarn@v2.1.0
+        with:
+          cmd: build
