@@ -1,25 +1,27 @@
 def {{ step_name }}({{ function_args }}):
     from kale.utils import pod_utils as _kale_pod_utils
-    from kale.utils.jupyter_utils import run_code as _kale_run_code
 
-    {% if auto_snapshot -%}
+{% if auto_snapshot %}
     _kale_pod_utils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
         "{{ step_name }}",
         "{{ nb_path }}")
-    {% endif %}
+{% endif %}
 
-{%- if in_variables|length > 0 -%}
-    data_loading_block = '''
+{%- if in_variables|length > 0 or out_variables|length > 0 %}
+    data_dir_block = '''
     import os
-    import shutil
-    from kale.marshal import resource_save as _kale_resource_save
-    from kale.marshal import resource_load as _kale_resource_load
-
     _kale_data_directory = "{{ marshal_path }}"
     {#- Verify directory exists #}
     if not os.path.isdir(_kale_data_directory):
         os.makedirs(_kale_data_directory, exist_ok=True)
+    '''
+{%- endif %}
+
+{% if in_variables|length > 0 %}
+    data_loading_block = '''
+    import os
+    from kale.marshal import resource_load as _kale_resource_load
 
     # -----------------------DATA LOADING START--------------------------------
     _kale_directory_file_names = [
@@ -28,7 +30,7 @@ def {{ step_name }}({{ function_args }}):
         if os.path.isfile(os.path.join(_kale_data_directory, f))
     ]
 
-{%- for in_var in in_variables -%}
+{%- for in_var in in_variables %}
     {#- First check that the variable exists in the path #}
     if "{{ in_var }}" not in _kale_directory_file_names:
         raise ValueError("{{ in_var }}" + " does not exists in directory")
@@ -49,9 +51,7 @@ def {{ step_name }}({{ function_args }}):
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
-{%- else -%}
-    data_loading_block = ''
-{%- endif %}
+{% endif %}
 
 {% for block in function_body %}
     block{{ loop.index }} = '''
@@ -60,6 +60,8 @@ def {{ step_name }}({{ function_args }}):
 {% endfor %}
 {% if out_variables|length > 0 %}
     data_saving_block = '''
+    import os
+    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
 {%- for out_var in out_variables %}
     if "{{ out_var }}" in locals():
@@ -71,14 +73,16 @@ def {{ step_name }}({{ function_args }}):
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''
-{%- else %}
-    data_saving_block = ''
 {%- endif %}
 
+{% if in_variables|length > 0 or out_variables|length > 0 or function_body|length > 0 %}
     # run the code blocks inside a jupyter kernel
-    blocks = (data_loading_block,
+    from kale.utils.jupyter_utils import run_code as _kale_run_code
+    blocks = ({% if in_variables|length > 0 or out_variables|length > 0 %}data_dir_block,{% endif -%}
+              {% if in_variables|length > 0 %}data_loading_block,{% endif -%}
 {%- for block in function_body %}
               block{{ loop.index }},
 {%- endfor %}
-              data_saving_block)
+              {% if out_variables|length > 0 %}data_saving_block{% endif %})
     _kale_run_code(blocks)
+{% endif -%}
