@@ -1,4 +1,5 @@
 import os
+import re
 import autopep8
 
 import networkx as nx
@@ -128,6 +129,14 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
                                    metadata):
     """Use the function template to generate Python code."""
     step_source = step_data.get('source', [])
+    # Escape triple quotes strings, as the code blocks will be wrapped in
+    # a triple quote string in the python executable
+    # XXX: This approach can cause issues in case the code itself contains
+    # XXX: escaped triple quotes. This is clearly a corner case and it would
+    # XXX: have to be tackled in a recursive way. An approach to avoid these
+    # XXX: issue could be to run the notebook directly, without having to
+    # XXX: copy the user code into the template.
+    step_source = [re.sub(r"'''", "\\'\\'\\'", s) for s in step_source]
     step_marshal_in = step_data.get('ins', [])
     step_marshal_out = step_data.get('outs', [])
 
