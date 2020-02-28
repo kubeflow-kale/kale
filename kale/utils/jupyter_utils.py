@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import signal
 import nbformat
 import threading
@@ -177,7 +178,7 @@ def process_outputs(cells):
     return html_artifact
 
 
-def capture_streams(kc, exit_on_error=False, timeout=10):
+def capture_streams(kc, exit_on_error=False):
     """Capture stream and error outputs from a kernel connection.
 
     Get messages from the iopub channel of the `kc` kernel connection
@@ -189,37 +190,37 @@ def capture_streams(kc, exit_on_error=False, timeout=10):
         kc: kernel connection
         exit_on_error (bool): True to call sys.exit() when the kernel sends
             an error message.
-        timeout (int): number of seconds to wait before quitting the connection
     """
     while True:
         try:
-            # this call will break the outer loop when more than `timeout`
-            # seconds pass without a response.
-            msg = kc.iopub_channel.get_msg(timeout=timeout)
-            msg_type = msg['header']['msg_type']
-            content = msg['content']
-            if msg_type == 'stream':  # stdout or stderr
-                if content['name'] == 'stdout':
-                    sys.stdout.write(content['text'])
-                elif content['name'] == 'stderr':
-                    sys.stderr.write(content['text'])
-                else:
-                    raise NotImplementedError("stream message content name not"
-                                              " recognized: {}"
-                                              .format(content['name']))
-            if msg_type == 'error':  # error and exceptions
-                # traceback is a list of strings (jupyter protocol spec)
-                traceback = map(remove_ansi_color_sequences,
-                                content['traceback'])
-                sys.stderr.write('\n'.join(traceback) + '\n')
-                if exit_on_error:
-                    # when receiving an error from the kernel, we don't want
-                    # to just print the exception to stderr, otherwise the
-                    # pipeline step would complete successfully.
-                    # kill sends the signal to the specific pid (main thread)
-                    os.kill(os.getpid(), signal.SIGUSR1)
+            msg = kc.iopub_channel.get_msg()
         except Empty:
+            print("The Kale kernel stream watcher thread raised an Empty"
+                  " exception, exiting...")
             return
+
+        msg_type = msg['header']['msg_type']
+        content = msg['content']
+        if msg_type == 'stream':  # stdout or stderr
+            if content['name'] == 'stdout':
+                sys.stdout.write(content['text'])
+            elif content['name'] == 'stderr':
+                sys.stderr.write(content['text'])
+            else:
+                raise NotImplementedError("stream message content name not"
+                                          " recognized: {}"
+                                          .format(content['name']))
+        if msg_type == 'error':  # error and exceptions
+            # traceback is a list of strings (jupyter protocol spec)
+            traceback = map(remove_ansi_color_sequences,
+                            content['traceback'])
+            sys.stderr.write('\n'.join(traceback) + '\n')
+            if exit_on_error:
+                # when receiving an error from the kernel, we don't want
+                # to just print the exception to stderr, otherwise the
+                # pipeline step would complete successfully.
+                # kill sends the signal to the specific pid (main thread)
+                os.kill(os.getpid(), signal.SIGUSR1)
 
 
 def run_code(source: tuple, kernel_name='python3'):
@@ -274,8 +275,9 @@ def run_code(source: tuple, kernel_name='python3'):
     # not closed, for example). With a signal we can capture the ExitCommand
     # exception from the main process and exit gracefully.
     signal.signal(signal.SIGUSR1, signal_handler)
-    # start separate thread to capture and print stdout, stderr, errors
-    x = threading.Thread(target=capture_streams, args=(kc, True,))
+    # start separate thread in to capture and print stdout, stderr, errors.
+    # daemon mode will make the watcher thread die when the main one returns.
+    x = threading.Thread(target=capture_streams, args=(kc, True,), daemon=True)
     x.start()
 
     try:
@@ -284,6 +286,10 @@ def run_code(source: tuple, kernel_name='python3'):
     except KaleKernelException:
         # exit gracefully with error
         sys.exit(-1)
+    # Give some time to the stream watcher thread to receive all messages from
+    # the kernel before shutting down.
+    time.sleep(1)
+    km.shutdown_kernel()
 
     result = process_outputs(notebook.cells)
     return result
