@@ -214,10 +214,7 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
         json.dump(metadata, f)
 
 
-def get_run_uuid():
-    # Retrieve the pod
-    pod_name = get_pod_name()
-    namespace = get_namespace()
+def get_workflow_name(pod_name, namespace):
     v1_client = _get_k8s_v1_client()
     pod = v1_client.read_namespaced_pod(pod_name, namespace)
 
@@ -228,6 +225,14 @@ def get_run_uuid():
         msg = ("Could not retrieve workflow name from pod"
                "{}/{}".format(namespace, pod_name))
         raise RuntimeError(msg)
+    return workflow_name
+
+
+def get_run_uuid():
+    # Retrieve the pod
+    pod_name = get_pod_name()
+    namespace = get_namespace()
+    workflow_name = get_workflow_name(pod_name, namespace)
 
     # Retrieve the Argo workflow
     api_group = "argoproj.io"

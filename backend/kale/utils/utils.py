@@ -1,4 +1,5 @@
 import os
+import re
 import random
 import string
 
@@ -11,3 +12,15 @@ def random_string(size=5, chars=string.ascii_lowercase + string.digits):
 def get_abs_working_dir(path):
     """Get absolute path to parent dir."""
     return os.path.dirname(os.path.abspath(path))
+
+
+def remove_ansi_color_sequences(text):
+    """Remove ANSI color sequences from text."""
+    ansi_color_escape = re.compile(r'\x1B\[[0-9;]*m')
+    return ansi_color_escape.sub('', text)
+
+
+def comment_magic_commands(code):
+    """Comment the magic commands in a code block."""
+    magic_pattern = re.compile(r'^(\s*%%?.*)$', re.MULTILINE)
+    return re.sub(magic_pattern, r'#\1', code.strip())

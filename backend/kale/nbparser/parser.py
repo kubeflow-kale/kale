@@ -322,11 +322,4 @@ def parse_notebook(notebook):
     # merge together pipeline metrics
     pipeline_metrics = '\n'.join(pipeline_metrics)
 
-    # make the nodes' code a single multiline string
-    # NOTICE: this is temporary, waiting for the artifacts-viz-feature
-    for step in nb_graph:
-        step_source = nb_graph.nodes(data=True)[step]['source']
-        nx.set_node_attributes(nb_graph,
-                               {step: {'source': '\n'.join(step_source)}})
-
     return nb_graph, pipeline_parameters, pipeline_metrics

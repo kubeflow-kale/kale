@@ -1,13 +1,14 @@
 def test():
+    data_dir_block = '''
     import os
-    import shutil
-    from kale.utils import pod_utils as _kale_pod_utils
-    from kale.marshal import resource_save as _kale_resource_save
-    from kale.marshal import resource_load as _kale_resource_load
-
     _kale_data_directory = ""
     if not os.path.isdir(_kale_data_directory):
         os.makedirs(_kale_data_directory, exist_ok=True)
+    '''
+
+    data_loading_block = '''
+    import os
+    from kale.marshal import resource_load as _kale_resource_load
 
     # -----------------------DATA LOADING START--------------------------------
     _kale_directory_file_names = [
@@ -30,3 +31,14 @@ def test():
     v1 = _kale_resource_load(
         os.path.join(_kale_data_directory, _kale_load_file_name))
     # -----------------------DATA LOADING END----------------------------------
+    '''
+
+    # run the code blocks inside a jupyter kernel
+    from kale.utils.jupyter_utils import run_code as _kale_run_code
+    from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
+    blocks = (data_dir_block, data_loading_block,
+              )
+    html_artifact = _kale_run_code(blocks)
+    with open("/test.html", "w") as f:
+        f.write(html_artifact)
+    _kale_update_uimetadata('test')

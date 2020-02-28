@@ -5,6 +5,7 @@ import networkx as nx
 from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
+from kale.utils import utils
 from kale.static_analysis.ast import get_all_names
 
 
@@ -39,6 +40,12 @@ def pyflakes_report(code):
         flakes_stderr.reset())
     pyflakes_api.check(code, filename="kale", reporter=rep)
 
+    # the stderr stream should be used just for compilation error, so if any
+    # message is found in the stderr stream, raise an exception
+    if rep._stderr():
+        raise RuntimeError("Flakes reported the following error:"
+                           "\n{}".format('\t' + '\t'.join(rep._stderr())))
+
     # Match names
     p = r"'(.+?)'"
 
@@ -63,8 +70,9 @@ def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     """
     block_names = nb_graph.nodes()
     for block in block_names:
-        source_code = nb_graph.nodes(data=True)[block]['source']
-        ins = pyflakes_report(code=source_code)
+        source_code = '\n'.join(nb_graph.nodes(data=True)[block]['source'])
+        commented_source_code = utils.comment_magic_commands(source_code)
+        ins = pyflakes_report(code=commented_source_code)
 
         if ignore_symbols:
             ins.difference_update(set(ignore_symbols))
@@ -118,7 +126,7 @@ def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     # First get all the names of each code block
     for block in nb_graph:
         block_data = nb_graph.nodes(data=True)[block]
-        all_names = get_all_names(block_data['source'])
+        all_names = get_all_names('\n'.join(block_data['source']))
         nx.set_node_attributes(nb_graph, {block: {'all_names': all_names}})
 
     # annotate the graph inplace with all the variables dependencies between
