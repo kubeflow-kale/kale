@@ -65,6 +65,12 @@ def run_code(source: tuple, kernel_name='python3'):
         source (tuple): source code blocks
         kernel_name: name of the kernel (form the kernel spec) to be created
     """
+    import IPython
+    if IPython.__version__ < '7.6.0':
+        raise RuntimeError("IPython version %s not supported."
+                           " Kale requires at least version 7.6.0."
+                           % IPython.__version__)
+
     # new notebook
     spec = get_kernel_spec(kernel_name)
     notebook = nbformat.v4.new_notebook(metadata={

@@ -33,7 +33,8 @@ setup(
         'jinja2 >=2.10, <3.0',
         'graphviz >=0.13, <1.0',
         'pyflakes >=2.1.1',
-        'dill >=0.3, <0.4'
+        'dill >=0.3, <0.4',
+        'IPython >= 7.6.0'
     ],
     extras_require={
         'dev': [
