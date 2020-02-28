@@ -1,7 +1,9 @@
 def {{ step_name }}({{ function_args }}):
+{%- if not auto_snapshot and in_variables|length == 0 and out_variables|length == 0 and function_body|length == 0 %}
+    pass
+{%- endif %}
+{%- if auto_snapshot %}
     from kale.utils import pod_utils as _kale_pod_utils
-
-{% if auto_snapshot %}
     _kale_pod_utils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
         "{{ step_name }}",
@@ -16,9 +18,9 @@ def {{ step_name }}({{ function_args }}):
     if not os.path.isdir(_kale_data_directory):
         os.makedirs(_kale_data_directory, exist_ok=True)
     '''
-{%- endif %}
+{% endif %}
 
-{% if in_variables|length > 0 %}
+{%- if in_variables|length > 0 %}
     data_loading_block = '''
     import os
     from kale.marshal import resource_load as _kale_resource_load
@@ -53,12 +55,12 @@ def {{ step_name }}({{ function_args }}):
     '''
 {% endif %}
 
-{% for block in function_body %}
+{%- for block in function_body %}
     block{{ loop.index }} = '''
 {{block|indent(4, True)}}
     '''
 {% endfor %}
-{% if out_variables|length > 0 %}
+{%- if out_variables|length > 0 %}
     data_saving_block = '''
     import os
     from kale.marshal import resource_save as _kale_resource_save
