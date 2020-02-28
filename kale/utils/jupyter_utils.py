@@ -6,6 +6,7 @@ import threading
 
 from queue import Empty
 from jupyter_client.kernelspec import get_kernel_spec
+from kale.utils.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
 
 
@@ -45,9 +46,8 @@ def capture_streams(kc, exit_on_error=False, timeout=10):
                         "stream message content name not recognized: %s"
                         % content['name'])
             if msg_type == 'error':  # error and exceptions
-                sys.stderr.write('\n'.join(content['traceback']) + '\n')
-                sys.stderr.write(
-                    "%s: %s" % (content['ename'], content['evalue']))
+                traceback = remove_ansi_color_sequences(content['traceback'])
+                sys.stderr.write('\n'.join(traceback) + '\n')
                 if exit_on_error:
                     # when receiving an error from the kernel, we don't want
                     # to just print the exception to stderr, otherwise the
