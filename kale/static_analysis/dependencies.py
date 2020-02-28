@@ -40,6 +40,12 @@ def pyflakes_report(code):
         flakes_stderr.reset())
     pyflakes_api.check(code, filename="kale", reporter=rep)
 
+    # the stderr stream should be used just for compilation error, so if any
+    # message is found in the stderr stream, raise an exception
+    if rep._stderr():
+        raise RuntimeError("Flakes reported the following error:"
+                           "\n{}".format('\t' + '\t'.join(rep._stderr())))
+
     # Match names
     p = r"'(.+?)'"
 
