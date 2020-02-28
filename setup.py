@@ -26,7 +26,7 @@ setup(
               'kale.rpc'
               ],
     install_requires=[
-        'kfp >=0.1.31, <0.2',
+        'kfp >= 0.2',
         'autopep8 >=1.4, <1.5',
         'nbformat >=4.4, <5.0',
         'networkx >=2.3, <3.0',
@@ -34,7 +34,13 @@ setup(
         'graphviz >=0.13, <1.0',
         'pyflakes >=2.1.1',
         'dill >=0.3, <0.4',
-        'IPython >= 7.6.0'
+        'IPython >= 7.6.0',
+        'jupyter-client >= 5.3.4',
+        'jupyter-core >= 4.6.0',
+        'nbconvert >= 5.6.1',
+        'ipykernel >= 5.1.4',
+        'kfp-server-api == 0.1.18.3',
+        'packaging > 20'
     ],
     extras_require={
         'dev': [
