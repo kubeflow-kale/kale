@@ -140,7 +140,7 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
 
     fn_code = template.render(
         step_name=step_name,
-        function_body=[step_source],
+        function_body=step_source,
         in_variables=step_marshal_in,
         out_variables=step_marshal_out,
         nb_path=nb_path,

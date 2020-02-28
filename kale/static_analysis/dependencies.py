@@ -63,7 +63,7 @@ def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     """
     block_names = nb_graph.nodes()
     for block in block_names:
-        source_code = nb_graph.nodes(data=True)[block]['source']
+        source_code = '\n'.join(nb_graph.nodes(data=True)[block]['source'])
         ins = pyflakes_report(code=source_code)
 
         if ignore_symbols:
@@ -118,7 +118,7 @@ def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     # First get all the names of each code block
     for block in nb_graph:
         block_data = nb_graph.nodes(data=True)[block]
-        all_names = get_all_names(block_data['source'])
+        all_names = get_all_names('\n'.join(block_data['source']))
         nx.set_node_attributes(nb_graph, {block: {'all_names': all_names}})
 
     # annotate the graph inplace with all the variables dependencies between

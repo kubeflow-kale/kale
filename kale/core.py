@@ -211,8 +211,10 @@ class Kale:
             template_env = _initialize_templating_env()
             metrics_template = template_env.get_template(
                 'pipeline_metrics_template.jinja2')
-            metrics_source = metrics_template.render(
-                pipeline_metrics=pipeline_metrics)
+            # need to be a list since it will be treated as a code cell and
+            # passed to the ipykernel
+            metrics_source = [metrics_template.render(
+                pipeline_metrics=pipeline_metrics)]
             data = {pipeline_metrics_name: {'source': metrics_source,
                                             'ins': [],
                                             'outs': []}}
