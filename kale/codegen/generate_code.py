@@ -1,4 +1,5 @@
 import os
+import re
 import autopep8
 
 import networkx as nx
@@ -87,7 +88,7 @@ def get_marshal_data(wd, volumes, nb_path):
 def get_args(pipeline_parameters):
     """Generate pipeline and function parameter.
 
-    The generated strings will be passed to the rendering template.
+    The generated lists will be passed to the rendering template.
 
     Args:
         pipeline_parameters (dict): pipeline parameters as
@@ -95,24 +96,17 @@ def get_args(pipeline_parameters):
 
     Returns (dict): a dict composed of:
         - 'pipeline_args_names': pipeline argument names as list
-        - 'pipeline_args': pipeline arguments as a comma separated string
-        - 'function_args': function arguments as a comma separated string
+        - 'pipeline_args_type': pipeline arguments types as list
+        - 'pipeline_args_values': function arguments values as list
     """
-    pipeline_args_names = ', '.join(list(pipeline_parameters.keys()))
-    # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join(["{}='{}'".format(arg, 
-                                                pipeline_parameters[arg][1])
-                               for arg in pipeline_parameters])
-    # Arguments are the pipeline arguments. Since we don't know precisely in
-    # what pipeline steps they are needed, we just pass them to every one.
-    # We assume there variables were not re-assigned throughout the notebook
-    function_args = ', '.join(["{}: {}".format(arg, 
-                                               pipeline_parameters[arg][0])
-                               for arg in pipeline_parameters])
+    pipeline_args_names = list(pipeline_parameters.keys())
+    pipeline_args_types = [arg[0] for arg in pipeline_parameters.values()]
+    pipeline_args_values = [arg[1] for arg in pipeline_parameters.values()]
+
     return {
         'pipeline_args_names': pipeline_args_names,
-        'pipeline_args': pipeline_args,
-        'function_args': function_args
+        'pipeline_args_types': pipeline_args_types,
+        'pipeline_args_values': pipeline_args_values
     }
 
 
@@ -135,12 +129,20 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
                                    metadata):
     """Use the function template to generate Python code."""
     step_source = step_data.get('source', [])
+    # Escape triple quotes strings, as the code blocks will be wrapped in
+    # a triple quote string in the python executable
+    # XXX: This approach can cause issues in case the code itself contains
+    # XXX: escaped triple quotes. This is clearly a corner case and it would
+    # XXX: have to be tackled in a recursive way. An approach to avoid these
+    # XXX: issue could be to run the notebook directly, without having to
+    # XXX: copy the user code into the template.
+    step_source = [re.sub(r"'''", "\\'\\'\\'", s) for s in step_source]
     step_marshal_in = step_data.get('ins', [])
     step_marshal_out = step_data.get('outs', [])
 
     fn_code = template.render(
         step_name=step_name,
-        function_body=[step_source],
+        function_body=step_source,
         in_variables=step_marshal_in,
         out_variables=step_marshal_out,
         nb_path=nb_path,
