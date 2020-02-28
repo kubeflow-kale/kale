@@ -11,6 +11,8 @@ from jupyter_client.kernelspec import get_kernel_spec
 from kale.utils.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
 
+from packaging import version as pkg_version
+
 html_template = '''
 <html><head>
     <style>
@@ -41,7 +43,7 @@ html_template = '''
     </style>
 </head>
 <body><div>
-{}
+%s
 </div></body>
 </html>
 '''
@@ -206,7 +208,9 @@ def capture_streams(kc, exit_on_error=False, timeout=10):
                                               " recognized: {}"
                                               .format(content['name']))
             if msg_type == 'error':  # error and exceptions
-                traceback = remove_ansi_color_sequences(content['traceback'])
+                # traceback is a list of strings (jupyter protocol spec)
+                traceback = map(remove_ansi_color_sequences,
+                                content['traceback'])
                 sys.stderr.write('\n'.join(traceback) + '\n')
                 if exit_on_error:
                     # when receiving an error from the kernel, we don't want
@@ -226,7 +230,7 @@ def run_code(source: tuple, kernel_name='python3'):
         kernel_name: name of the kernel (form the kernel spec) to be created
     """
     import IPython
-    if IPython.__version__ < '7.6.0':
+    if pkg_version.parse(IPython.__version__) < pkg_version.parse('7.6.0'):
         raise RuntimeError("IPython version {} not supported."
                            " Kale requires at least version 7.6.0."
                            .format(IPython.__version__))
