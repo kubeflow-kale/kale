@@ -5,6 +5,7 @@ import networkx as nx
 from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
+from kale.utils import utils
 from kale.static_analysis.ast import get_all_names
 
 
@@ -64,7 +65,8 @@ def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
     block_names = nb_graph.nodes()
     for block in block_names:
         source_code = '\n'.join(nb_graph.nodes(data=True)[block]['source'])
-        ins = pyflakes_report(code=source_code)
+        commented_source_code = utils.comment_magic_commands(source_code)
+        ins = pyflakes_report(code=commented_source_code)
 
         if ignore_symbols:
             ins.difference_update(set(ignore_symbols))

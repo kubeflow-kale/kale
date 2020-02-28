@@ -2,6 +2,7 @@ import re
 import ast
 
 from collections import deque
+from kale.utils import utils
 
 # TODO: Get this list dynamically
 _BUILT_INS_ = ["abs", "delattr", "hash", "memoryview", "set",
@@ -86,7 +87,21 @@ def get_all_names(code):
     Returns: a list of string names
     """
     names = set()
-    tree = ast.parse(code)
+
+    # Comment IPython magic commands.
+    # Note #1: This is needed to correctly parse the code using AST, as it does
+    #  not understand IPython magic commands.
+    # Note #2: This will comment out both in-line magics and cell magics. This
+    #  can lead to potential errors in case a cell magic like `%%capture out`
+    #  is used. In that case, Kale would detect as missing the `out` variable
+    #  declared by the magic command and will try to marshal it in at the
+    #  beginning of the pipeline step. These cases should be very rare, and
+    #  will be handled case by case as specific issues arise.
+    # Note #3: Magic commands are preserved in the resulting Python executable,
+    #  they are commented just here in order to make AST run.
+    commented_code = utils.comment_magic_commands(code)
+
+    tree = ast.parse(commented_code)
     for block in tree.body:
         for node in walk(block):
             if isinstance(node, (ast.Name,)):
