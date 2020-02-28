@@ -30,7 +30,11 @@
     "build": "tsc",
     "clean": "rimraf lib",
     "prepublishOnly": "npm run build",
-    "watch": "tsc -w --listEmittedFiles"
+    "watch": "tsc -w --listEmittedFiles",
+    "format": "pretty-quick --pattern '**/*.{ts,js,tsx,jsx,scss,css,html,md,json}'",
+    "format:check": "jlpm format --check",
+    "format:staged": "jlpm format --staged",
+    "format:check:staged": "jlpm format:check --staged"
   },
   "dependencies": {
     "@jupyterlab/application": ">=1.1.0 <2.0.0",
@@ -48,6 +52,9 @@
     "use-debounce": "^3.0.1"
   },
   "devDependencies": {
+    "husky": "^4.2.3",
+    "prettier": "^1.19.1",
+    "pretty-quick": "^2.0.1",
     "rimraf": "~2.6.2",
     "typescript": "3.5.1"
   },
@@ -59,5 +66,10 @@
   },
   "jupyterlab": {
     "extension": true
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "jlpm format:check:staged"
+    }
   }
 }

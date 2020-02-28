@@ -1,0 +1,19 @@
+name: CI
+on: pull_request
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Fetch repository's history
+        run: |
+          git fetch --no-tags --prune --unshallow
+      - name: Install dependencies
+        uses: borales/actions-yarn@v2.1.0
+        with:
+          cmd: install
+      - name: Run format:check against master
+        uses: borales/actions-yarn@v2.1.0
+        with:
+          cmd: format:check -- --branch origin/master

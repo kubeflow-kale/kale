@@ -1,8 +1,8 @@
-import { Dialog, showDialog } from "@jupyterlab/apputils";
-import { NotebookPanel } from "@jupyterlab/notebook";
-import { KernelMessage, Kernel } from "@jupyterlab/services";
-import { CommandRegistry } from "@phosphor/commands";
-import * as React from "react";
+import { Dialog, showDialog } from '@jupyterlab/apputils';
+import { NotebookPanel } from '@jupyterlab/notebook';
+import { KernelMessage, Kernel } from '@jupyterlab/services';
+import { CommandRegistry } from '@phosphor/commands';
+import * as React from 'react';
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
 export default class NotebookUtilities {
@@ -17,24 +17,30 @@ export default class NotebookUtilities {
   public static async showMessage(
     title: string,
     msg: string[],
-    buttonLabel: string = "Dismiss",
-    buttonClassName: string = ""
+    buttonLabel: string = 'Dismiss',
+    buttonClassName: string = '',
   ): Promise<void> {
     const buttons: ReadonlyArray<Dialog.IButton> = [
-      Dialog.okButton({ label: buttonLabel, className: buttonClassName })
+      Dialog.okButton({ label: buttonLabel, className: buttonClassName }),
     ];
 
-    const messageBody =
-        <div key={`msg-box-${Math.random() * 100000}`}>{msg.map((s: string, i: number) => {
-            return <React.Fragment>
-              <span className='dialog-box-text' key={`msg-${i}`}>{s}</span>
-              <br key={`br-msg-${i}`}/>
+    const messageBody = (
+      <div key={`msg-box-${Math.random() * 100000}`}>
+        {msg.map((s: string, i: number) => {
+          return (
+            <React.Fragment>
+              <span className="dialog-box-text" key={`msg-${i}`}>
+                {s}
+              </span>
+              <br key={`br-msg-${i}`} />
             </React.Fragment>
-        })}</div>;
+          );
+        })}
+      </div>
+    );
 
     await showDialog({ title, buttons, body: messageBody });
   }
-
 
   /**
    * Opens a pop-up dialog in JupyterLab to display a yes/no dialog.
@@ -49,17 +55,17 @@ export default class NotebookUtilities {
   public static async showYesNoDialog(
     title: string,
     msg: string,
-    acceptLabel: string = "YES",
-    rejectLabel: string = "NO",
-    yesButtonClassName: string = "",
-    noButtonClassName: string = ""
+    acceptLabel: string = 'YES',
+    rejectLabel: string = 'NO',
+    yesButtonClassName: string = '',
+    noButtonClassName: string = '',
   ): Promise<boolean> {
     const buttons: ReadonlyArray<Dialog.IButton> = [
       Dialog.okButton({ label: acceptLabel, className: yesButtonClassName }),
-      Dialog.cancelButton({ label: rejectLabel, className: noButtonClassName })
+      Dialog.cancelButton({ label: rejectLabel, className: noButtonClassName }),
     ];
     const result = await showDialog({ title, buttons, body: msg });
-    return result.button.label === acceptLabel
+    return result.button.label === acceptLabel;
   }
 
   /**
@@ -74,8 +80,8 @@ export default class NotebookUtilities {
   public static async showRefreshDialog(
     title: string,
     msg: string[],
-    buttonLabel: string = "Refresh",
-    buttonClassName: string = ""
+    buttonLabel: string = 'Refresh',
+    buttonClassName: string = '',
   ): Promise<void> {
     await this.showMessage(title, msg, buttonLabel, buttonClassName);
     location.reload();
@@ -87,12 +93,12 @@ export default class NotebookUtilities {
    * @returns Promise<NotebookPanel> - A promise containing the notebook panel object that was created (if successful).
    */
   public static async createNewNotebook(
-    command: CommandRegistry
+    command: CommandRegistry,
   ): Promise<NotebookPanel> {
-    const notebook: any = await command.execute("notebook:create-new", {
+    const notebook: any = await command.execute('notebook:create-new', {
       activate: true,
-      path: "",
-      preferredLanguage: ""
+      path: '',
+      preferredLanguage: '',
     });
     await notebook.session.ready;
     return notebook;
@@ -103,7 +109,7 @@ export default class NotebookUtilities {
    * @param notebookPanel The notebook panel containing the notebook to save
    */
   public static async saveNotebook(
-    notebookPanel: NotebookPanel
+    notebookPanel: NotebookPanel,
   ): Promise<boolean> {
     if (notebookPanel) {
       await notebookPanel.context.ready;
@@ -117,13 +123,11 @@ export default class NotebookUtilities {
    * Convert the notebook contents to JSON
    * @param notebookPanel The notebook panel containing the notebook to serialize
    */
-  public static notebookToJSON(
-      notebookPanel: NotebookPanel
-  ): any {
+  public static notebookToJSON(notebookPanel: NotebookPanel): any {
     if (notebookPanel) {
-      return notebookPanel.content.model.toJSON()
+      return notebookPanel.content.model.toJSON();
     }
-    return null
+    return null;
   }
 
   /**
@@ -135,7 +139,7 @@ export default class NotebookUtilities {
   public static getMetaData(notebookPanel: NotebookPanel, key: string): any {
     if (!notebookPanel) {
       throw new Error(
-        "The notebook is null or undefined. No meta data available."
+        'The notebook is null or undefined. No meta data available.',
       );
     }
     if (notebookPanel.model && notebookPanel.model.metadata.has(key)) {
@@ -158,11 +162,11 @@ export default class NotebookUtilities {
     notebookPanel: NotebookPanel,
     key: string,
     value: any,
-    save: boolean = false
+    save: boolean = false,
   ): any {
     if (!notebookPanel) {
       throw new Error(
-        "The notebook is null or undefined. No meta data available."
+        'The notebook is null or undefined. No meta data available.',
       );
     }
     const oldVal = notebookPanel.model.metadata.set(key, value);
@@ -182,11 +186,11 @@ export default class NotebookUtilities {
       // console.log('Default spec:', kernelSpecs.default);
       // console.log('Available specs', Object.keys(kernelSpecs.kernelspecs));
       // use the default name
-      return {name: kernelSpecs.default}
+      return { name: kernelSpecs.default };
     });
     return await Kernel.startNew(options).then(_kernel => {
-        return _kernel
-      });
+      return _kernel;
+    });
   }
 
   // TODO: We can use this context manager to execute commands inside a new kernel
@@ -203,7 +207,7 @@ export default class NotebookUtilities {
     // close kernel
     _k.shutdown();
     // return result
-    return res
+    return res;
   }
 
   /**
@@ -245,35 +249,39 @@ export default class NotebookUtilities {
     runSilent: boolean = false,
     storeHistory: boolean = false,
     allowStdIn: boolean = false,
-    stopOnError: boolean = false
+    stopOnError: boolean = false,
   ): Promise<any> {
     if (!kernel) {
-      throw new Error("Kernel is null or undefined.");
+      throw new Error('Kernel is null or undefined.');
     }
 
     // Wait for kernel to be ready before sending request
     await kernel.ready;
 
-    const message: KernelMessage.IShellMessage = await kernel.requestExecute(
-      {
-        allow_stdin: allowStdIn,
-        code: runCode,
-        silent: runSilent,
-        stop_on_error: stopOnError,
-        store_history: storeHistory,
-        user_expressions: userExpressions
-      }
-    ).done;
+    const message: KernelMessage.IShellMessage = await kernel.requestExecute({
+      allow_stdin: allowStdIn,
+      code: runCode,
+      silent: runSilent,
+      stop_on_error: stopOnError,
+      store_history: storeHistory,
+      user_expressions: userExpressions,
+    }).done;
 
     const content: any = message.content;
 
-    if (content.status !== "ok") {
+    if (content.status !== 'ok') {
       // If response is not 'ok', throw contents as error, log code
       const msg: string = `Code caused an error:\n${runCode}`;
       console.error(msg);
-      if(content.traceback){
-        content.traceback.forEach((line:string) => console.log(line.replace(
-    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')));
+      if (content.traceback) {
+        content.traceback.forEach((line: string) =>
+          console.log(
+            line.replace(
+              /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+              '',
+            ),
+          ),
+        );
       }
       throw content;
     }
@@ -286,16 +294,16 @@ export default class NotebookUtilities {
    * a NotebookPanel instead of a Kernel
    */
   public static async sendKernelRequestFromNotebook(
-      notebookPanel: NotebookPanel,
-      runCode: string,
-      userExpressions: any,
-      runSilent: boolean = false,
-      storeHistory: boolean = false,
-      allowStdIn: boolean = false,
-      stopOnError: boolean = false
+    notebookPanel: NotebookPanel,
+    runCode: string,
+    userExpressions: any,
+    runSilent: boolean = false,
+    storeHistory: boolean = false,
+    allowStdIn: boolean = false,
+    stopOnError: boolean = false,
   ) {
     if (!notebookPanel) {
-      throw new Error("Notebook is null or undefined.");
+      throw new Error('Notebook is null or undefined.');
     }
 
     // Wait for notebook panel to be ready
@@ -303,13 +311,13 @@ export default class NotebookUtilities {
     await notebookPanel.session.ready;
 
     return this.sendKernelRequest(
-        notebookPanel.session.kernel,
-        runCode,
-        userExpressions,
-        runSilent,
-        storeHistory,
-        allowStdIn,
-        stopOnError
-    )
+      notebookPanel.session.kernel,
+      runCode,
+      userExpressions,
+      runSilent,
+      storeHistory,
+      allowStdIn,
+      stopOnError,
+    );
   }
 }

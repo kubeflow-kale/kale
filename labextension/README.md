@@ -1,6 +1,5 @@
 ## Kale JupyterLab Extension
 
-
 This JupyterLab extension provides a Kubeflow specific left area that can be used to deploy a Notebook to Kubeflow Pipelines. The UI is just high level component designed to let the user annotate Notebook metadata and Cells metadata easily and visually. In order to convert the notebook to a Kubeflow Pipeline workflow and have it run in KFP, [Kale](http://github.com/kubeflow-kale/kale) needs to be installed in the same Python environment as the running Notebook Kernel.
 
 ### Getting started
@@ -35,7 +34,9 @@ The Launcher is able to invoke Kale in the background by programmatically execut
 kale --nb <current_active_notebook_name> [--upload_pipeline] [--run_pipeline]
 ```
 
-## Contributing
+## Development
+
+### Build
 
 To build and run the extension in dev mode, first clone the repository in your local machine.
 
@@ -49,7 +50,7 @@ jlpm install
 # Build the extension. This will generate a dist/ folder with build files
 jlpm run build
 
-# Add the extension to jupyterlab. 
+# Add the extension to jupyterlab.
 # Be sure to uninstall any other version first (e.g. npm kubeflow-kale-launcher package)
 jupyter labextension install .
 ```
@@ -65,3 +66,19 @@ And run JupyterLab in `watch` mode to load the new compiled version:
 ```
 jupyter lab --no-browser --watch
 ```
+
+### Contribute
+
+This repository uses
+[husky](https://github.com/typicode/husky)
+to set up git hooks.
+
+For `husky` to function properly, you need to have `yarn` installed and in your
+`PATH`. The reason that is required is that `husky` is installed via
+`jlpm install` and `jlpm` is a `yarn` wrapper. (Similarly, if it was installed
+using the `npm` package manager, then `npm` would have to be in `PATH`.)
+
+Currently installed git hooks:
+
+- `pre-commit`: Run a prettier check on staged files, using
+  [pretty-quick](https://github.com/azz/pretty-quick)
