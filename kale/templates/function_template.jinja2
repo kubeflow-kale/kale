@@ -78,11 +78,15 @@ def {{ step_name }}({{ function_args }}):
 {% if in_variables|length > 0 or out_variables|length > 0 or function_body|length > 0 %}
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
+    from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
     blocks = ({% if in_variables|length > 0 or out_variables|length > 0 %}data_dir_block,{% endif -%}
               {% if in_variables|length > 0 %}data_loading_block,{% endif -%}
 {%- for block in function_body %}
               block{{ loop.index }},
 {%- endfor %}
               {% if out_variables|length > 0 %}data_saving_block{% endif %})
-    _kale_run_code(blocks)
+    html_artifact = _kale_run_code(blocks)
+    with open("/{{ step_name }}.html", "w") as f:
+        f.write(html_artifact)
+    _kale_update_uimetadata('{{ step_name }}')
 {% endif -%}
