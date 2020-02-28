@@ -95,23 +95,23 @@ def test_get_marshal_data(args, target):
 def _test_args_dict(f1, f2, f3):
     return {
         'pipeline_args_names': f1,
-        'pipeline_args': f2,
-        'function_args': f3
+        'pipeline_args_types': f2,
+        'pipeline_args_values': f3
     }
 
 
 @pytest.mark.parametrize("pipeline_parameters,target", [
     ({},
-     _test_args_dict('', '', '')),
+     _test_args_dict([], [], [])),
     # ---
     ({'param1': ('str', 'v1')},
-     _test_args_dict('param1', "param1='v1'", 'param1: str')),
+     _test_args_dict(["param1"], ["str"], ["v1"])),
     # ---
     ({'param1': ('int', 1)},
-     _test_args_dict('param1', "param1='1'", 'param1: int')),
+     _test_args_dict(["param1"], ["int"], [1])),
     # ---
-    ({'p1': ('int', 1), 'p2': ('str', 'v')},
-     _test_args_dict('p1, p2', "p1='1', p2='v'", 'p1: int, p2: str')),
+    ({'p1': ('int', 1), 'p2': ('str', 'v'), 'p3': ('bool', True)},
+     _test_args_dict(["p1", "p2", "p3"], ["int", "str", "bool"], [1, "v", True])),
 ])
 def test_get_args(pipeline_parameters, target):
     """Test that argument string are properly formatted"""
@@ -129,7 +129,8 @@ def template():
 @pytest.mark.parametrize('step_name,source,ins,outs,nb_path,metadata,target', [
     ('test', [], '', '', '', {}, 'func01.out.py'),
     # ---
-    ('test', [], '', '', '', {'function_args': 'arg1, arg2, arg3'},
+    ('test', [], '', '', '', {'pipeline_args_names': ['arg1', 'arg2', 'arg3'],
+                              'pipeline_args_types': ['int', 'str', 'str']},
      'func02.out.py'),
     # ---
     ('test', [], '', '', '/path/to/nb',

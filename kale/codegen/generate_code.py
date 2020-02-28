@@ -87,7 +87,7 @@ def get_marshal_data(wd, volumes, nb_path):
 def get_args(pipeline_parameters):
     """Generate pipeline and function parameter.
 
-    The generated strings will be passed to the rendering template.
+    The generated lists will be passed to the rendering template.
 
     Args:
         pipeline_parameters (dict): pipeline parameters as
@@ -95,24 +95,17 @@ def get_args(pipeline_parameters):
 
     Returns (dict): a dict composed of:
         - 'pipeline_args_names': pipeline argument names as list
-        - 'pipeline_args': pipeline arguments as a comma separated string
-        - 'function_args': function arguments as a comma separated string
+        - 'pipeline_args_type': pipeline arguments types as list
+        - 'pipeline_args_values': function arguments values as list
     """
-    pipeline_args_names = ', '.join(list(pipeline_parameters.keys()))
-    # wrap in quotes every parameter - required by kfp
-    pipeline_args = ', '.join(["{}='{}'".format(arg, 
-                                                pipeline_parameters[arg][1])
-                               for arg in pipeline_parameters])
-    # Arguments are the pipeline arguments. Since we don't know precisely in
-    # what pipeline steps they are needed, we just pass them to every one.
-    # We assume there variables were not re-assigned throughout the notebook
-    function_args = ', '.join(["{}: {}".format(arg, 
-                                               pipeline_parameters[arg][0])
-                               for arg in pipeline_parameters])
+    pipeline_args_names = list(pipeline_parameters.keys())
+    pipeline_args_types = [arg[0] for arg in pipeline_parameters.values()]
+    pipeline_args_values = [arg[1] for arg in pipeline_parameters.values()]
+
     return {
         'pipeline_args_names': pipeline_args_names,
-        'pipeline_args': pipeline_args,
-        'function_args': function_args
+        'pipeline_args_types': pipeline_args_types,
+        'pipeline_args_values': pipeline_args_values
     }
 
 
