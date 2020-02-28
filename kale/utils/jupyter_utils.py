@@ -41,22 +41,22 @@ html_template = '''
     </style>
 </head>
 <body><div>
-    %s
+{}
 </div></body>
 </html>
 '''
 
 image_html_template = '''
 <div>
-  <p>%s</p>
-  <img src="data:image/png;base64, %s" />
+  <p>{}</p>
+  <img src="data:image/png;base64, {}" />
 </div>
 '''
 
 text_html_template = '''
 <pre>
 ------- CELL OUTPUT -------
-%s
+{}
 ---------------------------
 </pre>
 <br><br>
@@ -64,7 +64,7 @@ text_html_template = '''
 
 javascript_html_template = '''
 <script>
-%s
+{}
 </script>
 '''
 
@@ -84,7 +84,7 @@ def generate_html_output(outputs):
     """
     if not isinstance(outputs, list):
         raise ValueError("A notebook's cell outputs must be a valid list."
-                         " Found %s instead." % type(outputs))
+                         " Found {} instead.".format(type(outputs)))
     html_body = ""
     # run through the list of outputs
     for o in outputs:
@@ -94,7 +94,7 @@ def generate_html_output(outputs):
         output_type = o.get('output_type', None)
         if not output_type:
             raise ValueError("Cell output dict has not `output_type` field."
-                             " Output: %s" % o)
+                             " Output: {}".format(o))
         if o['output_type'] in ['display_data', 'execute_result']:
             # check mime-type of content
             # Currently supported MIME types:
@@ -112,20 +112,20 @@ def generate_html_output(outputs):
             # TODO: Generalize to multiple image types (i.e. jpeg and svg+xml)
             if 'image/png' in data:
                 title = data.get('text/plain', '')
-                html = image_html_template % (title, data['image/png'])
+                html = image_html_template.format(title, data['image/png'])
                 html_body += html
 
             if 'text/html' in data:
                 html_body += data['text/html']
 
-            if 'image/png' not in data \
-                    and 'text/html' not in data \
-                    and 'text/plain' in data:
-                html_body += text_html_template % data['text/plain']
+            if ('image/png' not in data
+                    and 'text/html' not in data
+                    and 'text/plain' in data):
+                html_body += text_html_template.format(data['text/plain'])
 
             if 'application/javascript' in data:
-                html_body += javascript_html_template \
-                             % data['application/javascript']
+                html_body += javascript_html_template.format(
+                    data['application/javascript'])
     return html_body
 
 
@@ -146,9 +146,9 @@ def update_uimetadata(artifact_name,
             if not outputs.get('outputs', None):
                 outputs['outputs'] = []
         except json.JSONDecodeError as e:
-            print("Failed to parse json file %s: %s\n"
+            print("Failed to parse json file {}: {}\n"
                   "This step will not be able to visualize artifacts in the"
-                  " KFP UI" % uimetadata_path, e)
+                  " KFP UI".format(uimetadata_path, e))
 
     pod_name = pod_utils.get_pod_name()
     namespace = pod_utils.get_namespace()
@@ -156,7 +156,7 @@ def update_uimetadata(artifact_name,
     html_artifact_entry = [{
         'type': 'web-app',
         'storage': 'minio',
-        'source': 'minio://mlpipeline/artifacts/%s/%s/%s' % (
+        'source': 'minio://mlpipeline/artifacts/{}/{}/{}'.format(
             workflow_name, pod_name, artifact_name + '.tgz')
     }]
     outputs['outputs'] += html_artifact_entry
@@ -202,9 +202,9 @@ def capture_streams(kc, exit_on_error=False, timeout=10):
                 elif content['name'] == 'stderr':
                     sys.stderr.write(content['text'])
                 else:
-                    raise NotImplementedError(
-                        "stream message content name not recognized: %s"
-                        % content['name'])
+                    raise NotImplementedError("stream message content name not"
+                                              " recognized: {}"
+                                              .format(content['name']))
             if msg_type == 'error':  # error and exceptions
                 traceback = remove_ansi_color_sequences(content['traceback'])
                 sys.stderr.write('\n'.join(traceback) + '\n')
@@ -227,9 +227,9 @@ def run_code(source: tuple, kernel_name='python3'):
     """
     import IPython
     if IPython.__version__ < '7.6.0':
-        raise RuntimeError("IPython version %s not supported."
+        raise RuntimeError("IPython version {} not supported."
                            " Kale requires at least version 7.6.0."
-                           % IPython.__version__)
+                           .format(IPython.__version__))
 
     # new notebook
     spec = get_kernel_spec(kernel_name)
