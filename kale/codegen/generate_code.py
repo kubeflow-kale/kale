@@ -99,9 +99,10 @@ def get_args(parameters):
         - 'parameters_types': parameters types as list
         - 'parameters_values': parameters default values as list
     """
-    parameters_names = sorted(parameters.keys())
-    parameters_types = [arg[0] for arg in parameters.values()]
-    parameters_values = [arg[1] for arg in parameters.values()]
+    sorted_parameters = dict(sorted(parameters.items()))
+    parameters_names = list(sorted_parameters.keys())
+    parameters_types = [arg[0] for arg in sorted_parameters.values()]
+    parameters_values = [arg[1] for arg in sorted_parameters.values()]
 
     return {
         'parameters_names': parameters_names,
@@ -139,12 +140,14 @@ def generate_lightweight_component(template, step_name, step_data, nb_path,
     step_source = [re.sub(r"'''", "\\'\\'\\'", s) for s in step_source]
     step_marshal_in = step_data.get('ins', [])
     step_marshal_out = step_data.get('outs', [])
+    step_parameters = get_args(step_data.get('parameters', {}))
 
     fn_code = template.render(
         step_name=step_name,
         function_body=step_source,
         in_variables=step_marshal_in,
         out_variables=step_marshal_out,
+        parameters=step_parameters,
         nb_path=nb_path,
         # step_parameters overrides the parameters fields of metadata
         **{**metadata, **step_parameters}
@@ -160,12 +163,18 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_components,
     leaf_steps = [x for x in nb_graph.nodes()
                   if nb_graph.out_degree(x) == 0]
 
+    # create a dict with step names and their parameters
+    all_step_parameters = {step: sorted(nb_graph.nodes(data=True)[step]
+                                        .get('parameters', {}).keys())
+                           for step in step_names}
+
     pipeline_code = template.render(
         nb_graph=nb_graph,
         lightweight_components=lightweight_components,
         step_names=step_names,
         step_prevs=pipeline_dependencies_tasks(nb_graph),
         leaf_steps=leaf_steps,
+        all_step_parameters=all_step_parameters,
         **metadata
     )
     # fix code style using pep8 guidelines

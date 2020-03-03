@@ -97,7 +97,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
 
     {% for name in step_names %}
 
-    {{ name }}_task = {{ name }}_op({{ parameters_names|join(', ') }})\
+    {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)\
                             .after({{ step_prevs[ name ]|join(', ') }})
     {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"

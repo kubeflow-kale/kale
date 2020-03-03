@@ -61,12 +61,13 @@ def pyflakes_report(code):
     return undef_vars
 
 
-def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
+def detect_in_dependencies(nb_graph: nx.DiGraph,
+                           pipeline_parameters: dict = None):
     """Detect missing names from the code blocks in the graph.
 
     Args:
         nb_graph: nx DiGraph with pipeline code blocks
-        ignore_symbols: names to be ignored from the report
+        pipeline_parameters: Pipeline parameters dict
     """
     block_names = nb_graph.nodes()
     for block in block_names:
@@ -74,12 +75,21 @@ def detect_in_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
         commented_source_code = utils.comment_magic_commands(source_code)
         ins = pyflakes_report(code=commented_source_code)
 
-        if ignore_symbols:
-            ins.difference_update(set(ignore_symbols))
-        nx.set_node_attributes(nb_graph, {block: {'ins': sorted(ins)}})
+        # Pipeline parameters will be part of the names that are missing,
+        # but of course we don't want to marshal them in as they will be
+        # present as parameters
+        relevant_parameters = set()
+        if pipeline_parameters:
+            # Not all pipeline parameters are needed in every pipeline step,
+            # these are the parameters that are actually needed by this step.
+            relevant_parameters = ins.intersection(pipeline_parameters.keys())
+            ins.difference_update(relevant_parameters)
+        step_params = {k: pipeline_parameters[k] for k in relevant_parameters}
+        nx.set_node_attributes(nb_graph, {block: {'ins': sorted(ins),
+                                                  'parameters': step_params}})
 
 
-def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
+def detect_out_dependencies(nb_graph: nx.DiGraph):
     """Detect the 'out' dependencies of each code block.
 
     These deps represent the variables that each code block must marshal to
@@ -90,7 +100,6 @@ def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
 
     Args:
         nb_graph: nx DiGraph with pipeline code blocks
-        ignore_symbols: names to be ignored
     """
     for block_name in reversed(list(nx.topological_sort(nb_graph))):
         ins = nb_graph.nodes(data=True)[block_name]['ins']
@@ -104,14 +113,12 @@ def detect_out_dependencies(nb_graph: nx.DiGraph, ignore_symbols: set = None):
             # include previous `outs` in case this father has multiple
             # children steps
             outs.update(father_data['outs'])
-            # remove symbols to ignore
-            if ignore_symbols:
-                ins = list(set(ins) - set(ignore_symbols))
             # add to father the new `outs` variables
             nx.set_node_attributes(nb_graph, {_a: {'outs': sorted(outs)}})
 
 
-def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
+def dependencies_detection(nb_graph: nx.DiGraph,
+                           pipeline_parameters: dict = None):
     """Analyze the code blocks in the graph and detect the missing names.
 
     in each code block, annotating the nodes with `in` and `out` dependencies
@@ -119,7 +126,7 @@ def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
 
     Args:
         nb_graph: nx DiGraph with pipeline code blocks
-        ignore_symbols: names to be ignored
+        pipeline_parameters: Pipeline parameters dict
 
     Returns: annotated graph
     """
@@ -131,7 +138,7 @@ def dependencies_detection(nb_graph: nx.DiGraph, ignore_symbols: set = None):
 
     # annotate the graph inplace with all the variables dependencies between
     # graph nodes
-    detect_in_dependencies(nb_graph, ignore_symbols)
-    detect_out_dependencies(nb_graph, ignore_symbols)
+    detect_in_dependencies(nb_graph, pipeline_parameters)
+    detect_out_dependencies(nb_graph)
 
     return nb_graph

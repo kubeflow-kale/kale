@@ -221,9 +221,9 @@ class Kale:
             nx.set_node_attributes(pipeline_graph, data)
 
         # run static analysis over the source code
-        to_ignore = set(pipeline_parameters_dict.keys())
-        dependencies.dependencies_detection(pipeline_graph,
-                                            ignore_symbols=to_ignore)
+        dependencies.dependencies_detection(
+            pipeline_graph,
+            pipeline_parameters=pipeline_parameters_dict)
 
         # add an empty step at the end of the pipeline for final snapshot
         if self.auto_snapshot:
