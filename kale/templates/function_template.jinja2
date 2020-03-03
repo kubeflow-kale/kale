@@ -32,7 +32,7 @@ def {{ step_name }}({%- for arg in parameters_names -%}
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_directory_file_names()
 {%- for in_var in in_variables %}
-    _kale_marshal_utils.load("{{ in_var }}", locals())
+    {{ in_var }} = _kale_marshal_utils.load("{{ in_var }}")
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -46,9 +46,9 @@ def {{ step_name }}({%- for arg in parameters_names -%}
 {%- if out_variables|length > 0 %}
     data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
-{%- for out_var in out_variables %}
     from kale.marshal import utils as _kale_marshal_utils
-    _kale_marshal_utils.save({{ out_var }}, "{{ out_var }}", locals())
+{%- for out_var in out_variables %}
+    _kale_marshal_utils.save({{ out_var }}, "{{ out_var }}")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''
