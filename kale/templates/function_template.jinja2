@@ -1,16 +1,16 @@
-def {{ step_name }}({%- for arg in pipeline_args_names -%}
-    {{ arg }}: {{ pipeline_args_types[loop.index-1] }}
-    {%- if loop.index < pipeline_args_names|length -%},
+def {{ step_name }}({%- for arg in parameters_names -%}
+    {{ arg }}: {{ parameters_types[loop.index-1] }}
+    {%- if loop.index < parameters_names|length -%},
     {%- endif -%}
     {%- endfor -%}):
 {%- if not auto_snapshot and in_variables|length == 0 and out_variables|length == 0 and function_body|length == 0 %}
     pass
-{%- elif pipeline_args_names|length > 0 %}
+{%- elif parameters_names|length > 0 %}
     pipeline_parameters_block = '''
-{%- for arg in pipeline_args_names %}
-    {% if pipeline_args_types[loop.index-1] == 'str' %}{{ arg }} = "{}"{% else %}{{ arg }} = {}{% endif -%}
+{%- for arg in parameters_names %}
+    {% if parameters_types[loop.index-1] == 'str' %}{{ arg }} = "{}"{% else %}{{ arg }} = {}{% endif -%}
 {%- endfor %}
-    '''.format({{ pipeline_args_names|join(', ') }})
+    '''.format({{ parameters_names|join(', ') }})
 {% endif %}
 {%- if auto_snapshot %}
     from kale.utils import pod_utils as _kale_pod_utils
