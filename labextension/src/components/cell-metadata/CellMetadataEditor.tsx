@@ -7,7 +7,6 @@ import {
 } from '../Components';
 import CellUtils from '../../utils/CellUtils';
 import { ICellModel, isCodeCellModel, CellModel } from '@jupyterlab/cells';
-import { findDOMNode } from 'react-dom';
 import EditIcon from '@material-ui/icons/Edit';
 import CloseIcon from '@material-ui/icons/Close';
 import ColorUtils from './ColorUtils';
@@ -18,6 +17,7 @@ const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
   { value: 'functions', label: 'Functions' },
   { value: 'pipeline-parameters', label: 'Pipeline Parameters' },
+  { value: 'pipeline-metrics', label: 'Pipeline Metrics' },
   { value: 'step', label: 'Pipeline Step' },
   { value: 'skip', label: 'Skip Cell' },
 ];
@@ -26,25 +26,33 @@ export const RESERVED_CELL_NAMES = [
   'imports',
   'functions',
   'pipeline-parameters',
+  'pipeline-metrics',
   'skip',
 ];
+
 export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {
   imports:
     'The code in this cell will be pre-pended to every step of the pipeline.',
   functions:
-    'The code in this cell will be pre-pended to every step of the pipeline, after `imports`.',
+    'The code in this cell will be pre-pended to every step of the pipeline,' +
+    ' after `imports`.',
   'pipeline-parameters':
-    'The variables in this cell will be transformed into pipeline parameters, preserving the current values as defaults.',
+    'The variables in this cell will be transformed into pipeline parameters,' +
+    ' preserving the current values as defaults.',
+  'pipeline-metrics':
+    'The variables in this cell will be transformed into pipeline metrics.',
   skip: 'This cell will be skipped and excluded from pipeline steps',
 };
 export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
   skip: 'a9a9a9',
   'pipeline-parameters': 'ee7a1a',
+  'pipeline-metrics': '773d0d',
   imports: 'a32626',
   functions: 'a32626',
 };
 
-const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric characters or \'_\', and can not start with a digit.`;
+const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric
+ characters or \'_\', and can not start with a digit.`;
 
 interface IProps {
   notebook: NotebookPanel;
