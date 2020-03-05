@@ -66,11 +66,14 @@ def upload_pipeline(request, pipeline_package_path, pipeline_metadata,
             raise
 
 
-def run_pipeline(request, pipeline_package_path, pipeline_metadata):
+def run_pipeline(request, pipeline_metadata, pipeline_package_path=None,
+                 pipeline_id=None):
     client = _get_client(pipeline_metadata.get("kfp_host", None))
     experiment = client.create_experiment(pipeline_metadata["experiment_name"])
     run_name = pipeline_metadata["pipeline_name"] + "_run"
-    run = client.run_pipeline(experiment.id, run_name, pipeline_package_path)
+    run = client.run_pipeline(experiment.id, run_name,
+                              pipeline_package_path=pipeline_package_path,
+                              pipeline_id=pipeline_id)
     return {"id": run.id, "name": run.name, "status": run.status}
 
 
