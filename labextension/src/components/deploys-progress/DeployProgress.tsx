@@ -8,6 +8,7 @@ import UnknownIcon from '@material-ui/icons/Help';
 import PendingIcon from '@material-ui/icons/Schedule';
 import SkippedIcon from '@material-ui/icons/SkipNext';
 import SuccessIcon from '@material-ui/icons/CheckCircle';
+import CancelIcon from '@material-ui/icons/Cancel';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
@@ -26,8 +27,8 @@ enum PipelineStatus {
   UNKNOWN = 'Unknown',
 }
 
-// From kubeflow/pipelines repo
 const color = {
+  // From kubeflow/pipelines repo
   activeBg: '#eaf1fd',
   alert: '#f9ab00', // Google yellow 600
   background: '#fff',
@@ -53,6 +54,8 @@ const color = {
   warningBg: '#f9f9e1',
   warningText: '#ee8100',
   weak: '#9aa0a6',
+  // From Rok repo
+  canceled: '#ff992a',
 };
 
 interface DeployProgress extends DeployProgressState {
@@ -60,11 +63,15 @@ interface DeployProgress extends DeployProgressState {
 }
 
 export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
-  const getTaskLink = (task: any) => {
+  const getSnapshotLink = (task: any) => {
     if (!task.result || !task.result.event) {
       return '#';
     }
-    return `${window.location.origin}/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
+    return `${window.location.origin}/_/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
+  };
+
+  const getTaskLink = (task: any) => {
+    return `${window.location.origin}/_/rok/buckets/${task.bucket}/tasks/${task.id}`;
   };
 
   const getUploadLink = (pipeline: any) => {
@@ -157,25 +164,21 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     );
   };
 
-  let snapshotTpl;
-  if (props.task) {
-    if (props.task.progress === 100) {
-      snapshotTpl = (
+  const getSnapshotTpl = () => {
+    if (!props.task) {
+      return (
         <React.Fragment>
-          <a
-            href={getTaskLink(props.task)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Done
-            <LaunchIcon style={{ fontSize: '1rem' }} />
-          </a>
+          Unknown status
+          <UnknownIcon
+            style={{ color: color.terminated, height: 18, width: 18 }}
+          />
         </React.Fragment>
       );
-    } else {
-      // FIXME: handle error and canceled in DeployProgress
+    }
+
+    if (!['success', 'error', 'canceled'].includes(props.task.status)) {
       const progress = props.task.progress || 0;
-      snapshotTpl = (
+      return (
         <LinearProgress
           variant="determinate"
           color="primary"
@@ -183,7 +186,39 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         />
       );
     }
-  }
+
+    let getLink: (task: any) => string = () => '#';
+    let message = props.task.message;
+    let IconComponent: any = UnknownIcon;
+    let iconColor = color.terminated;
+
+    switch (props.task.status) {
+      case 'success':
+        getLink = getSnapshotLink;
+        message = 'Done';
+        IconComponent = LaunchIcon;
+        break;
+      case 'error':
+        getLink = getTaskLink;
+        IconComponent = ErrorIcon;
+        iconColor = color.errorText;
+        break;
+      case 'canceled':
+        IconComponent = CancelIcon;
+        getLink = getTaskLink;
+        iconColor = color.canceled;
+        break;
+    }
+
+    return (
+      <React.Fragment>
+        <a href={getLink(props.task)} target="_blank" rel="noopener noreferrer">
+          {message}
+          <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
+        </a>
+      </React.Fragment>
+    );
+  };
 
   let uploadTpl;
   if (props.pipeline) {
@@ -195,7 +230,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           rel="noopener noreferrer"
         >
           Done
-          <LaunchIcon style={{ fontSize: '1rem' }} />
+          <LaunchIcon style={{ height: 18, width: 18 }} />
         </a>
       </React.Fragment>
     );
@@ -241,7 +276,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
       {props.showSnapshotProgress ? (
         <div className="deploy-progress-row">
           <div className="deploy-progress-label">Taking snapshot... </div>
-          <div className="deploy-progress-value">{snapshotTpl}</div>
+          <div className="deploy-progress-value">{getSnapshotTpl()}</div>
         </div>
       ) : null}
 

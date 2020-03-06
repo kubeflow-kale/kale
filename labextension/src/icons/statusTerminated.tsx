@@ -16,7 +16,7 @@
 
 import * as React from 'react';
 // import { CSSProperties } from 'jss/css';
-export default class StatusRunning extends React.Component<{ style: any }> {
+export default class StatusTerminated extends React.Component<{ style: any }> {
   public render(): JSX.Element {
     const { style } = this.props;
     return (
@@ -26,7 +26,7 @@ export default class StatusRunning extends React.Component<{ style: any }> {
         viewBox="0 0 18 18"
       >
         <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
-          <g transform="translate(-1.000000, -1.000000)">
+          <g>
             <polygon points="0 0 18 0 18 18 0 18" />
             <path
               d="M8.9925,1.5 C4.8525,1.5 1.5,4.86 1.5,9 C1.5,13.14 4.8525,16.5 8.9925,16.5
