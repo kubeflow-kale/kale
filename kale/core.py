@@ -46,6 +46,7 @@ KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
 
 
 class Kale:
+    """Use this class to convert a Notebook to a KFP py executable."""
     def __init__(self,
                  source_notebook_path: str,
                  notebook_metadata_overrides: dict = None,
@@ -108,6 +109,13 @@ class Kale:
         self.pipeline_metadata['volumes'] = self.create_cloned_volumes(volumes)
 
     def run_cmd(self, cmd):
+        """Run a bash command.
+
+        Args:
+            cmd (str): command to be run
+
+        Returns (str): stdout of the command
+        """
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         exit_code = p.wait()
@@ -135,6 +143,14 @@ class Kale:
         raise ValueError(msg)
 
     def create_cloned_volumes(self, volumes):
+        """Use Rok to take snapshots of volumes.
+
+        Args:
+            volumes (list): a list of volumes
+
+        Returns: Same list of volumes replacing the 'cloned' ones with
+            'new_pvc' ones setting the corresponding 'rok/origin' annotation
+        """
         if not any(v['type'] == 'clone' for v in volumes):
             return volumes
 
@@ -147,11 +163,11 @@ class Kale:
         commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                                  namespace)
         output_cmd = (
-                "rok-gw -o json object-register jupyter"
-                + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
-                + " --param namespace='{}'".format(namespace)
-                + " --param commit_title='{}'".format(commit_title)
-                + " --param commit_message='{}'".format(commit_message))
+            "rok-gw -o json object-register jupyter"
+            + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
+            + " --param namespace='{}'".format(namespace)
+            + " --param commit_title='{}'".format(commit_title)
+            + " --param commit_message='{}'".format(commit_message))
         output = self.run_cmd(output_cmd)
 
         output = json.loads(output)
@@ -162,9 +178,9 @@ class Kale:
             obj_name = v["object_name"]
             version_name = v["version_name"]
             output_cmd = (
-                    "rok-gw -o json object-show '{}'".format(bucket_name)
-                    + " '{}' --version '{}'".format(obj_name, version_name)
-                    + " --detail")
+                "rok-gw -o json object-show '{}'".format(bucket_name)
+                + " '{}' --version '{}'".format(obj_name, version_name)
+                + " --detail")
             output = self.run_cmd(output_cmd)
             v["mount_point"] = json.loads(output)["metadata"]["mountpoint"]
 
@@ -177,16 +193,14 @@ class Kale:
         return _volumes
 
     def detect_environment(self):
-        """
-        Detect local configs to preserve reproducibility of
-        dev env in pipeline steps
-        """
+        """Detect local confs to preserve reproducibility in pipeline steps."""
         # When running inside a Kubeflow Notebook Server we can detect the
         # running docker image and use it as default in the pipeline steps.
         if not self.pipeline_metadata['docker_image']:
+            docker_image = ""
             try:
                 # will fail in case in cluster config is not found
-                self.pipeline_metadata['docker_image'] = get_docker_base_image()
+                docker_image = get_docker_base_image()
             except ConfigException:
                 # no K8s config found
                 # use kfp default image
@@ -194,8 +208,10 @@ class Kale:
             except Exception:
                 # some other exception
                 raise
+            self.pipeline_metadata["docker_image"] = docker_image
 
     def notebook_to_graph(self):
+        """Convert an annotated Notebook to a Graph."""
         # convert notebook to nx graph
         (pipeline_graph,
          pipeline_parameters_source,
@@ -258,15 +274,16 @@ class Kale:
 
     def generate_kfp_executable(self, pipeline_graph, pipeline_parameters,
                                 save_to_tmp=False):
+        """Generate a Python executable starting from a Graph."""
         self.logger.debug("------------- Kale Start Run -------------")
 
         # generate full kfp pipeline definition
-        kfp_code = generate_code.gen_kfp_code(nb_graph=pipeline_graph,
-                                              nb_path=os.path.abspath(
-                                                  self.source_path),
-                                              pipeline_parameters=pipeline_parameters,
-                                              metadata=self.pipeline_metadata,
-                                              auto_snapshot=self.auto_snapshot)
+        gen_args = {"nb_graph": pipeline_graph,
+                    "nb_path": os.path.abspath(self.source_path),
+                    "pipeline_parameters": pipeline_parameters,
+                    "metadata": self.pipeline_metadata,
+                    "auto_snapshot": self.auto_snapshot}
+        kfp_code = generate_code.gen_kfp_code(**gen_args)
 
         if save_to_tmp:
             output_path = None
@@ -280,9 +297,7 @@ class Kale:
         return output_path
 
     def print_pipeline(self, pipeline_graph):
-        """
-        Prints a complete definition of the pipeline with all the tags
-        """
+        """Prints a complete definition of the pipeline with all the tags."""
         for block_name in nx.topological_sort(pipeline_graph):
             block_data = pipeline_graph.nodes(data=True)[block_name]
 
@@ -310,6 +325,7 @@ class Kale:
         nx.drawing.nx_pydot.write_dot(graph, dot_path)
 
     def save_pipeline(self, pipeline_code, output_path=None):
+        """Save Python code to file."""
         if output_path is None:
             # create tmp path
             tmp_dir = tempfile.mkdtemp()
