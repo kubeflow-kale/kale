@@ -24,18 +24,22 @@ from kale.static_analysis.ast import get_all_names
 
 
 class StreamList:
+    """Simulate a file object to store Flakes' report streams."""
 
     def __init__(self):
         self.out = list()
 
     def write(self, text):
+        """Write to stream list."""
         self.out.append(text)
 
     def reset(self):
+        """Clean the stream list."""
         self.out = list()
         return self
 
     def __call__(self):
+        """Return the stream list."""
         return self.out
 
 
