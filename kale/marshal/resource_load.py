@@ -25,11 +25,13 @@ resource_load = PatternDispatcher('resource_load')
 
 @resource_load.register('.*', priority=1)
 def resource_all(uri, *args, **kwargs):
+    """Load any object with dill."""
     print("Loading general object: {}".format(uri))
     return dill.load(open(uri, "rb"))
 
 
 @resource_load.register('.+::.+', priority=15)
 def resource_split(uri, *args, **kwargs):
+    """Load resource when name has ::."""
     uri, other = uri.rsplit('::', 1)
     return resource_load(uri, other, *args, **kwargs)
