@@ -115,7 +115,7 @@ def generate_html_output(outputs):
         if o['output_type'] in ['display_data', 'execute_result']:
             # check mime-type of content
             # Currently supported MIME types:
-            # see: https://ipython.org/ipython-doc/2/api/generated/IPython.core.displaypub.html#IPython.core.displaypub.DisplayPublisher
+            # see: https://ipython.org/ipython-doc/2/api/generated/IPython.core.displaypub.html#IPython.core.displaypub.DisplayPublisher  # noqa: 501
             # text / plain
             # text / html
             # text / markdown
