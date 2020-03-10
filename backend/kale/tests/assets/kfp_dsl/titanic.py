@@ -337,9 +337,9 @@ def featureengineering():
 
     for dataset in data:
         # extract titles
-        dataset['Title'] = dataset.Name.str.extract(' ([A-Za-z]+)\.', expand=False)
+        dataset['Title'] = dataset.Name.str.extract(' ([A-Za-z]+)\\.', expand=False)
         # replace titles with a more common title or as Rare
-        dataset['Title'] = dataset['Title'].replace(['Lady', 'Countess','Capt', 'Col','Don', 'Dr',\
+        dataset['Title'] = dataset['Title'].replace(['Lady', 'Countess','Capt', 'Col','Don', 'Dr',\\
                                                 'Major', 'Rev', 'Sir', 'Jonkheer', 'Dona'], 'Rare')
         dataset['Title'] = dataset['Title'].replace('Mlle', 'Miss')
         dataset['Title'] = dataset['Title'].replace('Ms', 'Miss')
