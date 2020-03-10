@@ -1,0 +1,23 @@
+# This is the official list of Kale authors for copyright purposes.
+#
+# This does not necessarily list everyone who has contributed code, since in
+# some cases, their employer may be the copyright holder. To see the full list
+# of contributors, see the revision history in source control or
+# https://github.com/kubeflow-kale/kale/graphs/contributors.
+#
+# Authors who wish to be recognized in this file should add themselves (or
+# their employer, as appropriate).
+# Names should be added to this file as one of
+#     Organization's name
+#     Individual's name <submission email address>
+#     Individual's name <submission email address> <email2> <emailN>
+
+# Please keep the list sorted.
+
+Arrikto Inc.
+Fondazione Bruno Kessler
+Ilias Katsakioris <elikatsis@arrikto.com>
+Kostis Lolos <klolos@arrikto.com>
+Stefano Fioravanzo <stefano@arrikto.com> <stefano.fioravanzo@gmail.com>
+Tasos Alexiou <tasos@arrikto.com>
+Valerio Maggio <valerio.maggio@bristol.ac.uk>
