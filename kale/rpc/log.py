@@ -15,7 +15,6 @@
 import logging
 import os
 
-
 # FIXME: We could have a chowned folder in /var/log and use it. But this won't
 # work for other kale installations. It would require that setting in the
 # Dockerfile
@@ -28,17 +27,20 @@ RPC_FMT_EXTRAS = "[TID=%(trans_id)s] [%(nb_path)s] "
 
 
 def configure_handler(handler, fmt_extras="", level=logging.INFO):
+    """Configure log handler."""
     handler.setLevel(level)
     handler.setFormatter(logging.Formatter(FMT_PREFIX + fmt_extras))
 
 
 def create_adapter(logger, trans_id=None, nb_path=None):
+    """Create log Adapter."""
     extras = {"trans_id": trans_id or "",
               "nb_path": os.path.realpath(nb_path) if nb_path else ""}
     return logging.LoggerAdapter(logger, extras)
 
 
 def setup_logging(request):
+    """Configure logging."""
     # Setup root logger
     root_stream_handler = logging.StreamHandler()
     configure_handler(root_stream_handler, "%(message)s")
