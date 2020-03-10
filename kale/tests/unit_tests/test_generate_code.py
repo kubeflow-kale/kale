@@ -94,9 +94,9 @@ def test_get_marshal_data(args, target):
 
 def _test_args_dict(f1, f2, f3):
     return {
-        'pipeline_args_names': f1,
-        'pipeline_args_types': f2,
-        'pipeline_args_values': f3
+        'parameters_names': f1,
+        'parameters_types': f2,
+        'parameters_values': f3
     }
 
 
@@ -129,8 +129,8 @@ def template():
 @pytest.mark.parametrize('step_name,source,ins,outs,nb_path,metadata,target', [
     ('test', [], '', '', '', {}, 'func01.out.py'),
     # ---
-    ('test', [], '', '', '', {'pipeline_args_names': ['arg1', 'arg2', 'arg3'],
-                              'pipeline_args_types': ['int', 'str', 'str']},
+    ('test', [], '', '', '', {'parameters_names': ['arg1', 'arg2', 'arg3'],
+                              'parameters_types': ['int', 'str', 'str']},
      'func02.out.py'),
     # ---
     ('test', [], '', '', '/path/to/nb',

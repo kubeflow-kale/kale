@@ -22,9 +22,9 @@ import kfp.dsl as dsl
    name='{{ pipeline_name }}',
    description='{{ pipeline_description }}'
 )
-def auto_generated_pipeline({%- for arg in pipeline_args_names -%}
-    {{ arg }}='{{ pipeline_args_values[loop.index-1] }}'
-    {%- if loop.index < pipeline_args_names|length -%},
+def auto_generated_pipeline({%- for arg in parameters_names -%}
+    {{ arg }}='{{ parameters_values[loop.index-1] }}'
+    {%- if loop.index < parameters_values|length -%},
     {%- endif -%}
     {%- endfor -%}):
     pvolumes_dict = OrderedDict()
@@ -97,7 +97,7 @@ def auto_generated_pipeline({%- for arg in pipeline_args_names -%}
 
     {% for name in step_names %}
 
-    {{ name }}_task = {{ name }}_op({{ pipeline_args_names|join(', ') }})\
+    {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)\
                             .after({{ step_prevs[ name ]|join(', ') }})
     {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
