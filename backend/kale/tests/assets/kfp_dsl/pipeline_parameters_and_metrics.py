@@ -10,13 +10,6 @@ def create_matrix(d1: int, d2: int):
     d2 = {}
     '''.format(d1, d2)
 
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     block1 = '''
     import numpy as np
     '''
@@ -26,21 +19,17 @@ def create_matrix(d1: int, d2: int):
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "rnd_matrix" in locals():
-        _kale_resource_save(
-            rnd_matrix, os.path.join(_kale_data_directory, "rnd_matrix"))
-    else:
-        print("_kale_resource_save: `rnd_matrix` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(rnd_matrix, "rnd_matrix")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, pipeline_parameters_block,
+    blocks = (pipeline_parameters_block,
               block1,
               block2,
               data_saving_block)
@@ -51,37 +40,12 @@ def create_matrix(d1: int, d2: int):
 
 
 def sum_matrix():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "rnd_matrix" not in _kale_directory_file_names:
-        raise ValueError("rnd_matrix" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "rnd_matrix")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("rnd_matrix", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    rnd_matrix = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    rnd_matrix = _kale_marshal_utils.load("rnd_matrix")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -94,21 +58,17 @@ def sum_matrix():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "result" in locals():
-        _kale_resource_save(
-            result, os.path.join(_kale_data_directory, "result"))
-    else:
-        print("_kale_resource_save: `result` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(result, "result")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               data_saving_block)
@@ -124,37 +84,12 @@ def pipeline_metrics(d1: int, d2: int):
     d2 = {}
     '''.format(d1, d2)
 
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "result" not in _kale_directory_file_names:
-        raise ValueError("result" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "result")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("result", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    result = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    result = _kale_marshal_utils.load("result")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -192,7 +127,7 @@ def pipeline_metrics(d1: int, d2: int):
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, pipeline_parameters_block, data_loading_block,
+    blocks = (pipeline_parameters_block, data_loading_block,
               block1,
               )
     html_artifact = _kale_run_code(blocks)

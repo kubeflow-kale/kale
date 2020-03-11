@@ -5,13 +5,6 @@ from kubernetes import client as k8s_client
 
 
 def loaddata():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     block1 = '''
     import numpy as np 
     import pandas as pd 
@@ -40,34 +33,22 @@ def loaddata():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "PREDICTION_LABEL" in locals():
-        _kale_resource_save(
-            PREDICTION_LABEL, os.path.join(_kale_data_directory, "PREDICTION_LABEL"))
-    else:
-        print("_kale_resource_save: `PREDICTION_LABEL` not found.")
-    if "test_df" in locals():
-        _kale_resource_save(
-            test_df, os.path.join(_kale_data_directory, "test_df"))
-    else:
-        print("_kale_resource_save: `test_df` not found.")
-    if "train_df" in locals():
-        _kale_resource_save(
-            train_df, os.path.join(_kale_data_directory, "train_df"))
-    else:
-        print("_kale_resource_save: `train_df` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(PREDICTION_LABEL, "PREDICTION_LABEL")
+    _kale_marshal_utils.save(test_df, "test_df")
+    _kale_marshal_utils.save(train_df, "train_df")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block,
-              block1,
-              block2,
-              data_saving_block)
+    blocks = (
+        block1,
+        block2,
+        data_saving_block)
     html_artifact = _kale_run_code(blocks)
     with open("/loaddata.html", "w") as f:
         f.write(html_artifact)
@@ -75,51 +56,13 @@ def loaddata():
 
 
 def datapreprocessing():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "test_df" not in _kale_directory_file_names:
-        raise ValueError("test_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "test_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("test_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    test_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    test_df = _kale_marshal_utils.load("test_df")
+    train_df = _kale_marshal_utils.load("train_df")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -207,26 +150,18 @@ def datapreprocessing():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "test_df" in locals():
-        _kale_resource_save(
-            test_df, os.path.join(_kale_data_directory, "test_df"))
-    else:
-        print("_kale_resource_save: `test_df` not found.")
-    if "train_df" in locals():
-        _kale_resource_save(
-            train_df, os.path.join(_kale_data_directory, "train_df"))
-    else:
-        print("_kale_resource_save: `train_df` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(test_df, "test_df")
+    _kale_marshal_utils.save(train_df, "train_df")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               block3,
@@ -243,65 +178,14 @@ def datapreprocessing():
 
 
 def featureengineering():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "PREDICTION_LABEL" not in _kale_directory_file_names:
-        raise ValueError("PREDICTION_LABEL" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "PREDICTION_LABEL")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("PREDICTION_LABEL", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    PREDICTION_LABEL = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "test_df" not in _kale_directory_file_names:
-        raise ValueError("test_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "test_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("test_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    test_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    PREDICTION_LABEL = _kale_marshal_utils.load("PREDICTION_LABEL")
+    test_df = _kale_marshal_utils.load("test_df")
+    train_df = _kale_marshal_utils.load("train_df")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -422,26 +306,18 @@ def featureengineering():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "train_df" in locals():
-        _kale_resource_save(
-            train_df, os.path.join(_kale_data_directory, "train_df"))
-    else:
-        print("_kale_resource_save: `train_df` not found.")
-    if "train_labels" in locals():
-        _kale_resource_save(
-            train_labels, os.path.join(_kale_data_directory, "train_labels"))
-    else:
-        print("_kale_resource_save: `train_labels` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(train_df, "train_df")
+    _kale_marshal_utils.save(train_labels, "train_labels")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               block3,
@@ -461,51 +337,13 @@ def featureengineering():
 
 
 def decisiontree():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_labels" not in _kale_directory_file_names:
-        raise ValueError("train_labels" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_labels")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_labels", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_labels = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    train_df = _kale_marshal_utils.load("train_df")
+    train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -534,21 +372,17 @@ def decisiontree():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "acc_decision_tree" in locals():
-        _kale_resource_save(
-            acc_decision_tree, os.path.join(_kale_data_directory, "acc_decision_tree"))
-    else:
-        print("_kale_resource_save: `acc_decision_tree` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(acc_decision_tree, "acc_decision_tree")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               data_saving_block)
@@ -559,51 +393,13 @@ def decisiontree():
 
 
 def svm():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_labels" not in _kale_directory_file_names:
-        raise ValueError("train_labels" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_labels")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_labels", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_labels = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    train_df = _kale_marshal_utils.load("train_df")
+    train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -632,21 +428,17 @@ def svm():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "acc_linear_svc" in locals():
-        _kale_resource_save(
-            acc_linear_svc, os.path.join(_kale_data_directory, "acc_linear_svc"))
-    else:
-        print("_kale_resource_save: `acc_linear_svc` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(acc_linear_svc, "acc_linear_svc")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               data_saving_block)
@@ -657,51 +449,13 @@ def svm():
 
 
 def naivebayes():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_labels" not in _kale_directory_file_names:
-        raise ValueError("train_labels" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_labels")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_labels", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_labels = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    train_df = _kale_marshal_utils.load("train_df")
+    train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -730,21 +484,17 @@ def naivebayes():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "acc_gaussian" in locals():
-        _kale_resource_save(
-            acc_gaussian, os.path.join(_kale_data_directory, "acc_gaussian"))
-    else:
-        print("_kale_resource_save: `acc_gaussian` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(acc_gaussian, "acc_gaussian")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               data_saving_block)
@@ -755,51 +505,13 @@ def naivebayes():
 
 
 def logisticregression():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_labels" not in _kale_directory_file_names:
-        raise ValueError("train_labels" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_labels")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_labels", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_labels = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    train_df = _kale_marshal_utils.load("train_df")
+    train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -828,21 +540,17 @@ def logisticregression():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "acc_log" in locals():
-        _kale_resource_save(
-            acc_log, os.path.join(_kale_data_directory, "acc_log"))
-    else:
-        print("_kale_resource_save: `acc_log` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(acc_log, "acc_log")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               data_saving_block)
@@ -853,51 +561,13 @@ def logisticregression():
 
 
 def randomforest():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "train_df" not in _kale_directory_file_names:
-        raise ValueError("train_df" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_df")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_df", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_df = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "train_labels" not in _kale_directory_file_names:
-        raise ValueError("train_labels" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "train_labels")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("train_labels", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    train_labels = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    train_df = _kale_marshal_utils.load("train_df")
+    train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -926,21 +596,17 @@ def randomforest():
     '''
 
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
-    if "acc_random_forest" in locals():
-        _kale_resource_save(
-            acc_random_forest, os.path.join(_kale_data_directory, "acc_random_forest"))
-    else:
-        print("_kale_resource_save: `acc_random_forest` not found.")
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.save(acc_random_forest, "acc_random_forest")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               data_saving_block)
@@ -951,93 +617,16 @@ def randomforest():
 
 
 def results():
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "/marshal"
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-    if "acc_decision_tree" not in _kale_directory_file_names:
-        raise ValueError("acc_decision_tree" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "acc_decision_tree")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("acc_decision_tree", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    acc_decision_tree = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "acc_gaussian" not in _kale_directory_file_names:
-        raise ValueError("acc_gaussian" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "acc_gaussian")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("acc_gaussian", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    acc_gaussian = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "acc_linear_svc" not in _kale_directory_file_names:
-        raise ValueError("acc_linear_svc" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "acc_linear_svc")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("acc_linear_svc", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    acc_linear_svc = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "acc_log" not in _kale_directory_file_names:
-        raise ValueError("acc_log" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "acc_log")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("acc_log", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    acc_log = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
-    if "acc_random_forest" not in _kale_directory_file_names:
-        raise ValueError("acc_random_forest" + " does not exists in directory")
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "acc_random_forest")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("acc_random_forest", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    acc_random_forest = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("/marshal")
+    _kale_marshal_utils.set_kale_directory_file_names()
+    acc_decision_tree = _kale_marshal_utils.load("acc_decision_tree")
+    acc_gaussian = _kale_marshal_utils.load("acc_gaussian")
+    acc_linear_svc = _kale_marshal_utils.load("acc_linear_svc")
+    acc_log = _kale_marshal_utils.load("acc_log")
+    acc_random_forest = _kale_marshal_utils.load("acc_random_forest")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -1073,7 +662,7 @@ def results():
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = (data_dir_block, data_loading_block,
+    blocks = (data_loading_block,
               block1,
               block2,
               )

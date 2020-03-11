@@ -20,46 +20,14 @@ def {{ step_name }}({%- for arg in parameters_names -%}
         "{{ nb_path }}")
 {% endif %}
 
-{%- if in_variables|length > 0 or out_variables|length > 0 %}
-    data_dir_block = '''
-    import os
-    _kale_data_directory = "{{ marshal_path }}"
-    {#- Verify directory exists #}
-    if not os.path.isdir(_kale_data_directory):
-        os.makedirs(_kale_data_directory, exist_ok=True)
-    '''
-{% endif %}
-
 {%- if in_variables|length > 0 %}
     data_loading_block = '''
-    import os
-    from kale.marshal import resource_load as _kale_resource_load
-
     # -----------------------DATA LOADING START--------------------------------
-    _kale_directory_file_names = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(_kale_data_directory)
-        if os.path.isfile(os.path.join(_kale_data_directory, f))
-    ]
-
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("{{ marshal_path }}")
+    _kale_marshal_utils.set_kale_directory_file_names()
 {%- for in_var in in_variables %}
-    {#- First check that the variable exists in the path #}
-    if "{{ in_var }}" not in _kale_directory_file_names:
-        raise ValueError("{{ in_var }}" + " does not exists in directory")
-
-    {#- Load variable #}
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(_kale_data_directory)
-        if (os.path.isfile(os.path.join(_kale_data_directory, f)) and
-            os.path.splitext(f)[0] == "{{ in_var }}")
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % ("{{ in_var }}", str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    {{ in_var }} = _kale_resource_load(
-        os.path.join(_kale_data_directory, _kale_load_file_name))
+    {{ in_var }} = _kale_marshal_utils.load("{{ in_var }}")
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -72,16 +40,11 @@ def {{ step_name }}({%- for arg in parameters_names -%}
 {% endfor %}
 {%- if out_variables|length > 0 %}
     data_saving_block = '''
-    import os
-    from kale.marshal import resource_save as _kale_resource_save
     # -----------------------DATA SAVING START---------------------------------
+    from kale.marshal import utils as _kale_marshal_utils
+    _kale_marshal_utils.set_kale_data_directory("{{ marshal_path }}")
 {%- for out_var in out_variables %}
-    if "{{ out_var }}" in locals():
-        {#-  `_kale_resource_save` will automatically add the correct extension #}
-        _kale_resource_save(
-            {{ out_var }}, os.path.join(_kale_data_directory, "{{ out_var }}"))
-    else:
-        print("_kale_resource_save: `{{ out_var }}` not found.")
+    _kale_marshal_utils.save({{ out_var }}, "{{ out_var }}")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -91,8 +54,7 @@ def {{ step_name }}({%- for arg in parameters_names -%}
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
     from kale.utils.jupyter_utils import update_uimetadata as _kale_update_uimetadata
-    blocks = ({% if in_variables|length > 0 or out_variables|length > 0 %}data_dir_block,{% endif -%}
-              {% if parameters_names|length > 0 %}pipeline_parameters_block,{% endif -%}
+    blocks = ({% if parameters_names|length > 0 %}pipeline_parameters_block,{% endif -%}
               {% if in_variables|length > 0 %}data_loading_block,{% endif -%}
 {%- for block in function_body %}
               block{{ loop.index }},
