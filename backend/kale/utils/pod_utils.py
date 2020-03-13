@@ -253,6 +253,8 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     # Mark the end of the snapshotting procedure
     log.info("-" * 100)
 
+    return task_info
+
 
 def get_workflow_name(pod_name, namespace):
     """Get the workflow name associated to a pod (pipeline step)."""

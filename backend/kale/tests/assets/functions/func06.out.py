@@ -1,4 +1,7 @@
 def test():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     block1 = '''
     print("hello")
     '''
@@ -15,4 +18,4 @@ def test():
         f.write(html_artifact)
     _kale_update_uimetadata('test')
 
-
+    _kale_mlmd_utils.call("mark_execution_complete")
