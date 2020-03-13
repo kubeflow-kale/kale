@@ -294,3 +294,9 @@ def get_run_uuid():
 def is_workspace_dir(directory):
     """Check dir path is the container's home folder."""
     return directory == os.getenv("HOME")
+
+
+def patch_pod(name, namespace, patch):
+    """Patch a pod."""
+    k8s_client = _get_k8s_v1_client()
+    k8s_client.patch_namespaced_pod(name=name, namespace=namespace, body=patch)
