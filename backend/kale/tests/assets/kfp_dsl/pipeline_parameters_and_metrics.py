@@ -11,6 +11,9 @@ def create_matrix(d1: int, d2: int):
     d2 = {}
     '''.format(d1, d2)
 
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     block1 = '''
     import numpy as np
     '''
@@ -50,8 +53,13 @@ def create_matrix(d1: int, d2: int):
         f.write(html_artifact)
     _kale_update_uimetadata('create_matrix')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def sum_matrix():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -90,6 +98,8 @@ def sum_matrix():
     with open("/sum_matrix.html", "w") as f:
         f.write(html_artifact)
     _kale_update_uimetadata('sum_matrix')
+
+    _kale_mlmd_utils.call("mark_execution_complete")
 
 
 create_matrix_op = comp.func_to_container_op(create_matrix)

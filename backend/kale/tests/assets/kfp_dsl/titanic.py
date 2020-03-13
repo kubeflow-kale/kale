@@ -6,6 +6,9 @@ from kubernetes import client as k8s_client
 
 
 def loaddata():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     block1 = '''
     import numpy as np
     import pandas as pd
@@ -56,8 +59,13 @@ def loaddata():
         f.write(html_artifact)
     _kale_update_uimetadata('loaddata')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def datapreprocessing():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -179,8 +187,13 @@ def datapreprocessing():
         f.write(html_artifact)
     _kale_update_uimetadata('datapreprocessing')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def featureengineering():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -339,8 +352,13 @@ def featureengineering():
         f.write(html_artifact)
     _kale_update_uimetadata('featureengineering')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def decisiontree():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -396,8 +414,13 @@ def decisiontree():
         f.write(html_artifact)
     _kale_update_uimetadata('decisiontree')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def svm():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -453,8 +476,13 @@ def svm():
         f.write(html_artifact)
     _kale_update_uimetadata('svm')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def naivebayes():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -510,8 +538,13 @@ def naivebayes():
         f.write(html_artifact)
     _kale_update_uimetadata('naivebayes')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def logisticregression():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -567,8 +600,13 @@ def logisticregression():
         f.write(html_artifact)
     _kale_update_uimetadata('logisticregression')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def randomforest():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -624,8 +662,13 @@ def randomforest():
         f.write(html_artifact)
     _kale_update_uimetadata('randomforest')
 
+    _kale_mlmd_utils.call("mark_execution_complete")
+
 
 def results():
+    from kale.utils import mlmd_utils as _kale_mlmd_utils
+    _kale_mlmd_utils.init_metadata()
+
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
@@ -680,6 +723,8 @@ def results():
     with open("/results.html", "w") as f:
         f.write(html_artifact)
     _kale_update_uimetadata('results')
+
+    _kale_mlmd_utils.call("mark_execution_complete")
 
 
 loaddata_op = comp.func_to_container_op(loaddata)
