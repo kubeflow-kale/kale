@@ -28,6 +28,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {%- endif -%}
     {%- endfor -%}):
     pvolumes_dict = OrderedDict()
+    volume_name_parameters = []
 
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
@@ -59,6 +60,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
         k8s_resource=pvc{{ loop.index }}
     )
     volume = vop{{ loop.index }}.volume
+    volume_name_parameters.append(vop{{ loop.index }}.outputs["name"].full_name)
 
     {% elif vol['type'] == 'pvc' %}
 
@@ -78,6 +80,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
         size='{{ pvc_size }}'
     )
     volume = vop{{ loop.index }}.volume
+    volume_name_parameters.append(vop{{ loop.index }}.outputs["name"].full_name)
 
     {% endif %}
 
@@ -92,8 +95,11 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
         modes=dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
+    volume_name_parameters.append(marshal_vop.outputs["name"].full_name)
     pvolumes_dict['{{ marshal_path }}'] = marshal_vop.volume
     {% endif %}
+
+    volume_name_parameters.sort()
 
     {% for name in step_names %}
     {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
@@ -123,6 +129,11 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     output_artifacts.update({'{{ name }}': '/{{ name }}.html'})
     {%- endif %}
     {{ name }}_task.output_artifact_paths.update(output_artifacts)
+    if volume_name_parameters:
+        import json
+        {{ name }}_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
     {% endfor %}
 
     {# Snaphosts #}
