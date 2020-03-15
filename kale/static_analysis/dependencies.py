@@ -20,7 +20,7 @@ from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
 from kale.utils import utils
-from kale.static_analysis.ast import get_all_names
+from kale.static_analysis import ast as kale_ast
 
 
 class StreamList:
@@ -135,6 +135,59 @@ def detect_out_dependencies(nb_graph: nx.DiGraph):
             nx.set_node_attributes(nb_graph, {_a: {'outs': sorted(outs)}})
 
 
+def detect_fns_free_variables(source_code, imports_and_functions="",
+                              step_parameters=None):
+    """Return the function's free variables.
+
+    Free variable: _If a variable is used in a code block but not defined
+    there, it is a free variable._
+
+    An Example:
+
+    ```
+    x = 5
+    def foo():
+        print(x)
+    ```
+
+    In the example above, `x` is a free variable for function `foo`, because
+    it is defined outside of the context of `foo`.
+
+    Here we run the PyFlakes report over the function body to get all the
+    missing names (i.e. free variables), excluding the function arguments.
+
+    Args:
+        source_code: Multiline Python source code
+        imports_and_functions: Multiline Python source that is prepended
+            to every pipeline step. It should contain the code cells that
+            where tagged as `import` and `functions`. We prepend this code to
+            the function body because it will always be present in any pipeline
+            step.
+        step_parameters: Step parameters names. The step parameters
+            are removed from the pyflakes report, as these names will always
+            be available in the step's context.
+
+    Returns (dict): A dictionary with the name of the function as key and
+        a list of variables names + consumed pipeline parameters as values.
+    """
+    fns_free_vars = dict()
+    # now check the functions' bodies for free variables. fns is a
+    # dict function_name -> (function_body, function_args)
+    fns = kale_ast.parse_functions(source_code)
+    for fn_name, (fn_body, fn_args) in fns.items():
+        code = imports_and_functions + "\n" + fn_body
+        free_vars = pyflakes_report(code=code).difference(fn_args)
+        # the pipeline parameters that are used in the function
+        consumed_params = {}
+        if step_parameters:
+            consumed_params = free_vars.intersection(step_parameters.keys())
+            # remove the used parameters form the free variables, as they
+            # need to be handled differently.
+            free_vars.difference_update(consumed_params)
+        fns_free_vars[fn_name] = (free_vars, consumed_params)
+    return fns_free_vars
+
+
 def dependencies_detection(nb_graph: nx.DiGraph,
                            pipeline_parameters: dict = None):
     """Analyze the code blocks in the graph and detect the missing names.
@@ -151,7 +204,7 @@ def dependencies_detection(nb_graph: nx.DiGraph,
     # First get all the names of each code block
     for block in nb_graph:
         block_data = nb_graph.nodes(data=True)[block]
-        all_names = get_all_names('\n'.join(block_data['source']))
+        all_names = kale_ast.get_all_names('\n'.join(block_data['source']))
         nx.set_node_attributes(nb_graph, {block: {'all_names': all_names}})
 
     # annotate the graph inplace with all the variables dependencies between
