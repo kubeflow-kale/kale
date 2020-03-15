@@ -14,25 +14,31 @@
 
 import re
 import ast
+import astor
 
 from collections import deque
 from kale.utils import utils
 
 
-def walk(node, skip_nodes=tuple()):
+def walk(node, stop_at=tuple(), ignore=tuple()):
     """Walk through the children of an ast node.
 
     Args:
         node: an ast node
-        skip_nodes: stop traversing through these nodes
+        stop_at: stop traversing through these nodes, including the matching
+            node
+        ignore: stop traversing through these nodes, excluding the matching
+            node
 
     Returns: a generator of ast nodes
-
     """
     todo = deque([node])
     while todo:
         node = todo.popleft()
-        if not isinstance(node, skip_nodes):
+        if isinstance(node, ignore):
+            # dequeue next node
+            continue
+        if not isinstance(node, stop_at):
             next_nodes = ast.iter_child_nodes(node)
             for n in next_nodes:
                 todo.extend([n])
@@ -117,6 +123,92 @@ def get_all_names(code):
     return names
 
 
+def get_function_args(fn):
+    """Get argument names of an ast.FunctionDef node.
+
+    Ref: https://greentreesnakes.readthedocs.io/en/latest/nodes.html#function-and-class-definitions  # noqa: E501
+    Args:
+        fn: ast.FunctionDef node
+
+    Returns (list(str)): list of function arguments
+    """
+    fn_args = []
+    for attr in ["args", "posonlyargs", "kwonlyargs"]:
+        for arg in getattr(fn.args, attr, []):
+            fn_args.append(arg.arg)
+    if fn.args.vararg:
+        fn_args.append(fn.args.vararg.arg)
+    if fn.args.kwarg:
+        fn_args.append(fn.args.kwarg.arg)
+    return fn_args
+
+
+def parse_functions(code):
+    """Parse all the global functions present in the input code.
+
+    Parse all the ast nodes ast.FunctionDef that are global functions in the
+    source code. These also include function that are defined inside other
+    Python statements, like `try`. ast.ClassDef nodes are skipped from the
+    parsing so that class functions are ignored.
+    All the functions' arguments names are returned alongside the source code.
+
+    Args:
+        code (str): Multiline string representing Python code
+
+    Returns (dict): A dictionary [fn_name] -> (body, args)
+    """
+    fns = dict()
+    tree = ast.parse(code)
+    for block in tree.body:
+        for node in walk(block,
+                         stop_at=(ast.FunctionDef,),
+                         ignore=(ast.ClassDef,)):
+            if isinstance(node, (ast.FunctionDef,)):
+                fn_name = node.name
+                fn_args = get_function_args(node)
+                fn_body = "".join([astor.to_source(node)
+                                   for node in node.body])
+                fns[fn_name] = (fn_body, set(fn_args))
+    return fns
+
+
+def get_function_calls(code):
+    """Get all function names that are called in the input source code.
+
+    A function call is something like:
+
+    ```
+    foo()
+    ```
+
+    That is obviously different from:
+
+    ```
+    obj.fn()
+    ```
+
+    These are parsed from the source code as `ast.Call` nodes, where the
+    `func` attribute of the `ast` node is a `ast.Name` node.
+    This is guaranteed to be a 'simple' function call (first example).
+
+    Args:
+        code (str): Multiline string representing Python code
+
+    Returns (list(str)): List of function names
+    """
+    fns = set()
+    tree = ast.parse(code)
+    for block in tree.body:
+        for node in walk(block):
+            # a function call. We check the attribute func to be ast.Name
+            # because it could also be a ast.Attribute node, in case of
+            # function calls like obj.foo()
+            if (isinstance(node, (ast.Call,))
+                    and isinstance(node.func, (ast.Name,))):
+                fns.add(node.func.id)
+    return fns
+
+
 def get_function_and_class_names(code):
     """Get all function and class names of the code block.
 
@@ -153,7 +245,7 @@ def parse_assignments_expressions(code):
                 "Must provide just primitive types assignments "
                 "in variables block")
         targets = block.targets
-        if isinstance(targets[0], (ast.Tuple, ast.List, )) or len(targets) > 1:
+        if isinstance(targets[0], (ast.Tuple, ast.List,)) or len(targets) > 1:
             raise ValueError(
                 "Must provide single variable "
                 "assignments in variables block")
