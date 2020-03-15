@@ -313,7 +313,7 @@ def parse_notebook(notebook):
             # add node to DAG, adding tags and source code of notebook cell
             if step_name not in nb_graph.nodes:
                 nb_graph.add_node(step_name, source=[c.source],
-                                  ins=set(), outs=set())
+                                  ins=list(), outs=list())
                 for _prev_step in tags['prev_steps']:
                     if _prev_step not in nb_graph.nodes:
                         raise ValueError("Step %s does not exist. It was "
@@ -336,4 +336,6 @@ def parse_notebook(notebook):
     # merge together pipeline metrics
     pipeline_metrics = '\n'.join(pipeline_metrics)
 
-    return nb_graph, pipeline_parameters, pipeline_metrics
+    imports_and_functions = "\n".join(imports_block + functions_block)
+    return (nb_graph, pipeline_parameters, pipeline_metrics,
+            imports_and_functions)

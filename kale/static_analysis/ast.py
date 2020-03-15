@@ -18,6 +18,7 @@ import astor
 
 from collections import deque
 from kale.utils import utils
+from functools import lru_cache
 
 
 def walk(node, stop_at=tuple(), ignore=tuple()):
@@ -65,30 +66,37 @@ def get_list_tuple_names(node):
     return names
 
 
-def get_all_names(code):
-    """Get all matching nodes from the ast of the input code block.
+@lru_cache(maxsize=128)
+def get_marshal_candidates(code):
+    """Get all the names that could be selected as objects to be marshalled.
 
-    Matching nodes:
+    This function is used by a descendant node onto its ancestors to resolve
+    its missing dependencies. Example:
 
+    +---+     +---+     +---+
+    | A | --> | B | --> | C |
+    +---+     +---+     +---+
+
+    When C runs the PyFlakes report on its source code, `x` is detected as a
+    missing variable. Then C runs `get_marshal_candidates` on its ancestors,
+    in order, starting from B. All the marshal candidates found in B that match
+    any of the missing C's names, as set as B's `outs`.
+
+    Ast nodes that become candidates:
         - ast.Name
-        - ast.FunctionDef
-        - ast.ClassDef
         - ast.Import
         - ast.ImportFrom
         - ast.Tuple
 
-    This function is just used to make a cross reference with the missing names
-    detected by the Flakes report. It is not used to arbitrary detect variable
-    dependencies.
-
-    Known missing detections:
-
-        - Function and Class parameters
+    Ast nodes that create local contexts must be excluded from the search, as
+    they can crete local variables that alias global ones. These nodes include
+    ast.FunctionDef, ast.ClassDef, context manager names and list and dict
+    comprehensions variables.
 
     Args:
-        code: multiple string representing Python code
+        code (str): multiple string representing Python code
 
-    Returns: a list of string names
+    Returns (list(str)): a list of names
     """
     names = set()
 
@@ -104,14 +112,24 @@ def get_all_names(code):
     # Note #3: Magic commands are preserved in the resulting Python executable,
     #  they are commented just here in order to make AST run.
     commented_code = utils.comment_magic_commands(code)
-
+    # need to exclude all the nodes that mights *define* variables in a local
+    # scope. For example, a function may define a variable x that is aliasing
+    # a global variable x, and we don't want to marshal it in that step, but
+    # from the step that defines the global x.
+    # TODO: Search for all possible python nodes that define local vars.
+    #  List comprehensions ([i for i in list])
+    #  Dict comprehensions
+    #  Exception handling?
+    #  Decorators?
+    #  Context manager (just the alias)
+    contexts = (ast.FunctionDef, ast.ClassDef, )
     tree = ast.parse(commented_code)
     for block in tree.body:
         for node in walk(block):
+            if isinstance(node, contexts):
+                break
             if isinstance(node, (ast.Name,)):
                 names.add(node.id)
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef,)):
-                names.add(node.name)
             if isinstance(node, (ast.Import, ast.ImportFrom,)):
                 for _n in node.names:
                     if _n.asname is None:
@@ -127,6 +145,7 @@ def get_function_args(fn):
     """Get argument names of an ast.FunctionDef node.
 
     Ref: https://greentreesnakes.readthedocs.io/en/latest/nodes.html#function-and-class-definitions  # noqa: E501
+
     Args:
         fn: ast.FunctionDef node
 
