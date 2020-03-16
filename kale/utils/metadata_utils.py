@@ -150,4 +150,17 @@ def _parse_volumes_metadata(volumes):
 
 def validate_cell_annotations(annotations):
     """Validate the metadata annotations of a notebook cell."""
-    pass
+    # validate GPU annotations
+    enable_gpu = annotations.get("enable_gpu")
+    if enable_gpu is not None and not isinstance(enable_gpu, bool):
+        raise ValueError("Annotation `enable_gpu` must be a valid boolean")
+    if enable_gpu:
+        # get the required fields
+        gpu_count = int(annotations.get("gpu_count"))
+        if gpu_count < 1:
+            raise ValueError("Annotation `gpu_count` must be great or equal"
+                             " to 1")
+        gpu_type = annotations.get("gpu_type")
+        if not isinstance(gpu_type, str) and gpu_type not in ["nvidia", "amd"]:
+            raise ValueError("Annotation `gpu_type` type must be a valid"
+                             " string and have value 'amd' or 'nvidia'")
