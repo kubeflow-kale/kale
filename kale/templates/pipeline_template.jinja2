@@ -96,10 +96,14 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {% endif %}
 
     {% for name in step_names %}
+    {% set step_annotations = nb_graph.nodes(data=True)[name].get("annotations", {}) %}
 
     {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)\
                             .after({{ step_prevs[ name ]|join(', ') }})
+    {%- if  step_annotations.get("gpu_enabled", false) %}
+    {{ name }}_task.set_gpu_limit("{{ step_annotations["gpu_count"] }}", "{{ step_annotations["gpu_type"] }}")
+    {%- endif %}
     {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
     {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     output_artifacts = {}
