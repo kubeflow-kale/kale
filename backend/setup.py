@@ -47,7 +47,8 @@ setup(
         'nbconvert >= 5.6.1, < 6.0.0',
         'ipykernel >= 5.1.4',
         'kfp-server-api == 0.1.18.3',
-        'packaging > 20'
+        'packaging > 20',
+        'ml_metadata > 0.21',
     ],
     extras_require={
         'dev': [
