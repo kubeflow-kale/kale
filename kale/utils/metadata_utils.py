@@ -146,3 +146,8 @@ def _parse_volumes_metadata(volumes):
                                key=lambda _v: is_workspace_dir(
                                    _v['mount_point']))
     return validated_volumes
+
+
+def validate_cell_annotations(annotations):
+    """Validate the metadata annotations of a notebook cell."""
+    pass

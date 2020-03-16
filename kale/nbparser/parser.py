@@ -17,6 +17,8 @@ import warnings
 
 import networkx as nx
 
+from kale.utils import metadata_utils
+
 SKIP_TAG = r'^skip$'
 IMPORT_TAG = r'^imports$'
 FUNCTIONS_TAG = r'^functions$'
@@ -30,6 +32,7 @@ STEP_TAG = r'^step:([_a-z]([_a-z0-9]*)?)?$'
 BLOCK_TAG = r'^block:([_a-z]([_a-z0-9]*)?)?$'
 PIPELINE_PARAMETERS_TAG = r'^pipeline-parameters$'
 PIPELINE_METRICS_TAG = r'^pipeline-metrics$'
+ANNOTATION_TAG = r'^annotation:([_a-z-]+):([_a-z0-9]+)$'
 
 _TAGS_LANGUAGE = [SKIP_TAG,
                   IMPORT_TAG,
@@ -38,7 +41,8 @@ _TAGS_LANGUAGE = [SKIP_TAG,
                   BLOCK_TAG,
                   STEP_TAG,
                   PIPELINE_PARAMETERS_TAG,
-                  PIPELINE_METRICS_TAG]
+                  PIPELINE_METRICS_TAG,
+                  ANNOTATION_TAG]
 
 
 def parse_metadata(metadata):
@@ -59,6 +63,9 @@ def parse_metadata(metadata):
     # than one Pipeline step.
     parsed_tags['step_names'] = list()
     parsed_tags['prev_steps'] = list()
+    # define an intermediate variable so that `annotations` is not added to
+    # every step even if it's empty
+    cell_annotations = dict()
 
     # the notebook cell was not tagged
     if 'tags' not in metadata or len(metadata['tags']) == 0:
@@ -90,26 +97,39 @@ def parse_metadata(metadata):
             return parsed_tags
 
         # now only `block|step` and `prev` tags remain to be parsed.
-        tag_name, value = t.split(':')
+        tag_parts = t.split(':')
+        tag_name = tag_parts.pop(0)
+
+        if tag_name == "annotation":
+            annotation_key = tag_parts.pop(0)
+            annotation_value = tag_parts.pop(0)
+            cell_annotations.update(
+                {annotation_key: annotation_value})
+
         # name of the future Pipeline step
         # TODO: Deprecate `block` in future release
-        if tag_name in ["block", "step"] and value:
+        if tag_name in ["block", "step"]:
             if tag_name == "block":
                 warnings.warn("`block` tag will be deprecated in a future"
                               " version, use `step` tag instead",
                               DeprecationWarning)
-            parsed_tags['step_names'].append(value)
+            step_name = tag_parts.pop(0)
+            parsed_tags['step_names'].append(step_name)
         # name(s) of the father Pipeline step(s)
         if tag_name == "prev":
-            parsed_tags['prev_steps'].append(value)
+            prev_step_name = tag_parts.pop(0)
+            parsed_tags['prev_steps'].append(prev_step_name)
 
     if not parsed_tags['step_names'] and parsed_tags['prev_steps']:
         raise ValueError("A cell can not provide `prev` annotations without "
                          "providing a `block` or `step` annotation as well")
+    metadata_utils.validate_cell_annotations(cell_annotations)
+    if cell_annotations:
+        parsed_tags['annotations'] = cell_annotations
     return parsed_tags
 
 
-def merge_code(nb_graph, dst, code):
+def merge_code(nb_graph, dst, code, annotations):
     """Add a new code block to an existing graph node.
 
     Note: Updates inplace the input graph.
@@ -118,10 +138,14 @@ def merge_code(nb_graph, dst, code):
         nb_graph (nx.DiGraph): Pipeline graph
         dst (str): Name id of the destination node
         code (str): Python source code to be appended to dst node
+        annotations (dict): Cell annotations (like GPU usage, ...)
     """
-    source_code = nb_graph.nodes(data=True)[dst]['source']
+    source_code = nb_graph.nodes(data=True)[dst]["source"]
+    existing_anns = nb_graph.nodes(data=True)[dst].get("annotations", {})
+    updated_anns = {**existing_anns, **annotations}
     # update pipeline block source code
-    nx.set_node_attributes(nb_graph, {dst: {'source': source_code + [code]}})
+    nx.set_node_attributes(nb_graph, {dst: {"source": source_code + [code],
+                                            "annotations": updated_anns}})
 
 
 def _get_reserved_tag_source(notebook, search_tag):
@@ -256,9 +280,9 @@ def parse_notebook(notebook):
                                       "One notebook cell was found with %s "
                                       "step names" % tags['step_names'])
 
-        step_name = tags['step_names'][0] \
-            if 0 < len(tags['step_names']) \
-            else None
+        step_name = (tags['step_names'][0]
+                     if 0 < len(tags['step_names'])
+                     else None)
 
         if step_name == 'skip':
             # when the cell is skipped, don't store `skip` as the previous
@@ -283,6 +307,7 @@ def parse_notebook(notebook):
 
         # if none of the above apply, then we are parsing a code cell with
         # a block names and (possibly) some dependencies
+        cell_annotations = tags.get('annotations', {})
 
         # if the cell was not tagged with a step name,
         # add the code to the previous cell
@@ -300,7 +325,8 @@ def parse_notebook(notebook):
             elif prev_step_name:
                 # this notebook cell will be merged to a previous one that
                 # specified a step name
-                merge_code(nb_graph, prev_step_name, c.source)
+                merge_code(nb_graph, prev_step_name, c.source,
+                           cell_annotations)
         else:
             # in this branch we are sure that we are reading a code cell with
             # a step tag, so we must not allow for pipeline-metrics
@@ -313,7 +339,8 @@ def parse_notebook(notebook):
             # add node to DAG, adding tags and source code of notebook cell
             if step_name not in nb_graph.nodes:
                 nb_graph.add_node(step_name, source=[c.source],
-                                  ins=list(), outs=list())
+                                  ins=set(), outs=set(),
+                                  annotations=cell_annotations)
                 for _prev_step in tags['prev_steps']:
                     if _prev_step not in nb_graph.nodes:
                         raise ValueError("Step %s does not exist. It was "
@@ -321,7 +348,7 @@ def parse_notebook(notebook):
                                          % (_prev_step, tags['step_names']))
                     nb_graph.add_edge(_prev_step, step_name)
             else:
-                merge_code(nb_graph, step_name, c.source)
+                merge_code(nb_graph, step_name, c.source, cell_annotations)
 
             prev_step_name = step_name
 

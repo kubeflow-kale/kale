@@ -27,7 +27,7 @@ def test_merge_code():
     g = nx.DiGraph()
     g.add_node('test', source=['test1'])
 
-    merge_code(g, 'test', 'test2')
+    merge_code(g, 'test', 'test2', {})
 
     assert g.nodes(data=True)['test']['source'] == ['test1', 'test2']
 
