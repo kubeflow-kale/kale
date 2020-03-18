@@ -64,7 +64,7 @@ def resource_pandas_load(uri, **kwargs):
 def resource_pandas_save(obj, path, **kwargs):
     """Save a pandas resource."""
     try:
-        import pandas as pd
+        import pandas as pd  # noqa: F401
         print("Saving pandas obj: {}".format(_get_obj_name(path)))
         obj.to_pickle(path + '.pdpkl')
     except ImportError:
