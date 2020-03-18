@@ -22,6 +22,7 @@ import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 interface IKaleCellTags {
   blockName: string;
   prevBlockNames: string[];
+  limits?: { [id: string]: string };
 }
 
 /** Contains utility functions for manipulating/handling Kale cell tags. */
@@ -98,9 +99,19 @@ export default class TagsUtils {
         .map(v => {
           return v.replace('prev:', '');
         });
+
+      let limits: { [id: string]: string } = {};
+      tags
+        .filter(v => v.startsWith('limit:'))
+        .map(lim => {
+          const values = lim.split(':');
+          // get the limit key and value
+          limits[values[1]] = values[2];
+        });
       return {
         blockName: b_name[0],
         prevBlockNames: prevs,
+        limits: limits,
       };
     }
     return null;
@@ -126,7 +137,13 @@ export default class TagsUtils {
       nb = 'block:' + nb;
     }
     const stepDependencies = metadata.prevBlockNames || [];
-    const tags = [nb].concat(stepDependencies.map(v => 'prev:' + v));
+    const limits = metadata.limits || {};
+    const tags = [nb]
+      .concat(stepDependencies.map(v => 'prev:' + v))
+      .concat(
+        Object.keys(limits).map(lim => 'limit:' + lim + ':' + limits[lim]),
+      );
+
     return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags, save);
   }
 
