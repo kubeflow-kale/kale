@@ -26,7 +26,8 @@ import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@material-ui/icons/Close';
 import ColorUtils from './ColorUtils';
 import { CellMetadataContext } from './CellMetadataContext';
-import { IconButton } from '@material-ui/core';
+import { Button, IconButton } from '@material-ui/core';
+import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
 
 const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
@@ -73,6 +74,8 @@ export interface IProps {
   notebook: NotebookPanel;
   stepName?: string;
   stepDependencies: string[];
+  // Resource limits, like gpu limits
+  limits?: { [id: string]: string };
 }
 
 // this stores the name of a block and its color (form the name hash)
@@ -84,12 +87,18 @@ interface IState {
   stepNameErrorMsg?: string;
   // a list of blocks that the current step can be dependent on.
   blockDependenciesChoices?: BlockDependencyChoice[];
+  // flag to open the metadata editor dialog dialog
+  // XXX (stefano): I would like to set this as required, but the return
+  // XXX (stefano): statement of updateBlockDependenciesChoices and
+  // XXX (stefano): updatePreviousStepName don't allow me.
+  cellMetadataEditorDialog?: boolean;
 }
 
 const DefaultState: IState = {
   previousStepName: null,
   stepNameErrorMsg: STEP_NAME_ERROR_MSG,
   blockDependenciesChoices: [],
+  cellMetadataEditorDialog: false,
 };
 
 /**
@@ -101,13 +110,14 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
   constructor(props: IProps) {
     super(props);
-    // We use this element referene in order to move it inside Notebooks's cell
+    // We use this element reference in order to move it inside Notebooks's cell
     // element.
     this.editorRef = React.createRef();
     this.state = DefaultState;
     this.updateCurrentBlockName = this.updateCurrentBlockName.bind(this);
     this.updateCurrentCellType = this.updateCurrentCellType.bind(this);
     this.updatePrevBlocksNames = this.updatePrevBlocksNames.bind(this);
+    this.toggleTagsEditorDialog = this.toggleTagsEditorDialog.bind(this);
   }
 
   componentWillUnmount() {
@@ -197,6 +207,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     if (this.isEqual(state.blockDependenciesChoices, dependencyChoices)) {
       return null;
     }
+    // XXX (stefano): By setting state.cellMetadataEditorDialog NOT optional,
+    // XXX (stefano): this return will require cellMetadataEditorDialog.
     return { blockDependenciesChoices: dependencyChoices };
   }
 
@@ -214,15 +226,16 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     if (prevBlockName === this.state.previousStepName) {
       return null;
     }
-    return {
-      previousStepName: prevBlockName,
-    };
+    // XXX (stefano): By setting state.cellMetadataEditorDialog NOT optional,
+    // XXX (stefano): this return will require cellMetadataEditorDialog.
+    return { previousStepName: prevBlockName };
   }
 
   updateCurrentBlockName = (value: string) => {
     const oldBlockName: string = this.props.stepName;
     let currentCellMetadata = {
       prevBlockNames: this.props.stepDependencies,
+      limits: this.props.limits,
       blockName: value,
     };
 
@@ -242,7 +255,45 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
   updatePrevBlocksNames = (previousBlocks: string[]) => {
     let currentCellMetadata = {
       blockName: this.props.stepName,
+      limits: this.props.limits,
       prevBlockNames: previousBlocks,
+    };
+
+    TagsUtils.setKaleCellTags(
+      this.props.notebook,
+      this.context.activeCellIndex,
+      currentCellMetadata,
+      true,
+    );
+  };
+
+  /**
+   * Event triggered when the the CellMetadataEditorDialog dialog is closed
+   */
+  updateCurrentLimits = (
+    actions: {
+      action: 'update' | 'delete';
+      limitKey: string;
+      limitValue?: string;
+    }[],
+  ) => {
+    let limits = { ...this.props.limits };
+    actions.forEach(action => {
+      if (action.action === 'update') {
+        limits[action.limitKey] = action.limitValue;
+      }
+      if (
+        action.action === 'delete' &&
+        Object.keys(this.props.limits).includes(action.limitKey)
+      ) {
+        delete limits[action.limitKey];
+      }
+    });
+
+    let currentCellMetadata = {
+      blockName: this.props.stepName,
+      prevBlockNames: this.props.stepDependencies,
+      limits: limits,
     };
 
     TagsUtils.setKaleCellTags(
@@ -281,6 +332,12 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
    */
   closeEditor() {
     this.context.onEditorVisibilityChange(false);
+  }
+
+  toggleTagsEditorDialog() {
+    this.setState({
+      cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog,
+    });
   }
 
   render() {
@@ -350,6 +407,26 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                 ''
               )}
 
+              {cellType === 'step' ? (
+                <div style={{ padding: 0 }}>
+                  <Button
+                    disabled={
+                      !(this.props.stepName && this.props.stepName.length > 0)
+                    }
+                    color="primary"
+                    variant="contained"
+                    size="small"
+                    title="GPU"
+                    onClick={_ => this.toggleTagsEditorDialog()}
+                    style={{ width: '5%' }}
+                  >
+                    GPU
+                  </Button>
+                </div>
+              ) : (
+                ''
+              )}
+
               <IconButton
                 aria-label="delete"
                 onClick={() => this.closeEditor()}
@@ -367,6 +444,13 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
             </div>
           </div>
         </div>
+        <CellMetadataEditorDialog
+          open={this.state.cellMetadataEditorDialog}
+          toggleDialog={this.toggleTagsEditorDialog}
+          stepName={this.props.stepName}
+          limits={this.props.limits || {}}
+          updateLimits={this.updateCurrentLimits}
+        />
       </React.Fragment>
     );
   }
