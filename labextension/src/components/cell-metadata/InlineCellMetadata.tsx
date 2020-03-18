@@ -226,7 +226,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         notebook: this.props.notebook,
         stepName: tags.blockName || '',
         stepDependencies: tags.prevBlockNames || [],
-        limits: tags.annotations || {},
+        limits: tags.limits || {},
       };
       editors[index] = editorProps;
       metadata.push(
@@ -235,6 +235,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           cellElement={this.props.notebook.content.node.childNodes[index]}
           blockName={tags.blockName}
           stepDependencies={tags.prevBlockNames}
+          limits={tags.limits || {}}
           previousBlockName={previousBlockName}
           cellIndex={index}
         />,
