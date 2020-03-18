@@ -55,8 +55,8 @@ def load(var_name):
     _kale_load_file_name = [
         f
         for f in os.listdir(KALE_DATA_DIRECTORY)
-        if (os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f)) and
-            os.path.splitext(f)[0] == var_name)
+        if (os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f))
+            and os.path.splitext(f)[0] == var_name)
     ]
     if len(_kale_load_file_name) > 1:
         raise ValueError("Found multiple files with name %s: %s"
