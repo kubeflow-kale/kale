@@ -14,41 +14,32 @@
 
 import re
 import ast
+import astor
 
 from collections import deque
 from kale.utils import utils
-
-# TODO: Get this list dynamically
-_BUILT_INS_ = ["abs", "delattr", "hash", "memoryview", "set",
-               "all", "dict", "help", "min", "setattr",
-               "any", "dir", "hex", "next", "slice",
-               "ascii", "divmod", "id", "object", "sorted",
-               "bin", "enumerate", "input", "oct", "staticmethod",
-               "bool", "eval", "int", "open", "str",
-               "breakpoint", "exec", "isinstance", "ord", "sum",
-               "bytearray", "filter", "issubclass", "pow", "super",
-               "bytes", "float", "iter", "print", "tuple",
-               "callable", "format", "len", "property", "type",
-               "chr", "frozenset", "list", "range", "vars",
-               "classmethod", "getattr", "locals", "repr", "zip",
-               "compile", "globals", "map", "reversed", "__import__",
-               "complex", "hasattr", "max", "round"]
+from functools import lru_cache
 
 
-def walk(node, skip_nodes=tuple()):
+def walk(node, stop_at=tuple(), ignore=tuple()):
     """Walk through the children of an ast node.
 
     Args:
         node: an ast node
-        skip_nodes: stop traversing through these nodes
+        stop_at: stop traversing through these nodes, including the matching
+            node
+        ignore: stop traversing through these nodes, excluding the matching
+            node
 
     Returns: a generator of ast nodes
-
     """
     todo = deque([node])
     while todo:
         node = todo.popleft()
-        if not isinstance(node, skip_nodes):
+        if isinstance(node, ignore):
+            # dequeue next node
+            continue
+        if not isinstance(node, stop_at):
             next_nodes = ast.iter_child_nodes(node)
             for n in next_nodes:
                 todo.extend([n])
@@ -75,30 +66,37 @@ def get_list_tuple_names(node):
     return names
 
 
-def get_all_names(code):
-    """Get all matching nodes from the ast of the input code block.
+@lru_cache(maxsize=128)
+def get_marshal_candidates(code):
+    """Get all the names that could be selected as objects to be marshalled.
 
-    Matching nodes:
+    This function is used by a descendant node onto its ancestors to resolve
+    its missing dependencies. Example:
 
+    +---+     +---+     +---+
+    | A | --> | B | --> | C |
+    +---+     +---+     +---+
+
+    When C runs the PyFlakes report on its source code, `x` is detected as a
+    missing variable. Then C runs `get_marshal_candidates` on its ancestors,
+    in order, starting from B. All the marshal candidates found in B that match
+    any of the missing C's names, as set as B's `outs`.
+
+    Ast nodes that become candidates:
         - ast.Name
-        - ast.FunctionDef
-        - ast.ClassDef
         - ast.Import
         - ast.ImportFrom
         - ast.Tuple
 
-    This function is just used to make a cross reference with the missing names
-    detected by the Flakes report. It is not used to arbitrary detect variable
-    dependencies.
-
-    Known missing detections:
-
-        - Function and Class parameters
+    Ast nodes that create local contexts must be excluded from the search, as
+    they can crete local variables that alias global ones. These nodes include
+    ast.FunctionDef, ast.ClassDef, context manager names and list and dict
+    comprehensions variables.
 
     Args:
-        code: multiple string representing Python code
+        code (str): multiple string representing Python code
 
-    Returns: a list of string names
+    Returns (list(str)): a list of names
     """
     names = set()
 
@@ -114,14 +112,24 @@ def get_all_names(code):
     # Note #3: Magic commands are preserved in the resulting Python executable,
     #  they are commented just here in order to make AST run.
     commented_code = utils.comment_magic_commands(code)
-
+    # need to exclude all the nodes that mights *define* variables in a local
+    # scope. For example, a function may define a variable x that is aliasing
+    # a global variable x, and we don't want to marshal it in that step, but
+    # from the step that defines the global x.
+    # TODO: Search for all possible python nodes that define local vars.
+    #  List comprehensions ([i for i in list])
+    #  Dict comprehensions
+    #  Exception handling?
+    #  Decorators?
+    #  Context manager (just the alias)
+    contexts = (ast.FunctionDef, ast.ClassDef, )
     tree = ast.parse(commented_code)
     for block in tree.body:
         for node in walk(block):
+            if isinstance(node, contexts):
+                break
             if isinstance(node, (ast.Name,)):
                 names.add(node.id)
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef,)):
-                names.add(node.name)
             if isinstance(node, (ast.Import, ast.ImportFrom,)):
                 for _n in node.names:
                     if _n.asname is None:
@@ -131,6 +139,93 @@ def get_all_names(code):
             if isinstance(node, (ast.Tuple, ast.List)):
                 names.update(get_list_tuple_names(node))
     return names
+
+
+def get_function_args(fn):
+    """Get argument names of an ast.FunctionDef node.
+
+    Ref: https://greentreesnakes.readthedocs.io/en/latest/nodes.html#function-and-class-definitions  # noqa: E501
+
+    Args:
+        fn: ast.FunctionDef node
+
+    Returns (list(str)): list of function arguments
+    """
+    fn_args = []
+    for attr in ["args", "posonlyargs", "kwonlyargs"]:
+        for arg in getattr(fn.args, attr, []):
+            fn_args.append(arg.arg)
+    if fn.args.vararg:
+        fn_args.append(fn.args.vararg.arg)
+    if fn.args.kwarg:
+        fn_args.append(fn.args.kwarg.arg)
+    return fn_args
+
+
+def parse_functions(code):
+    """Parse all the global functions present in the input code.
+
+    Parse all the ast nodes ast.FunctionDef that are global functions in the
+    source code. These also include function that are defined inside other
+    Python statements, like `try`. ast.ClassDef nodes are skipped from the
+    parsing so that class functions are ignored.
+    All the functions' arguments names are returned alongside the source code.
+
+    Args:
+        code (str): Multiline string representing Python code
+
+    Returns (dict): A dictionary [fn_name] -> (body, args)
+    """
+    fns = dict()
+    tree = ast.parse(code)
+    for block in tree.body:
+        for node in walk(block,
+                         stop_at=(ast.FunctionDef,),
+                         ignore=(ast.ClassDef,)):
+            if isinstance(node, (ast.FunctionDef,)):
+                fn_name = node.name
+                fn_args = get_function_args(node)
+                fn_body = "".join([astor.to_source(node)
+                                   for node in node.body])
+                fns[fn_name] = (fn_body, set(fn_args))
+    return fns
+
+
+def get_function_calls(code):
+    """Get all function names that are called in the input source code.
+
+    A function call is something like:
+
+    ```
+    foo()
+    ```
+
+    That is obviously different from:
+
+    ```
+    obj.fn()
+    ```
+
+    These are parsed from the source code as `ast.Call` nodes, where the
+    `func` attribute of the `ast` node is a `ast.Name` node.
+    This is guaranteed to be a 'simple' function call (first example).
+
+    Args:
+        code (str): Multiline string representing Python code
+
+    Returns (list(str)): List of function names
+    """
+    fns = set()
+    tree = ast.parse(code)
+    for block in tree.body:
+        for node in walk(block):
+            # a function call. We check the attribute func to be ast.Name
+            # because it could also be a ast.Attribute node, in case of
+            # function calls like obj.foo()
+            if (isinstance(node, (ast.Call,))
+                    and isinstance(node.func, (ast.Name,))):
+                fns.add(node.func.id)
+    return fns
 
 
 def get_function_and_class_names(code):
@@ -169,7 +264,7 @@ def parse_assignments_expressions(code):
                 "Must provide just primitive types assignments "
                 "in variables block")
         targets = block.targets
-        if isinstance(targets[0], (ast.Tuple, ast.List, )) or len(targets) > 1:
+        if isinstance(targets[0], (ast.Tuple, ast.List,)) or len(targets) > 1:
             raise ValueError(
                 "Must provide single variable "
                 "assignments in variables block")

@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 import pytest
+import networkx as nx
 
-from kale.static_analysis.dependencies import pyflakes_report
+from kale.static_analysis import dependencies
 
 
 @pytest.mark.parametrize("code,target", [
@@ -26,5 +27,292 @@ from kale.static_analysis.dependencies import pyflakes_report
 ])
 def test_pyflakes_report(code, target):
     """Tests pyflakes_report function."""
-    res = pyflakes_report(code)
+    res = dependencies.pyflakes_report(code)
     assert sorted(res) == sorted(target)
+
+
+def test_detect_fns_free_variables():
+    """Test the function returns the correct free variables."""
+    source_code = '''
+x = 5
+def foo():
+    print(math.sqrt(x))
+    '''
+
+    target = {"foo": ({"x", "math"}, {})}
+    assert target == dependencies.detect_fns_free_variables(source_code)
+
+
+def test_detect_fns_free_variables_with_imports():
+    """Test the function returns the correct free variables."""
+    imports_and_functions = """
+import math
+    """
+
+    source_code = '''
+x = 5
+def foo():
+    print(math.sqrt(x))
+    '''
+
+    target = {"foo": ({"x"}, {})}
+    assert target == dependencies.detect_fns_free_variables(
+        source_code,
+        imports_and_functions
+    )
+
+
+def test_dependencies_detection_free_variable():
+    """Test dependencies detection with free variables."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo():
+   print(x)
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo()
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['ins'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['x']
+    assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_inner_function():
+    """Test dependencies detection with inner functions."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo():
+    def bar(x):
+        print(x)
+    bar(5)
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo()
+print(x)
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['ins'] == []
+    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_inner_function_free_variable():
+    """Test dependencies detection with free variables and inner function."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo():
+    def bar():
+        print(x)
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo()
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['ins'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['x']
+    assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_with_parameter():
+    """Test dependencies detection with function with parameter."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo(x):
+    def bar():
+        print(x)
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo(5)
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == []
+    assert g.nodes(data=True)['step2']['ins'] == []
+    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step3']['ins'] == ['foo']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_with_globals():
+    """Test dependencies detection with inner function and globals."""
+    imports_and_functions = "import math"
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo(x):
+    def bar():
+        math.sqrt(x)
+    bar()
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo(5)
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == []
+    assert g.nodes(data=True)['step2']['ins'] == []
+    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step3']['ins'] == ['foo']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_with_pipeline_parameters():
+    """Test dependencies are detected with pipeline parameters and globals."""
+    imports_and_functions = "import math"
+    pipeline_parameters = {"y": (5, 'int')}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo(x):
+    def bar():
+        math.sqrt(x + y)
+    bar()
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo(5)
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == []
+    assert g.nodes(data=True)['step2']['ins'] == []
+    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['parameters'] == {"y": (5, 'int')}
+    assert g.nodes(data=True)['step3']['ins'] == ['foo']
+    assert g.nodes(data=True)['step3']['outs'] == []
+    assert g.nodes(data=True)['step3']['parameters'] == {"y": (5, 'int')}
+
+
+def test_dependencies_detection_with_try_except():
+    """Test dependencies are detected with functions inside try."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+y = 6
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+try:
+    def foo():
+        print(x)
+    def bar():
+        print(y)
+except:
+    pass
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+foo()
+bar()
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == ['x', 'y']
+    assert g.nodes(data=True)['step2']['ins'] == ['x', 'y']
+    assert g.nodes(data=True)['step2']['outs'] == ['x', 'y']
+    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x', 'y']
+    assert g.nodes(data=True)['step3']['outs'] == []
