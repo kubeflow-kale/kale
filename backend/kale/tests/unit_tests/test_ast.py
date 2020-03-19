@@ -66,20 +66,20 @@ def fun()
     ('', []),
     (_numpy_snippet, ['a', 'b', 'np', 'os', 'print']),
     (_numpy2_snippet, ['a', 'b', 'np', 'os', 'print']),
-    (_foos_snippet, ['_test', '_test2', 'var', 'b']),
-    (_class_snippet, ['test', '__init__', 'self', 'a', 'foo', 'b']),
+    (_foos_snippet, []),
+    (_class_snippet, []),
     (_ctx_mngr_snippet, ['my_context', 'param', 'res', 'ctx'])
 ])
-def test_get_all_names(code, target):
-    """Tests get_all_names function."""
-    res = kale_ast.get_all_names(code)
+def test_get_marshal_candidates(code, target):
+    """Tests get_marshal_candidates function."""
+    res = kale_ast.get_marshal_candidates(code)
     assert sorted(res) == sorted(target)
 
 
-def test_get_all_names_exc():
-    """Tests exception when passing a wrong code snippet to get_all_names."""
+def test_get_marshal_candidates_exc():
+    """Tests exception when passing a wrong code snippet."""
     with pytest.raises(SyntaxError):
-        kale_ast.get_all_names(_wrong_code_snippet)
+        kale_ast.get_marshal_candidates(_wrong_code_snippet)
 
 
 @pytest.mark.parametrize("code,target", [
@@ -160,3 +160,57 @@ def test_parse_metrics_print_statements_exc(code):
     """Tests a exception cases for parse_metrics_print_statements function."""
     with pytest.raises(ValueError):
         kale_ast.parse_metrics_print_statements(code)
+
+
+def test_parse_functions():
+    """Test that the body of the function is retrieved correctly."""
+    code = '''
+x = 5
+def foo():
+    print('hello')
+    print(x)
+    '''
+
+    target = {"foo": ("print('hello')\nprint(x)\n", set())}
+    assert kale_ast.parse_functions(code) == target
+
+
+def test_parse_functions_with_args():
+    """Test that the body of the function with args is retrieved correctly."""
+    code = '''
+x = 5
+def foo(a, b, c=None):
+    print('hello')
+    print(x)
+        '''
+
+    target = {"foo": ("print('hello')\nprint(x)\n", {"a", "b", "c"})}
+    assert kale_ast.parse_functions(code) == target
+
+
+def test_get_calls():
+    """Test that just function calls are detected."""
+    code = '''
+a.obj()
+foo()
+        '''
+    assert kale_ast.get_function_calls(code) == {'foo'}
+
+    code = '''
+x = 5
+def foo():
+    print(x)
+        '''
+    assert kale_ast.get_function_calls(code) == {'print'}
+
+
+def test_function_args():
+    """Test the correct parsing of functions arguments."""
+    code = '''
+def f(a: 'annotation', b=1, c=2, *d, e, f=3, **g) -> 'return annotation':
+    pass
+    '''
+
+    tree = ast.parse(code)
+    args_names = ["a", "b", "c", "d", "e", "f", "g"]
+    assert sorted(kale_ast.get_function_args(tree.body[0])) == args_names

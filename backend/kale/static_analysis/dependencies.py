@@ -19,8 +19,8 @@ import networkx as nx
 from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
-from kale.utils import utils
-from kale.static_analysis.ast import get_all_names
+from kale.utils import utils, graph_utils
+from kale.static_analysis import ast as kale_ast
 
 
 class StreamList:
@@ -79,84 +79,188 @@ def pyflakes_report(code):
     return undef_vars
 
 
-def detect_in_dependencies(nb_graph: nx.DiGraph,
+def detect_in_dependencies(source_code: str,
                            pipeline_parameters: dict = None):
-    """Detect missing names from the code blocks in the graph.
+    """Detect missing names from one pipeline step source code.
 
     Args:
-        nb_graph: nx DiGraph with pipeline code blocks
+        source_code: Multiline Python source code
         pipeline_parameters: Pipeline parameters dict
     """
-    block_names = nb_graph.nodes()
-    for block in block_names:
-        source_code = '\n'.join(nb_graph.nodes(data=True)[block]['source'])
-        commented_source_code = utils.comment_magic_commands(source_code)
-        ins = pyflakes_report(code=commented_source_code)
+    commented_source_code = utils.comment_magic_commands(source_code)
+    ins = pyflakes_report(code=commented_source_code)
 
-        # Pipeline parameters will be part of the names that are missing,
-        # but of course we don't want to marshal them in as they will be
-        # present as parameters
-        relevant_parameters = set()
-        if pipeline_parameters:
-            # Not all pipeline parameters are needed in every pipeline step,
-            # these are the parameters that are actually needed by this step.
-            relevant_parameters = ins.intersection(pipeline_parameters.keys())
-            ins.difference_update(relevant_parameters)
-        step_params = {k: pipeline_parameters[k] for k in relevant_parameters}
-        nx.set_node_attributes(nb_graph, {block: {'ins': sorted(ins),
-                                                  'parameters': step_params}})
+    # Pipeline parameters will be part of the names that are missing,
+    # but of course we don't want to marshal them in as they will be
+    # present as parameters
+    relevant_parameters = set()
+    if pipeline_parameters:
+        # Not all pipeline parameters are needed in every pipeline step,
+        # these are the parameters that are actually needed by this step.
+        relevant_parameters = ins.intersection(pipeline_parameters.keys())
+        ins.difference_update(relevant_parameters)
+    step_params = {k: pipeline_parameters[k] for k in relevant_parameters}
+    return ins, step_params
 
 
-def detect_out_dependencies(nb_graph: nx.DiGraph):
-    """Detect the 'out' dependencies of each code block.
+def detect_fns_free_variables(source_code, imports_and_functions="",
+                              step_parameters=None):
+    """Return the function's free variables.
 
-    These deps represent the variables that each code block must marshal to
-    child steps of the pipeline. Out deps are detected by cycling though all
-    the ancestors of each block. By knowing the 'ins' deps (e.g. missing names)
-    of the current block, we can get the blocks were those names were declared.
-    If an ancestor matches the `ins` entry then it will have a matching `outs`.
+    Free variable: _If a variable is used in a code block but not defined
+    there, it is a free variable._
+
+    An Example:
+
+    ```
+    x = 5
+    def foo():
+        print(x)
+    ```
+
+    In the example above, `x` is a free variable for function `foo`, because
+    it is defined outside of the context of `foo`.
+
+    Here we run the PyFlakes report over the function body to get all the
+    missing names (i.e. free variables), excluding the function arguments.
 
     Args:
-        nb_graph: nx DiGraph with pipeline code blocks
+        source_code: Multiline Python source code
+        imports_and_functions: Multiline Python source that is prepended
+            to every pipeline step. It should contain the code cells that
+            where tagged as `import` and `functions`. We prepend this code to
+            the function body because it will always be present in any pipeline
+            step.
+        step_parameters: Step parameters names. The step parameters
+            are removed from the pyflakes report, as these names will always
+            be available in the step's context.
+
+    Returns (dict): A dictionary with the name of the function as key and
+        a list of variables names + consumed pipeline parameters as values.
     """
-    for block_name in reversed(list(nx.topological_sort(nb_graph))):
-        ins = nb_graph.nodes(data=True)[block_name]['ins']
-        # for _a in nb_graph.predecessors(block_name):
-        for _a in nx.ancestors(nb_graph, block_name):
-            father_data = nb_graph.nodes(data=True)[_a]
-            # Intersect the missing names of this father's child with all
-            # the father's names. The intersection is the list of variables
-            # that the father need to serialize
-            outs = set(ins).intersection(father_data['all_names'])
-            # include previous `outs` in case this father has multiple
-            # children steps
-            outs.update(father_data['outs'])
-            # add to father the new `outs` variables
-            nx.set_node_attributes(nb_graph, {_a: {'outs': sorted(outs)}})
+    fns_free_vars = dict()
+    # now check the functions' bodies for free variables. fns is a
+    # dict function_name -> (function_body, function_args)
+    fns = kale_ast.parse_functions(source_code)
+    for fn_name, (fn_body, fn_args) in fns.items():
+        code = imports_and_functions + "\n" + fn_body
+        free_vars = pyflakes_report(code=code).difference(fn_args)
+        # the pipeline parameters that are used in the function
+        consumed_params = {}
+        if step_parameters:
+            consumed_params = free_vars.intersection(step_parameters.keys())
+            # remove the used parameters form the free variables, as they
+            # need to be handled differently.
+            free_vars.difference_update(consumed_params)
+        fns_free_vars[fn_name] = (free_vars, consumed_params)
+    return fns_free_vars
 
 
 def dependencies_detection(nb_graph: nx.DiGraph,
-                           pipeline_parameters: dict = None):
-    """Analyze the code blocks in the graph and detect the missing names.
+                           pipeline_parameters: dict = None,
+                           imports_and_functions: str = ""):
+    """Detect the data dependencies between nodes in the graph.
 
-    in each code block, annotating the nodes with `in` and `out` dependencies
-    based in the topology of the graph.
+    The data dependencies detection algorithm roughly works as follows:
+
+    1. Traversing the graph in topological order, for every node `step` do
+    2. Detect the `ins` of current `step` by running PyFlakes on the source
+     code. During this action the pipeline parameters are taken into
+     consideration
+    3. Parse `step`'s global function definitions to get free variables
+     (i.e. variables that would need to be marshalled in other steps that call
+     these functions) - in this action pipeline parameters are taken into
+     consideration.
+    4. Get all the function that `step` calls
+    5. For every `step`'s ancestor `anc` do
+        - Get all the potential names (objects, functions, ...) of `anc` that
+         could be marshalled (saved)
+        - Intersect this with the `step`'s `ins` (from action 2) and add the
+         result to `anc`'s `outs`.
+        - for every `step`'s function call (action 4), check if this function
+         was defined in `anc` and if it has free variables (action 3). If so,
+         add to `step`'s `ins` and to `anc`'s `outs` these free variables.
 
     Args:
         nb_graph: nx DiGraph with pipeline code blocks
         pipeline_parameters: Pipeline parameters dict
+        imports_and_functions: Multiline Python source that is prepended to
+            every pipeline step
 
     Returns: annotated graph
     """
-    # First get all the names of each code block
-    for block in nb_graph:
-        block_data = nb_graph.nodes(data=True)[block]
-        all_names = get_all_names('\n'.join(block_data['source']))
-        nx.set_node_attributes(nb_graph, {block: {'all_names': all_names}})
+    # resolve the data dependencies between steps, looping through the graph
+    for step in nx.topological_sort(nb_graph):
+        step_data = nb_graph.nodes(data=True)[step]
 
-    # annotate the graph inplace with all the variables dependencies between
-    # graph nodes
-    detect_in_dependencies(nb_graph, pipeline_parameters)
-    detect_out_dependencies(nb_graph)
+        # detect the INS dependencies of the CURRENT node----------------------
+        step_source_code = '\n'.join(step_data['source'])
+        # get the variables that this step is missing and the pipeline
+        # parameters that it actually needs.
+        ins, parameters = detect_in_dependencies(
+            source_code=step_source_code,
+            pipeline_parameters=pipeline_parameters)
+        fns_free_variables = detect_fns_free_variables(
+            step_source_code, imports_and_functions, pipeline_parameters)
+        # will set ins later at the end of the function, as we will
+        # potentially add more ins below
+        nx.set_node_attributes(nb_graph, {step: {
+            'fns_free_variables': fns_free_variables,
+            'parameters': parameters
+        }})
 
-    return nb_graph
+        # Get all the function calls. This will be used below to check if any
+        # of the ancestors declare any of these functions. Is that is so, the
+        # free variables of those functions will have to be loaded.
+        fn_calls = kale_ast.get_function_calls(step_source_code)
+
+        # add OUT dependencies annotations in the PARENT nodes-----------------
+        # Intersect the missing names of this father's child with all
+        # the father's names. The intersection is the list of variables
+        # that the father need to serialize
+        # The ancestors are the the nodes that have a path to `step`, ordered
+        # by path length.
+        ins_left = ins.copy()
+        for anc in (graph_utils.get_ordered_ancestors(nb_graph, step)):
+            if not ins_left:
+                # if there are no more variables that need to be marshalled,
+                # stop the graph traverse
+                break
+            anc_data = nb_graph.nodes(data=True)[anc]
+            anc_source = '\n'.join(anc_data['source'])
+            # get all the marshal candidates from father's source and intersect
+            # with the required names of the current node
+            marshal_candidates = kale_ast.get_marshal_candidates(anc_source)
+            outs = ins_left.intersection(marshal_candidates)
+            # Remove the ins that have already been assigned to an ancestor.
+            ins_left.difference_update(outs)
+            # Include free variables
+            to_remove = set()
+            for fn_call in fn_calls:
+                fns_free_variables = anc_data.get("fns_free_variables", {})
+                if fn_call in fns_free_variables.keys():
+                    # the current step needs to load these variables
+                    fn_free_vars, used_params = fns_free_variables[fn_call]
+                    ins.update(fn_free_vars)
+                    # the current ancestor needs to save these variables
+                    outs.update(fn_free_vars)
+                    # add the parameters used by the function to the list
+                    # of pipeline parameters used by the step
+                    step_params = step_data.get("parameters", {})
+                    for param in used_params:
+                        if param not in step_params:
+                            step_params[param] = pipeline_parameters[param]
+                    nx.set_node_attributes(nb_graph,
+                                           {step: {'params': step_params}})
+                    # Remove this function as it has been served. We don't want
+                    # other ancestors to save free variables for this function.
+                    # Using the helper to_remove because the set can not be
+                    # resized during iteration.
+                    to_remove.add(fn_call)
+            fn_calls.difference_update(to_remove)
+            # Add to ancestor the new outs annotations. First merge the current
+            # outs present in the anc with the new ones
+            outs.update(anc_data.get('outs', []))
+            nx.set_node_attributes(nb_graph, {anc: {'outs': sorted(outs)}})
+
+        nx.set_node_attributes(nb_graph, {step: {'ins': sorted(ins)}})

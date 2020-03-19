@@ -42,6 +42,7 @@ setup(
     install_requires=[
         'kfp >= 0.2',
         'autopep8 >=1.4, <1.5',
+        'astor >= 0.8.1',
         'nbformat >=4.4, <5.0',
         'networkx >=2.3, <3.0',
         'jinja2 >=2.10, <3.0',

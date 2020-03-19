@@ -215,7 +215,8 @@ class Kale:
         # convert notebook to nx graph
         (pipeline_graph,
          pipeline_parameters_source,
-         pipeline_metrics_source) = parser.parse_notebook(self.notebook)
+         pipeline_metrics_source,
+         imports_and_functions) = parser.parse_notebook(self.notebook)
 
         # get a dict from the 'pipeline parameters' cell source code
         pipeline_parameters_dict = ast.parse_assignments_expressions(
@@ -253,7 +254,9 @@ class Kale:
         # run static analysis over the source code
         dependencies.dependencies_detection(
             pipeline_graph,
-            pipeline_parameters=pipeline_parameters_dict)
+            pipeline_parameters=pipeline_parameters_dict,
+            imports_and_functions=imports_and_functions
+        )
 
         # add an empty step at the end of the pipeline for final snapshot
         if self.auto_snapshot:
