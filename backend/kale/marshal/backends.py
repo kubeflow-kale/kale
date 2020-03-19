@@ -19,6 +19,7 @@ from .resource_save import resource_save
 from .resource_load import resource_all as fallback_load
 from .resource_save import resource_all as fallback_save
 
+
 # TODO: Add more backends for common data types
 
 
@@ -28,6 +29,7 @@ def _get_obj_name(s):
 
 @resource_load.register(r'.*\.npy')  # match anything ending in .npy
 def resource_numpy_load(uri, **kwargs):
+    """Load a numpy resource."""
     try:
         import numpy as np
         print("Loading numpy obj: {}".format(_get_obj_name(uri)))
@@ -38,6 +40,7 @@ def resource_numpy_load(uri, **kwargs):
 
 @resource_save.register(r'numpy\..*')
 def resource_numpy_save(obj, path, **kwargs):
+    """Save a numpy resource."""
     try:
         import numpy as np
         print("Saving numpy obj: {}".format(_get_obj_name(path)))
@@ -48,6 +51,7 @@ def resource_numpy_save(obj, path, **kwargs):
 
 @resource_load.register(r'.*\.pdpkl')
 def resource_pandas_load(uri, **kwargs):
+    """Load a pandas resource."""
     try:
         import pandas as pd
         print("Loading pandas obj: {}".format(_get_obj_name(uri)))
@@ -58,16 +62,18 @@ def resource_pandas_load(uri, **kwargs):
 
 @resource_save.register(r'pandas\..*')
 def resource_pandas_save(obj, path, **kwargs):
+    """Save a pandas resource."""
     try:
-        import pandas as pd
+        import pandas as pd  # noqa: F401
         print("Saving pandas obj: {}".format(_get_obj_name(path)))
-        obj.to_pickle(path+'.pdpkl')
+        obj.to_pickle(path + '.pdpkl')
     except ImportError:
         fallback_save(obj, path, **kwargs)
 
 
 @resource_load.register(r'.*\.pt')
 def resource_torch_load(uri, **kwargs):
+    """Load a torch resource."""
     try:
         import torch
         print("Loading PyTorch model: {}".format(_get_obj_name(uri)))
@@ -82,6 +88,7 @@ def resource_torch_load(uri, **kwargs):
 
 @resource_save.register(r'torch.*')
 def resource_torch_save(obj, path, **kwargs):
+    """Save a torch resource."""
     try:
         import torch
         print("Saving PyTorch model: {}".format(_get_obj_name(path)))

@@ -28,14 +28,13 @@ from kale.utils import metadata_utils
         'size': 5,
         'type': 'pv',
         'mount_point': '/'
-    }],
-     [{
-         'name': 'v',
-         'annotations': {'a1': 'v1'},
-         'size': '5',
-         'type': 'pv',
-         'mount_point': '/'
-     }]),
+    }], [{
+        'name': 'v',
+        'annotations': {'a1': 'v1'},
+        'size': '5',
+        'type': 'pv',
+        'mount_point': '/'
+    }]),
     # ---
     ([{
         'name': 'v',
@@ -43,14 +42,13 @@ from kale.utils import metadata_utils
         'size': 5,
         'type': 'pvc',
         'mount_point': '/'
-    }],
-     [{
-         'name': 'v',
-         'annotations': {'a1': 'v1'},
-         'size': '5',
-         'type': 'pvc',
-         'mount_point': '/'
-     }])
+    }], [{
+        'name': 'v',
+        'annotations': {'a1': 'v1'},
+        'size': '5',
+        'type': 'pvc',
+        'mount_point': '/'
+    }])
 ])
 def test_validate_volumes_metadata(volumes, target):
     """Tests volumes validation method."""
