@@ -61,7 +61,9 @@ setup(
             'pytest',
             'pytest-clarity',
             'testfixtures',
-            'pytest-cov'
+            'pytest-cov',
+            'flake8',
+            'flake8-docstrings'
         ]
     },
     entry_points={'console_scripts':

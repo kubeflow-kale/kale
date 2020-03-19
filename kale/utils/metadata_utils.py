@@ -106,11 +106,11 @@ def _parse_volumes_metadata(volumes):
         if not re.match(K8S_VALID_NAME_REGEX, v['name']):
             raise ValueError(
                 "Volume spec: PV/PVC name {}".format(K8S_NAME_MSG))
-        if ('snapshot' in v and
-                v['snapshot'] and
-                (('snapshot_name' not in v) or
-                 not re.match(K8S_VALID_NAME_REGEX,
-                              v['snapshot_name']))):
+        if ('snapshot' in v
+                and v['snapshot']
+                and (('snapshot_name' not in v)
+                     or not re.match(K8S_VALID_NAME_REGEX,
+                                     v['snapshot_name']))):
             raise ValueError("Provide a valid snapshot resource name if you"
                              " want to snapshot a volume. Snapshot resource"
                              " name {}".format(K8S_NAME_MSG))

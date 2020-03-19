@@ -19,6 +19,7 @@ from kale.rpc.log import KALE_LOG_FILE
 
 
 class Code(enum.Enum):
+    """Error codes."""
     OK = 0
     IMPORT_ERROR = 1
     ENCODING_ERROR = 2
@@ -54,33 +55,33 @@ class _RPCError(Exception):
 
 
 class RPCImportError(_RPCError):
-
+    """Import Error."""
     name = "importError"
     code = Code.IMPORT_ERROR
 
 
 class RPCEncodingError(_RPCError):
-
+    """Encoding Error."""
     name = "encodingError"
     code = Code.ENCODING_ERROR
 
 
 class RPCNotFoundError(_RPCError):
-
+    """Not Found Error."""
     name = "notFoundError"
     code = Code.NOT_FOUND
     message = "Not Found"
 
 
 class RPCInternalError(_RPCError):
-
+    """Internal Error."""
     name = "internalError"
     code = Code.INTERNAL_ERROR
     message = "Internal Error"
 
 
 class RPCServiceUnavailableError(_RPCError):
-
+    """Service Unavailable Error."""
     name = "serviceUnavailableError"
     code = Code.SERVICE_UNAVAILABLE
     message = "Service is Unavailable"

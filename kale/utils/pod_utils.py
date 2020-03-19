@@ -45,6 +45,7 @@ logger = logging.getLogger("kubeflow-kale")
 
 
 def parse_k8s_size(size):
+    """Parse a string with K8s size and return its integer equivalent."""
     match = K8S_SIZE_RE.match(size)
     if not match:
         raise ValueError("Could not parse Kubernetes size: {}".format(size))
@@ -54,11 +55,13 @@ def parse_k8s_size(size):
 
 
 def get_namespace():
+    """Get the current namespace."""
     with open(NAMESPACE_PATH, "r") as f:
         return f.read()
 
 
 def get_pod_name():
+    """Get the current pod name."""
     pod_name = os.getenv("HOSTNAME")
     if pod_name is None:
         raise RuntimeError("Env variable HOSTNAME not found.")
@@ -66,6 +69,7 @@ def get_pod_name():
 
 
 def get_container_name():
+    """Get the current container name."""
     container_name = os.getenv("NB_PREFIX")
     if container_name is None:
         raise RuntimeError("Env variable NB_PREFIX not found.")
@@ -84,7 +88,8 @@ def _get_k8s_custom_objects_client():
 
 
 def _get_pod_container(pod, container_name):
-    container = list(filter(lambda c: c.name == container_name, pod.spec.containers))
+    container = list(
+        filter(lambda c: c.name == container_name, pod.spec.containers))
     assert len(container) <= 1
     if not container:
         raise RuntimeError("Could not find container '%s' in pod '%s'"
@@ -124,7 +129,8 @@ def _list_volumes(client, namespace, pod_name, container_name):
             raise RuntimeError(msg)
 
         ann = pvc.metadata.annotations
-        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner", None)
+        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
+                              None)
         if provisioner != ROK_CSI_STORAGE_PROVISIONER:
             msg = ("Found PVC storage provisioner '%s'. Only storage"
                    " provisioner '%s' is supported."
@@ -139,6 +145,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
 
 def list_volumes():
+    """List the currently mounted volumes."""
     client = _get_k8s_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
@@ -147,6 +154,7 @@ def list_volumes():
 
 
 def get_docker_base_image():
+    """Get the current container's docker image."""
     client = _get_k8s_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
@@ -158,6 +166,7 @@ def get_docker_base_image():
 
 
 def print_volumes():
+    """Print the current volumes."""
     headers = ("Mount Path", "Volume Name", "Volume Size")
     rows = [(path, volume.name, size)
             for path, volume, size in list_volumes()]
@@ -165,6 +174,7 @@ def print_volumes():
 
 
 def create_rok_bucket(bucket, client=None):
+    """Create a new Rok bucket."""
     from rok_gw_client.client import RokClient, GatewayClientError
     if client is None:
         client = RokClient()
@@ -184,6 +194,7 @@ def create_rok_bucket(bucket, client=None):
 
 
 def snapshot_pipeline_step(pipeline, step, nb_path):
+    """Take a snapshot of a pipeline step with Rok."""
     from rok_gw_client.client import RokClient
 
     bucket = "pipelines"
@@ -229,6 +240,7 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
 
 
 def get_workflow_name(pod_name, namespace):
+    """Get the workflow name associated to a pod (pipeline step)."""
     v1_client = _get_k8s_v1_client()
     pod = v1_client.read_namespaced_pod(pod_name, namespace)
 
@@ -243,6 +255,7 @@ def get_workflow_name(pod_name, namespace):
 
 
 def get_run_uuid():
+    """Get the Workflow's UUID form inside a pipeline step."""
     # Retrieve the pod
     pod_name = get_pod_name()
     namespace = get_namespace()
@@ -266,4 +279,5 @@ def get_run_uuid():
 
 
 def is_workspace_dir(directory):
+    """Check dir path is the container's home folder."""
     return directory == os.getenv("HOME")

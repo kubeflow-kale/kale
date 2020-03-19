@@ -27,15 +27,14 @@ from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
 from kale.rpc.errors import RPCInternalError
 
-
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
-
 
 logger = create_adapter(logging.getLogger(__name__))
 
 
 def resume_notebook_path(request):
+    """Get the relative path of the notebook found in KALE_NOTEBOOK_PATH."""
     p = os.environ.get("KALE_NOTEBOOK_PATH")
     if p and not os.path.isfile(p):
         raise RuntimeError("env path KALE_NOTEBOOK_PATH=%s is not a file" % p)
@@ -56,6 +55,7 @@ def resume_notebook_path(request):
 
 
 def list_volumes(request):
+    """Get the list of mounted volumes."""
     volumes = pod_utils.list_volumes()
     volumes_out = [{"type": "clone",
                     "name": volume.name,
@@ -68,12 +68,14 @@ def list_volumes(request):
 
 
 def get_base_image(request):
+    """Get the current pod's docker base image."""
     return pod_utils.get_docker_base_image()
 
 
 def compile_notebook(request, source_notebook_path,
                      notebook_metadata_overrides=None, debug=False,
                      auto_snapshot=False):
+    """Compile the notebook to KFP DSL."""
     instance = Kale(source_notebook_path, notebook_metadata_overrides,
                     debug, auto_snapshot)
     instance.logger = request.log if hasattr(request, "log") else logger
@@ -138,12 +140,13 @@ def get_pipeline_metrics(request, source_notebook_path):
 def _get_kale_marshal_dir(source_notebook_path):
     nb_file_name = os.path.basename(source_notebook_path)
     nb_dir_name = os.path.dirname(source_notebook_path)
-    kale_marshal_dir_name = ".{}{}".format(nb_file_name, 
+    kale_marshal_dir_name = ".{}{}".format(nb_file_name,
                                            KALE_MARSHAL_DIR_POSTFIX)
     return os.path.realpath(os.path.join(nb_dir_name, kale_marshal_dir_name))
 
 
 def unmarshal_data(source_notebook_path):
+    """Unmarshal data from the marshal directory."""
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if not os.path.exists(kale_marshal_dir):
         return {}
@@ -157,6 +160,7 @@ def unmarshal_data(source_notebook_path):
 
 
 def explore_notebook(request, source_notebook_path):
+    """Check if the notebook is to be resumed at a specific pipeline step."""
     step_name = os.getenv(KALE_PIPELINE_STEP_ENV, None)
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
 
@@ -168,6 +172,7 @@ def explore_notebook(request, source_notebook_path):
 
 
 def remove_marshal_dir(request, source_notebook_path):
+    """Remove the marshal directory."""
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if os.path.exists(kale_marshal_dir):
         shutil.rmtree(kale_marshal_dir)

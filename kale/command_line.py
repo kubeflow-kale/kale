@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import argparse
-import nbformat as nb
 
 from argparse import RawTextHelpFormatter
 
@@ -45,6 +44,7 @@ Override the arguments of the source Notebook's Kale metadata section
 
 
 def main():
+    """Entry-point of CLI command."""
     parser = argparse.ArgumentParser(description=ARGS_DESC,
                                      formatter_class=RawTextHelpFormatter)
     general_group = parser.add_argument_group('General')
@@ -121,7 +121,7 @@ your Notebook Server.
 
 
 def kale_volumes():
-    """This function handles kale-volumes CLI command"""
+    """This function handles kale-volumes CLI command."""
     import logging
     import os
     import sys

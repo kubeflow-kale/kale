@@ -20,7 +20,6 @@ from kale.utils import pod_utils
 from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
 from kale.rpc.log import create_adapter
 
-
 DEFAULT_BUCKET = "notebooks"
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
@@ -29,7 +28,6 @@ This is a snapshot of notebook {} in namespace {}.
 This snapshot was created by Kale in order to clone the volumes of the notebook
 and use them to spawn a Kubeflow pipeline.\
 """
-
 
 _client = None
 logger = create_adapter(logging.getLogger(__name__))
@@ -47,11 +45,13 @@ def _get_client():
 
 
 def get_task(request, task_id, bucket=DEFAULT_BUCKET):
+    """Get the Rok task with id=task_id."""
     rok = _get_client()
     return rok.task_get(bucket, task_id)
 
 
 def snapshot_notebook(request, bucket=DEFAULT_BUCKET, obj=None):
+    """Perform a snapshot over the notebook's pod."""
     rok = _get_client()
     hostname = os.getenv("HOSTNAME")
     namespace = pod_utils.get_namespace()
@@ -91,12 +91,13 @@ def _get_cloned_volume(volume, obj_name, members):
                                       'value': member['rok_url']}]
             return volume
 
-    msg = "Volume '{}' not found in group '{}'".format(volume['name'], 
+    msg = "Volume '{}' not found in group '{}'".format(volume['name'],
                                                        obj_name)
     raise ValueError(msg)
 
 
 def replace_cloned_volumes(request, bucket, obj, version, volumes):
+    """Replace the volumes to be cloned with a Rok snapshot."""
     rok = _get_client()
     version_info = rok.version_info(bucket, obj, version)
     members = _get_group_members(version_info)
@@ -110,6 +111,7 @@ def replace_cloned_volumes(request, bucket, obj, version, volumes):
 
 
 def check_rok_availability(request):
+    """Check if Rok is available."""
     log = request.log if hasattr(request, "log") else logger
     try:
         rok = _get_client()

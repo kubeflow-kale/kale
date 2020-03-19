@@ -42,6 +42,7 @@ def import_func(request, import_func_str):
 
 
 def format_success(result, trans_id):
+    """Serialise the result."""
     return utils.serialize({"code": errors.Code.OK.value,
                             "result": result,
                             "trans_id": trans_id})
@@ -68,6 +69,15 @@ def sanitize_ctx(request, ctx):
 
 
 def run(func, kwargs, ctx):
+    """Execute command requests coming from the UI.
+
+    Args:
+        func: the name of function to be run
+        kwargs: A dict object with the arguments to be passed to the function
+        ctx: context
+
+    Returns: The result of the called function
+    """
     # Setup initial request obj to have something to log to
     request = KaleRPCRequest()
     request.log.debug("Decoding ctx of RPC function '%s'", func)
