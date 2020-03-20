@@ -237,10 +237,10 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             # Include free variables
             to_remove = set()
             for fn_call in fn_calls:
-                fns_free_variables = anc_data.get("fns_free_variables", {})
-                if fn_call in fns_free_variables.keys():
+                anc_fns_free_vars = anc_data.get("fns_free_variables", {})
+                if fn_call in anc_fns_free_vars.keys():
                     # the current step needs to load these variables
-                    fn_free_vars, used_params = fns_free_variables[fn_call]
+                    fn_free_vars, used_params = anc_fns_free_vars[fn_call]
                     ins.update(fn_free_vars)
                     # the current ancestor needs to save these variables
                     outs.update(fn_free_vars)
