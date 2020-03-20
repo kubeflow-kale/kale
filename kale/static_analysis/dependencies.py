@@ -202,12 +202,6 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             pipeline_parameters=pipeline_parameters)
         fns_free_variables = detect_fns_free_variables(
             step_source_code, imports_and_functions, pipeline_parameters)
-        # will set ins later at the end of the function, as we will
-        # potentially add more ins below
-        nx.set_node_attributes(nb_graph, {step: {
-            'fns_free_variables': fns_free_variables,
-            'parameters': parameters
-        }})
 
         # Get all the function calls. This will be used below to check if any
         # of the ancestors declare any of these functions. Is that is so, the
@@ -246,12 +240,8 @@ def dependencies_detection(nb_graph: nx.DiGraph,
                     outs.update(fn_free_vars)
                     # add the parameters used by the function to the list
                     # of pipeline parameters used by the step
-                    step_params = step_data.get("parameters", {})
                     for param in used_params:
-                        if param not in step_params:
-                            step_params[param] = pipeline_parameters[param]
-                    nx.set_node_attributes(nb_graph,
-                                           {step: {'params': step_params}})
+                        parameters[param] = pipeline_parameters[param]
                     # Remove this function as it has been served. We don't want
                     # other ancestors to save free variables for this function.
                     # Using the helper to_remove because the set can not be
@@ -263,4 +253,7 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             outs.update(anc_data.get('outs', []))
             nx.set_node_attributes(nb_graph, {anc: {'outs': sorted(outs)}})
 
-        nx.set_node_attributes(nb_graph, {step: {'ins': sorted(ins)}})
+        new_data = {'ins': sorted(ins),
+                    'fns_free_variables': fns_free_variables,
+                    'parameters': parameters}
+        nx.set_node_attributes(nb_graph, {step: new_data})
