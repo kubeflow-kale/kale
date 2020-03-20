@@ -140,11 +140,11 @@ def detect_fns_free_variables(source_code, imports_and_functions="",
     """
     fns_free_vars = dict()
     # now check the functions' bodies for free variables. fns is a
-    # dict function_name -> (function_body, function_args)
+    # dict function_name -> function_source
     fns = kale_ast.parse_functions(source_code)
-    for fn_name, (fn_body, fn_args) in fns.items():
-        code = imports_and_functions + "\n" + fn_body
-        free_vars = pyflakes_report(code=code).difference(fn_args)
+    for fn_name, fn in fns.items():
+        code = imports_and_functions + "\n" + fn
+        free_vars = pyflakes_report(code=code)
         # the pipeline parameters that are used in the function
         consumed_params = {}
         if step_parameters:
