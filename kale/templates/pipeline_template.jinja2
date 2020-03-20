@@ -65,13 +65,22 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     volume = dsl.PipelineVolume(pvc=vol_{{ mountpoint.replace('/', '_').strip('_') }})
 
     {% elif vol['type'] == 'new_pvc' %}
-    {% if annotations.get('rok/origin') and "workspace" not in name %}
-    {% set v_parameter_name = name.split('-')[:-1]|join('_') %}
+
+
+    {% if annotations.get('rok/origin') %}
+        {% if "workspace" not in name %}
+        {% set v_parameter_name = name.split('-')[:-1]|join('_') %}
+        {% set op_name = name.split('-')[:-1]|join('-') %}
     annotations['rok/origin'] = rok_{{ v_parameter_name }}_url
+        {% else  %}
+        {% set op_name = "rok-workspace-volume" %}
+        {% endif %}
+    {% else %}
+    {% set op_name = name|replace("_", "-") %}
     {% endif %}
 
     vop{{ loop.index }} = dsl.VolumeOp(
-        name='create-volume-{{ loop.index }}',
+        name='{{ op_name }}',
         resource_name='{{ name }}',
         {%- if annotations %}
         annotations=annotations,
