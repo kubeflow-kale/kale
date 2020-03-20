@@ -235,6 +235,15 @@ def dependencies_detection(nb_graph: nx.DiGraph,
                 if fn_call in anc_fns_free_vars.keys():
                     # the current step needs to load these variables
                     fn_free_vars, used_params = anc_fns_free_vars[fn_call]
+                    # search if this function calls other functions (i.e. if
+                    # its free variables are found in the free variables dict)
+                    _left = list(fn_free_vars)
+                    while _left:
+                        _cur = _left.pop(0)
+                        # if the free var is itself a fn with free vars
+                        if _cur in anc_fns_free_vars:
+                            fn_free_vars.update(anc_fns_free_vars[_cur][0])
+                            _left = _left + list(anc_fns_free_vars[_cur][0])
                     ins.update(fn_free_vars)
                     # the current ancestor needs to save these variables
                     outs.update(fn_free_vars)
@@ -247,6 +256,12 @@ def dependencies_detection(nb_graph: nx.DiGraph,
                     # Using the helper to_remove because the set can not be
                     # resized during iteration.
                     to_remove.add(fn_call)
+                    # add the function and its free variables to the current
+                    # step as well. This is useful in case *another* function
+                    # will call this one (`fn_call`) in a child step. In this
+                    # way we can track the calls up to the last free variable.
+                    # (refer to test `test_dependencies_detection_recursive`)
+                    fns_free_variables[fn_call] = anc_fns_free_vars[fn_call]
             fn_calls.difference_update(to_remove)
             # Add to ancestor the new outs annotations. First merge the current
             # outs present in the anc with the new ones
