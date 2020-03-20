@@ -125,9 +125,9 @@ def get_marshal_candidates(code):
     contexts = (ast.FunctionDef, ast.ClassDef, )
     tree = ast.parse(commented_code)
     for block in tree.body:
-        for node in walk(block):
+        for node in walk(block, stop_at=contexts):
             if isinstance(node, contexts):
-                break
+                names.add(node.name)
             if isinstance(node, (ast.Name,)):
                 names.add(node.id)
             if isinstance(node, (ast.Import, ast.ImportFrom,)):

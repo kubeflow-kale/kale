@@ -66,8 +66,8 @@ def fun()
     ('', []),
     (_numpy_snippet, ['a', 'b', 'np', 'os', 'print']),
     (_numpy2_snippet, ['a', 'b', 'np', 'os', 'print']),
-    (_foos_snippet, []),
-    (_class_snippet, []),
+    (_foos_snippet, ['_test', '_test2']),
+    (_class_snippet, ['test']),
     (_ctx_mngr_snippet, ['my_context', 'param', 'res', 'ctx'])
 ])
 def test_get_marshal_candidates(code, target):

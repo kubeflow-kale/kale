@@ -91,7 +91,7 @@ foo()
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x']
     assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -128,7 +128,7 @@ print(x)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x']
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -163,7 +163,7 @@ foo()
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x']
     assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -198,7 +198,7 @@ foo(5)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == []
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step3']['ins'] == ['foo']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -234,7 +234,7 @@ foo(5)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == []
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step3']['ins'] == ['foo']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -270,7 +270,7 @@ foo(5)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == []
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step2']['parameters'] == {"y": (5, 'int')}
     assert g.nodes(data=True)['step3']['ins'] == ['foo']
     assert g.nodes(data=True)['step3']['outs'] == []
@@ -313,6 +313,6 @@ bar()
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x', 'y']
     assert g.nodes(data=True)['step2']['ins'] == ['x', 'y']
-    assert g.nodes(data=True)['step2']['outs'] == ['x', 'y']
+    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x', 'y']
     assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x', 'y']
     assert g.nodes(data=True)['step3']['outs'] == []
