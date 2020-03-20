@@ -56,7 +56,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
     }], {}),
     # ---
     ([{
-        'name': 'test-volume',
+        'name': 'test-volume-rnd',
         'type': 'new_pvc',
         'mount_point': '/root',
         'annotations': {'rok/origin': 'url'}

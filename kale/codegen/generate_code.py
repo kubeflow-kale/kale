@@ -53,8 +53,14 @@ def get_volume_parameters(volumes):
         elif v['type'] == 'new_pvc':
             rok_url = v['annotations'].get("rok/origin")
             if rok_url is not None:
-                par_name = "rok_{}_url".format(v['name'].replace('-', '_'))
-                volume_parameters[par_name] = ('str', rok_url)
+                par_name = '_'.join(v['name'].split('-')[:-1])
+                par_name = "rok_%s_url" % par_name
+                # do not include the workspace volume as part of pipeline
+                # parameters
+                if "workspace" not in par_name:
+                    # The default value of a data volume is empty. In this
+                    # way the pipeline is not bound to a specific data volume.
+                    volume_parameters[par_name] = ('str', rok_url)
         else:
             raise ValueError("Unknown volume type: {}".format(v['type']))
     return volume_parameters
