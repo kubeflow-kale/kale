@@ -201,9 +201,15 @@ interface IUploadPipelineArgs {
   overwrite: boolean;
 }
 
+interface IUploadPipelineResp {
+  already_exists: boolean;
+  pipeline: { id: string; name: string };
+}
+
 interface IRunPipelineArgs {
-  pipeline_package_path: string;
   pipeline_metadata: Object;
+  pipeline_package_path?: string;
+  pipeline_id?: string;
 }
 
 const DefaultState: IState = {
@@ -950,6 +956,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
 
     // UPLOAD
+    let uploadPipeline: IUploadPipelineResp = null;
     if (
       this.state.deploymentType === 'upload' ||
       this.state.deploymentType === 'run'
@@ -960,7 +967,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         pipeline_metadata: compileNotebook.pipeline_metadata,
         overwrite: false,
       };
-      let uploadPipeline = await this.executeRpcAndShowRPCError(
+      uploadPipeline = await this.executeRpcAndShowRPCError(
         'kfp.upload_pipeline',
         uploadPipelineArgs,
       );
@@ -1008,8 +1015,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     if (this.state.deploymentType === 'run') {
       this.updateDeployProgress(_deployIndex, { showRunProgress: true });
       const runPipelineArgs: IRunPipelineArgs = {
-        pipeline_package_path: compileNotebook.pipeline_package_path,
         pipeline_metadata: compileNotebook.pipeline_metadata,
+        pipeline_id: uploadPipeline.pipeline.id,
       };
       const runPipeline = await this.executeRpcAndShowRPCError(
         'kfp.run_pipeline',
