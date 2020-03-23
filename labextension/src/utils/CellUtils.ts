@@ -105,7 +105,7 @@ export default class CellUtilities {
     key: string,
     value: any,
     save: boolean = false,
-  ): any {
+  ): Promise<any> {
     if (!notebookPanel) {
       throw new Error('Notebook was null!');
     }
@@ -116,11 +116,11 @@ export default class CellUtilities {
       const cell: ICellModel = notebookPanel.model.cells.get(index);
       const oldVal: any = cell.metadata.set(key, value);
       if (save) {
-        notebookPanel.context.save();
+        return notebookPanel.context.save();
       }
-      return oldVal;
+      return Promise.resolve(oldVal);
     } catch (error) {
-      throw error;
+      return Promise.reject(error);
     }
   }
 

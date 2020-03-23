@@ -379,7 +379,7 @@ a {
   /* FIXME: find a way to calculate margin */
   margin-left: 73px;
   margin-top: 8px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
 }
@@ -401,6 +401,7 @@ a {
   position: relative;
 }
 
+.kale-editor-close-btn,
 .kale-editor-toggle {
   border: 0;
   width: 16px;
@@ -414,36 +415,32 @@ a {
   color: var(--jp-inverse-layout-color3);
 }
 
+.kale-editor-close-btn > svg,
 .kale-editor-toggle > svg {
   width: 100%;
   height: auto;
+}
+
+.kale-editor-toggle > svg {
   background-color: var(--jp-cell-editor-background);
 }
 
-.jp-Notebook .jp-Cell.jp-mod-selected .kale-editor-toggle > svg {
+.jp-Notebook.jp-mod-editMode
+  .jp-Cell.jp-mod-selected
+  .kale-editor-toggle
+  > svg {
   background-color: #fff;
 }
 
 .kale-cell-metadata-editor {
   margin-bottom: 6px;
   display: flex;
-  width: 50%;
   border: 1px solid var(--md-grey-400);
-  padding: 6px;
 }
 
-.kale-cell-metadata-editor > div {
-  width: 50%;
-}
-
-.kale-cell-metadata-editor > div:first-child {
+.kale-cell-metadata-editor > .MuiFormControl-root {
+  margin-left: 4px;
   margin-right: 4px;
-  border-right: 1px solid var(--md-grey-400);
-  padding-right: 6px;
-}
-
-.kale-cell-metadata-editor .MuiSelect-selectMenu {
-  min-height: 25px;
 }
 
 .kale-metadata-editor-wrapper.opened .kale-editor-toggle {
@@ -467,8 +464,15 @@ a {
 }
 
 .kale-chip.MuiChip-root {
-  height: 21px;
+  height: 19px;
   color: #fff;
+}
+
+.kale-chip-select.MuiChip-root {
+  height: 18px;
+  margin-right: 1px;
+  margin-bottom: 1px;
+  line-height: 18px;
 }
 
 .kale-metadata-editor-wrapper:not(.kale-is-step)

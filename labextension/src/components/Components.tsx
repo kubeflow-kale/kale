@@ -53,10 +53,7 @@ const useStyles = makeStyles(() =>
       fontSize: 'var(--jp-ui-font-size2)',
     },
     input: {
-      borderRadius: 4,
-      position: 'relative',
       color: 'var(--jp-ui-font-color1)',
-      fontSize: 'var(--jp-ui-font-size2)',
     },
     focused: {},
     // notchedOutline: {
@@ -296,9 +293,7 @@ const useStylesSelectMulti = makeStyles(() =>
       display: 'flex',
       flexWrap: 'wrap',
     },
-    chip: {
-      margin: 2,
-    },
+    chip: {},
     multiSelectForm: {
       width: '100%',
     },
@@ -403,7 +398,7 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
                     }}
                     key={value}
                     label={value}
-                    className={`kale-chip ${classes.chip}`}
+                    className={`kale-chip kale-chip-select ${classes.chip}`}
                   />
                 );
               })}
