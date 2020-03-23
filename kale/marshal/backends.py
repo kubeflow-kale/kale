@@ -95,3 +95,25 @@ def resource_torch_save(obj, path, **kwargs):
         torch.save(obj, path + ".pt", pickle_module=dill)
     except ImportError:
         fallback_save(obj, path, **kwargs)
+
+
+@resource_load.register(r'.*\.keras')
+def resource_keras_load(uri, **kwargs):
+    """Load a Keras model."""
+    try:
+        from keras.models import load_model
+        print("Loading Keras model: {}".format(_get_obj_name(uri)))
+        obj_keras = load_model(uri)
+        return obj_keras
+    except ImportError:
+        return fallback_load(uri, **kwargs)
+
+
+@resource_save.register(r'keras.*')
+def resource_keras_save(obj, path, **kwargs):
+    """Save a Keras model."""
+    try:
+        print("Saving Keras model: {}".format(_get_obj_name(path)))
+        obj.save(path + ".keras")
+    except ImportError:
+        fallback_save(obj, path, **kwargs)
