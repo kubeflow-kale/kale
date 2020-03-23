@@ -18,10 +18,38 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { KernelMessage, Kernel } from '@jupyterlab/services';
 import { CommandRegistry } from '@phosphor/commands';
+// @ts-ignore
+import SanitizedHTML from 'react-sanitized-html';
 import * as React from 'react';
+import { ReactElement } from 'react';
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
 export default class NotebookUtilities {
+  /**
+   * Builds an HTML container by sanitizing a list of strings and converting
+   * them in valid HTML
+   * @param msg A list of string with HTML formatting
+   * @returns a HTMLDivElement composed of a list of spans with formatted text
+   */
+  private static buildDialogBody(msg: string[]): ReactElement {
+    return (
+      <div>
+        {msg.map((s: string, i: number) => {
+          return (
+            <React.Fragment key={`msg-${i}`}>
+              <SanitizedHTML
+                allowedAttributes={{ a: ['href'] }}
+                allowedTags={['b', 'i', 'em', 'strong', 'a', 'pre']}
+                html={s}
+              />
+              <br />
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  }
+
   /**
    * Opens a pop-up dialog in JupyterLab to display a simple message.
    * @param title The title for the message popup
@@ -39,22 +67,7 @@ export default class NotebookUtilities {
     const buttons: ReadonlyArray<Dialog.IButton> = [
       Dialog.okButton({ label: buttonLabel, className: buttonClassName }),
     ];
-
-    const messageBody = (
-      <div key={`msg-box-${Math.random() * 100000}`}>
-        {msg.map((s: string, i: number) => {
-          return (
-            <React.Fragment>
-              <span className="dialog-box-text" key={`msg-${i}`}>
-                {s}
-              </span>
-              <br key={`br-msg-${i}`} />
-            </React.Fragment>
-          );
-        })}
-      </div>
-    );
-
+    const messageBody = this.buildDialogBody(msg);
     await showDialog({ title, buttons, body: messageBody });
   }
 
@@ -70,7 +83,7 @@ export default class NotebookUtilities {
    */
   public static async showYesNoDialog(
     title: string,
-    msg: string,
+    msg: string[],
     acceptLabel: string = 'YES',
     rejectLabel: string = 'NO',
     yesButtonClassName: string = '',
@@ -80,7 +93,8 @@ export default class NotebookUtilities {
       Dialog.okButton({ label: acceptLabel, className: yesButtonClassName }),
       Dialog.cancelButton({ label: rejectLabel, className: noButtonClassName }),
     ];
-    const result = await showDialog({ title, buttons, body: msg });
+    const messageBody = this.buildDialogBody(msg);
+    const result = await showDialog({ title, buttons, body: messageBody });
     return result.button.label === acceptLabel;
   }
 

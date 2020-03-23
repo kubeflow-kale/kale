@@ -48,6 +48,7 @@
     "@types/react-dom": "^16.9.1",
     "react": "16.8.4",
     "react-dom": "^16.8.0",
+    "react-sanitized-html": "^2.0.0",
     "react-switch": "^5.0.1",
     "use-debounce": "^3.0.1"
   },

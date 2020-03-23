@@ -25,10 +25,12 @@ import PendingIcon from '@material-ui/icons/Schedule';
 import SkippedIcon from '@material-ui/icons/SkipNext';
 import SuccessIcon from '@material-ui/icons/CheckCircle';
 import CancelIcon from '@material-ui/icons/Cancel';
+import WarningIcon from '@material-ui/icons/Warning';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
+import NotebookUtils from '../../utils/NotebookUtils';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -79,6 +81,20 @@ interface DeployProgress extends DeployProgressState {
 }
 
 export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
+  const getWarningBadge = (title: string, content: any) => {
+    return content ? (
+      <a
+        onClick={_ => {
+          NotebookUtils.showMessage(title, content);
+        }}
+      >
+        <WarningIcon style={{ color: color.alert, height: 18, width: 18 }} />
+      </a>
+    ) : (
+      ''
+    );
+  };
+
   const getSnapshotLink = (task: any) => {
     if (!task.result || !task.result.event) {
       return '#';
@@ -236,6 +252,28 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     );
   };
 
+  let compileTpl;
+  if (props.compiledPath && props.compiledPath !== 'error') {
+    compileTpl = (
+      <React.Fragment>
+        <a onClick={_ => props.docManager.openOrReveal(props.compiledPath)}>
+          Done
+          <SuccessIcon
+            style={{ color: color.success, height: 18, width: 18 }}
+          />
+        </a>
+      </React.Fragment>
+    );
+  } else if (props.compiledPath === 'error') {
+    compileTpl = (
+      <React.Fragment>
+        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+      </React.Fragment>
+    );
+  } else {
+    compileTpl = <LinearProgress color="primary" />;
+  }
+
   let uploadTpl;
   if (props.pipeline) {
     uploadTpl = (
@@ -251,7 +289,11 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
       </React.Fragment>
     );
   } else if (props.pipeline === false) {
-    uploadTpl = <React.Fragment>Canceled</React.Fragment>;
+    uploadTpl = (
+      <React.Fragment>
+        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+      </React.Fragment>
+    );
   } else {
     uploadTpl = <LinearProgress color="primary" />;
   }
@@ -267,6 +309,12 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         >
           {getRunComponent(props.runPipeline)}
         </a>
+      </React.Fragment>
+    );
+  } else if (props.runPipeline == false) {
+    runTpl = (
+      <React.Fragment>
+        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
       </React.Fragment>
     );
   } else {
@@ -291,22 +339,41 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
 
       {props.showSnapshotProgress ? (
         <div className="deploy-progress-row">
-          <div className="deploy-progress-label">Taking snapshot... </div>
-          <div className="deploy-progress-value">{getSnapshotTpl()}</div>
+          <div className="deploy-progress-label">Taking snapshot...</div>
+          <div className="deploy-progress-value">
+            {getSnapshotTpl()}{' '}
+            {getWarningBadge('Snapshot Warnings', props.snapshotWarnings)}
+          </div>
+        </div>
+      ) : null}
+
+      {props.showCompileProgress ? (
+        <div className="deploy-progress-row">
+          <div className="deploy-progress-label">Compiling Notebook...</div>
+          <div className="deploy-progress-value">
+            {compileTpl}
+            {getWarningBadge('Compile Warnings', props.compileWarnings)}
+          </div>
         </div>
       ) : null}
 
       {props.showUploadProgress ? (
         <div className="deploy-progress-row">
-          <div className="deploy-progress-label">Uploading pipeline... </div>
-          <div className="deploy-progress-value">{uploadTpl}</div>
+          <div className="deploy-progress-label">Uploading pipeline...</div>
+          <div className="deploy-progress-value">
+            {uploadTpl}
+            {getWarningBadge('Upload Warnings', props.uploadWarnings)}
+          </div>
         </div>
       ) : null}
 
       {props.showRunProgress ? (
         <div className="deploy-progress-row">
-          <div className="deploy-progress-label">Running pipeline... </div>
-          <div className="deploy-progress-value">{runTpl}</div>
+          <div className="deploy-progress-label">Running pipeline...</div>
+          <div className="deploy-progress-value">
+            {runTpl}
+            {getWarningBadge('Run Warnings', props.runWarnings)}
+          </div>
         </div>
       ) : null}
     </div>

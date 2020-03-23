@@ -92,6 +92,7 @@ export interface IMaterialInput {
   extraInputProps?: any;
   variant?: 'filled' | 'standard' | 'outlined';
   onBeforeUpdate?: (value: string) => boolean;
+  placeholder?: string;
 }
 
 export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
@@ -150,7 +151,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
           classes: {
             root: classes.label,
           },
-          shrink: value !== '',
+          shrink: !!props.placeholder || value !== '',
         }}
         InputProps={inputProps}
         FormHelperTextProps={{
@@ -162,6 +163,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
         error={error}
         label={props.label}
         value={value}
+        placeholder={props.placeholder}
         onChange={evt => {
           setValue(evt.target.value);
           if (!props.onBeforeUpdate) {
@@ -419,6 +421,7 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
 interface ICollapsablePanel {
   title: string;
   dockerImageValue: string;
+  dockerImageDefaultValue: string;
   dockerChange: Function;
   debug: boolean;
   changeDebug: Function;
@@ -445,6 +448,7 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = prop
           label={'Docker image'}
           updateValue={props.dockerChange}
           value={props.dockerImageValue}
+          placeholder={props.dockerImageDefaultValue}
         />
 
         <div className="toolbar" style={{ padding: '12px 4px 0 4px' }}>

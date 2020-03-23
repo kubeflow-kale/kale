@@ -16,17 +16,25 @@
 
 import * as React from 'react';
 import { CircularProgress } from '@material-ui/core';
+import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';
 
 export type DeployProgressState = {
   showSnapshotProgress?: boolean;
   task?: any;
+  snapshotWarnings?: any;
+  showCompileProgress?: boolean;
+  compiledPath?: string;
+  compileWarnings?: any;
   showUploadProgress?: boolean;
   pipeline?: false | any;
+  uploadWarnings?: any;
   showRunProgress?: boolean;
   runPipeline?: any;
+  runWarnings?: any;
   deleted?: boolean;
+  docManager?: IDocumentManager;
 };
 
 interface DeploysProgress {
@@ -47,11 +55,18 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
             key={`d-${index}`}
             showSnapshotProgress={dpState.showSnapshotProgress}
             task={dpState.task}
+            snapshotWarnings={dpState.snapshotWarnings}
+            showCompileProgress={dpState.showCompileProgress}
+            compiledPath={dpState.compiledPath}
+            compileWarnings={dpState.compileWarnings}
             showUploadProgress={dpState.showUploadProgress}
             pipeline={dpState.pipeline}
+            uploadWarnings={dpState.uploadWarnings}
             showRunProgress={dpState.showRunProgress}
             runPipeline={dpState.runPipeline}
+            runWarnings={dpState.runWarnings}
             onRemove={_onPanelRemove(+index)}
+            docManager={dpState.docManager}
           />
         );
       });
