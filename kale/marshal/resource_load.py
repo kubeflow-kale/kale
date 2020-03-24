@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import dill
+import logging
 
 from .dispatchers import PatternDispatcher
 
@@ -20,13 +21,14 @@ from .dispatchers import PatternDispatcher
 __all__ = 'resource_load'
 
 
+log = logging.getLogger(__name__)
 resource_load = PatternDispatcher('resource_load')
 
 
 @resource_load.register('.*', priority=1)
 def resource_all(uri, *args, **kwargs):
     """Load any object with dill."""
-    print("Loading general object: {}".format(uri))
+    log.info("Loading general object: %s", uri)
     return dill.load(open(uri, "rb"))
 
 
