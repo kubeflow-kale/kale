@@ -66,8 +66,8 @@ def fun()
     ('', []),
     (_numpy_snippet, ['a', 'b', 'np', 'os', 'print']),
     (_numpy2_snippet, ['a', 'b', 'np', 'os', 'print']),
-    (_foos_snippet, []),
-    (_class_snippet, []),
+    (_foos_snippet, ['_test', '_test2']),
+    (_class_snippet, ['test']),
     (_ctx_mngr_snippet, ['my_context', 'param', 'res', 'ctx'])
 ])
 def test_get_marshal_candidates(code, target):
@@ -171,20 +171,7 @@ def foo():
     print(x)
     '''
 
-    target = {"foo": ("print('hello')\nprint(x)\n", set())}
-    assert kale_ast.parse_functions(code) == target
-
-
-def test_parse_functions_with_args():
-    """Test that the body of the function with args is retrieved correctly."""
-    code = '''
-x = 5
-def foo(a, b, c=None):
-    print('hello')
-    print(x)
-        '''
-
-    target = {"foo": ("print('hello')\nprint(x)\n", {"a", "b", "c"})}
+    target = {"foo": "def foo():\n    print('hello')\n    print(x)\n"}
     assert kale_ast.parse_functions(code) == target
 
 
@@ -202,15 +189,3 @@ def foo():
     print(x)
         '''
     assert kale_ast.get_function_calls(code) == {'print'}
-
-
-def test_function_args():
-    """Test the correct parsing of functions arguments."""
-    code = '''
-def f(a: 'annotation', b=1, c=2, *d, e, f=3, **g) -> 'return annotation':
-    pass
-    '''
-
-    tree = ast.parse(code)
-    args_names = ["a", "b", "c", "d", "e", "f", "g"]
-    assert sorted(kale_ast.get_function_args(tree.body[0])) == args_names

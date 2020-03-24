@@ -125,9 +125,9 @@ def get_marshal_candidates(code):
     contexts = (ast.FunctionDef, ast.ClassDef, )
     tree = ast.parse(commented_code)
     for block in tree.body:
-        for node in walk(block):
+        for node in walk(block, stop_at=contexts):
             if isinstance(node, contexts):
-                break
+                names.add(node.name)
             if isinstance(node, (ast.Name,)):
                 names.add(node.id)
             if isinstance(node, (ast.Import, ast.ImportFrom,)):
@@ -141,27 +141,6 @@ def get_marshal_candidates(code):
     return names
 
 
-def get_function_args(fn):
-    """Get argument names of an ast.FunctionDef node.
-
-    Ref: https://greentreesnakes.readthedocs.io/en/latest/nodes.html#function-and-class-definitions  # noqa: E501
-
-    Args:
-        fn: ast.FunctionDef node
-
-    Returns (list(str)): list of function arguments
-    """
-    fn_args = []
-    for attr in ["args", "posonlyargs", "kwonlyargs"]:
-        for arg in getattr(fn.args, attr, []):
-            fn_args.append(arg.arg)
-    if fn.args.vararg:
-        fn_args.append(fn.args.vararg.arg)
-    if fn.args.kwarg:
-        fn_args.append(fn.args.kwarg.arg)
-    return fn_args
-
-
 def parse_functions(code):
     """Parse all the global functions present in the input code.
 
@@ -169,12 +148,11 @@ def parse_functions(code):
     source code. These also include function that are defined inside other
     Python statements, like `try`. ast.ClassDef nodes are skipped from the
     parsing so that class functions are ignored.
-    All the functions' arguments names are returned alongside the source code.
 
     Args:
         code (str): Multiline string representing Python code
 
-    Returns (dict): A dictionary [fn_name] -> (body, args)
+    Returns (dict): A dictionary [fn_name] -> function_source
     """
     fns = dict()
     tree = ast.parse(code)
@@ -184,10 +162,7 @@ def parse_functions(code):
                          ignore=(ast.ClassDef,)):
             if isinstance(node, (ast.FunctionDef,)):
                 fn_name = node.name
-                fn_args = get_function_args(node)
-                fn_body = "".join([astor.to_source(node)
-                                   for node in node.body])
-                fns[fn_name] = (fn_body, set(fn_args))
+                fns[fn_name] = astor.to_source(node)
     return fns
 
 
