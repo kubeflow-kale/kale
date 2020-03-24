@@ -91,7 +91,7 @@ foo()
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x']
     assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -128,7 +128,7 @@ print(x)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x']
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -163,7 +163,7 @@ foo()
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x']
     assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -198,7 +198,7 @@ foo(5)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == []
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step3']['ins'] == ['foo']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -234,7 +234,7 @@ foo(5)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == []
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step3']['ins'] == ['foo']
     assert g.nodes(data=True)['step3']['outs'] == []
 
@@ -270,7 +270,7 @@ foo(5)
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == []
     assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == []
+    assert g.nodes(data=True)['step2']['outs'] == ['foo']
     assert g.nodes(data=True)['step2']['parameters'] == {"y": (5, 'int')}
     assert g.nodes(data=True)['step3']['ins'] == ['foo']
     assert g.nodes(data=True)['step3']['outs'] == []
@@ -313,6 +313,177 @@ bar()
     assert g.nodes(data=True)['step1']['ins'] == []
     assert g.nodes(data=True)['step1']['outs'] == ['x', 'y']
     assert g.nodes(data=True)['step2']['ins'] == ['x', 'y']
-    assert g.nodes(data=True)['step2']['outs'] == ['x', 'y']
+    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x', 'y']
     assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x', 'y']
     assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_recursive():
+    """Test dependencies are detected even with a chain of functions calls."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def foo():
+    print(x)
+def bar():
+    foo()
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+bar()
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == ['x']
+    assert g.nodes(data=True)['step2']['ins'] == ['x']
+    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x']
+    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_recursive_different_steps():
+    """Test dependencies are detected even with a chain of functions calls."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+x = 5
+def foo():
+    print(x)
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def bar():
+    foo()
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+bar()
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step1']['ins'] == []
+    assert g.nodes(data=True)['step1']['outs'] == ['foo', 'x']
+    assert g.nodes(data=True)['step2']['ins'] == ['foo', 'x']
+    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x']
+    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_recursive_different_steps_triple():
+    """Test dependencies are detected even with a long chain of fns calls."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step0", ins=list(), outs=list(), source=['''
+    %s
+x = 5
+def init():
+    print(x)
+        ''' % imports_and_functions])
+    g.add_node("step1", ins=list(), outs=list(), source=['''
+%s
+def foo():
+    init()
+    ''' % imports_and_functions])
+    g.add_node("step2", ins=list(), outs=list(), source=['''
+%s
+def bar():
+    foo()
+    ''' % imports_and_functions])
+    g.add_node("step3", ins=list(), outs=list(), source=['''
+%s
+bar()
+    ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step0", "step1")
+    g.add_edge("step1", "step2")
+    g.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step0']['ins'] == []
+    assert g.nodes(data=True)['step0']['outs'] == ['init', 'x']
+    assert g.nodes(data=True)['step1']['ins'] == ['init', 'x']
+    assert g.nodes(data=True)['step1']['outs'] == ['foo', 'init', 'x']
+    assert g.nodes(data=True)['step2']['ins'] == ['foo', 'init', 'x']
+    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'init', 'x']
+    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'init', 'x']
+    assert g.nodes(data=True)['step3']['outs'] == []
+
+
+def test_dependencies_detection_recursive_different_steps_branch():
+    """Test dependencies when fns are passed from multiple branches."""
+    imports_and_functions = ""
+    pipeline_parameters = {}
+
+    g = nx.DiGraph()
+    # NODES
+    g.add_node("step0", ins=list(), outs=list(), source=['''
+    %s
+x = 5
+y = 6
+        ''' % imports_and_functions])
+    g.add_node("stepL", ins=list(), outs=list(), source=['''
+%s
+def foo():
+    print(x)
+    ''' % imports_and_functions])
+    g.add_node("stepR", ins=list(), outs=list(), source=['''
+%s
+def bar():
+    print(y)
+    ''' % imports_and_functions])
+    g.add_node("stepM", ins=list(), outs=list(), source=['''
+%s
+def result():
+    foo()
+    bar()
+    ''' % imports_and_functions])
+    g.add_node("stepF", ins=list(), outs=list(), source=['''
+%s
+result()
+        ''' % imports_and_functions])
+    # EDGES
+    g.add_edge("step0", "stepL")
+    g.add_edge("step0", "stepR")
+    g.add_edge("stepL", "stepM")
+    g.add_edge("stepR", "stepM")
+    g.add_edge("stepM", "stepF")
+
+    dependencies.dependencies_detection(g, pipeline_parameters,
+                                        imports_and_functions)
+    assert g.nodes(data=True)['step0']['ins'] == []
+    assert g.nodes(data=True)['step0']['outs'] == ['x', 'y']
+    assert g.nodes(data=True)['stepL']['ins'] == ['x']
+    assert g.nodes(data=True)['stepL']['outs'] == ['foo', 'x']
+    assert g.nodes(data=True)['stepR']['ins'] == ['y']
+    assert g.nodes(data=True)['stepR']['outs'] == ['bar', 'y']
+    assert g.nodes(data=True)['stepM']['ins'] == ['bar', 'foo', 'x', 'y']
+    assert (g.nodes(data=True)['stepM']['outs']
+            == ['bar', 'foo', 'result', 'x', 'y'])
+    assert (g.nodes(data=True)['stepF']['ins']
+            == ['bar', 'foo', 'result', 'x', 'y'])
+    assert g.nodes(data=True)['stepF']['outs'] == []

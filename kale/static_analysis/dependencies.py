@@ -140,11 +140,11 @@ def detect_fns_free_variables(source_code, imports_and_functions="",
     """
     fns_free_vars = dict()
     # now check the functions' bodies for free variables. fns is a
-    # dict function_name -> (function_body, function_args)
+    # dict function_name -> function_source
     fns = kale_ast.parse_functions(source_code)
-    for fn_name, (fn_body, fn_args) in fns.items():
-        code = imports_and_functions + "\n" + fn_body
-        free_vars = pyflakes_report(code=code).difference(fn_args)
+    for fn_name, fn in fns.items():
+        code = imports_and_functions + "\n" + fn
+        free_vars = pyflakes_report(code=code)
         # the pipeline parameters that are used in the function
         consumed_params = {}
         if step_parameters:
@@ -202,12 +202,6 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             pipeline_parameters=pipeline_parameters)
         fns_free_variables = detect_fns_free_variables(
             step_source_code, imports_and_functions, pipeline_parameters)
-        # will set ins later at the end of the function, as we will
-        # potentially add more ins below
-        nx.set_node_attributes(nb_graph, {step: {
-            'fns_free_variables': fns_free_variables,
-            'parameters': parameters
-        }})
 
         # Get all the function calls. This will be used below to check if any
         # of the ancestors declare any of these functions. Is that is so, the
@@ -237,30 +231,44 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             # Include free variables
             to_remove = set()
             for fn_call in fn_calls:
-                fns_free_variables = anc_data.get("fns_free_variables", {})
-                if fn_call in fns_free_variables.keys():
+                anc_fns_free_vars = anc_data.get("fns_free_variables", {})
+                if fn_call in anc_fns_free_vars.keys():
                     # the current step needs to load these variables
-                    fn_free_vars, used_params = fns_free_variables[fn_call]
+                    fn_free_vars, used_params = anc_fns_free_vars[fn_call]
+                    # search if this function calls other functions (i.e. if
+                    # its free variables are found in the free variables dict)
+                    _left = list(fn_free_vars)
+                    while _left:
+                        _cur = _left.pop(0)
+                        # if the free var is itself a fn with free vars
+                        if _cur in anc_fns_free_vars:
+                            fn_free_vars.update(anc_fns_free_vars[_cur][0])
+                            _left = _left + list(anc_fns_free_vars[_cur][0])
                     ins.update(fn_free_vars)
                     # the current ancestor needs to save these variables
                     outs.update(fn_free_vars)
                     # add the parameters used by the function to the list
                     # of pipeline parameters used by the step
-                    step_params = step_data.get("parameters", {})
                     for param in used_params:
-                        if param not in step_params:
-                            step_params[param] = pipeline_parameters[param]
-                    nx.set_node_attributes(nb_graph,
-                                           {step: {'params': step_params}})
+                        parameters[param] = pipeline_parameters[param]
                     # Remove this function as it has been served. We don't want
                     # other ancestors to save free variables for this function.
                     # Using the helper to_remove because the set can not be
                     # resized during iteration.
                     to_remove.add(fn_call)
+                    # add the function and its free variables to the current
+                    # step as well. This is useful in case *another* function
+                    # will call this one (`fn_call`) in a child step. In this
+                    # way we can track the calls up to the last free variable.
+                    # (refer to test `test_dependencies_detection_recursive`)
+                    fns_free_variables[fn_call] = anc_fns_free_vars[fn_call]
             fn_calls.difference_update(to_remove)
             # Add to ancestor the new outs annotations. First merge the current
             # outs present in the anc with the new ones
             outs.update(anc_data.get('outs', []))
             nx.set_node_attributes(nb_graph, {anc: {'outs': sorted(outs)}})
 
-        nx.set_node_attributes(nb_graph, {step: {'ins': sorted(ins)}})
+        new_data = {'ins': sorted(ins),
+                    'fns_free_variables': fns_free_variables,
+                    'parameters': parameters}
+        nx.set_node_attributes(nb_graph, {step: new_data})
