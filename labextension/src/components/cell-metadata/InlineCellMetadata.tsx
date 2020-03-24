@@ -138,10 +138,13 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     args: IObservableList.IChangedArgs<ICellModel>,
   ) => {
     this.resetMetadataComponents();
+
+    const prevValue = args.oldValues[0];
+
     // Change type 'set' is when a cell changes its type. Even if a user changes
     // multiple cells using Shift + click the args.oldValues has only one chell
     // each time.
-    if (args.type === 'set' && args.oldValues[0] instanceof CodeCellModel) {
+    if (args.type === 'set' && prevValue instanceof CodeCellModel) {
       CellUtils.setCellMetaData(
         this.props.notebook,
         args.newIndex,
@@ -149,6 +152,11 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         [],
         true,
       );
+    }
+
+    // Change type 'remove' is when a cell is removed from the notebook.
+    if (args.type === 'remove') {
+      TagsUtils.removeOldDependencies(this.props.notebook, prevValue);
     }
   };
 

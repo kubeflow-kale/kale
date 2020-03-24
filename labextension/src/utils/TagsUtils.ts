@@ -17,6 +17,7 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../components/cell-metadata/CellMetadataEditor';
+import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 
 interface IKaleCellTags {
   blockName: string;
@@ -189,17 +190,58 @@ export default class TagsUtils {
     const previousBlocks: string[] = [];
 
     const oldBlockName: string = stepName;
-    let cellMedatada = {
+    let cellMetadata = {
       prevBlockNames: previousBlocks,
       blockName: value,
     };
     TagsUtils.setKaleCellTags(
       notebook,
       activeCellIndex,
-      cellMedatada,
+      cellMetadata,
       false,
     ).then(oldValue => {
       TagsUtils.updateKaleCellsTags(notebook, oldBlockName, value);
     });
+  }
+
+  public static cellsToArray(notebook: NotebookPanel) {
+    const cells = notebook.model.cells;
+    const cellsArray = [];
+    for (let index = 0; index < cells.length; index += 1) {
+      const cell = cells.get(index);
+      cellsArray.push(cell);
+    }
+    return cellsArray;
+  }
+
+  public static removeOldDependencies(
+    notebook: NotebookPanel,
+    removedCell: ICellModel,
+  ) {
+    if (!(removedCell instanceof CodeCellModel)) {
+      return;
+    }
+    const tags = removedCell.metadata.get('tags') as string[];
+    if (!tags) {
+      return;
+    }
+    const blockName = tags
+      .filter(t => t.startsWith('block:'))
+      .map(t => t.replace('block:', ''))[0];
+    if (!blockName) {
+      return;
+    }
+    const removedDependency = `prev:${blockName}`;
+    this.cellsToArray(notebook)
+      .filter(cell =>
+        (cell.metadata.get('tags') as string[]).includes(removedDependency),
+      )
+      .forEach(cell => {
+        const newTags = (cell.metadata.get('tags') as string[]).filter(
+          e => e !== removedDependency,
+        );
+        cell.metadata.set('tags', newTags);
+      });
+    notebook.context.save();
   }
 }
