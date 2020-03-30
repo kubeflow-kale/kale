@@ -20,11 +20,23 @@ from .resource_load import resource_all as fallback_load
 from .resource_save import resource_all as fallback_save
 
 
-# TODO: Add more backends for common data types
-
-
 def _get_obj_name(s):
     return s.split('/')[-1]
+
+
+@resource_load.register(r'.*\.pyfn')
+def resource_function_load(uri, **kwargs):
+    """Load a Python function."""
+    print("Loading function: {}".format(_get_obj_name(uri)))
+    return dill.load(open(uri, "rb"))
+
+
+@resource_save.register(r'function')
+def resource_function_save(obj, path, **kwargs):
+    """Save a Python function."""
+    print("Saving function: {}".format(_get_obj_name(path)))
+    with open(path + ".pyfn", "wb") as f:
+        dill.dump(obj, f)
 
 
 @resource_load.register(r'.*\.npy')  # match anything ending in .npy
