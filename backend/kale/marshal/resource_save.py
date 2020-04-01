@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import dill
+import logging
 
 from .dispatchers import TypeDispatcher
 
@@ -20,12 +21,13 @@ from .dispatchers import TypeDispatcher
 __all__ = 'resource_save'
 
 
+log = logging.getLogger(__name__)
 resource_save = TypeDispatcher('resource_save')
 
 
 @resource_save.register('.*', priority=1)
 def resource_all(o, path, *args, **kwargs):
     """Save any type of object in a general way."""
-    print("Saving general object: {}".format(path.split('/')[-1]))
+    log.info("Saving general object: %s", path.split('/')[-1])
     with open(path + ".dillpkl", "wb") as f:
         dill.dump(o, f)
