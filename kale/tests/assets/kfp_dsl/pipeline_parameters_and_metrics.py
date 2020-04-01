@@ -130,10 +130,7 @@ def pipeline_metrics(d1: int, d2: int):
     blocks = (pipeline_parameters_block, data_loading_block,
               block1,
               )
-    html_artifact = _kale_run_code(blocks)
-    with open("/pipeline_metrics.html", "w") as f:
-        f.write(html_artifact)
-    _kale_update_uimetadata('pipeline_metrics')
+    _kale_run_code(blocks)
 
 
 create_matrix_op = comp.func_to_container_op(create_matrix)

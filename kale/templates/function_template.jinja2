@@ -60,8 +60,12 @@ def {{ step_name }}({%- for arg in parameters_names -%}
               block{{ loop.index }},
 {%- endfor %}
               {% if out_variables|length > 0 %}data_saving_block{% endif %})
+{%- if step_name == "pipeline_metrics" %}
+    _kale_run_code(blocks)
+{% else %}
     html_artifact = _kale_run_code(blocks)
     with open("/{{ step_name }}.html", "w") as f:
         f.write(html_artifact)
     _kale_update_uimetadata('{{ step_name }}')
+{% endif -%}
 {% endif -%}
