@@ -69,12 +69,23 @@ image_html_template = '''
 '''
 
 text_html_template = '''
+<div style="margin:10px 0;">
 <pre>
-------- CELL OUTPUT -------
 {}
----------------------------
 </pre>
-<br><br>
+</div>
+'''
+
+stream_html_template = '''
+<pre style="margin:0;">
+{}
+</pre>
+'''
+
+stream_error_container_html_template = '''
+<div style="background:#FFDDDD;">
+{}
+</div>
 '''
 
 javascript_html_template = '''
@@ -103,6 +114,7 @@ def generate_html_output(outputs):
     html_body = ""
     # run through the list of outputs
     for o in outputs:
+        html = ""
         # the only rich outputs should come from `display_data` and
         # `execution_result` messages. The latter are identical to
         # `display_data` messages, with the addition of an execution_count key.
@@ -110,6 +122,12 @@ def generate_html_output(outputs):
         if not output_type:
             raise ValueError("Cell output dict has not `output_type` field."
                              " Output: {}".format(o))
+        if o['output_type'] == 'stream':
+            if o['name'] == 'stdout':
+                html = stream_html_template.format(o['text'])
+            if o['name'] == 'stderr':
+                html = stream_error_container_html_template.format(
+                    stream_html_template.format(o['text']))
         if o['output_type'] in ['display_data', 'execute_result']:
             # check mime-type of content
             # Currently supported MIME types:
@@ -127,20 +145,20 @@ def generate_html_output(outputs):
             # TODO: Generalize to multiple image types (i.e. jpeg and svg+xml)
             if 'image/png' in data:
                 title = data.get('text/plain', '')
-                html = image_html_template.format(title, data['image/png'])
-                html_body += html
+                html += image_html_template.format(title, data['image/png'])
 
             if 'text/html' in data:
-                html_body += data['text/html']
+                html += data['text/html']
 
             if ('image/png' not in data
                     and 'text/html' not in data
                     and 'text/plain' in data):
-                html_body += text_html_template.format(data['text/plain'])
+                html += text_html_template.format(data['text/plain'])
 
             if 'application/javascript' in data:
-                html_body += javascript_html_template.format(
+                html += javascript_html_template.format(
                     data['application/javascript'])
+        html_body += html
     return html_body
 
 
