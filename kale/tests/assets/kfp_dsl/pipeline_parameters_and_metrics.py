@@ -204,6 +204,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('hp tuning')
 
     # Submit a pipeline run
-    run_name = 'hp-test-rnd_run'
+    from kale.utils.kfp_utils import generate_run_name
+    run_name = generate_run_name('hp-test-rnd')
     run_result = client.run_pipeline(
         experiment.id, run_name, pipeline_filename, {})

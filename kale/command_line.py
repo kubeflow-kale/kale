@@ -106,8 +106,10 @@ def main():
         )
 
     if args.run_pipeline:
+        run_name = kfp_utils.generate_run_name(
+            kale.pipeline_metadata['pipeline_name'])
         kfp_utils.run_pipeline(
-            run_name=kale.pipeline_metadata['pipeline_name'] + '_run',
+            run_name=run_name,
             experiment_name=kale.pipeline_metadata['experiment_name'],
             pipeline_package_path=pipeline_package_path,
             host=kale.pipeline_metadata.get('kfp_host', None)

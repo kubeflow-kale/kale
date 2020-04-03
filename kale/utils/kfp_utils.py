@@ -22,6 +22,8 @@ from kfp.compiler import Compiler
 
 from kfp_server_api.rest import ApiException
 
+from kale.utils import utils
+
 
 def _get_kfp_client(host=None):
     return Client(host=host)
@@ -121,3 +123,8 @@ def run_pipeline(run_name, experiment_name, pipeline_package_path, host=None):
                               {})
     # return the run metadata
     return run
+
+
+def generate_run_name(pipeline_name: str):
+    """Generate a new run name based on pipeline name."""
+    return "{}_run-{}".format(pipeline_name, utils.random_string(5))
