@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import json
+import os
 
 import tempfile
 import importlib.util
@@ -22,7 +24,7 @@ from kfp.compiler import Compiler
 
 from kfp_server_api.rest import ApiException
 
-from kale.utils import utils
+from kale.utils import utils, pod_utils
 
 
 def _get_kfp_client(host=None):
@@ -128,3 +130,38 @@ def run_pipeline(run_name, experiment_name, pipeline_package_path, host=None):
 def generate_run_name(pipeline_name: str):
     """Generate a new run name based on pipeline name."""
     return "{}_run-{}".format(pipeline_name, utils.random_string(5))
+
+
+def update_uimetadata(artifact_name,
+                      uimetadata_path='/mlpipeline-ui-metadata.json'):
+    """Update ui-metadata dictionary with a new web-app entry.
+
+    Args:
+        artifact_name: Name of the artifact
+        uimetadata_path: path to mlpipeline-ui-metadata.json
+    """
+    # Default empty ui-metadata dict
+    outputs = {"outputs": []}
+    if os.path.exists(uimetadata_path):
+        try:
+            outputs = json.loads(
+                open(uimetadata_path, 'r').read())
+            if not outputs.get('outputs', None):
+                outputs['outputs'] = []
+        except json.JSONDecodeError as e:
+            print("Failed to parse json file {}: {}\n"
+                  "This step will not be able to visualize artifacts in the"
+                  " KFP UI".format(uimetadata_path, e))
+
+    pod_name = pod_utils.get_pod_name()
+    namespace = pod_utils.get_namespace()
+    workflow_name = pod_utils.get_workflow_name(pod_name, namespace)
+    html_artifact_entry = [{
+        'type': 'web-app',
+        'storage': 'minio',
+        'source': 'minio://mlpipeline/artifacts/{}/{}/{}'.format(
+            workflow_name, pod_name, artifact_name + '.tgz')
+    }]
+    outputs['outputs'] += html_artifact_entry
+    with open(uimetadata_path, "w") as f:
+        json.dump(outputs, f)
