@@ -272,3 +272,53 @@ def dependencies_detection(nb_graph: nx.DiGraph,
                     'fns_free_variables': fns_free_variables,
                     'parameters': parameters}
         nx.set_node_attributes(nb_graph, {step: new_data})
+
+
+def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
+    """Assign pipeline metrics to specific pipeline steps.
+
+    This assignment follows a similar logic to the detection of `out`
+    dependencies. Starting from a temporary step - child of all the leaf nodes,
+    all the nodes in the pipelines are traversed in reversed topological order.
+    When a step shows one of the metrics as part of its code, then that metric
+    is assigned to the step.
+
+    Args:
+        nb_graph: nx DiGraph with pipeline code blocks
+        pipeline_metrics (dict): a dict of pipeline metrics where the key is
+            the KFP sanitized name and the value the name of the original
+            variable.
+    """
+    # create a temporary step at the end of the pipeline to simplify the
+    # iteration from the leaf steps
+    tmp_step = "_tmp"
+    leaf_steps = graph_utils.get_leaf_nodes(nb_graph)
+    [nb_graph.add_edge(node, tmp_step) for node in leaf_steps]
+
+    metrics_left = set(pipeline_metrics.copy())
+    for anc in graph_utils.get_ordered_ancestors(nb_graph, tmp_step):
+        if not metrics_left:
+            break
+
+        anc_data = nb_graph.nodes(data=True)[anc]
+        anc_source = '\n'.join(anc_data['source'])
+        # get all the marshal candidates from father's source and intersect
+        # with the metrics that have not been matched yet
+        marshal_candidates = kale_ast.get_marshal_candidates(anc_source)
+        assigned_metrics = metrics_left.intersection(marshal_candidates)
+        # Remove the metrics that have already been assigned.
+        metrics_left.difference_update(assigned_metrics)
+        # Generate code to produce the metrics artifact in the current step
+        # generate the code that dumps the pipeline metrics to file
+        template_env = initialize_templating_env()
+        metrics_template = template_env.get_template(
+            'step_metrics_template.jinja2')
+        # need to be a list since it will be treated as a code cell and
+        # passed to the ipykernel
+        metrics_source = metrics_template.render(metrics=assigned_metrics)
+        anc_data['source'].append(metrics_source)
+        # need to have a `metrics` flag set to true in order to set the
+        # metrics output artifact in the pipeline template
+        nx.set_node_attributes(nb_graph, {anc: {'metrics': True}})
+
+    nb_graph.remove_node(tmp_step)

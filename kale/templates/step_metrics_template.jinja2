@@ -1,0 +1,26 @@
+import json
+
+_kfp_metrics_metadata = list()
+_kfp_step_metrics = {
+{% for metric in metrics -%}
+    "{{ metric }}": {{ metric }},
+{% endfor -%}
+}
+
+for name, value in _kfp_step_metrics.items():
+    if not isinstance(value, (int, float)):
+        try:
+            value = float(value)
+        except ValueError:
+            print("Variable {} with type {} not supported as pipeline"
+                  " metric. Can only write `int` or `float` types as"
+                  " pipeline metrics".format(name, type(value)))
+            continue
+    _kfp_metrics_metadata.append({
+                'name': name,
+                'numberValue': value,
+                'format': "RAW",
+            })
+
+with open('/mlpipeline-metrics.json', 'w') as f:
+    json.dump({'metrics': _kfp_metrics_metadata}, f)
