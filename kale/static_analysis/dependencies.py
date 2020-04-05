@@ -274,6 +274,15 @@ def dependencies_detection(nb_graph: nx.DiGraph,
         nx.set_node_attributes(nb_graph, {step: new_data})
 
 
+METRICS_TEMPLATE = '''\
+from kale.utils import kfp_utils as _kale_kfp_utils
+_kale_kfp_metrics = {
+%s
+}
+_kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
+'''
+
+
 def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
     """Assign pipeline metrics to specific pipeline steps.
 
@@ -293,6 +302,8 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
     # iteration from the leaf steps
     tmp_step = "_tmp"
     leaf_steps = graph_utils.get_leaf_nodes(nb_graph)
+    if not leaf_steps:
+        return
     [nb_graph.add_edge(node, tmp_step) for node in leaf_steps]
 
     metrics_left = set(pipeline_metrics.copy())
@@ -309,14 +320,9 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
         # Remove the metrics that have already been assigned.
         metrics_left.difference_update(assigned_metrics)
         # Generate code to produce the metrics artifact in the current step
-        # generate the code that dumps the pipeline metrics to file
-        template_env = initialize_templating_env()
-        metrics_template = template_env.get_template(
-            'step_metrics_template.jinja2')
-        # need to be a list since it will be treated as a code cell and
-        # passed to the ipykernel
-        metrics_source = metrics_template.render(metrics=assigned_metrics)
-        anc_data['source'].append(metrics_source)
+        code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
+            ['"%s": %s' % (x, x) for x in sorted(assigned_metrics)]))
+        anc_data['source'].append(code)
         # need to have a `metrics` flag set to true in order to set the
         # metrics output artifact in the pipeline template
         nx.set_node_attributes(nb_graph, {anc: {'metrics': True}})

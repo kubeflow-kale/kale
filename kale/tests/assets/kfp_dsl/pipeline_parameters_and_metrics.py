@@ -19,31 +19,12 @@ def create_matrix(d1: int, d2: int):
     '''
 
     block3 = '''
-    import json
-
-    _kfp_metrics_metadata = list()
-    _kfp_step_metrics = {
-    "d1": d1,
-    "d2": d2,
+    from kale.utils import kfp_utils as _kale_kfp_utils
+    _kale_kfp_metrics = {
+        "d1": d1,
+        "d2": d2
     }
-
-    for name, value in _kfp_step_metrics.items():
-        if not isinstance(value, (int, float)):
-            try:
-                value = float(value)
-            except ValueError:
-                print("Variable {} with type {} not supported as pipeline"
-                      " metric. Can only write `int` or `float` types as"
-                      " pipeline metrics".format(name, type(value)))
-                continue
-        _kfp_metrics_metadata.append({
-                    'name': name,
-                    'numberValue': value,
-                    'format': "RAW",
-                })
-
-    with open('/mlpipeline-metrics.json', 'w') as f:
-        json.dump({'metrics': _kfp_metrics_metadata}, f)
+    _kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)
     '''
 
     data_saving_block = '''
@@ -88,30 +69,11 @@ def sum_matrix():
     '''
 
     block3 = '''
-    import json
-
-    _kfp_metrics_metadata = list()
-    _kfp_step_metrics = {
-    "result": result,
+    from kale.utils import kfp_utils as _kale_kfp_utils
+    _kale_kfp_metrics = {
+        "result": result
     }
-
-    for name, value in _kfp_step_metrics.items():
-        if not isinstance(value, (int, float)):
-            try:
-                value = float(value)
-            except ValueError:
-                print("Variable {} with type {} not supported as pipeline"
-                      " metric. Can only write `int` or `float` types as"
-                      " pipeline metrics".format(name, type(value)))
-                continue
-        _kfp_metrics_metadata.append({
-                    'name': name,
-                    'numberValue': value,
-                    'format': "RAW",
-                })
-
-    with open('/mlpipeline-metrics.json', 'w') as f:
-        json.dump({'metrics': _kfp_metrics_metadata}, f)
+    _kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)
     '''
 
     # run the code blocks inside a jupyter kernel

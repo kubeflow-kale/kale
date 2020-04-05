@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import json
 import os
-
+import json
 import tempfile
 import importlib.util
 
@@ -21,7 +20,6 @@ from shutil import copyfile
 
 from kfp import Client
 from kfp.compiler import Compiler
-
 from kfp_server_api.rest import ApiException
 
 from kale.utils import utils, pod_utils
@@ -165,3 +163,30 @@ def update_uimetadata(artifact_name,
     outputs['outputs'] += html_artifact_entry
     with open(uimetadata_path, "w") as f:
         json.dump(outputs, f)
+
+
+def generate_mlpipeline_metrics(metrics):
+    """Generate a /mlpipeline-metrics.json file.
+
+    Args:
+        metrics (dict): a dictionary where the key is the metric name and the
+            value is its value.
+    """
+    metadata = list()
+    for name, value in metrics.items():
+        if not isinstance(value, (int, float)):
+            try:
+                value = float(value)
+            except ValueError:
+                print("Variable {} with type {} not supported as pipeline"
+                      " metric. Can only write `int` or `float` types as"
+                      " pipeline metrics".format(name, type(value)))
+                continue
+        metadata.append({
+            'name': name,
+            'numberValue': value,
+            'format': "RAW",
+        })
+
+    with open('/mlpipeline-metrics.json', 'w') as f:
+        json.dump({'metrics': metadata}, f)
