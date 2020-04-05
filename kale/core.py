@@ -27,7 +27,7 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
-from kale.utils import utils
+from kale.utils import utils, graph_utils
 from kale.utils.pod_utils import get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
 from kale.codegen.generate_code import _initialize_templating_env
@@ -135,8 +135,7 @@ class Kale:
             pipeline_metrics_name = "pipeline_metrics"
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
-            leaf_steps = [x for x in pipeline_graph.nodes()
-                          if pipeline_graph.out_degree(x) == 0]
+            leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
             for node in leaf_steps:
                 pipeline_graph.add_edge(node, pipeline_metrics_name)
             # generate the code that dumps the pipeline metrics to file
@@ -164,8 +163,7 @@ class Kale:
             auto_snapshot_name = 'final_auto_snapshot'
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
-            leaf_steps = [x for x in pipeline_graph.nodes()
-                          if pipeline_graph.out_degree(x) == 0]
+            leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
             for node in leaf_steps:
                 pipeline_graph.add_edge(node, auto_snapshot_name)
             data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
