@@ -65,13 +65,13 @@ def sum_matrix():
     '''
 
     block2 = '''
-    result = rnd_matrix.sum()
+    sum_result = rnd_matrix.sum()
     '''
 
     block3 = '''
     from kale.utils import kfp_utils as _kale_kfp_utils
     _kale_kfp_metrics = {
-        "result": result
+        "sum-result": sum_result
     }
     _kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)
     '''

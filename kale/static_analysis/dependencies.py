@@ -306,7 +306,15 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
         return
     [nb_graph.add_edge(node, tmp_step) for node in leaf_steps]
 
-    metrics_left = set(pipeline_metrics.copy())
+    # pipeline_metrics is a dict having sanitized variable names as keys and
+    # the corresponding variable names as values. Here we need to refer to
+    # the sanitized names using the python variables.
+    # XXX: We could change parse_metrics_print_statements() to return the
+    # XXX: reverse dictionary, but that would require changing either
+    # XXX: rpc.nb.get_pipeline_metrics() or change in the JupyterLab Extension
+    # XXX: parsing of the RPC result
+    rev_pipeline_metrics = {v: k for k, v in pipeline_metrics.items()}
+    metrics_left = set(rev_pipeline_metrics.keys())
     for anc in graph_utils.get_ordered_ancestors(nb_graph, tmp_step):
         if not metrics_left:
             break
@@ -321,7 +329,8 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
         metrics_left.difference_update(assigned_metrics)
         # Generate code to produce the metrics artifact in the current step
         code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
-            ['"%s": %s' % (x, x) for x in sorted(assigned_metrics)]))
+            ['"%s": %s' % (rev_pipeline_metrics[x], x)
+             for x in sorted(assigned_metrics)]))
         anc_data['source'].append(code)
         # need to have a `metrics` flag set to true in order to set the
         # metrics output artifact in the pipeline template
