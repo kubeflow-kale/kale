@@ -16,6 +16,7 @@ import os
 import re
 import random
 import string
+import urllib
 
 
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
@@ -38,3 +39,8 @@ def comment_magic_commands(code):
     """Comment the magic commands in a code block."""
     magic_pattern = re.compile(r'^(\s*%%?.*)$', re.MULTILINE)
     return re.sub(magic_pattern, r'#\1', code.strip())
+
+
+def encode_url_component(component: str):
+    """Encode a value so it can safely be used as a URL component."""
+    return urllib.parse.quote(component, safe="")
