@@ -21,6 +21,7 @@ import kubernetes.client as k8s
 import kubernetes.config as k8s_config
 
 from kale.utils.utils import encode_url_component
+from kale.utils import kfp_utils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
@@ -199,8 +200,8 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
     """Take a snapshot of a pipeline step with Rok."""
     from rok_gw_client.client import RokClient
 
-    bucket = "pipelines"
     run_uuid = get_run_uuid()
+    bucket = kfp_utils.get_experiment_from_run_id(run_uuid).name
     obj = "{}-{}".format(pipeline, run_uuid)
     commit_title = "Step: {}".format(step)
     commit_message = "Step '{}' of pipeline run '{}'".format(step, run_uuid)
