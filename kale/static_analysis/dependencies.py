@@ -328,10 +328,11 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
         # Remove the metrics that have already been assigned.
         metrics_left.difference_update(assigned_metrics)
         # Generate code to produce the metrics artifact in the current step
-        code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
-            ['"%s": %s' % (rev_pipeline_metrics[x], x)
-             for x in sorted(assigned_metrics)]))
-        anc_data['source'].append(code)
+        if assigned_metrics:
+            code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
+                ['"%s": %s' % (rev_pipeline_metrics[x], x)
+                 for x in sorted(assigned_metrics)]))
+            anc_data['source'].append(code)
         # need to have a `metrics` flag set to true in order to set the
         # metrics output artifact in the pipeline template
         nx.set_node_attributes(nb_graph, {anc: {'metrics': True}})
