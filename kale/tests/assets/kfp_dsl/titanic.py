@@ -835,6 +835,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('Titanic')
 
     # Submit a pipeline run
-    run_name = 'titanic-ml-rnd_run'
+    from kale.utils.kfp_utils import generate_run_name
+    run_name = generate_run_name('titanic-ml-rnd')
     run_result = client.run_pipeline(
         experiment.id, run_name, pipeline_filename, {})
