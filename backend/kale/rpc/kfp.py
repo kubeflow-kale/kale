@@ -15,6 +15,8 @@
 import kfp
 from kfp_server_api.rest import ApiException
 
+from kale.utils import kfp_utils
+
 _client = None
 
 
@@ -86,7 +88,7 @@ def run_pipeline(request, pipeline_metadata, pipeline_package_path=None,
     """Run a pipeline."""
     client = _get_client(pipeline_metadata.get("kfp_host", None))
     experiment = client.create_experiment(pipeline_metadata["experiment_name"])
-    run_name = pipeline_metadata["pipeline_name"] + "_run"
+    run_name = kfp_utils.generate_run_name(pipeline_metadata["pipeline_name"])
     run = client.run_pipeline(experiment.id, run_name,
                               pipeline_package_path=pipeline_package_path,
                               pipeline_id=pipeline_id)
