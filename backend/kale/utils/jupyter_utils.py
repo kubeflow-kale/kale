@@ -14,14 +14,12 @@
 
 import os
 import sys
-import json
 import time
 import signal
 import nbformat
 import threading
 
 from queue import Empty
-from kale.utils import pod_utils
 from jupyter_client.kernelspec import get_kernel_spec
 from kale.utils.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
@@ -144,41 +142,6 @@ def generate_html_output(outputs):
                 html_body += javascript_html_template.format(
                     data['application/javascript'])
     return html_body
-
-
-def update_uimetadata(artifact_name,
-                      uimetadata_path='/mlpipeline-ui-metadata.json'):
-    """Update ui-metadata dictionary with a new web-app entry.
-
-    Args:
-        artifact_name: Name of the artifact
-        uimetadata_path: path to mlpipeline-ui-metadata.json
-    """
-    # Default empty ui-metadata dict
-    outputs = {"outputs": []}
-    if os.path.exists(uimetadata_path):
-        try:
-            outputs = json.loads(
-                open(uimetadata_path, 'r').read())
-            if not outputs.get('outputs', None):
-                outputs['outputs'] = []
-        except json.JSONDecodeError as e:
-            print("Failed to parse json file {}: {}\n"
-                  "This step will not be able to visualize artifacts in the"
-                  " KFP UI".format(uimetadata_path, e))
-
-    pod_name = pod_utils.get_pod_name()
-    namespace = pod_utils.get_namespace()
-    workflow_name = pod_utils.get_workflow_name(pod_name, namespace)
-    html_artifact_entry = [{
-        'type': 'web-app',
-        'storage': 'minio',
-        'source': 'minio://mlpipeline/artifacts/{}/{}/{}'.format(
-            workflow_name, pod_name, artifact_name + '.tgz')
-    }]
-    outputs['outputs'] += html_artifact_entry
-    with open(uimetadata_path, "w") as f:
-        json.dump(outputs, f)
 
 
 def process_outputs(cells):

@@ -18,6 +18,7 @@ import autopep8
 
 import networkx as nx
 
+from kale.utils import graph_utils
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
 
@@ -178,8 +179,7 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_components,
                       metadata):
     """Use the pipeline template to generate Python code."""
     # All the Pipeline steps that do not have children
-    leaf_steps = [x for x in nb_graph.nodes()
-                  if nb_graph.out_degree(x) == 0]
+    leaf_steps = graph_utils.get_leaf_nodes(nb_graph)
 
     # create a dict with step names and their parameters
     all_step_parameters = {step: sorted(nb_graph.nodes(data=True)[step]
