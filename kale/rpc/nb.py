@@ -91,6 +91,14 @@ def compile_notebook(request, source_notebook_path,
             "pipeline_metadata": instance.pipeline_metadata}
 
 
+def validate_notebook(request, source_notebook_path,
+                      notebook_metadata_overrides=None):
+    """Validate notebook metadata."""
+    # Notebook metadata is validated at class instantiation
+    Kale(source_notebook_path, notebook_metadata_overrides)
+    return True
+
+
 def get_pipeline_parameters(request, source_notebook_path):
     """Get the pipeline parameters tagged in the notebook."""
     # read notebook
