@@ -13,13 +13,10 @@
 #  limitations under the License.
 
 import os
-import copy
-import json
 import pprint
 import tempfile
 
 import logging
-import subprocess
 import logging.handlers
 
 import nbformat as nb
@@ -31,16 +28,9 @@ from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils import utils
-from kale.utils.pod_utils import get_namespace, get_docker_base_image
+from kale.utils.pod_utils import get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
 from kale.codegen.generate_code import _initialize_templating_env
-
-NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
-This is a snapshot of notebook {} in namespace {}.
-
-This snapshot was created by Kale in order to clone the volumes of the notebook
-and use them to spawn a Kubeflow pipeline.\
-"""
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
 
@@ -102,95 +92,6 @@ class Kale:
 
         # mute other loggers
         logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
-
-        # Replace all requested cloned volumes with the snapshotted PVCs
-        volumes = self.pipeline_metadata['volumes'][:] \
-            if self.pipeline_metadata['volumes'] else []
-        self.pipeline_metadata['volumes'] = self.create_cloned_volumes(volumes)
-
-    def run_cmd(self, cmd):
-        """Run a bash command.
-
-        Args:
-            cmd (str): command to be run
-
-        Returns (str): stdout of the command
-        """
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        exit_code = p.wait()
-        out = p.stdout.read()
-        err = p.stderr.read()
-        if exit_code:
-            msg = "Command '{}' failed with exit code: {}".format(cmd,
-                                                                  exit_code)
-            self.logger.error("{}:{}".format(msg, err))
-            raise RuntimeError(msg)
-
-        return out
-
-    def _get_cloned_volume(self, volume, snapshot_volumes):
-        for snap in snapshot_volumes:
-            if snap['mount_point'] == volume['mount_point']:
-                volume = copy.deepcopy(volume)
-                volume['type'] = 'new_pvc'
-                volume['annotations'] = [{'key': 'rok/origin',
-                                          'value': snap['rok_url']}]
-                return volume
-
-        msg = "Volume '{}' not found in notebook snapshot"
-        msg = msg.format(volume['name'])
-        raise ValueError(msg)
-
-    def create_cloned_volumes(self, volumes):
-        """Use Rok to take snapshots of volumes.
-
-        Args:
-            volumes (list): a list of volumes
-
-        Returns: Same list of volumes replacing the 'cloned' ones with
-            'new_pvc' ones setting the corresponding 'rok/origin' annotation
-        """
-        if not any(v['type'] == 'clone' for v in volumes):
-            return volumes
-
-        # FIXME: Make sure the bucket exists
-        bucket_name = "notebooks"
-        hostname = os.getenv("HOSTNAME")
-        # FIXME: Import the Rok client instead of spawning external commands
-        namespace = get_namespace()
-        commit_title = "Snapshot of notebook {}".format(hostname)
-        commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
-                                                                 namespace)
-        output_cmd = (
-            "rok-gw -o json object-register jupyter"
-            + " '{}' '{}' --no-interactive".format(bucket_name, hostname)
-            + " --param namespace='{}'".format(namespace)
-            + " --param commit_title='{}'".format(commit_title)
-            + " --param commit_message='{}'".format(commit_message))
-        output = self.run_cmd(output_cmd)
-
-        output = json.loads(output)
-        snapshot_volumes = output['result']['version']['group_members']
-
-        # Retrieve the mount point of each snapshotted volume
-        for v in snapshot_volumes:
-            obj_name = v["object_name"]
-            version_name = v["version_name"]
-            output_cmd = (
-                "rok-gw -o json object-show '{}'".format(bucket_name)
-                + " '{}' --version '{}'".format(obj_name, version_name)
-                + " --detail")
-            output = self.run_cmd(output_cmd)
-            v["mount_point"] = json.loads(output)["metadata"]["mountpoint"]
-
-        _volumes = []
-        for volume in volumes or []:
-            if volume['type'] == 'clone':
-                volume = self._get_cloned_volume(volume, snapshot_volumes)
-            _volumes.append(volume)
-
-        return _volumes
 
     def detect_environment(self):
         """Detect local confs to preserve reproducibility in pipeline steps."""
