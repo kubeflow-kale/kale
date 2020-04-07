@@ -272,3 +272,69 @@ def dependencies_detection(nb_graph: nx.DiGraph,
                     'fns_free_variables': fns_free_variables,
                     'parameters': parameters}
         nx.set_node_attributes(nb_graph, {step: new_data})
+
+
+METRICS_TEMPLATE = '''\
+from kale.utils import kfp_utils as _kale_kfp_utils
+_kale_kfp_metrics = {
+%s
+}
+_kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
+'''
+
+
+def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
+    """Assign pipeline metrics to specific pipeline steps.
+
+    This assignment follows a similar logic to the detection of `out`
+    dependencies. Starting from a temporary step - child of all the leaf nodes,
+    all the nodes in the pipelines are traversed in reversed topological order.
+    When a step shows one of the metrics as part of its code, then that metric
+    is assigned to the step.
+
+    Args:
+        nb_graph: nx DiGraph with pipeline code blocks
+        pipeline_metrics (dict): a dict of pipeline metrics where the key is
+            the KFP sanitized name and the value the name of the original
+            variable.
+    """
+    # create a temporary step at the end of the pipeline to simplify the
+    # iteration from the leaf steps
+    tmp_step = "_tmp"
+    leaf_steps = graph_utils.get_leaf_nodes(nb_graph)
+    if not leaf_steps:
+        return
+    [nb_graph.add_edge(node, tmp_step) for node in leaf_steps]
+
+    # pipeline_metrics is a dict having sanitized variable names as keys and
+    # the corresponding variable names as values. Here we need to refer to
+    # the sanitized names using the python variables.
+    # XXX: We could change parse_metrics_print_statements() to return the
+    # XXX: reverse dictionary, but that would require changing either
+    # XXX: rpc.nb.get_pipeline_metrics() or change in the JupyterLab Extension
+    # XXX: parsing of the RPC result
+    rev_pipeline_metrics = {v: k for k, v in pipeline_metrics.items()}
+    metrics_left = set(rev_pipeline_metrics.keys())
+    for anc in graph_utils.get_ordered_ancestors(nb_graph, tmp_step):
+        if not metrics_left:
+            break
+
+        anc_data = nb_graph.nodes(data=True)[anc]
+        anc_source = '\n'.join(anc_data['source'])
+        # get all the marshal candidates from father's source and intersect
+        # with the metrics that have not been matched yet
+        marshal_candidates = kale_ast.get_marshal_candidates(anc_source)
+        assigned_metrics = metrics_left.intersection(marshal_candidates)
+        # Remove the metrics that have already been assigned.
+        metrics_left.difference_update(assigned_metrics)
+        # Generate code to produce the metrics artifact in the current step
+        if assigned_metrics:
+            code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
+                ['"%s": %s' % (rev_pipeline_metrics[x], x)
+                 for x in sorted(assigned_metrics)]))
+            anc_data['source'].append(code)
+        # need to have a `metrics` flag set to true in order to set the
+        # metrics output artifact in the pipeline template
+        nx.set_node_attributes(nb_graph, {anc: {'metrics': True}})
+
+    nb_graph.remove_node(tmp_step)

@@ -72,3 +72,18 @@ def get_ordered_ancestors(g: nx.DiGraph, node):
                 ancs.append(p)
                 q.append(p)
     return ancs
+
+
+def get_leaf_nodes(g: nx.DiGraph):
+    """Get the list of leaf nodes of a DAG.
+
+    A node is considered a leaf when its in-degree is > 0 and its out-degree
+    is 0.
+
+    Args:
+        g (nx.DiGraph): A DAG representing a pipeline
+
+    Returns (list): A list of leaf nodes.
+    """
+    return [x for x in g.nodes()
+            if g.out_degree(x) == 0 and g.in_degree(x) > 0]

@@ -27,10 +27,9 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
-from kale.utils import utils
+from kale.utils import utils, graph_utils
 from kale.utils.pod_utils import get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
-from kale.codegen.generate_code import _initialize_templating_env
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
 
@@ -127,45 +126,20 @@ class Kale:
         pipeline_metrics = ast.parse_metrics_print_statements(
             pipeline_metrics_source)
 
-        # if there are some pipeline metrics, create an additional step at the
-        # end of the pipeline to log them.
-        # By adding this step before dependencies detection, we make sure that
-        # the necessary variables are marshalled at the beginning of the step.
-        if len(pipeline_metrics):
-            pipeline_metrics_name = "pipeline_metrics"
-            # add a link from all the last steps of the pipeline to
-            # the final auto snapshot one.
-            leaf_steps = [x for x in pipeline_graph.nodes()
-                          if pipeline_graph.out_degree(x) == 0]
-            for node in leaf_steps:
-                pipeline_graph.add_edge(node, pipeline_metrics_name)
-            # generate the code that dumps the pipeline metrics to file
-            template_env = _initialize_templating_env()
-            metrics_template = template_env.get_template(
-                'pipeline_metrics_template.jinja2')
-            # need to be a list since it will be treated as a code cell and
-            # passed to the ipykernel
-            metrics_source = [metrics_template.render(
-                pipeline_metrics=pipeline_metrics)]
-            data = {pipeline_metrics_name: {'source': metrics_source,
-                                            'ins': [],
-                                            'outs': []}}
-            nx.set_node_attributes(pipeline_graph, data)
-
         # run static analysis over the source code
         dependencies.dependencies_detection(
             pipeline_graph,
             pipeline_parameters=pipeline_parameters_dict,
             imports_and_functions=imports_and_functions
         )
+        dependencies.assign_metrics(pipeline_graph, pipeline_metrics)
 
         # add an empty step at the end of the pipeline for final snapshot
         if self.auto_snapshot:
             auto_snapshot_name = 'final_auto_snapshot'
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
-            leaf_steps = [x for x in pipeline_graph.nodes()
-                          if pipeline_graph.out_degree(x) == 0]
+            leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
             for node in leaf_steps:
                 pipeline_graph.add_edge(node, auto_snapshot_name)
             data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}

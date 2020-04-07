@@ -106,7 +106,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {%- if auto_snapshot %}
     output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     {%- endif %}
-    {%- if name == "pipeline_metrics" %}
+    {%- if nb_graph.nodes(data=True)[name].get("metrics", false) %}
     output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
     {%- endif %}
     {%- if name != "final_auto_snapshot" and name != "pipeline_metrics" %}
