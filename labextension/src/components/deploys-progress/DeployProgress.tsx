@@ -252,6 +252,23 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     );
   };
 
+  let validationTpl;
+  if (props.notebookValidation === true) {
+    validationTpl = (
+      <React.Fragment>
+        <SuccessIcon style={{ color: color.success, height: 18, width: 18 }} />
+      </React.Fragment>
+    );
+  } else if (props.notebookValidation === false) {
+    validationTpl = (
+      <React.Fragment>
+        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+      </React.Fragment>
+    );
+  } else {
+    validationTpl = <LinearProgress color="primary" />;
+  }
+
   let compileTpl;
   if (props.compiledPath && props.compiledPath !== 'error') {
     compileTpl = (
@@ -336,6 +353,16 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           onClick={_ => props.onRemove()}
         />
       </div>
+
+      {props.showValidationProgress ? (
+        <div className="deploy-progress-row">
+          <div className="deploy-progress-label">Validating Notebook...</div>
+          <div className="deploy-progress-value">
+            {validationTpl}
+            {getWarningBadge('Validation Warnings', props.validationWarnings)}
+          </div>
+        </div>
+      ) : null}
 
       {props.showSnapshotProgress ? (
         <div className="deploy-progress-row">

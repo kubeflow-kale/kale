@@ -21,6 +21,9 @@ import { IDocumentManager } from '@jupyterlab/docmanager';
 import { DeployProgress } from './DeployProgress';
 
 export type DeployProgressState = {
+  showValidationProgress?: boolean;
+  notebookValidation?: boolean;
+  validationWarnings?: boolean;
   showSnapshotProgress?: boolean;
   task?: any;
   snapshotWarnings?: any;
@@ -53,6 +56,9 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
         return (
           <DeployProgress
             key={`d-${index}`}
+            showValidationProgress={dpState.showValidationProgress}
+            notebookValidation={dpState.notebookValidation}
+            validationWarnings={dpState.validationWarnings}
             showSnapshotProgress={dpState.showSnapshotProgress}
             task={dpState.task}
             snapshotWarnings={dpState.snapshotWarnings}

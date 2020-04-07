@@ -951,6 +951,28 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata.docker_image = DefaultState.metadata.docker_image;
     }
 
+    const nbFilePath = this.state.activeNotebook.context.path;
+
+    // VALIDATE METADATA
+    this.updateDeployProgress(_deployIndex, {
+      showValidationProgress: true,
+    });
+    const validateNotebookArgs = {
+      source_notebook_path: nbFilePath,
+      notebook_metadata_overrides: metadata,
+    };
+    const validateNotebook = await this.executeRpcAndShowRPCError(
+      'nb.validate_notebook',
+      validateNotebookArgs,
+    );
+    if (!validateNotebook) {
+      this.updateDeployProgress(_deployIndex, { notebookValidation: false });
+      this.setState({ runDeployment: false });
+      return;
+    }
+    this.updateDeployProgress(_deployIndex, { notebookValidation: true });
+
+    // SNAPSHOT VOLUMES
     if (
       metadata.volumes.filter((v: IVolumeMetadata) => v.type === 'clone')
         .length > 0
@@ -973,8 +995,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     // after parsing and validating the metadata, show warnings (if necessary)
     const compileWarnings = this.getCompileWarnings(metadata);
-
-    const nbFilePath = this.state.activeNotebook.context.path;
 
     // CREATE PIPELINE
     this.updateDeployProgress(_deployIndex, {
