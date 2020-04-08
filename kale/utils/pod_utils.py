@@ -20,6 +20,9 @@ import tabulate
 import kubernetes.client as k8s
 import kubernetes.config as k8s_config
 
+from kale.utils.utils import encode_url_component
+from kale.utils import kfp_utils
+
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
 
@@ -197,14 +200,14 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
     """Take a snapshot of a pipeline step with Rok."""
     from rok_gw_client.client import RokClient
 
-    bucket = "pipelines"
     run_uuid = get_run_uuid()
+    bucket = kfp_utils.get_experiment_from_run_id(run_uuid).name
     obj = "{}-{}".format(pipeline, run_uuid)
     commit_title = "Step: {}".format(step)
     commit_message = "Step '{}' of pipeline run '{}'".format(step, run_uuid)
     environment = json.dumps({"KALE_PIPELINE_STEP": step,
                               "KALE_NOTEBOOK_PATH": nb_path})
-    metadata = json.dumps({"environment": environment})
+    metadata = json.dumps({"environment": environment, "kfp_runid": run_uuid})
     params = {"pod": get_pod_name(),
               "metadata": metadata,
               "default_container": "main",
@@ -221,7 +224,9 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
 
     # FIXME: How do we retrieve the base URL of the ROK UI?
     version = task_info["task"]["result"]["event"]["version"]
-    url_path = "/rok/buckets/%s/files/%s/versions/%s" % (bucket, obj, version)
+    url_path = ("/rok/buckets/%s/files/%s/versions/%s"
+                % (encode_url_component(bucket), encode_url_component(obj),
+                   encode_url_component(version)))
     print("\n%s\n" % url_path)
 
     md_source = ("# Rok autosnapshot\n"

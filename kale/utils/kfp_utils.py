@@ -190,3 +190,22 @@ def generate_mlpipeline_metrics(metrics):
 
     with open('/mlpipeline-metrics.json', 'w') as f:
         json.dump({'metrics': metadata}, f)
+
+
+def get_experiment_from_run_id(run_id: str):
+    """Retrieve the experiment in which a run belongs.
+
+    Returns: ApiExperiment - the KFP Experiment which owns the run
+    """
+    client = _get_kfp_client()
+    run = client.runs.get_run(run_id=run_id).run
+    experiment_id = None
+    type_experiment = client.api_models.ApiResourceType.EXPERIMENT
+    relationship_owner = client.api_models.ApiRelationship.OWNER
+    for ref in run.resource_references:
+        if (ref.relationship == relationship_owner
+                and ref.key.type == type_experiment):
+            experiment_id = ref.key.id
+    # NOTE: It is safe to assume that a resource reference of type EXPERIMENT
+    # exists, as well as an experiment with that ID
+    return client.experiments.get_experiment(id=experiment_id)
