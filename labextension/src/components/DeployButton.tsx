@@ -75,6 +75,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = pr
             aria-label="split button"
           >
             <Button
+              color="primary"
               style={{ width: '100%' }}
               onClick={_ => props.handleClick(options[selectedIndex].value)}
             >
@@ -97,6 +98,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = pr
             </Button>
           </ButtonGroup>
           <Popper
+            color="primary"
             style={{ zIndex: 2 }}
             open={open}
             anchorEl={anchorRef.current}

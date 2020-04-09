@@ -22,7 +22,6 @@ import {
   IObservableUndoableList,
 } from '@jupyterlab/observables';
 import { isCodeCellModel, CodeCellModel, ICellModel } from '@jupyterlab/cells';
-import Switch from 'react-switch';
 import CellUtils from '../../utils/CellUtils';
 import TagsUtils from '../../utils/TagsUtils';
 import { InlineMetadata } from './InlineMetadata';
@@ -31,6 +30,7 @@ import {
   IProps as EditorProps,
 } from './CellMetadataEditor';
 import { CellMetadataContext } from './CellMetadataContext';
+import { Switch } from '@material-ui/core';
 
 interface IProps {
   notebook: NotebookPanel;
@@ -286,16 +286,11 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           <div className={'switch-label'}>Enable</div>
           <Switch
             checked={this.state.checked}
-            onChange={c => this.toggleGlobalKaleSwitch(c)}
-            onColor="#599EF0"
-            onHandleColor="#477EF0"
-            handleDiameter={18}
-            uncheckedIcon={false}
-            checkedIcon={false}
-            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
-            activeBoxShadow="0px 0px 1px 7px rgba(0, 0, 0, 0.2)"
-            height={10}
-            width={20}
+            onChange={c => this.toggleGlobalKaleSwitch(c.target.checked)}
+            color="primary"
+            name="enableKale"
+            inputProps={{ 'aria-label': 'primary checkbox' }}
+            classes={{ root: 'material-switch' }}
           />
         </div>
         <div className="hidden">

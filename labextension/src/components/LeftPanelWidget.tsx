@@ -49,6 +49,8 @@ import {
 import { RESERVED_CELL_NAMES } from './cell-metadata/CellMetadataEditor';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
+import { ThemeProvider } from '@material-ui/core/styles';
+import { theme } from '../Theme';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -1442,74 +1444,94 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     );
 
     return (
-      <div className={'kubeflow-widget'} key="kale-widget">
-        <div className={'kubeflow-widget-content'}>
-          <div>
-            <p
-              style={{ fontSize: 'var(--jp-ui-font-size3)' }}
-              className="kale-header"
-            >
-              Kale Deployment Panel {this.state.isEnabled}
-            </p>
-          </div>
-
-          <div className="kale-component">
-            <InlineCellsMetadata
-              onMetadataEnable={this.onMetadataEnable}
-              notebook={this.state.activeNotebook}
-              activeCellIndex={this.state.activeCellIndex}
-            />
-          </div>
-
-          <div
-            className={
-              'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
-            }
-          >
+      <ThemeProvider theme={theme}>
+        <div className={'kubeflow-widget'} key="kale-widget">
+          <div className={'kubeflow-widget-content'}>
             <div>
-              <p className="kale-header">Pipeline Metadata</p>
+              <p
+                style={{
+                  fontSize: 'var(--jp-ui-font-size3)',
+                  color: theme.kale.headers.main,
+                }}
+                className="kale-header"
+              >
+                Kale Deployment Panel {this.state.isEnabled}
+              </p>
             </div>
 
-            <div className={'input-container'}>
-              {experiment_name_input}
-              {pipeline_name_input}
-              {pipeline_desc_input}
+            <div className="kale-component">
+              <InlineCellsMetadata
+                onMetadataEnable={this.onMetadataEnable}
+                notebook={this.state.activeNotebook}
+                activeCellIndex={this.state.activeCellIndex}
+              />
+            </div>
+
+            <div
+              className={
+                'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
+              }
+            >
+              <div>
+                <p
+                  className="kale-header"
+                  style={{ color: theme.kale.headers.main }}
+                >
+                  Pipeline Metadata
+                </p>
+              </div>
+
+              <div className={'input-container'}>
+                {experiment_name_input}
+                {pipeline_name_input}
+                {pipeline_desc_input}
+              </div>
+            </div>
+
+            <div className={this.state.isEnabled ? '' : 'hidden'}>
+              <div className="kale-component" key="kale-component-volumes">
+                <div className="kale-header-switch">
+                  <p
+                    className="kale-header"
+                    style={{ color: theme.kale.headers.main }}
+                  >
+                    Volumes
+                  </p>
+                </div>
+                {volsPanel}
+              </div>
+            </div>
+
+            <div
+              className={
+                'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
+              }
+            >
+              <CollapsablePanel
+                title={'Advanced Settings'}
+                dockerImageValue={this.state.metadata.docker_image}
+                dockerImageDefaultValue={DefaultState.metadata.docker_image}
+                dockerChange={this.updateDockerImage}
+                debug={this.state.deployDebugMessage}
+                changeDebug={this.changeDeployDebugMessage}
+              />
             </div>
           </div>
-
-          <div className={this.state.isEnabled ? '' : 'hidden'}>
-            {volsPanel}
-          </div>
-
           <div
-            className={
-              'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
-            }
+            className={this.state.isEnabled ? '' : 'hidden'}
+            style={{ marginTop: 'auto' }}
           >
-            <CollapsablePanel
-              title={'Advanced Settings'}
-              dockerImageValue={this.state.metadata.docker_image}
-              dockerImageDefaultValue={DefaultState.metadata.docker_image}
-              dockerChange={this.updateDockerImage}
-              debug={this.state.deployDebugMessage}
-              changeDebug={this.changeDeployDebugMessage}
+            <DeploysProgress
+              deploys={this.state.deploys}
+              onPanelRemove={this.onPanelRemove}
+            />
+            <SplitDeployButton
+              running={this.state.runDeployment}
+              handleClick={this.activateRunDeployState}
             />
           </div>
         </div>
-        <div
-          className={this.state.isEnabled ? '' : 'hidden'}
-          style={{ marginTop: 'auto' }}
-        >
-          <DeploysProgress
-            deploys={this.state.deploys}
-            onPanelRemove={this.onPanelRemove}
-          />
-          <SplitDeployButton
-            running={this.state.runDeployment}
-            handleClick={this.activateRunDeployState}
-          />
-        </div>
-      </div>
+      </ThemeProvider>
     );
   }
 }

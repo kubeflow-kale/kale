@@ -26,6 +26,7 @@ import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@material-ui/icons/Close';
 import ColorUtils from './ColorUtils';
 import { CellMetadataContext } from './CellMetadataContext';
+import { IconButton } from '@material-ui/core';
 
 const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
@@ -79,14 +80,14 @@ type BlockDependencyChoice = { value: string; color: string };
 interface IState {
   // used to store the closest preceding block name. Used in case the current
   // block name is empty, to suggest merging to the previous one.
-  previousBlockName?: string;
+  previousStepName?: string;
   stepNameErrorMsg?: string;
   // a list of blocks that the current step can be dependent on.
   blockDependenciesChoices?: BlockDependencyChoice[];
 }
 
 const DefaultState: IState = {
-  previousBlockName: null,
+  previousStepName: null,
   stepNameErrorMsg: STEP_NAME_ERROR_MSG,
   blockDependenciesChoices: [],
 };
@@ -191,7 +192,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       .filter(
         el => !RESERVED_CELL_NAMES.includes(el) && !(el === props.stepName),
       )
-      .map(name => ({ value: name, color: `#${this.getColor(name)}` }));
+      .map(name => ({ value: name, color: `#${ColorUtils.getColor(name)}` }));
 
     if (this.isEqual(state.blockDependenciesChoices, dependencyChoices)) {
       return null;
@@ -210,11 +211,11 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       props.notebook.content,
       this.context.activeCellIndex,
     );
-    if (prevBlockName === this.state.previousBlockName) {
+    if (prevBlockName === this.state.previousStepName) {
       return null;
     }
     return {
-      previousBlockName: prevBlockName,
+      previousStepName: prevBlockName,
     };
   }
 
@@ -252,10 +253,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     );
   };
 
-  getColor(name: string) {
-    return ColorUtils.getColor(name);
-  }
-
   /**
    * Function called before updating the value of the block name input text
    * field. It acts as a validator.
@@ -273,10 +270,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     return false;
   };
 
-  getPrevBlockNotice = () => {
-    return this.state.previousBlockName && this.props.stepName === ''
-      ? 'Leave step name empty to merge code to block ' +
-          this.state.previousBlockName
+  getPrevStepNotice = () => {
+    return this.state.previousStepName && this.props.stepName === ''
+      ? `Leave the step name empty to merge the cell to step '${this.state.previousStepName}'`
       : null;
   };
 
@@ -291,11 +287,11 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName)
       ? this.props.stepName
       : 'step';
+    const cellColor = this.props.stepName
+      ? `#${ColorUtils.getColor(this.props.stepName)}`
+      : 'transparent';
 
-    const cellTypeHelperText =
-      RESERVED_CELL_NAMES_HELP_TEXT[this.props.stepName] || null;
-
-    const prevBlockNotice = this.getPrevBlockNotice();
+    const prevStepNotice = this.getPrevStepNotice();
 
     return (
       <React.Fragment>
@@ -313,21 +309,16 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                 'kale-cell-metadata-editor' +
                 (this.context.isEditorVisible ? '' : ' hidden')
               }
+              style={{ borderLeft: `2px solid ${cellColor}` }}
             >
-              <button
-                className="kale-editor-close-btn"
-                onClick={() => this.closeEditor()}
-              >
-                <CloseIcon />
-              </button>
               <MaterialSelect
                 updateValue={this.updateCurrentCellType}
                 values={CELL_TYPES}
                 value={cellType}
                 label={'Cell type'}
                 index={0}
-                variant="standard"
-                helperText={cellTypeHelperText}
+                variant="outlined"
+                style={{ width: '30%' }}
               />
 
               {cellType === 'step' ? (
@@ -337,9 +328,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                   value={this.props.stepName || ''}
                   regex={'^([_a-z]([_a-z0-9]*)?)?$'}
                   regexErrorMsg={this.state.stepNameErrorMsg}
-                  helperText={prevBlockNotice}
-                  variant="standard"
+                  variant="outlined"
                   onBeforeUpdate={this.onBeforeUpdate}
+                  style={{ width: '30%' }}
                 />
               ) : (
                 ''
@@ -351,12 +342,28 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                   }
                   updateSelected={this.updatePrevBlocksNames}
                   options={this.state.blockDependenciesChoices}
-                  variant="standard"
+                  variant="outlined"
                   selected={this.props.stepDependencies || []}
+                  style={{ width: '35%' }}
                 />
               ) : (
                 ''
               )}
+
+              <IconButton
+                aria-label="delete"
+                onClick={() => this.closeEditor()}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </div>
+            <div
+              className={
+                'kale-cell-metadata-editor-helper-text' +
+                (this.context.isEditorVisible ? '' : ' hidden')
+              }
+            >
+              <p>{prevStepNotice}</p>
             </div>
           </div>
         </div>

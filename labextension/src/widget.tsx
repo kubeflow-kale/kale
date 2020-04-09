@@ -176,7 +176,7 @@ async function activate(
       />,
     );
     widget.id = 'kubeflow-kale/kubeflowDeployment';
-    widget.title.iconClass = 'jp-kubeflow-logo jp-SideBar-tabIcon';
+    widget.title.iconClass = 'jp-kale-logo jp-SideBar-tabIcon';
     widget.title.caption = 'Kubeflow Pipelines Deployment Panel';
 
     restorer.add(widget, widget.id);
