@@ -3,15 +3,6 @@ __pycache__/
 .pytest_cache/
 .idea/
 
-data/
-base_notebooks/
-
-todos.md
-
-
-pipeline_code.py
-
-
 *.pyc
 
 # Setuptools distribution folder.
@@ -23,11 +14,13 @@ build/
 
 _private/
 
-# do not track auto generated kfp code
-*.kfp.py
-
 # for jupyter lab extension
 *.bundle.*
 lib/
 node_modules/
 .DS_Store
+
+yarn-error.log
+*.tsbuildinfo
+package-lock.json
+

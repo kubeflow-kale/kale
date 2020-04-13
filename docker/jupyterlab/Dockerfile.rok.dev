@@ -29,23 +29,15 @@ RUN pip3 install --upgrade pip && \
 ARG KALE_BRANCH="master"
 WORKDIR /
 RUN rm -rf /kale && \
-    git clone -b ${KALE_BRANCH} https://github.com/kubeflow-kale/kale && \
-    cd /kale && \
-    pip3 install -U . && \
-    cd / && \
-    rm -rf /kale
+    git clone -b ${KALE_BRANCH} https://github.com/kubeflow-kale/kale
 
-# Install JupyterLab Extension from KALE_EXT_BRANCH (defaults to "master")
-ARG KALE_EXT_BRANCH="master"
-WORKDIR /
-RUN rm -rf /jupyterlab-kubeflow-kale && \
-    git clone -b ${KALE_EXT_BRANCH} https://github.com/kubeflow-kale/jupyterlab-kubeflow-kale && \
-    cd /jupyterlab-kubeflow-kale && \
-    jlpm install && \
+WORKDIR /kale/backend
+RUN pip3 install -U .
+
+WORKDIR /kale/labextension
+RUN jlpm install && \
     jlpm run build && \
-    jupyter labextension install . && \
-    cd / && \
-    rm -rf /jupyterlab-kubeflow-kale
+    jupyter labextension install .
 
 RUN jupyter lab build --dev-build=False
 

@@ -15,18 +15,10 @@
 from setuptools import setup
 
 
-# read the contents of README file
-from os import path
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
-
 setup(
     name='kubeflow-kale',
     version='0.4.0',
     description='Convert JupyterNotebooks to Kubeflow Pipelines deployments',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
     url='https://github.com/kubeflow-kale/kale',
     author='Stefano Fioravanzo',
     author_email='stefano.fioravanzo@gmail.com',
