@@ -6,8 +6,8 @@ from kubernetes import client as k8s_client
 
 def loaddata():
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -68,8 +68,8 @@ def datapreprocessing():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -192,8 +192,8 @@ def featureengineering():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -351,8 +351,8 @@ def decisiontree():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -408,8 +408,8 @@ def svm():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -465,8 +465,8 @@ def naivebayes():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -522,8 +522,8 @@ def logisticregression():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -579,8 +579,8 @@ def randomforest():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -639,8 +639,8 @@ def results():
     '''
 
     block1 = '''
-    import numpy as np 
-    import pandas as pd 
+    import numpy as np
+    import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
     from matplotlib import style
@@ -658,9 +658,9 @@ def results():
 
     block2 = '''
     results = pd.DataFrame({
-        'Model': ['Support Vector Machines', 'logistic Regression', 
+        'Model': ['Support Vector Machines', 'logistic Regression',
                   'Random Forest', 'Naive Bayes', 'Decision Tree'],
-        'Score': [acc_linear_svc, acc_log, 
+        'Score': [acc_linear_svc, acc_log,
                   acc_random_forest, acc_gaussian, acc_decision_tree]})
     result_df = results.sort_values(by='Score', ascending=False)
     result_df = result_df.set_index('Score')
@@ -841,7 +841,7 @@ if __name__ == "__main__":
     # Get or create an experiment and submit a pipeline run
     import kfp
     client = kfp.Client()
-    experiment = client.create_experiment('Titanic')
+    experiment = client.create_experiment('titanic')
 
     # Submit a pipeline run
     from kale.utils.kfp_utils import generate_run_name

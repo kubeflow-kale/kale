@@ -40,9 +40,10 @@ KALE_STEP_NAME_REGEX = r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
 KALE_NAME_MSG = ("must consist of lower case alphanumeric characters"
                  " or '-', and must start and end with an alphanumeric"
                  " character.")
-K8S_VALID_NAME_REGEX = r'^[a-z]([a-z0-9-.]*[a-z0-9])?$'
-K8S_NAME_MSG = ("must consist of lower case alphanumeric characters,"
-                " '-' or '.', and must start and end with a character.")
+K8S_VALID_NAME_REGEX = r'^[a-z]([a-z0-9-]*[a-z0-9])?$'
+K8S_NAME_MSG = ("must consist of lower case alphanumeric characters or"
+                " '-', and must start with a lowercase character and end with"
+                " a lowercase alphanumeric character.")
 VOLUME_TYPES = ('pv', 'pvc', 'new_pvc', 'clone')
 VOLUME_REQUIRED_FIELDS = ('name', 'annotations', 'size', 'type', 'mount_point')
 
@@ -66,6 +67,9 @@ def parse_metadata(notebook_metadata):
 
     metadata = copy.deepcopy(DEFAULT_METADATA)
     metadata.update(validated_notebook_metadata)
+
+    if not re.match(K8S_VALID_NAME_REGEX, metadata['experiment_name']):
+        raise ValueError("Experiment name  {}".format(K8S_NAME_MSG))
 
     if not re.match(KALE_STEP_NAME_REGEX, metadata['pipeline_name']):
         raise ValueError("Pipeline name  {}".format(KALE_NAME_MSG))
