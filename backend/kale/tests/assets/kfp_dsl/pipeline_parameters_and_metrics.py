@@ -148,7 +148,7 @@ if __name__ == "__main__":
     # Get or create an experiment and submit a pipeline run
     import kfp
     client = kfp.Client()
-    experiment = client.create_experiment('hp tuning')
+    experiment = client.create_experiment('hp-tuning')
 
     # Submit a pipeline run
     from kale.utils.kfp_utils import generate_run_name
