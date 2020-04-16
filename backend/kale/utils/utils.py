@@ -44,3 +44,9 @@ def comment_magic_commands(code):
 def encode_url_component(component: str):
     """Encode a value so it can safely be used as a URL component."""
     return urllib.parse.quote(component, safe="")
+
+
+def sanitize_k8s_name(name):
+    """Sanitize a string to conform to Kubernetes naming conventions."""
+    name = re.sub("-+", "-", re.sub("[^-0-9a-z]+", "-", name.lower()))
+    return name.lstrip("-").rstrip("-")
