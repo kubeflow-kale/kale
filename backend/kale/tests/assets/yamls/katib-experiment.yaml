@@ -1,0 +1,49 @@
+apiVersion: kubeflow.org/v1alpha3
+kind: Experiment
+metadata:
+  labels:
+    controller-tools.k8s.io: '1.0'
+  name: katib-test
+spec:
+  algorithm:
+    algorithmName: grid
+  maxFailedTrialCount: 6
+  maxTrialCount: 30
+  objective:
+    goal: 100
+    objectiveMetricName: result
+    type: maximize
+  parallelTrialCount: 1
+  parameters:
+  - feasibleSpace:
+      max: '50.0'
+      min: '1.0'
+      step: '10.0'
+    name: a
+    parameterType: double
+  - feasibleSpace:
+      max: '5'
+      min: '1'
+      step: '9'
+    name: b
+    parameterType: int
+  - feasibleSpace:
+      list:
+      - '1'
+      - '9'
+      - '15'
+    name: c
+    parameterType: categorical
+  trialTemplate:
+    goTemplate:
+      rawTemplate: "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: {{.Trial}}\n\
+        \  namespace: {{.NameSpace}}\nspec:\n  backoffLimit: 0\n  template:\n    metadata:\n\
+        \      annotations:\n        sidecar.istio.io/inject: \"false\"\n    spec:\n\
+        \      restartPolicy: Never\n      containers:\n        - name: {{.Trial}}\n\
+        \          image: gcr.io/arrikto-playground/elikatsis/kale/trials:1b82d32\n\
+        \          command:\n            - python3 -u -c \"from kale.utils.kfp_utils\
+        \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
+        \                    pipeline_id='12345',                    run_name='{{.Trial}}',\
+        \                    experiment_name='katib-test',                    {{-\
+        \ with .HyperParameters }} {{- range .}}\n                        {{.Name}}='{{.Value}}',\
+        \                    {{- end }} {{- end }}                )\"\n"
