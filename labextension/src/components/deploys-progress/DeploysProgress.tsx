@@ -19,6 +19,7 @@ import { CircularProgress } from '@material-ui/core';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';
+import { IKatibExperiment } from '../LeftPanelWidget';
 
 export type DeployProgressState = {
   showValidationProgress?: boolean;
@@ -36,6 +37,10 @@ export type DeployProgressState = {
   showRunProgress?: boolean;
   runPipeline?: any;
   runWarnings?: any;
+  showKatibProgress?: boolean;
+  katib?: IKatibExperiment;
+  showKatibKFPExperiment?: boolean;
+  katibKFPExperiment?: { id: string; name: string };
   deleted?: boolean;
   docManager?: IDocumentManager;
 };
@@ -71,6 +76,10 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
             showRunProgress={dpState.showRunProgress}
             runPipeline={dpState.runPipeline}
             runWarnings={dpState.runWarnings}
+            showKatibProgress={dpState.showKatibProgress}
+            katib={dpState.katib}
+            showKatibKFPExperiment={dpState.showKatibKFPExperiment}
+            katibKFPExperiment={dpState.katibKFPExperiment}
             onRemove={_onPanelRemove(+index)}
             docManager={dpState.docManager}
           />
