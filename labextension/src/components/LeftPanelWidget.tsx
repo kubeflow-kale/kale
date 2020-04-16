@@ -162,6 +162,56 @@ export interface IAnnotation {
   value: string;
 }
 
+// Katib types: https://github.com/kubeflow/katib/blob/master/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
+export interface IKatibParameter {
+  name: string;
+  parameterType: 'unknown' | 'double' | 'int' | 'categorical' | 'discrete';
+  feasibleSpace: { min?: string; max?: string; list?: string[]; step?: string };
+}
+
+interface IKatibObjective {
+  goal?: number;
+  type: 'minimize' | 'maximize';
+  objectiveMetricName: string;
+  additionalMetricNames?: string[];
+}
+
+interface IKatibAlgorithm {
+  algorithmName:
+    | 'random'
+    | 'grid'
+    | 'bayesianoptimization'
+    | 'hyperband'
+    | 'tpe';
+  algorithmSettings?: { name: string; value: string }[];
+  earlyStopping?: {
+    earlyStoppingAlgorithmName: { name: string; value: string }[];
+  };
+}
+
+export interface IKatibMetadata {
+  parameters: IKatibParameter[];
+  objective: IKatibObjective;
+  algorithm: IKatibAlgorithm;
+  maxTrialCount: number;
+  maxFailedTrialCount: number;
+  parallelTrialCount: number;
+}
+
+const DefaultKatibMetadata: IKatibMetadata = {
+  parameters: [],
+  objective: {
+    type: 'minimize',
+    objectiveMetricName: '',
+  },
+  algorithm: {
+    algorithmName: 'grid',
+  },
+  maxTrialCount: 12,
+  maxFailedTrialCount: 3,
+  parallelTrialCount: 3,
+};
+
 export interface IVolumeMetadata {
   type: string;
   // name field will have different meaning based on the type:
@@ -188,6 +238,8 @@ interface IKaleNotebookMetadata {
   pipeline_description: string;
   docker_image: string;
   volumes: IVolumeMetadata[];
+  katib_run: boolean;
+  katib_metadata?: IKatibMetadata;
 }
 
 interface ICompileNotebookArgs {
@@ -222,6 +274,7 @@ const DefaultState: IState = {
     pipeline_description: '',
     docker_image: '',
     volumes: [],
+    katib_run: false,
   },
   runDeployment: false,
   deploymentType: 'compile',
@@ -577,6 +630,22 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   changeDeployDebugMessage = () =>
     this.setState({ deployDebugMessage: !this.state.deployDebugMessage });
 
+  updateKatibRun = () =>
+    this.setState({
+      metadata: {
+        ...this.state.metadata,
+        katib_run: !this.state.metadata.katib_run,
+      },
+    });
+
+  updateKatibMetadata = (metadata: IKatibMetadata) =>
+    this.setState({
+      metadata: {
+        ...this.state.metadata,
+        katib_metadata: metadata,
+      },
+    });
+
   // restore state to default values
   resetState = () =>
     this.setState({ ...DefaultState, isEnabled: this.state.isEnabled });
@@ -822,6 +891,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         }
 
         let metadata: IKaleNotebookMetadata = {
+          ...notebookMetadata,
           experiment: experiment,
           experiment_name: experiment_name,
           pipeline_name: notebookMetadata['pipeline_name'] || '',
@@ -830,6 +900,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             notebookMetadata['docker_image'] ||
             DefaultState.metadata.docker_image,
           volumes: metadataVolumes,
+          katib_run:
+            notebookMetadata['katib_run'] || DefaultState.metadata.katib_run,
+          katib_metadata: {
+            ...DefaultKatibMetadata,
+            ...(notebookMetadata['katib_metadata'] || {}),
+          },
         };
         this.setState({
           volumes: stateVolumes,
