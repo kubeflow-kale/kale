@@ -11,10 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 import os
+import sys
 import json
+import time
+import logging
 import tempfile
 import importlib.util
+
+import kubernetes
 
 from shutil import copyfile
 
@@ -25,8 +31,32 @@ from kfp_server_api.rest import ApiException
 from kale.utils import utils, pod_utils
 
 
-def _get_kfp_client(host=None):
-    return Client(host=host)
+KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
+KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
+ARGO_COMPLETED_LABEL_KEY = "workflows.argoproj.io/completed"
+ARGO_PHASE_LABEL_KEY = "workflows.argoproj.io/phase"
+
+_logger = None
+_k8s_co_client = None
+_k8s_watch = None
+
+
+def _get_k8s_co_client():
+    global _k8s_co_client
+    if not _k8s_co_client:
+        _k8s_co_client = kubernetes.client.CustomObjectsApi()
+    return _k8s_co_client
+
+
+def _get_k8s_watch():
+    global _k8s_watch
+    if not _k8s_watch:
+        _k8s_watch = kubernetes.watch.Watch()
+    return _k8s_watch
+
+
+def _get_kfp_client(host=None, namespace: str = "kubeflow"):
+    return Client(host=host, namespace=namespace)
 
 
 def get_pipeline_id(pipeline_name, host=None):
@@ -209,3 +239,158 @@ def get_experiment_from_run_id(run_id: str):
     # NOTE: It is safe to assume that a resource reference of type EXPERIMENT
     # exists, as well as an experiment with that ID
     return client.experiments.get_experiment(id=experiment_id)
+
+
+def get_run(run_id: str, host: str = None, namespace: str = "kubeflow"):
+    """Retrieve KFP run based on RunID."""
+    client = _get_kfp_client(host, namespace)
+    return client.get_run(run_id)
+
+
+# TODO: Use a global setup logging function
+def _get_logger():
+    """Setup logging."""
+    global _logger
+    if not _logger:
+        fmt = "%(asctime)s %(module)s:%(lineno)d [%(levelname)s] %(message)s"
+        datefmt = "%Y-%m-%dT%H:%M:%SZ"
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        stream_handler.setFormatter(logging.Formatter(fmt, datefmt))
+
+        _logger = logging.getLogger(__name__)
+        _logger.propagate = 0
+        _logger.setLevel(logging.DEBUG)
+        _logger.addHandler(stream_handler)
+    return _logger
+
+
+def _create_kfp_run(pipeline_id: str, run_name: str, version_id: str = None,
+                    experiment_name: str = "Default",
+                    namespace: str = "kubeflow", **kwargs):
+    """Create a KFP run from a KFP pipeline with custom arguments.
+
+    Args:
+        pipeline_id: KFP pipeline
+        version_id: KFP pipeline's version (optional, not supported yet)
+        experiment_name: KFP experiment to create run in. (default: "Default")
+        namespace: Namespace of KFP deployment
+        kwargs: All the parameters the pipeline will be fed with
+
+    Returns:
+        run_id: ID of the created KFP run
+    """
+    kfp_client = _get_kfp_client(namespace=namespace)
+
+    if not pipeline_id:
+        raise ValueError("You must provide pipeline_id.")
+
+    experiment = kfp_client.create_experiment(experiment_name)
+    run = kfp_client.run_pipeline(experiment_id=experiment.id,
+                                  job_name=run_name,
+                                  pipeline_id=pipeline_id,
+                                  # XXX: kfp-server-api==0.1.18.3 is the only
+                                  # version that does work, but we cannot set
+                                  # namespace in that old version
+                                  # namespace=namespace,
+                                  params=kwargs)
+
+    return run.id
+
+
+def _wait_kfp_run(run_id: str, namespace: str = "kubeflow"):
+    """Wait for a KFP run to complete.
+
+    Args:
+        run_id: ID of the created KFP run
+        namespace: Namespace of KFP deployment
+
+    Returns:
+        status: Status of KFP run upon completion
+    """
+    logger = _get_logger()
+
+    logger.info("Watching for Run with ID: '%s' in namespace '%s'", run_id,
+                namespace)
+
+    while True:
+        time.sleep(30)
+
+        run = get_run(run_id, namespace=namespace)
+        status = run.run.status
+        logger.info("Run status: %s", status)
+
+        if status not in KFP_RUN_FINAL_STATES:
+            continue
+
+        return status
+
+
+def _get_kfp_run_metrics(run_id: str, namespace: str = "kubeflow"):
+    """Retrieve output metrics of a KFP run.
+
+    We sleep() and try multiple times to make sure that the KFP persistence
+    agent has reported run metrics.
+
+    Args:
+        run_id: ID of the created KFP run
+        namespace: Namespace of KFP deployment
+    Returns:
+        metrics: Dict of metrics along with their values
+    """
+    logger = _get_logger()
+
+    run_metrics = None
+    max_tries = 3
+    tries = 0
+    while not run_metrics:
+        if tries >= max_tries:
+            return {}
+        time.sleep(5)
+        logger.info("Try %d: Checking for run metrics...", tries)
+        run = get_run(run_id=run_id)
+        run_metrics = run.run.metrics
+        tries += 1
+
+    logger.info("Found run metrics!")
+    return {metric.name: metric.number_value for metric in run_metrics}
+
+
+def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
+                            version_id: str = None,
+                            experiment_name: str = "Default",
+                            namespace: str = "kubeflow", **kwargs):
+    """Create a KFP run, wait for it to complete and retrieve its metrics.
+
+    Create a KFP run from a KFP pipeline with custom arguments and wait for
+    it to finish. If it succeeds, return its metrics.
+
+    Args:
+        pipeline_id: KFP pipeline
+        version_id: KFP pipeline's version (optional, not supported yet)
+        experiment_name: KFP experiment to create run in. (default: "Default")
+        namespace: Namespace of KFP deployment
+        kwargs: All the parameters the pipeline will be fed with
+
+    Returns:
+        metrics: Dict of metrics along with their values
+    """
+    logger = _get_logger()
+
+    run_id = _create_kfp_run(pipeline_id, run_name, version_id,
+                             experiment_name, namespace, **kwargs)
+    status = _wait_kfp_run(run_id, namespace)
+
+    # If run has not succeeded, return no metrics
+    if status != "Succeeded":
+        logger.warning("KFP run did not run successfully. No metrics to"
+                       " return.")
+        # exit gracefully with error
+        sys.exit(-1)
+
+    # Retrieve metrics
+    run_metrics = _get_kfp_run_metrics(run_id, namespace)
+    for name, value in run_metrics.items():
+        logger.info("%s=%s", name, value)
+
+    return run_metrics
