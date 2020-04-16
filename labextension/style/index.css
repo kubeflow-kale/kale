@@ -41,6 +41,15 @@
   /*border-bottom: solid var(--jp-border-width) var(--jp-border-color2);*/
 }
 
+.kale-header.katib-dialog-header {
+  padding: 5px 0;
+  margin: 20px 0 10px 0;
+}
+
+.kale-header.katib-headers-tooltip {
+  height: 0.7em;
+}
+
 .kale-header-switch {
   flex: 0 0 auto;
   flex-direction: row;
@@ -51,10 +60,6 @@
   display: -ms-flexbox; /* TWEENER - IE 10 */
   display: -webkit-flex; /* NEW - Chrome */
   display: flex;
-}
-
-.kale-header:first-child {
-  margin-top: 0;
 }
 
 .kale-footer {

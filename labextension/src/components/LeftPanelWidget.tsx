@@ -30,7 +30,7 @@ import {
   rokErrorTooltip,
 } from '../utils/RPCUtils';
 import CellUtils from '../utils/CellUtils';
-import { CollapsablePanel, MaterialInput } from './Components';
+import { CollapsablePanel, LightTooltip, MaterialInput } from './Components';
 import {
   Cell,
   isCodeCellModel,
@@ -51,6 +51,8 @@ import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { theme } from '../Theme';
+import { Button, Switch, Zoom } from '@material-ui/core';
+import { KatibDialog } from './KatibDialog';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -155,6 +157,7 @@ interface IState {
   autosnapshot: boolean;
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
+  katibDialog: boolean;
 }
 
 export interface IAnnotation {
@@ -292,6 +295,7 @@ const DefaultState: IState = {
   autosnapshot: false,
   deploys: {},
   isEnabled: false,
+  katibDialog: false,
 };
 
 let deployIndex = 0;
@@ -645,6 +649,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         katib_metadata: metadata,
       },
     });
+
+  toggleKatibDialog = () =>
+    this.setState({ katibDialog: !this.state.katibDialog });
 
   // restore state to default values
   resetState = () =>
@@ -1493,6 +1500,29 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       />
     );
 
+    const katib_run_input = (
+      <div className="input-container">
+        <LightTooltip
+          title={'Enable this option to run HyperParameter Tuning with Katib'}
+          placement="top-start"
+          interactive={true}
+          TransitionComponent={Zoom}
+        >
+          <div className="toolbar">
+            <div className="switch-label">HP Tuning with Katib</div>
+            <Switch
+              checked={this.state.metadata.katib_run}
+              onChange={_ => this.updateKatibRun()}
+              color="primary"
+              name="enableKatib"
+              className="material-switch"
+              inputProps={{ 'aria-label': 'primary checkbox' }}
+            />
+          </div>
+        </LightTooltip>
+      </div>
+    );
+
     const volsPanel = (
       <VolumesPanel
         volumes={this.state.volumes}
@@ -1564,6 +1594,35 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               </div>
             </div>
 
+            <div
+              className={
+                'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
+              }
+            >
+              <div>
+                <p
+                  className="kale-header"
+                  style={{ color: theme.kale.headers.main }}
+                >
+                  Run
+                </p>
+              </div>
+              {katib_run_input}
+              <div className="input-container add-button">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  title="SetupKatibJob"
+                  onClick={this.toggleKatibDialog}
+                  disabled={!this.state.metadata.katib_run}
+                  style={{ marginLeft: '10px', marginTop: '0px' }}
+                >
+                  Set Up Katib Job
+                </Button>
+              </div>
+            </div>
+
             <div className={this.state.isEnabled ? '' : 'hidden'}>
               <div className="kale-component" key="kale-component-volumes">
                 <div className="kale-header-switch">
@@ -1606,6 +1665,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               handleClick={this.activateRunDeployState}
             />
           </div>
+
+          <KatibDialog
+            open={this.state.katibDialog}
+            toggleDialog={this.toggleKatibDialog}
+            katibMetadata={
+              this.state.metadata.katib_metadata || DefaultKatibMetadata
+            }
+            updateKatibMetadata={this.updateKatibMetadata}
+            activeNotebook={this.state.activeNotebook}
+            kernel={this.props.kernel}
+          />
         </div>
       </ThemeProvider>
     );
