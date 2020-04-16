@@ -84,6 +84,12 @@ def parse_metadata(notebook_metadata):
         metadata.update({'volumes': _parse_volumes_metadata(volumes)})
     else:
         raise ValueError("Volumes spec must be a list")
+
+    katib = metadata.get('katib', False)
+    if not isinstance(katib, bool):
+        raise ValueError("The field `katib` is not a boolean")
+    if katib:
+        _validate_katib_metadata(metadata.get("katib_metadata", {}))
     return metadata
 
 
@@ -150,3 +156,27 @@ def _parse_volumes_metadata(volumes):
                                key=lambda _v: is_workspace_dir(
                                    _v['mount_point']))
     return validated_volumes
+
+
+def _validate_katib_metadata(katib_metadata):
+    """Validate the Katib metadata.
+
+    This is not a comprehensive validation of all the katib fields. We just
+    care about validating that some fields exist and have the proper types.
+    The rest of the validation is left for when the Katib's Experiment CRD is
+    submitted.
+    """
+    parsed_metadata = copy.deepcopy(katib_metadata)
+
+    parameters = parsed_metadata.get('katib_parameters')
+    if not parameters or not isinstance(parameters, list):
+        raise ValueError("Katib parameters are either missing or must be"
+                         " converted to a list.")
+
+    objective = parsed_metadata.get('katib_objective')
+    if not objective:
+        raise ValueError("Katib metadata must contain a valid objective spec")
+
+    algorithm = parsed_metadata.get('katib_algorithm')
+    if not algorithm:
+        raise ValueError("Katib metadata must contain a valid algorithm spec")
