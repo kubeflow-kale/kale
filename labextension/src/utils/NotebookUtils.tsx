@@ -137,13 +137,27 @@ export default class NotebookUtilities {
   /**
    * Safely saves the Jupyter notebook document contents to disk
    * @param notebookPanel The notebook panel containing the notebook to save
+   * @param withPrompt Ask the user before saving the notebook
+   * @param waitSave Await the save notebook operation
    */
   public static async saveNotebook(
     notebookPanel: NotebookPanel,
+    withPrompt: boolean = false,
+    waitSave: boolean = false,
   ): Promise<boolean> {
-    if (notebookPanel) {
+    if (notebookPanel && notebookPanel.model.dirty) {
       await notebookPanel.context.ready;
-      notebookPanel.context.save();
+      if (
+        withPrompt &&
+        !(await this.showYesNoDialog('Unsaved changes', [
+          'Do you want to save the notebook?',
+        ]))
+      ) {
+        return false;
+      }
+      waitSave
+        ? await notebookPanel.context.save()
+        : notebookPanel.context.save();
       return true;
     }
     return false;

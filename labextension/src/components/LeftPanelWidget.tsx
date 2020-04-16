@@ -666,8 +666,21 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       },
     });
 
-  toggleKatibDialog = () =>
-    this.setState({ katibDialog: !this.state.katibDialog });
+  toggleKatibDialog = async () => {
+    // When opening the katib dialog, we sent and RPC to Kale to parse the
+    // current notebook to retrieve the pipeline parameters. In case the
+    // notebook is in an unsaved state, ask the user to save it.
+    if (!this.state.katibDialog) {
+      await NotebookUtils.saveNotebook(this.state.activeNotebook, true, true);
+      // if the notebook is saved
+      if (!this.state.activeNotebook.context.model.dirty) {
+        this.setState({ katibDialog: true });
+      }
+    } else {
+      // close
+      this.setState({ katibDialog: false });
+    }
+  };
 
   // restore state to default values
   resetState = () =>

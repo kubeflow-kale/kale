@@ -89,8 +89,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
   }, [props.open]);
 
   const onKatibShowPanel = async () => {
-    // save notebook to make sure that any new change is reflected in the RPC
-    await NotebookUtils.saveNotebook(props.activeNotebook);
     // Send an RPC to Kale to get the pipeline parameters
     // that are currently defined in the notebook
     const nbFilePath = props.activeNotebook.context.path;
