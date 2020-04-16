@@ -38,6 +38,33 @@ def list_experiments(request):
     return experiments
 
 
+def get_experiment(request, experiment_name):
+    """Get a KFP experiment. If it does not exist return None."""
+    client = _get_client()
+    try:
+        experiment = client.get_experiment(experiment_name=experiment_name)
+    except ValueError as e:
+        err_msg = "No experiment is found with name {}".format(experiment_name)
+        if err_msg in str(e):
+            return None
+        else:
+            # Unexpected exception
+            raise
+    return {"id": experiment.id, "name": experiment.name}
+
+
+def create_experiment(request, experiment_name, raise_if_exists=False):
+    """Create a new experiment."""
+    client = _get_client()
+    exp = get_experiment(None, experiment_name)
+    if not exp:
+        experiment = client.create_experiment(name=experiment_name)
+        return {"id": experiment.id, "name": experiment.name}
+    if raise_if_exists:
+        raise ValueError("Failed to create experiment, experiment already"
+                         " exists.")
+
+
 def _get_pipeline_id(pipeline_name):
     client = _get_client()
     token = ""
