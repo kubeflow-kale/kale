@@ -28,15 +28,15 @@ def _output_display(data):
     ([], ""),
     # ---
     (_output_display({'image/png': "bytes"}),
-     ju.image_html_template.format("", "bytes")),
+     ju.IMAGE_HTML_TEMPLATE.format("", "bytes")),
     # ---
     (_output_display({'text/html': "bytes"}), "bytes"),
     # ---
     (_output_display({'text/plain': "bytes"}),
-     ju.text_html_template.format("bytes")),
+     ju.TEXT_HTML_TEMPLATE.format("bytes")),
     # ---
     (_output_display({'application/javascript': "bytes"}),
-     ju.javascript_html_template.format("bytes")),
+     ju.JAVASCRIPT_HTML_TEMPLATE.format("bytes")),
 ])
 def test_generate_html_output(outputs, target):
     """Tests html artifact generation from cell outputs."""

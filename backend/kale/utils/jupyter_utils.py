@@ -26,7 +26,7 @@ from nbconvert.preprocessors.execute import ExecutePreprocessor
 
 from packaging import version as pkg_version
 
-html_template = '''
+HTML_TEMPLATE = '''
 <html><head>
     <style>
         table {
@@ -61,23 +61,34 @@ html_template = '''
 </html>
 '''
 
-image_html_template = '''
+IMAGE_HTML_TEMPLATE = '''
 <div>
   <p>{}</p>
   <img src="data:image/png;base64, {}" />
 </div>
 '''
 
-text_html_template = '''
+TEXT_HTML_TEMPLATE = '''
+<div style="margin:10px 0;">
 <pre>
-------- CELL OUTPUT -------
 {}
----------------------------
 </pre>
-<br><br>
+</div>
 '''
 
-javascript_html_template = '''
+STREAM_HTML_TEMPLATE = '''
+<pre style="margin:0;">
+{}
+</pre>
+'''
+
+STREAM_ERROR_CONTAINER_HTML_TEMPLATE = '''
+<div style="background:#FFDDDD;">
+{}
+</div>
+'''
+
+JAVASCRIPT_HTML_TEMPLATE = '''
 <script>
 {}
 </script>
@@ -103,6 +114,7 @@ def generate_html_output(outputs):
     html_body = ""
     # run through the list of outputs
     for o in outputs:
+        html = ""
         # the only rich outputs should come from `display_data` and
         # `execution_result` messages. The latter are identical to
         # `display_data` messages, with the addition of an execution_count key.
@@ -110,6 +122,12 @@ def generate_html_output(outputs):
         if not output_type:
             raise ValueError("Cell output dict has not `output_type` field."
                              " Output: {}".format(o))
+        if o['output_type'] == 'stream':
+            if o['name'] == 'stdout':
+                html = STREAM_HTML_TEMPLATE.format(o['text'])
+            if o['name'] == 'stderr':
+                html = STREAM_ERROR_CONTAINER_HTML_TEMPLATE.format(
+                    STREAM_HTML_TEMPLATE.format(o['text']))
         if o['output_type'] in ['display_data', 'execute_result']:
             # check mime-type of content
             # Currently supported MIME types:
@@ -127,20 +145,20 @@ def generate_html_output(outputs):
             # TODO: Generalize to multiple image types (i.e. jpeg and svg+xml)
             if 'image/png' in data:
                 title = data.get('text/plain', '')
-                html = image_html_template.format(title, data['image/png'])
-                html_body += html
+                html += IMAGE_HTML_TEMPLATE.format(title, data['image/png'])
 
             if 'text/html' in data:
-                html_body += data['text/html']
+                html += data['text/html']
 
             if ('image/png' not in data
                     and 'text/html' not in data
                     and 'text/plain' in data):
-                html_body += text_html_template.format(data['text/plain'])
+                html += TEXT_HTML_TEMPLATE.format(data['text/plain'])
 
             if 'application/javascript' in data:
-                html_body += javascript_html_template.format(
+                html += JAVASCRIPT_HTML_TEMPLATE.format(
                     data['application/javascript'])
+        html_body += html
     return html_body
 
 
@@ -151,7 +169,7 @@ def process_outputs(cells):
     html_outputs = '\n'.join(html_outputs).strip()
     if html_outputs == "":
         html_outputs = "This step did not produce any artifacts."
-    html_artifact = html_template % html_outputs
+    html_artifact = HTML_TEMPLATE % html_outputs
     return html_artifact
 
 
