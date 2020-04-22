@@ -28,6 +28,7 @@ interface IProps {
   blockName: string;
   previousBlockName: string;
   stepDependencies: string[];
+  limits: { [id: string]: string };
   cellElement: any;
   cellIndex: number;
 }
@@ -204,6 +205,25 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     return ColorUtils.getColor(name);
   }
 
+  createLimitsText() {
+    const gpuType = Object.keys(this.props.limits).includes('nvidia.com/gpu')
+      ? 'nvidia.com/gpu'
+      : Object.keys(this.props.limits).includes('amd.com/gpu')
+      ? 'amd.com/gpu'
+      : undefined;
+
+    return gpuType !== undefined ? (
+      <React.Fragment>
+        <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+          GPU request: {gpuType + ' - '}
+          {this.props.limits[gpuType]}
+        </p>
+      </React.Fragment>
+    ) : (
+      ''
+    );
+  }
+
   /**
    * Create a list of div dots that represent the dependencies of the current
    * block
@@ -275,6 +295,8 @@ export class InlineMetadata extends React.Component<IProps, IState> {
               ''
             )}
             {this.state.dependencies}
+
+            {this.createLimitsText()}
           </div>
 
           <div

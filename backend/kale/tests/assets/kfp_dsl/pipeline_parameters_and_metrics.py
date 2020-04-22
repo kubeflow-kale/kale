@@ -115,6 +115,9 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
     create_matrix_task = create_matrix_op(d1, d2)\
         .add_pvolumes(pvolumes_dict)\
         .after()
+    step_limits = {'nvidia.com/gpu': '2'}
+    for k, v in step_limits.items():
+        create_matrix_task.container.add_resource_limit(k, v)
     create_matrix_task.container.working_dir = "/kale"
     create_matrix_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))

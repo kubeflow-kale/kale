@@ -30,6 +30,13 @@ STEP_TAG = r'^step:([_a-z]([_a-z0-9]*)?)?$'
 BLOCK_TAG = r'^block:([_a-z]([_a-z0-9]*)?)?$'
 PIPELINE_PARAMETERS_TAG = r'^pipeline-parameters$'
 PIPELINE_METRICS_TAG = r'^pipeline-metrics$'
+# Annotations map to actual pod annotations that can be set via KFP SDK
+segment = "[a-zA-Z0-9]+([a-zA-Z0-9-_.]*[a-zA-Z0-9])?"
+K8S_ANNOTATION_KEY = "%s([/]%s)?" % (segment, segment)
+ANNOTATION_TAG = r'^annotation:%s:(.*)$' % K8S_ANNOTATION_KEY
+# Limits map to K8s limits, like CPU, Mem, GPU, ...
+# E.g.: limit:nvidia.com/gpu:2
+LIMITS_TAG = r'^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$'
 
 _TAGS_LANGUAGE = [SKIP_TAG,
                   IMPORT_TAG,
@@ -38,7 +45,9 @@ _TAGS_LANGUAGE = [SKIP_TAG,
                   BLOCK_TAG,
                   STEP_TAG,
                   PIPELINE_PARAMETERS_TAG,
-                  PIPELINE_METRICS_TAG]
+                  PIPELINE_METRICS_TAG,
+                  ANNOTATION_TAG,
+                  LIMITS_TAG]
 
 
 def parse_metadata(metadata):
@@ -59,6 +68,10 @@ def parse_metadata(metadata):
     # than one Pipeline step.
     parsed_tags['step_names'] = list()
     parsed_tags['prev_steps'] = list()
+    # define intermediate variables so that dicts are not added to a steps
+    # when they are empty
+    cell_annotations = dict()
+    cell_limits = dict()
 
     # the notebook cell was not tagged
     if 'tags' not in metadata or len(metadata['tags']) == 0:
@@ -90,22 +103,50 @@ def parse_metadata(metadata):
             return parsed_tags
 
         # now only `block|step` and `prev` tags remain to be parsed.
-        tag_name, value = t.split(':')
+        tag_parts = t.split(':')
+        tag_name = tag_parts.pop(0)
+
+        if tag_name == "annotation":
+            annotation_key = tag_parts.pop(0)
+            # Since an annotation value can be anything, merge together
+            # everything that's left.
+            annotation_value = ''.join(tag_parts)
+            cell_annotations.update({annotation_key: annotation_value})
+
+        if tag_name == "limit":
+            limit_key = tag_parts.pop(0)
+            limit_value = tag_parts.pop(0)
+            cell_limits.update({limit_key: limit_value})
+
         # name of the future Pipeline step
         # TODO: Deprecate `block` in future release
-        if tag_name in ["block", "step"] and value:
+        if tag_name in ["block", "step"]:
             if tag_name == "block":
                 warnings.warn("`block` tag will be deprecated in a future"
                               " version, use `step` tag instead",
                               DeprecationWarning)
-            parsed_tags['step_names'].append(value)
+            step_name = tag_parts.pop(0)
+            parsed_tags['step_names'].append(step_name)
         # name(s) of the father Pipeline step(s)
         if tag_name == "prev":
-            parsed_tags['prev_steps'].append(value)
+            prev_step_name = tag_parts.pop(0)
+            parsed_tags['prev_steps'].append(prev_step_name)
 
     if not parsed_tags['step_names'] and parsed_tags['prev_steps']:
         raise ValueError("A cell can not provide `prev` annotations without "
                          "providing a `block` or `step` annotation as well")
+
+    if cell_annotations:
+        if not parsed_tags['step_names']:
+            raise ValueError("A cell can not provide Pod annotations in a cell"
+                             " that does not declare a step name.")
+        parsed_tags['annotations'] = cell_annotations
+
+    if cell_limits:
+        if not parsed_tags['step_names']:
+            raise ValueError("A cell can not provide Pod resource limits in a"
+                             " cell that does not declare a step name.")
+        parsed_tags['limits'] = cell_limits
     return parsed_tags
 
 
@@ -119,9 +160,9 @@ def merge_code(nb_graph, dst, code):
         dst (str): Name id of the destination node
         code (str): Python source code to be appended to dst node
     """
-    source_code = nb_graph.nodes(data=True)[dst]['source']
+    source_code = nb_graph.nodes(data=True)[dst]["source"]
     # update pipeline block source code
-    nx.set_node_attributes(nb_graph, {dst: {'source': source_code + [code]}})
+    nx.set_node_attributes(nb_graph, {dst: {"source": source_code + [code]}})
 
 
 def _get_reserved_tag_source(notebook, search_tag):
@@ -256,9 +297,9 @@ def parse_notebook(notebook):
                                       "One notebook cell was found with %s "
                                       "step names" % tags['step_names'])
 
-        step_name = tags['step_names'][0] \
-            if 0 < len(tags['step_names']) \
-            else None
+        step_name = (tags['step_names'][0]
+                     if 0 < len(tags['step_names'])
+                     else None)
 
         if step_name == 'skip':
             # when the cell is skipped, don't store `skip` as the previous
@@ -283,6 +324,8 @@ def parse_notebook(notebook):
 
         # if none of the above apply, then we are parsing a code cell with
         # a block names and (possibly) some dependencies
+        cell_annotations = tags.get('annotations', {})
+        cell_limits = tags.get('limits', {})
 
         # if the cell was not tagged with a step name,
         # add the code to the previous cell
@@ -313,7 +356,9 @@ def parse_notebook(notebook):
             # add node to DAG, adding tags and source code of notebook cell
             if step_name not in nb_graph.nodes:
                 nb_graph.add_node(step_name, source=[c.source],
-                                  ins=list(), outs=list())
+                                  ins=set(), outs=set(),
+                                  annotations=cell_annotations,
+                                  limits=cell_limits)
                 for _prev_step in tags['prev_steps']:
                     if _prev_step not in nb_graph.nodes:
                         raise ValueError("Step %s does not exist. It was "

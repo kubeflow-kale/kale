@@ -226,6 +226,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         notebook: this.props.notebook,
         stepName: tags.blockName || '',
         stepDependencies: tags.prevBlockNames || [],
+        limits: tags.limits || {},
       };
       editors[index] = editorProps;
       metadata.push(
@@ -234,6 +235,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           cellElement={this.props.notebook.content.node.childNodes[index]}
           blockName={tags.blockName}
           stepDependencies={tags.prevBlockNames}
+          limits={tags.limits || {}}
           previousBlockName={previousBlockName}
           cellIndex={index}
         />,
@@ -277,7 +279,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   render() {
     // Get the editor props of the active cell, so that just one editor is
     // rendered at any given time.
-    const editorProps = {
+    const editorProps: EditorProps = {
       ...this.state.editors[this.props.activeCellIndex],
     };
     return (
@@ -305,6 +307,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
               notebook={editorProps.notebook}
               stepName={editorProps.stepName}
               stepDependencies={editorProps.stepDependencies}
+              limits={editorProps.limits}
             />
             {this.state.metadataCmp}
           </CellMetadataContext.Provider>

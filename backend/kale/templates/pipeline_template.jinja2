@@ -51,7 +51,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
                 requests={"storage": {{ pvc_size }}}
             )
         )
-    )                                                              
+    )
 
     vop{{ loop.index }} = dsl.VolumeOp(
         name="pvc-data{{ loop.index }}",
@@ -96,17 +96,26 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {% endif %}
 
     {% for name in step_names %}
-
     {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)\
                             .after({{ step_prevs[ name ]|join(', ') }})
+    {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
+    step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
+    for k, v in step_annotations.items():
+        {{ name }}_task.container.add_pod_annotation(k, v)
+    {%- endif %}
+    {%- if nb_graph.nodes(data=True)[name].get("limits") %}
+    step_limits = {{ nb_graph.nodes(data=True)[name].get("limits", {}) }}
+    for k, v in step_limits.items():
+      {{ name }}_task.container.add_resource_limit(k, v)
+    {%- endif %}
     {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
     {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     output_artifacts = {}
     {%- if auto_snapshot %}
     output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("metrics", false) %}
+    {%- if nb_graph.nodes(data=True)[name].get("metrics") %}
     output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
     {%- endif %}
     {%- if name != "final_auto_snapshot" and name != "pipeline_metrics" %}
