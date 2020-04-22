@@ -30,7 +30,7 @@ import {
   rokErrorTooltip,
 } from '../utils/RPCUtils';
 import CellUtils from '../utils/CellUtils';
-import { CollapsablePanel, MaterialInput } from './Components';
+import { CollapsablePanel, LightTooltip, MaterialInput } from './Components';
 import {
   Cell,
   isCodeCellModel,
@@ -51,6 +51,8 @@ import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { theme } from '../Theme';
+import { Button, Switch, Zoom } from '@material-ui/core';
+import { KatibDialog } from './KatibDialog';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -155,12 +157,63 @@ interface IState {
   autosnapshot: boolean;
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
+  katibDialog: boolean;
 }
 
 export interface IAnnotation {
   key: string;
   value: string;
 }
+
+// Katib types: https://github.com/kubeflow/katib/blob/master/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
+export interface IKatibParameter {
+  name: string;
+  parameterType: 'unknown' | 'double' | 'int' | 'categorical' | 'discrete';
+  feasibleSpace: { min?: string; max?: string; list?: string[]; step?: string };
+}
+
+interface IKatibObjective {
+  goal?: number;
+  type: 'minimize' | 'maximize';
+  objectiveMetricName: string;
+  additionalMetricNames?: string[];
+}
+
+interface IKatibAlgorithm {
+  algorithmName:
+    | 'random'
+    | 'grid'
+    | 'bayesianoptimization'
+    | 'hyperband'
+    | 'tpe';
+  algorithmSettings?: { name: string; value: string }[];
+  earlyStopping?: {
+    earlyStoppingAlgorithmName: { name: string; value: string }[];
+  };
+}
+
+export interface IKatibMetadata {
+  parameters: IKatibParameter[];
+  objective: IKatibObjective;
+  algorithm: IKatibAlgorithm;
+  maxTrialCount: number;
+  maxFailedTrialCount: number;
+  parallelTrialCount: number;
+}
+
+const DefaultKatibMetadata: IKatibMetadata = {
+  parameters: [],
+  objective: {
+    type: 'minimize',
+    objectiveMetricName: '',
+  },
+  algorithm: {
+    algorithmName: 'grid',
+  },
+  maxTrialCount: 12,
+  maxFailedTrialCount: 3,
+  parallelTrialCount: 3,
+};
 
 export interface IVolumeMetadata {
   type: string;
@@ -188,6 +241,8 @@ interface IKaleNotebookMetadata {
   pipeline_description: string;
   docker_image: string;
   volumes: IVolumeMetadata[];
+  katib_run: boolean;
+  katib_metadata?: IKatibMetadata;
 }
 
 interface ICompileNotebookArgs {
@@ -214,6 +269,22 @@ interface IRunPipelineArgs {
   pipeline_id?: string;
 }
 
+interface IKatibRunArgs {
+  pipeline_id: string;
+  pipeline_metadata: any;
+}
+
+export interface IKatibExperiment {
+  name?: string;
+  namespace?: string;
+  status: string;
+  trials?: number;
+  trialsFailed?: number;
+  trialsRunning?: number;
+  trialsSucceeded?: number;
+  maxTrialCount?: number;
+}
+
 const DefaultState: IState = {
   metadata: {
     experiment: { id: '', name: '' },
@@ -222,6 +293,7 @@ const DefaultState: IState = {
     pipeline_description: '',
     docker_image: '',
     volumes: [],
+    katib_run: false,
   },
   runDeployment: false,
   deploymentType: 'compile',
@@ -239,6 +311,7 @@ const DefaultState: IState = {
   autosnapshot: false,
   deploys: {},
   isEnabled: false,
+  katibDialog: false,
 };
 
 let deployIndex = 0;
@@ -577,6 +650,38 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   changeDeployDebugMessage = () =>
     this.setState({ deployDebugMessage: !this.state.deployDebugMessage });
 
+  updateKatibRun = () =>
+    this.setState({
+      metadata: {
+        ...this.state.metadata,
+        katib_run: !this.state.metadata.katib_run,
+      },
+    });
+
+  updateKatibMetadata = (metadata: IKatibMetadata) =>
+    this.setState({
+      metadata: {
+        ...this.state.metadata,
+        katib_metadata: metadata,
+      },
+    });
+
+  toggleKatibDialog = async () => {
+    // When opening the katib dialog, we sent and RPC to Kale to parse the
+    // current notebook to retrieve the pipeline parameters. In case the
+    // notebook is in an unsaved state, ask the user to save it.
+    if (!this.state.katibDialog) {
+      await NotebookUtils.saveNotebook(this.state.activeNotebook, true, true);
+      // if the notebook is saved
+      if (!this.state.activeNotebook.context.model.dirty) {
+        this.setState({ katibDialog: true });
+      }
+    } else {
+      // close
+      this.setState({ katibDialog: false });
+    }
+  };
+
   // restore state to default values
   resetState = () =>
     this.setState({ ...DefaultState, isEnabled: this.state.isEnabled });
@@ -822,6 +927,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         }
 
         let metadata: IKaleNotebookMetadata = {
+          ...notebookMetadata,
           experiment: experiment,
           experiment_name: experiment_name,
           pipeline_name: notebookMetadata['pipeline_name'] || '',
@@ -830,6 +936,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             notebookMetadata['docker_image'] ||
             DefaultState.metadata.docker_image,
           volumes: metadataVolumes,
+          katib_run:
+            notebookMetadata['katib_run'] || DefaultState.metadata.katib_run,
+          katib_metadata: {
+            ...DefaultKatibMetadata,
+            ...(notebookMetadata['katib_metadata'] || {}),
+          },
         };
         this.setState({
           volumes: stateVolumes,
@@ -1087,25 +1199,92 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       }
     }
 
+    if (!uploadPipeline) {
+      this.setState({ runDeployment: false });
+      this.updateDeployProgress(_deployIndex, { pipeline: false });
+      console.error(
+        '`uploadPipeline` is null even if it should have a valid ' +
+          'pipeline name and id.',
+      );
+      return;
+    }
+
     // RUN
     if (this.state.deploymentType === 'run') {
-      this.updateDeployProgress(_deployIndex, { showRunProgress: true });
-      const runPipelineArgs: IRunPipelineArgs = {
-        pipeline_metadata: compileNotebook.pipeline_metadata,
-        pipeline_id: uploadPipeline.pipeline.id,
-      };
-      const runPipeline = await this.executeRpcAndShowRPCError(
-        'kfp.run_pipeline',
-        runPipelineArgs,
-      );
-      if (runPipeline) {
-        this.updateDeployProgress(_deployIndex, { runPipeline });
-        this.pollRun(_deployIndex, runPipeline);
-      } else {
+      if (metadata.katib_run) {
         this.updateDeployProgress(_deployIndex, {
-          showRunProgress: false,
-          runPipeline: false,
+          showKatibKFPExperiment: true,
         });
+        // create a new experiment, using the base name of the currently
+        // selected one
+        const newExpName: string =
+          metadata.experiment.name +
+          '-' +
+          Math.random()
+            .toString(36)
+            .slice(2, 7);
+
+        // create new KFP experiment
+        let kfpExperiment: { id: string; name: string };
+        try {
+          kfpExperiment = await this.executeRpc('kfp.create_experiment', {
+            experiment_name: newExpName,
+          });
+          this.updateDeployProgress(_deployIndex, {
+            katibKFPExperiment: kfpExperiment,
+          });
+        } catch (error) {
+          // stop deploy button icon spin
+          this.setState({ runDeployment: false });
+          this.updateDeployProgress(_deployIndex, {
+            showKatibProgress: false,
+            katibKFPExperiment: { id: 'error', name: 'error' },
+          });
+          throw error;
+        }
+
+        this.updateDeployProgress(_deployIndex, { showKatibProgress: true });
+        const runKatibArgs: IKatibRunArgs = {
+          pipeline_id: uploadPipeline.pipeline.id,
+          pipeline_metadata: {
+            ...metadata,
+            experiment_name: kfpExperiment.name,
+          },
+        };
+        let katibExperiment: IKatibExperiment = null;
+        try {
+          katibExperiment = await this.executeRpc(
+            'katib.create_katib_experiment',
+            runKatibArgs,
+          );
+        } catch (error) {
+          // stop deploy button icon spin
+          this.setState({ runDeployment: false });
+          this.updateDeployProgress(_deployIndex, {
+            katib: { status: 'error' },
+          });
+          throw error;
+        }
+        this.pollKatib(_deployIndex, katibExperiment);
+      } else {
+        this.updateDeployProgress(_deployIndex, { showRunProgress: true });
+        const runPipelineArgs: IRunPipelineArgs = {
+          pipeline_metadata: compileNotebook.pipeline_metadata,
+          pipeline_id: uploadPipeline.pipeline.id,
+        };
+        const runPipeline = await this.executeRpcAndShowRPCError(
+          'kfp.run_pipeline',
+          runPipelineArgs,
+        );
+        if (runPipeline) {
+          this.updateDeployProgress(_deployIndex, { runPipeline });
+          this.pollRun(_deployIndex, runPipeline);
+        } else {
+          this.updateDeployProgress(_deployIndex, {
+            showRunProgress: false,
+            runPipeline: false,
+          });
+        }
       }
     }
     // stop deploy button icon spin
@@ -1119,6 +1298,27 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       this.updateDeployProgress(_deployIndex, { runPipeline: run });
       if (run && (run.status === 'Running' || run.status === null)) {
         setTimeout(() => this.pollRun(_deployIndex, run), 2000);
+      }
+    });
+  }
+
+  pollKatib(_deployIndex: number, katibExperiment: IKatibExperiment) {
+    const getExperimentArgs: any = {
+      experiment: katibExperiment.name,
+      namespace: katibExperiment.namespace,
+    };
+    this.executeRpcAndShowRPCError(
+      'katib.get_experiment',
+      getExperimentArgs,
+    ).then(katib => {
+      if (!katib) {
+        // could not get the experiment
+        this.updateDeployProgress(_deployIndex, { katib: { status: 'error' } });
+        return;
+      }
+      this.updateDeployProgress(_deployIndex, { katib });
+      if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
+        setTimeout(() => this.pollKatib(_deployIndex, katibExperiment), 5000);
       }
     });
   }
@@ -1417,6 +1617,29 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       />
     );
 
+    const katib_run_input = (
+      <div className="input-container">
+        <LightTooltip
+          title={'Enable this option to run HyperParameter Tuning with Katib'}
+          placement="top-start"
+          interactive={true}
+          TransitionComponent={Zoom}
+        >
+          <div className="toolbar">
+            <div className="switch-label">HP Tuning with Katib</div>
+            <Switch
+              checked={this.state.metadata.katib_run}
+              onChange={_ => this.updateKatibRun()}
+              color="primary"
+              name="enableKatib"
+              className="material-switch"
+              inputProps={{ 'aria-label': 'primary checkbox' }}
+            />
+          </div>
+        </LightTooltip>
+      </div>
+    );
+
     const volsPanel = (
       <VolumesPanel
         volumes={this.state.volumes}
@@ -1488,6 +1711,35 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               </div>
             </div>
 
+            <div
+              className={
+                'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
+              }
+            >
+              <div>
+                <p
+                  className="kale-header"
+                  style={{ color: theme.kale.headers.main }}
+                >
+                  Run
+                </p>
+              </div>
+              {katib_run_input}
+              <div className="input-container add-button">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  title="SetupKatibJob"
+                  onClick={this.toggleKatibDialog}
+                  disabled={!this.state.metadata.katib_run}
+                  style={{ marginLeft: '10px', marginTop: '0px' }}
+                >
+                  Set Up Katib Job
+                </Button>
+              </div>
+            </div>
+
             <div className={this.state.isEnabled ? '' : 'hidden'}>
               <div className="kale-component" key="kale-component-volumes">
                 <div className="kale-header-switch">
@@ -1528,8 +1780,20 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             <SplitDeployButton
               running={this.state.runDeployment}
               handleClick={this.activateRunDeployState}
+              katibRun={this.state.metadata.katib_run}
             />
           </div>
+
+          <KatibDialog
+            open={this.state.katibDialog}
+            toggleDialog={this.toggleKatibDialog}
+            katibMetadata={
+              this.state.metadata.katib_metadata || DefaultKatibMetadata
+            }
+            updateKatibMetadata={this.updateKatibMetadata}
+            activeNotebook={this.state.activeNotebook}
+            kernel={this.props.kernel}
+          />
         </div>
       </ThemeProvider>
     );

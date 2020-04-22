@@ -27,21 +27,25 @@ import MenuItem from '@material-ui/core/MenuItem';
 import MenuList from '@material-ui/core/MenuList';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-const options = [
-  { label: 'Compile and Run', value: 'run' },
-  { label: 'Compile and Upload', value: 'upload' },
-  { label: 'Compile and Save', value: 'compile' },
-];
-
 interface ISplitDeployButton {
   running: boolean;
   handleClick: Function;
+  katibRun: boolean;
 }
 
 export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = props => {
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+
+  const options = [
+    {
+      label: 'Compile and Run' + (props.katibRun ? ' Katib Job' : ''),
+      value: 'run',
+    },
+    { label: 'Compile and Upload', value: 'upload' },
+    { label: 'Compile and Save', value: 'compile' },
+  ];
 
   const handleMenuItemClick = (
     event: React.MouseEvent<HTMLLIElement>,

@@ -83,6 +83,7 @@ export interface IMaterialInput {
   readOnly?: boolean;
   extraInputProps?: any;
   variant?: 'filled' | 'standard' | 'outlined';
+  validation?: 'int' | 'double';
   onBeforeUpdate?: (value: string) => boolean;
   placeholder?: string;
   disabled?: boolean;
@@ -94,14 +95,38 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
   const [error, updateError] = React.useState(false);
   const classes = useStyles({});
 
+  const getRegex = () => {
+    if (props.regex) {
+      return props.regex;
+    } else if (props.validation && props.validation == 'int') {
+      return /^(-\d)?\d*$/;
+    } else if (props.validation && props.validation == 'double') {
+      return /^(-\d)?\d*(\.\d)?\d*$/;
+    } else {
+      return undefined;
+    }
+  };
+
+  const getRegexMessage = () => {
+    if (props.regexErrorMsg) {
+      return props.regexErrorMsg;
+    } else if (props.validation && props.validation == 'int') {
+      return 'Integer value required';
+    } else if (props.validation && props.validation == 'double') {
+      return 'Float value required';
+    } else {
+      return undefined;
+    }
+  };
+
   const onChange = (value: string, index: number) => {
     // if the input domain is restricted by a regex
-    if (!props.regex) {
+    if (!getRegex()) {
       props.updateValue(value, index);
       return;
     }
 
-    let re = new RegExp(props.regex);
+    let re = new RegExp(getRegex());
     if (!re.test(value)) {
       updateError(true);
     } else {
@@ -125,8 +150,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
     500,
   );
 
-  let helperText = props.helperText ? props.helperText : null;
-  helperText = error ? props.regexErrorMsg : helperText;
+  const helperText = error ? getRegexMessage() : props.helperText || null;
 
   let inputProps = {
     classes: {
