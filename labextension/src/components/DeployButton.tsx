@@ -84,7 +84,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = pr
               onClick={_ => props.handleClick(options[selectedIndex].value)}
             >
               {props.running ? (
-                <CircularProgress thickness={6} size={14} color={'primary'} />
+                <CircularProgress thickness={6} size={14} color={'secondary'} />
               ) : (
                 options[selectedIndex].label
               )}
