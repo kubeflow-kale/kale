@@ -68,11 +68,8 @@ def parse_metadata(notebook_metadata):
     metadata = copy.deepcopy(DEFAULT_METADATA)
     metadata.update(validated_notebook_metadata)
 
-    if not re.match(K8S_VALID_NAME_REGEX, metadata['experiment_name']):
-        raise ValueError("Experiment name  {}".format(K8S_NAME_MSG))
-
     if not re.match(KALE_STEP_NAME_REGEX, metadata['pipeline_name']):
-        raise ValueError("Pipeline name  {}".format(KALE_NAME_MSG))
+        raise ValueError("Pipeline name {}".format(KALE_NAME_MSG))
 
     # update the pipeline name with a random string
     random_pipeline_name = "{}-{}".format(metadata['pipeline_name'],
@@ -90,6 +87,9 @@ def parse_metadata(notebook_metadata):
         raise ValueError("The field `katib` is not a boolean")
     if katib:
         _validate_katib_metadata(metadata.get("katib_metadata", {}))
+        if not re.match(K8S_VALID_NAME_REGEX, metadata['experiment_name']):
+            raise ValueError("When choosing HP Tuning, experiment name"
+                             " {}".format(K8S_NAME_MSG))
     return metadata
 
 
