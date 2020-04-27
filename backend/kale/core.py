@@ -134,12 +134,13 @@ class Kale:
         )
         dependencies.assign_metrics(pipeline_graph, pipeline_metrics)
 
-        # add an empty step at the end of the pipeline for final snapshot
-        if self.auto_snapshot:
+        # if there are multiple DAG leaves, add an empty step at the end of the
+        # pipeline for final snapshot
+        leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
+        if self.auto_snapshot and len(leaf_steps) > 1:
             auto_snapshot_name = 'final_auto_snapshot'
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
-            leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
             for node in leaf_steps:
                 pipeline_graph.add_edge(node, auto_snapshot_name)
             data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
