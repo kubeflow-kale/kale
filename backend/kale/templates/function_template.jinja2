@@ -17,7 +17,8 @@ def {{ step_name }}({%- for arg in parameters_names -%}
     _kale_pod_utils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
         "{{ step_name }}",
-        "{{ nb_path }}")
+        "{{ nb_path }}",
+        before=True)
 {% endif %}
 
 {%- if in_variables|length > 0 %}
@@ -66,3 +67,11 @@ def {{ step_name }}({%- for arg in parameters_names -%}
         f.write(html_artifact)
     _kale_update_uimetadata('{{ step_name }}')
 {% endif -%}
+
+{%- if auto_snapshot %}
+    _kale_pod_utils.snapshot_pipeline_step(
+        "{{ pipeline_name }}",
+        "{{ step_name }}",
+        "{{ nb_path }}",
+        before=False)
+{% endif %}

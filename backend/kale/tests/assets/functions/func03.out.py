@@ -3,4 +3,11 @@ def test():
     _kale_pod_utils.snapshot_pipeline_step(
         "T",
         "test",
-        "/path/to/nb")
+        "/path/to/nb",
+        before=True)
+
+    _kale_pod_utils.snapshot_pipeline_step(
+        "T",
+        "test",
+        "/path/to/nb",
+        before=False)
