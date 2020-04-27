@@ -12,7 +12,7 @@ def {{ step_name }}({%- for arg in parameters_names -%}
 {%- endfor %}
     '''.format({{ parameters_names|join(', ') }})
 {% endif %}
-{%- if auto_snapshot %}
+{%- if auto_snapshot and step_name != 'final_auto_snapshot'  %}
     from kale.utils import pod_utils as _kale_pod_utils
     _kale_pod_utils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
@@ -69,6 +69,9 @@ def {{ step_name }}({%- for arg in parameters_names -%}
 {% endif -%}
 
 {%- if auto_snapshot %}
+{%- if step_name == 'final_auto_snapshot' %}
+    from kale.utils import pod_utils as _kale_pod_utils
+{%- endif %}
     _kale_pod_utils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
         "{{ step_name }}",
