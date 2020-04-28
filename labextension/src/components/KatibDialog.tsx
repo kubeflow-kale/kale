@@ -515,7 +515,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                         : null
                     }
                     variant={'outlined'}
-                    label={'Value' + idx}
+                    label={'Value'}
                     value={value}
                     updateValue={updateParameter(
                       metadataParameter.name,
