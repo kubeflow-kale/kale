@@ -545,7 +545,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
       {props.showKatibKFPExperiment ? (
         <div className="deploy-progress-row">
           <div className="deploy-progress-label">
-            Creating KFP Experiment...{' '}
+            Creating KFP Experiment...
           </div>
           <div className="deploy-progress-value">{katibKfpExpTpl}</div>
         </div>
@@ -558,7 +558,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             style={{ borderBottom: 'transparent', paddingBottom: 0 }}
           >
             <div className="deploy-progress-label">
-              Running Katib Experiment...{' '}
+              Running Katib Experiment...
             </div>
             <div className="deploy-progress-value">{katibTpl}</div>
           </div>
