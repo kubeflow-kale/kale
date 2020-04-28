@@ -318,6 +318,7 @@ a {
 .deploy-progress-value a {
   height: 16px;
   display: flex;
+  margin-left: 5px;
 }
 
 .deploy-progress-value svg {
