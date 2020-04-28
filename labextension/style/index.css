@@ -48,6 +48,7 @@
 
 .kale-header.katib-headers-tooltip {
   height: 0.7em;
+  opacity: 0.75;
 }
 
 .kale-header-switch {
