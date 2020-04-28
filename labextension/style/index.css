@@ -465,6 +465,10 @@ a {
   width: 100%;
 }
 
+.menu-item-label {
+  width: 100%;
+}
+
 /* this class needs to be applied to every material switch we use because
   jp lab overrides the height of every input checkbox component.
 */
