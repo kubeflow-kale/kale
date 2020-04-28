@@ -551,7 +551,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 <Button
                   variant="contained"
                   size="small"
-                  title="Add Category"
+                  title="Add Value"
                   color="primary"
                   style={{ marginRight: '52px' }}
                   onClick={() => {
@@ -562,7 +562,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   }}
                 >
                   <AddIcon />
-                  Add Category
+                  Add Value
                 </Button>
               </div>
             </Grid>
