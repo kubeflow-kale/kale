@@ -85,5 +85,4 @@ def get_leaf_nodes(g: nx.DiGraph):
 
     Returns (list): A list of leaf nodes.
     """
-    return [x for x in g.nodes()
-            if g.out_degree(x) == 0 and g.in_degree(x) > 0]
+    return [x for x in g.nodes() if g.out_degree(x) == 0]

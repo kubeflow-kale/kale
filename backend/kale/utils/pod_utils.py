@@ -196,15 +196,16 @@ def create_rok_bucket(bucket, client=None):
         return client.bucket_create(bucket)
 
 
-def snapshot_pipeline_step(pipeline, step, nb_path):
+def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     """Take a snapshot of a pipeline step with Rok."""
     from rok_gw_client.client import RokClient
 
     run_uuid = get_run_uuid()
     bucket = kfp_utils.get_experiment_from_run_id(run_uuid).name
     obj = "{}-{}".format(pipeline, run_uuid)
-    commit_title = "Step: {}".format(step)
-    commit_message = "Step '{}' of pipeline run '{}'".format(step, run_uuid)
+    commit_title = "Step: {} ({})".format(step, "start" if before else "end")
+    commit_message = "Autosnapshot {} step '{}' of pipeline run '{}'".format(
+        "before" if before else "after", step, run_uuid)
     environment = json.dumps({"KALE_PIPELINE_STEP": step,
                               "KALE_NOTEBOOK_PATH": nb_path})
     metadata = json.dumps({"environment": environment, "kfp_runid": run_uuid})
@@ -218,9 +219,10 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
     create_rok_bucket(bucket, client=rok)
     task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
     print("Successfully created snapshot for step '%s'" % step)
-    print("You can explore the state of the notebook at the beginning"
-          " of this step by spawning a new notebook from the following"
-          " Rok snapshot:")
+    if before:
+        print("You can explore the state of the notebook at the beginning"
+              " of this step by spawning a new notebook from the following"
+              " Rok snapshot:")
 
     # FIXME: How do we retrieve the base URL of the ROK UI?
     version = task_info["task"]["result"]["event"]["version"]
@@ -237,11 +239,12 @@ def snapshot_pipeline_step(pipeline, step, nb_path):
                  "2\\. Copy the Rok URL.\n\n"
                  "3\\. Create a new Notebook Server by using this Rok URL to "
                  "autofill the form." % (step, url_path))
-    metadata = {"outputs": [{"storage": "inline",
-                             "source": md_source,
-                             "type": "markdown"}]}
-    with open("/mlpipeline-ui-metadata.json", "w") as f:
-        json.dump(metadata, f)
+    if before:
+        metadata = {"outputs": [{"storage": "inline",
+                                 "source": md_source,
+                                 "type": "markdown"}]}
+        with open("/mlpipeline-ui-metadata.json", "w") as f:
+            json.dump(metadata, f)
 
 
 def get_workflow_name(pod_name, namespace):
