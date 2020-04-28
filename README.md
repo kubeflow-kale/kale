@@ -42,6 +42,8 @@ jupyter lab
 
 To build images to be used as a NotebookServer in Kubeflow, refer to the Dockerfile in the `docker` folder.
 
+Head over to [FAQ](FAQ.md) to read about some known issues and some of the limitations imposed by the Kale data marshalling model.
+
 ## Resources
 
 - Kale introduction [blog post](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
