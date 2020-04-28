@@ -151,7 +151,10 @@ def template():
     ('test', ['v1 = "Hello"', 'print(v1)'], '', ['v1'], '', {},
      'func05.out.py'),
     # ---
-    ('test', ['print("hello")'], '', '', '', {}, 'func06.out.py')
+    ('test', ['print("hello")'], '', '', '', {}, 'func06.out.py'),
+    # ---
+    ('final_auto_snapshot', [], '', '', '/path/to/nb',
+     {'auto_snapshot': True, 'pipeline_name': 'T'}, 'func07.out.py')
 ])
 def test_generate_function(template, step_name, source, ins, outs, nb_path,
                            metadata, target):
