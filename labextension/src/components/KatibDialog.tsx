@@ -196,7 +196,13 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         );
         return (
           existing_param.length > 0 &&
-          existing_param[0].parameterType === new_param_type
+          // in case the new parameter is numeric, don't validate its type
+          // because it could have been set to categorical by the user in a
+          // previous Dialog interaction
+          (['int', 'double'].includes(new_param_type) &&
+          existing_param[0].parameterType == 'categorical'
+            ? true
+            : existing_param[0].parameterType === new_param_type)
         );
       })
       // get the matching entries of the notebook's metadata (there might be
@@ -304,6 +310,22 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       ...parameter.feasibleSpace,
       list: parameterList,
     };
+  };
+
+  const updateNumericParameterType = (
+    parameterName: string,
+    parameterOriginalType: 'int' | 'double',
+  ) => (parameter: IKatibParameter, value: string) => {
+    if (value === 'list') {
+      parameter.parameterType = 'categorical';
+      delete parameter.feasibleSpace.max;
+      delete parameter.feasibleSpace.min;
+      delete parameter.feasibleSpace.step;
+    } else {
+      // value === "range"
+      parameter.parameterType = parameterOriginalType;
+      delete parameter.feasibleSpace.list;
+    }
   };
 
   const updateObjectiveMetricName = (value: string) => {
@@ -485,8 +507,15 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   alignItems="center"
                 >
                   <MaterialInput
+                    validation={
+                      pyParameterType === 'int'
+                        ? 'int'
+                        : pyParameterType === 'float'
+                        ? 'double'
+                        : null
+                    }
                     variant={'outlined'}
-                    label={'Value' + idx}
+                    label={'Value'}
                     value={value}
                     updateValue={updateParameter(
                       metadataParameter.name,
@@ -522,7 +551,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 <Button
                   variant="contained"
                   size="small"
-                  title="Add Category"
+                  title="Add Value"
                   color="primary"
                   style={{ marginRight: '52px' }}
                   onClick={() => {
@@ -533,7 +562,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   }}
                 >
                   <AddIcon />
-                  Add Category
+                  Add Value
                 </Button>
               </div>
             </Grid>
@@ -576,7 +605,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             </Grid>
             <Grid item xs={3}>
               <MaterialInput
-                validation="int"
+                validation={metadataParameter.parameterType}
                 variant={'outlined'}
                 label={'Step'}
                 value={metadataParameter.feasibleSpace.step || ''}
@@ -638,6 +667,37 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 ) : (
                   ''
                 )}
+                {metadataParameter &&
+                ['int', 'float'].includes(pyParameterType) ? (
+                  <MaterialSelect
+                    variant={'outlined'}
+                    updateValue={updateParameter(
+                      parameterName,
+                      updateNumericParameterType(
+                        parameterName,
+                        pyParameterType,
+                      ),
+                    )}
+                    values={[
+                      { label: 'Range', value: 'range' },
+                      {
+                        label: 'List',
+                        value: 'list',
+                        tooltip:
+                          'Depending on the implementation of your chosen' +
+                          ' algorithm, a list might be treated differently' +
+                          ' from a range.',
+                      },
+                    ]}
+                    value={
+                      metadataParameter.parameterType === 'categorical'
+                        ? 'list'
+                        : 'range'
+                    }
+                    label={''}
+                    index={0}
+                  />
+                ) : null}
               </Grid>
               <Grid item xs={8}>
                 {katibParameterType ? (

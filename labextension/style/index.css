@@ -48,6 +48,7 @@
 
 .kale-header.katib-headers-tooltip {
   height: 0.7em;
+  opacity: 0.75;
 }
 
 .kale-header-switch {
@@ -462,6 +463,10 @@ a {
 
 .MuiButtonBase-root.Mui-disabled.menu-item-tooltip .menu-item-label {
   padding: 8px 16px;
+  width: 100%;
+}
+
+.menu-item-label {
   width: 100%;
 }
 

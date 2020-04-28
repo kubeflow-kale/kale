@@ -113,7 +113,7 @@ export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
     } else if (props.validation && props.validation == 'int') {
       return 'Integer value required';
     } else if (props.validation && props.validation == 'double') {
-      return 'Float value required';
+      return 'Double value required';
     } else {
       return undefined;
     }
