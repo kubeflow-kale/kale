@@ -252,6 +252,20 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   }
 
   render() {
+    const details = RESERVED_CELL_NAMES.includes(
+      this.props.blockName,
+    ) ? null : (
+      <>
+        {/* Add a `depends on: ` string before the deps dots in case there are some*/}
+        {this.state.dependencies.length > 0 ? (
+          <p style={{ fontStyle: 'italic', margin: '0 5px' }}>depends on: </p>
+        ) : null}
+        {this.state.dependencies}
+
+        {this.createLimitsText()}
+      </>
+    );
+
     return (
       <div>
         <div ref={this.wrapperRef}>
@@ -286,17 +300,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
               />
             </Tooltip>
 
-            {/* Add a `depends on: ` string before the deps dots in case there are some*/}
-            {this.state.dependencies.length > 0 ? (
-              <p style={{ fontStyle: 'italic', margin: '0 5px' }}>
-                depends on:{' '}
-              </p>
-            ) : (
-              ''
-            )}
-            {this.state.dependencies}
-
-            {this.createLimitsText()}
+            {details}
           </div>
 
           <div
