@@ -44,7 +44,7 @@ K8S_SIZE_UNITS = {"E": 10 ** 18,
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 
-logger = logging.getLogger("kubeflow-kale")
+log = logging.getLogger(__name__)
 
 
 def parse_k8s_size(size):
@@ -192,7 +192,7 @@ def create_rok_bucket(bucket, client=None):
         if e.response.status_code != 404:
             raise
 
-        logger.info("Creating bucket: %s", bucket)
+        log.info("Creating bucket: %s", bucket)
         return client.bucket_create(bucket)
 
 
@@ -218,18 +218,19 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     # Create the bucket in case it does not exist
     create_rok_bucket(bucket, client=rok)
     task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
-    print("Successfully created snapshot for step '%s'" % step)
-    if before:
-        print("You can explore the state of the notebook at the beginning"
-              " of this step by spawning a new notebook from the following"
-              " Rok snapshot:")
 
     # FIXME: How do we retrieve the base URL of the ROK UI?
     version = task_info["task"]["result"]["event"]["version"]
     url_path = ("/rok/buckets/%s/files/%s/versions/%s"
                 % (encode_url_component(bucket), encode_url_component(obj),
                    encode_url_component(version)))
-    print("\n%s\n" % url_path)
+
+    log.info("Successfully created snapshot for step '%s'", step)
+    if before:
+        log.info("You can explore the state of the notebook at the beginning"
+                 " of this step by spawning a new notebook from the following"
+                 " Rok snapshot:")
+    log.info("%s", url_path)
 
     md_source = ("# Rok autosnapshot\n"
                  "Rok has successfully created a snapshot for step `%s`.\n\n"
