@@ -198,6 +198,8 @@ def create_rok_bucket(bucket, client=None):
 
 def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     """Take a snapshot of a pipeline step with Rok."""
+    # Mark the start of the snapshotting procedure
+    log.info("-" * 100)
     from rok_gw_client.client import RokClient
 
     run_uuid = get_run_uuid()
@@ -246,6 +248,8 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
                                  "type": "markdown"}]}
         with open("/mlpipeline-ui-metadata.json", "w") as f:
             json.dump(metadata, f)
+    # Mark the end of the snapshotting procedure
+    log.info("-" * 100)
 
 
 def get_workflow_name(pod_name, namespace):
