@@ -63,7 +63,7 @@ def setup_logging(request):
     configure_handler(rpc_file_handler, RPC_FMT_EXTRAS + "%(message)s",
                       logging.DEBUG)
     _rpc_logger = logging.getLogger("kale.rpc")
-    _rpc_logger.propagate = 0
+    _rpc_logger.propagate = False
     _rpc_logger.setLevel(logging.DEBUG)
     _rpc_logger.addHandler(rpc_file_handler)
     _rpc_logger.addHandler(rpc_stream_handler)
