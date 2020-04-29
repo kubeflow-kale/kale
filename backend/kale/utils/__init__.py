@@ -12,3 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from kale.utils import log_utils
+log_utils.get_logger(module=__name__)
+del log_utils
