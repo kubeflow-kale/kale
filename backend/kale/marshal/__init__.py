@@ -18,18 +18,6 @@ from .resource_load import resource_load
 from .backends import *
 
 
-def setup_logging():
-    """Configure logging."""
-    # Setup root logger
-    root_stream_handler = logging.StreamHandler()
-    root_stream_handler.setLevel(logging.INFO)
-    root_stream_handler.setFormatter(logging.Formatter(
-        "%(asctime)s Kale Marshalling [%(levelname)s] %(message)s",
-        "%H:%M:%S"))
-
-    _log = logging.getLogger("kale.marshal")
-    _log.setLevel(logging.INFO)
-    _log.addHandler(root_stream_handler)
-
-
-setup_logging()
+from kale.utils import log_utils
+log_utils.get_logger(module=__name__, name="Kale Marshalling")
+del log_utils
