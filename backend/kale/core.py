@@ -154,7 +154,7 @@ class Kale:
             notebook_dir = os.path.dirname(self.source_path)
             filename = "{}.kale.py".format(
                 self.pipeline_metadata['pipeline_name'])
-            output_path = os.path.join(notebook_dir, filename)
+            output_path = os.path.abspath(os.path.join(notebook_dir, filename))
         # save kfp generated code
         output_path = self.save_pipeline(kfp_code, output_path)
         return output_path

@@ -97,7 +97,9 @@ def compile_pipeline(pipeline_source, pipeline_name):
 
     # path to generated pipeline package
     pipeline_package = pipeline_name + '.pipeline.tar.gz'
-    Compiler().compile(foo.auto_generated_pipeline, pipeline_package)
+    Compiler().compile(foo.auto_generated_pipeline,
+                       os.path.join(os.path.dirname(pipeline_source),
+                                    pipeline_package))
     return pipeline_package
 
 
