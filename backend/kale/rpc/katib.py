@@ -56,11 +56,8 @@ spec:
                 )"
 """
 
-trans_id = None
 
-
-def _get_k8s_co_client():
-    global trans_id
+def _get_k8s_co_client(trans_id):
     try:
         kubernetes.config.load_incluster_config()
     except Exception:  # Not in a notebook server
@@ -93,7 +90,7 @@ def _define_katib_experiment(name, katib_spec, trial_parameters):
 
 def _launch_katib_experiment(request, katib_experiment, namespace):
     """Launch Katib experiment."""
-    k8s_co_client = _get_k8s_co_client()
+    k8s_co_client = _get_k8s_co_client(request.trans_id)
 
     co_group = "kubeflow.org"
     co_version = "v1alpha3"
@@ -153,8 +150,6 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata,
 
     Returns (dict): a dictionary describing the status of the experiment
     """
-    global trans_id
-    trans_id = request.trans_id
     try:
         namespace = pod_utils.get_namespace()
     except Exception:
@@ -211,7 +206,7 @@ def get_experiment(request, experiment, namespace):
 
     Returns (dict): a dict describing the status of the running experiment
     """
-    k8s_co_client = _get_k8s_co_client()
+    k8s_co_client = _get_k8s_co_client(request.trans_id)
 
     co_group = "kubeflow.org"
     co_version = "v1alpha3"
