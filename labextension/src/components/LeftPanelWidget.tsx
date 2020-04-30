@@ -272,6 +272,7 @@ interface IRunPipelineArgs {
 interface IKatibRunArgs {
   pipeline_id: string;
   pipeline_metadata: any;
+  output_path: string;
 }
 
 export interface IKatibExperiment {
@@ -1250,6 +1251,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             ...metadata,
             experiment_name: kfpExperiment.name,
           },
+          output_path: nbFilePath.substring(0, nbFilePath.lastIndexOf('/')),
         };
         let katibExperiment: IKatibExperiment = null;
         try {
