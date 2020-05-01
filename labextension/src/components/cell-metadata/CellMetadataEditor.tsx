@@ -16,7 +16,6 @@
 
 import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
-import { MaterialSelectMulti } from '../Components';
 import TagsUtils from '../../utils/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@material-ui/icons/Close';
@@ -26,6 +25,7 @@ import { Button, IconButton } from '@material-ui/core';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
 import { Input } from '../Input';
 import { Select } from '../Select';
+import { SelectMulti } from '../SelectMulti';
 
 const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
@@ -391,7 +391,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                 ''
               )}
               {cellType === 'step' ? (
-                <MaterialSelectMulti
+                <SelectMulti
+                  id="select-previous-blocks"
+                  label="Depends on"
                   disabled={
                     !(this.props.stepName && this.props.stepName.length > 0)
                   }

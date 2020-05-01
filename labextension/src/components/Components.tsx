@@ -15,17 +15,10 @@
  */
 
 import * as React from 'react';
-import { findDOMNode } from 'react-dom';
-import { Input as MaterialInput } from '@material-ui/core';
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
-import { Button, MenuItem, Select, Switch } from '@material-ui/core';
+import { Button, Switch } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
-import Chip from '@material-ui/core/Chip';
-import InputLabel from '@material-ui/core/InputLabel';
-import FormControl from '@material-ui/core/FormControl';
-import OutlinedInput from '@material-ui/core/OutlinedInput';
 import { RokInput } from './RokInput';
-import ColorUtils from './cell-metadata/ColorUtils';
 import { Input } from './Input';
 
 // https://codeburst.io/my-journey-to-make-styling-with-material-ui-right-6a44f7c68113
@@ -55,139 +48,6 @@ const useStyles = makeStyles(() =>
     },
   }),
 );
-
-const useStylesSelectMulti = makeStyles(() =>
-  createStyles({
-    menu: {
-      color: 'var(--jp-ui-font-color1)',
-      fontSize: 'var(--jp-ui-font-size2)',
-    },
-    chips: {
-      display: 'flex',
-      flexWrap: 'wrap',
-    },
-    chip: {},
-    multiSelectForm: {
-      width: '100%',
-    },
-    label: {
-      backgroundColor: 'var(--jp-layout-color1)',
-      color: 'var(--jp-input-border-color)',
-      fontSize: 'var(--jp-ui-font-size2)',
-    },
-    input: {
-      fontSize: 'var(--jp-ui-font-size2)',
-    },
-  }),
-);
-
-const outlinedStyle = makeStyles(() =>
-  createStyles({
-    // root: {
-    //     "& $notchedOutline": {
-    //         borderWidth: '1px',
-    //         borderColor: 'var(--jp-input-border-color)',
-    //     },
-    // },
-    focused: {},
-    // notchedOutline: {},
-  }),
-);
-
-interface IMaterialSelectMultiple {
-  updateSelected: Function;
-  options: { value: string; color: string }[];
-  selected: string[];
-  variant?: 'filled' | 'standard' | 'outlined';
-  disabled?: boolean;
-  style?: any;
-}
-export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultiple> = props => {
-  const classes = useStylesSelectMulti({});
-  const outlined_classes = outlinedStyle({});
-  const [inputLabelRef, setInputLabelRef] = React.useState(undefined);
-  const labelOffsetWidth = inputLabelRef
-    ? (findDOMNode(inputLabelRef) as HTMLElement).offsetWidth
-    : 0;
-
-  let inputComponent = (
-    <MaterialInput
-      classes={outlined_classes}
-      margin="dense"
-      name="previous"
-      id="select-previous-blocks"
-    />
-  );
-
-  if (!props.variant || props.variant === 'outlined') {
-    inputComponent = (
-      <OutlinedInput
-        classes={outlined_classes}
-        margin="dense"
-        labelWidth={labelOffsetWidth}
-        name="previous"
-        id="select-previous-blocks"
-      />
-    );
-  }
-
-  return (
-    <FormControl
-      variant={props.variant}
-      margin="dense"
-      disabled={props.disabled}
-      className={classes.multiSelectForm}
-      style={props.style || {}}
-    >
-      <InputLabel
-        ref={ref => {
-          setInputLabelRef(ref);
-        }}
-        htmlFor="select-previous-blocks"
-        className={classes.label}
-      >
-        Depends on
-      </InputLabel>
-      <Select
-        multiple
-        MenuProps={{
-          PaperProps: {
-            className: classes.menu,
-          },
-        }}
-        onChange={evt =>
-          props.updateSelected((evt.target as HTMLInputElement).value)
-        }
-        margin="dense"
-        variant={props.variant}
-        input={inputComponent}
-        value={props.selected}
-        renderValue={elements => (
-          <div className={classes.chips}>
-            {(elements as string[]).map(value => {
-              return (
-                <Chip
-                  style={{
-                    backgroundColor: `#${ColorUtils.getColor(value)}`,
-                  }}
-                  key={value}
-                  label={value}
-                  className={`kale-chip kale-chip-select ${classes.chip}`}
-                />
-              );
-            })}
-          </div>
-        )}
-      >
-        {props.options.map(option => (
-          <MenuItem key={option.value} value={option.value}>
-            {option.value}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  );
-};
 
 interface ICollapsablePanel {
   title: string;
