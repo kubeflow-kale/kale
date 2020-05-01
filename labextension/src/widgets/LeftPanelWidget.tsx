@@ -21,33 +21,19 @@ import {
   NotebookPanel,
 } from '@jupyterlab/notebook';
 import NotebookUtils from '../lib/NotebookUtils';
-import {
-  executeRpc,
-  BaseError,
-  KernelError,
-  RPCError,
-  IRPCError,
-  rokErrorTooltip,
-} from '../lib/RPCUtils';
+import { RPCError, IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import CellUtils from '../lib/CellUtils';
 import { AdvancedSettings } from '../components/AdvancedSettings';
-
-import {
-  Cell,
-  isCodeCellModel,
-  CodeCell,
-  CodeCellModel,
-} from '@jupyterlab/cells';
+import { Cell } from '@jupyterlab/cells';
 import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
 import { VolumesPanel } from './VolumesPanel';
 import { SplitDeployButton } from '../components/DeployButton';
-import { KernelMessage, Kernel } from '@jupyterlab/services';
+import { Kernel } from '@jupyterlab/services';
 import { ExperimentInput } from '../components/ExperimentInput';
 import {
   DeploysProgress,
   DeployProgressState,
 } from './deploys-progress/DeploysProgress';
-import { RESERVED_CELL_NAMES } from './cell-metadata/CellMetadataEditor';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@material-ui/core/styles';
@@ -60,6 +46,7 @@ import {
   _legacy_executeRpc,
   _legacy_executeRpcAndShowRPCError,
 } from '../lib/RPCUtils';
+import { wait } from '../lib/Utils';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -939,10 +926,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
   };
 
-  wait = (ms: number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  };
-
   runSnapshotProcedure = async (_deployIndex: number) => {
     const showSnapshotProgress = true;
     const snapshot = await this.snapshotNotebook();
@@ -1435,7 +1418,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       },
     );
     if (ms) {
-      await this.wait(ms);
+      await wait(ms);
     }
     return task;
   };
