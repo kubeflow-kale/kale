@@ -16,11 +16,11 @@
 
 import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
-import TagsUtils from '../../utils/TagsUtils';
+import TagsUtils from '../../lib/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@material-ui/icons/Close';
-import ColorUtils from '../../utils/ColorUtils';
-import { CellMetadataContext } from './CellMetadataContext';
+import ColorUtils from '../../lib/ColorUtils';
+import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Button, IconButton } from '@material-ui/core';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
 import { Input } from '../../components/Input';

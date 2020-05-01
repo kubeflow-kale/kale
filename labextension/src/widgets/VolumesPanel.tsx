@@ -19,7 +19,7 @@ import { Button, Switch, Tooltip, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { IVolumeMetadata, ISelectVolumeTypes } from './LeftPanelWidget';
-import { IRPCError, rokErrorTooltip } from '../utils/RPCUtils';
+import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';
 import { LightTooltip } from '../components/LightTooltip';

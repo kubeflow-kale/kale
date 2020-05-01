@@ -16,13 +16,13 @@
 
 import * as React from 'react';
 import { Chip, Tooltip } from '@material-ui/core';
-import ColorUtils from '../../utils/ColorUtils';
+import ColorUtils from '../../lib/ColorUtils';
 import {
   RESERVED_CELL_NAMES,
   RESERVED_CELL_NAMES_HELP_TEXT,
 } from './CellMetadataEditor';
 import EditIcon from '@material-ui/icons/Edit';
-import { CellMetadataContext } from './CellMetadataContext';
+import { CellMetadataContext } from '../../lib/CellMetadataContext';
 
 interface IProps {
   blockName: string;

@@ -25,7 +25,7 @@ import {
   Grid,
   Switch,
 } from '@material-ui/core';
-import ColorUtils from '../../utils/ColorUtils';
+import ColorUtils from '../../lib/ColorUtils';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 

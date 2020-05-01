@@ -36,7 +36,7 @@ import * as React from 'react';
 import '../style/index.css';
 
 import { KubeflowKaleLeftPanel } from './widgets/LeftPanelWidget';
-import NotebookUtils from './utils/NotebookUtils';
+import NotebookUtils from './lib/NotebookUtils';
 import {
   executeRpc,
   globalUnhandledRejection,
@@ -44,7 +44,7 @@ import {
   IRPCError,
   RPCError,
   RPC_CALL_STATUS,
-} from './utils/RPCUtils';
+} from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 
 /* tslint:disable */

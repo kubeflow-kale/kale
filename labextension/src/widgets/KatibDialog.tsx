@@ -22,9 +22,9 @@ import {
   ISelectOption,
 } from './LeftPanelWidget';
 import { NotebookPanel } from '@jupyterlab/notebook';
-import { executeRpc, RPC_CALL_STATUS, RPCError } from '../utils/RPCUtils';
+import { executeRpc, RPC_CALL_STATUS, RPCError } from '../lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
-import NotebookUtils from '../utils/NotebookUtils';
+import NotebookUtils from '../lib/NotebookUtils';
 import { useTheme } from '@material-ui/core/styles';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';

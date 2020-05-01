@@ -20,7 +20,7 @@ import {
   Notebook,
   NotebookPanel,
 } from '@jupyterlab/notebook';
-import NotebookUtils from '../utils/NotebookUtils';
+import NotebookUtils from '../lib/NotebookUtils';
 import {
   executeRpc,
   BaseError,
@@ -28,9 +28,10 @@ import {
   RPCError,
   IRPCError,
   rokErrorTooltip,
-} from '../utils/RPCUtils';
-import CellUtils from '../utils/CellUtils';
+} from '../lib/RPCUtils';
+import CellUtils from '../lib/CellUtils';
 import { AdvancedSettings } from '../components/AdvancedSettings';
+
 import {
   Cell,
   isCodeCellModel,
