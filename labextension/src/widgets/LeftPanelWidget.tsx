@@ -56,6 +56,10 @@ import { Button, Switch, Zoom } from '@material-ui/core';
 import { KatibDialog } from './KatibDialog';
 import { Input } from '../components/Input';
 import { LightTooltip } from '../components/LightTooltip';
+import {
+  _legacy_executeRpc,
+  _legacy_executeRpcAndShowRPCError,
+} from '../lib/RPCUtils';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -746,50 +750,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     });
   };
 
-  executeRpc = async (func: string, args: any = {}, nb_path: string = null) => {
-    if (!nb_path && this.state.activeNotebook) {
-      nb_path = this.state.activeNotebook.context.path;
-    }
-    let retryRpc = true;
-    let result: any = null;
-    // Kerned aborts the execution if busy
-    // If that is the case, retry the RPC
-    while (retryRpc) {
-      try {
-        result = await executeRpc(this.props.kernel, func, args, { nb_path });
-        retryRpc = false;
-      } catch (error) {
-        if (error instanceof KernelError && error.error.status === 'aborted') {
-          continue;
-        }
-        // If kernel not busy, throw the error
-        throw error;
-      }
-    }
-    return result;
-  };
-
-  // Execute RPC and if an RPCError is caught, show dialog and return null
-  // This is our default behavior prior to this commit. This may probably
-  // change in the future, setting custom logic for each RPC call. For
-  // example, see getBaseImage().
-  executeRpcAndShowRPCError = async (
-    func: string,
-    args: any = {},
-    nb_path: string = null,
-  ) => {
-    try {
-      const result = await this.executeRpc(func, args, nb_path);
-      return result;
-    } catch (error) {
-      if (error instanceof RPCError) {
-        await error.showDialog();
-        return null;
-      }
-      throw error;
-    }
-  };
-
   /**
    * Read new notebook and assign its metadata to the state.
    * @param notebook active NotebookPanel
@@ -816,7 +776,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       if (this.props.backend) {
         // Detect whether this is an exploration, i.e., recovery from snapshot
         const nbFilePath = this.state.activeNotebook.context.path;
-        const exploration = await this.executeRpcAndShowRPCError(
+        const exploration = await _legacy_executeRpcAndShowRPCError(
+          this.state.activeNotebook,
+          this.props.kernel,
           'nb.explore_notebook',
           { source_notebook_path: nbFilePath },
         );
@@ -858,9 +820,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               `Error value: ${runCellResponse.evalue}`,
             ]);
           }
-          await this.executeRpcAndShowRPCError('nb.remove_marshal_dir', {
-            source_notebook_path: nbFilePath,
-          });
+          await _legacy_executeRpcAndShowRPCError(
+            this.state.activeNotebook,
+            this.props.kernel,
+            'nb.remove_marshal_dir',
+            {
+              source_notebook_path: nbFilePath,
+            },
+          );
         }
 
         if (!this.props.rokError) {
@@ -1079,7 +1046,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       source_notebook_path: nbFilePath,
       notebook_metadata_overrides: metadata,
     };
-    const validateNotebook = await this.executeRpcAndShowRPCError(
+    const validateNotebook = await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
       'nb.validate_notebook',
       validateNotebookArgs,
     );
@@ -1128,7 +1097,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       debug: this.state.deployDebugMessage,
       auto_snapshot: this.state.autosnapshot,
     };
-    const compileNotebook = await this.executeRpcAndShowRPCError(
+    const compileNotebook = await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
       'nb.compile_notebook',
       compileNotebookArgs,
     );
@@ -1163,7 +1134,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         pipeline_metadata: compileNotebook.pipeline_metadata,
         overwrite: false,
       };
-      uploadPipeline = await this.executeRpcAndShowRPCError(
+      uploadPipeline = await _legacy_executeRpcAndShowRPCError(
+        this.state.activeNotebook,
+        this.props.kernel,
         'kfp.upload_pipeline',
         uploadPipelineArgs,
       );
@@ -1187,7 +1160,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // OVERWRITE EXISTING PIPELINE
         if (result) {
           uploadPipelineArgs.overwrite = true;
-          uploadPipeline = await this.executeRpcAndShowRPCError(
+          uploadPipeline = await _legacy_executeRpcAndShowRPCError(
+            this.state.activeNotebook,
+            this.props.kernel,
             'kfp.upload_pipeline',
             uploadPipelineArgs,
           );
@@ -1228,9 +1203,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // create new KFP experiment
         let kfpExperiment: { id: string; name: string };
         try {
-          kfpExperiment = await this.executeRpc('kfp.create_experiment', {
-            experiment_name: newExpName,
-          });
+          kfpExperiment = await _legacy_executeRpc(
+            this.state.activeNotebook,
+            this.props.kernel,
+            'kfp.create_experiment',
+            {
+              experiment_name: newExpName,
+            },
+          );
           this.updateDeployProgress(_deployIndex, {
             katibKFPExperiment: kfpExperiment,
           });
@@ -1255,7 +1235,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         };
         let katibExperiment: IKatibExperiment = null;
         try {
-          katibExperiment = await this.executeRpc(
+          katibExperiment = await _legacy_executeRpc(
+            this.state.activeNotebook,
+            this.props.kernel,
             'katib.create_katib_experiment',
             runKatibArgs,
           );
@@ -1274,7 +1256,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           pipeline_metadata: compileNotebook.pipeline_metadata,
           pipeline_id: uploadPipeline.pipeline.id,
         };
-        const runPipeline = await this.executeRpcAndShowRPCError(
+        const runPipeline = await _legacy_executeRpcAndShowRPCError(
+          this.state.activeNotebook,
+          this.props.kernel,
           'kfp.run_pipeline',
           runPipelineArgs,
         );
@@ -1294,9 +1278,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   pollRun(_deployIndex: number, runPipeline: any) {
-    this.executeRpcAndShowRPCError('kfp.get_run', {
-      run_id: runPipeline.id,
-    }).then(run => {
+    _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
+      'kfp.get_run',
+      {
+        run_id: runPipeline.id,
+      },
+    ).then(run => {
       this.updateDeployProgress(_deployIndex, { runPipeline: run });
       if (run && (run.status === 'Running' || run.status === null)) {
         setTimeout(() => this.pollRun(_deployIndex, run), 2000);
@@ -1309,7 +1298,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       experiment: katibExperiment.name,
       namespace: katibExperiment.namespace,
     };
-    this.executeRpcAndShowRPCError(
+    _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
       'katib.get_experiment',
       getExperimentArgs,
     ).then(katib => {
@@ -1327,7 +1318,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   getExperiments = async () => {
     this.setState({ gettingExperiments: true });
-    let list_experiments: IExperiment[] = await this.executeRpcAndShowRPCError(
+    let list_experiments: IExperiment[] = await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
       'kfp.list_experiments',
     );
     if (list_experiments) {
@@ -1372,7 +1365,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   getMountedVolumes = async () => {
-    let notebookVolumes: IVolumeMetadata[] = await this.executeRpcAndShowRPCError(
+    let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
       'nb.list_volumes',
     );
     let availableVolumeTypes = selectVolumeTypes.map(t => {
@@ -1404,7 +1399,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   getBaseImage = async () => {
     let baseImage: string = null;
     try {
-      baseImage = await this.executeRpc('nb.get_base_image');
+      baseImage = await _legacy_executeRpc(
+        this.state.activeNotebook,
+        this.props.kernel,
+        'nb.get_base_image',
+      );
     } catch (error) {
       if (error instanceof RPCError) {
         console.warn('Kale is not running in a Notebook Server', error.error);
@@ -1420,13 +1419,22 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   snapshotNotebook = async () => {
-    return await this.executeRpcAndShowRPCError('rok.snapshot_notebook');
+    return await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
+      'rok.snapshot_notebook',
+    );
   };
 
   getSnapshotProgress = async (task_id: string, ms?: number) => {
-    const task = await this.executeRpcAndShowRPCError('rok.get_task', {
-      task_id,
-    });
+    const task = await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
+      'rok.get_task',
+      {
+        task_id,
+      },
+    );
     if (ms) {
       await this.wait(ms);
     }
@@ -1439,12 +1447,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     version: string,
     volumes: IVolumeMetadata[],
   ) => {
-    return await this.executeRpcAndShowRPCError('rok.replace_cloned_volumes', {
-      bucket,
-      obj,
-      version,
-      volumes,
-    });
+    return await _legacy_executeRpcAndShowRPCError(
+      this.state.activeNotebook,
+      this.props.kernel,
+      'rok.replace_cloned_volumes',
+      {
+        bucket,
+        obj,
+        version,
+        volumes,
+      },
+    );
   };
 
   unmarshalData = async (nbFileName: string) => {
