@@ -15,7 +15,7 @@
  */
 
 // Dependencies
-import { ICellModel, isCodeCellModel } from '@jupyterlab/cells';
+import { Cell, ICellModel, isCodeCellModel } from '@jupyterlab/cells';
 import { nbformat } from '@jupyterlab/coreutils';
 import { Notebook, NotebookActions, NotebookPanel } from '@jupyterlab/notebook';
 
@@ -416,5 +416,26 @@ export default class CellUtilities {
     );
     CellUtilities.deleteCellAtIndex(notebookPanel.content, index);
     return result;
+  }
+
+  public static getStepName(notebook: NotebookPanel, index: number): string {
+    const names: string[] = (
+      this.getCellMetaData(notebook.content, index, 'tags') || []
+    )
+      .filter((t: string) => !t.startsWith('prev:'))
+      .map((t: string) => t.replace('block:', ''));
+    return names.length > 0 ? names[0] : '';
+  }
+
+  public static getCellByStepName(
+    notebook: NotebookPanel,
+    stepName: string,
+  ): { cell: Cell; index: number } {
+    for (let i = 0; i < notebook.model.cells.length; i++) {
+      const name = this.getStepName(notebook, i);
+      if (name === stepName) {
+        return { cell: notebook.content.widgets[i], index: i };
+      }
+    }
   }
 }

@@ -22,9 +22,59 @@ import { CommandRegistry } from '@phosphor/commands';
 import SanitizedHTML from 'react-sanitized-html';
 import * as React from 'react';
 import { ReactElement } from 'react';
+import {
+  Cell,
+  CodeCell,
+  CodeCellModel,
+  isCodeCellModel,
+} from '@jupyterlab/cells';
+import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
+import CellUtilities from './CellUtils';
+import { nbformat } from '@jupyterlab/coreutils';
+
+interface IRunCellResponse {
+  status: string;
+  cellType?: string;
+  cellIndex?: number;
+  ename?: string;
+  evalue?: string;
+  cell?: Cell;
+  index?: number;
+}
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
 export default class NotebookUtilities {
+  /**
+   * Clear the outputs of all the notebook' cells
+   * @param notebook NotebookPanel
+   */
+  public static clearCellOutputs(notebook: NotebookPanel): void {
+    for (let i = 0; i < notebook.model.cells.length; i++) {
+      if (!isCodeCellModel(notebook.model.cells.get(i))) {
+        continue;
+      }
+      (notebook.model.cells.get(i) as CodeCellModel).executionCount = null;
+      (notebook.model.cells.get(i) as CodeCellModel).outputs.clear();
+    }
+  }
+
+  /**
+   * Scroll the notebook to the specified cell, making it active
+   * @param notebook NotebookPanel
+   * @param cell The cell to be actived
+   */
+  public static selectAndScrollToCell(
+    notebook: NotebookPanel,
+    cell: { cell: Cell; index: number },
+  ): void {
+    notebook.content.select(cell.cell);
+    notebook.content.activeCellIndex = cell.index;
+    const cellPosition = (notebook.content.node.childNodes[
+      cell.index
+    ] as HTMLElement).getBoundingClientRect();
+    notebook.content.scrollToPosition(cellPosition.top);
+  }
+
   /**
    * Builds an HTML container by sanitizing a list of strings and converting
    * them in valid HTML
@@ -218,6 +268,51 @@ export default class NotebookUtilities {
       this.saveNotebook(notebookPanel);
     }
     return oldVal;
+  }
+
+  public static async runGlobalCells(
+    notebook: NotebookPanel,
+  ): Promise<IRunCellResponse> {
+    let cell = { cell: notebook.content.widgets[0], index: 0 };
+    for (let i = 0; i < notebook.model.cells.length; i++) {
+      if (!isCodeCellModel(notebook.model.cells.get(i))) {
+        continue;
+      }
+      const blockName = CellUtilities.getStepName(notebook, i);
+      // If a cell of that type is found, run that
+      // and all consequent cells getting merged to that one
+      if (blockName !== 'skip' && RESERVED_CELL_NAMES.includes(blockName)) {
+        while (i < notebook.model.cells.length) {
+          if (!isCodeCellModel(notebook.model.cells.get(i))) {
+            i++;
+            continue;
+          }
+          const cellName = CellUtilities.getStepName(notebook, i);
+          if (cellName !== blockName && cellName !== '') {
+            break;
+          }
+          cell = { cell: notebook.content.widgets[i], index: i };
+          this.selectAndScrollToCell(notebook, cell);
+          // this.setState({ activeCellIndex: cell.index, activeCell: cell.cell });
+          const kernelMsg = (await CodeCell.execute(
+            notebook.content.widgets[i] as CodeCell,
+            notebook.session,
+          )) as KernelMessage.IExecuteReplyMsg;
+          if (kernelMsg.content && kernelMsg.content.status === 'error') {
+            return {
+              status: 'error',
+              cellType: blockName,
+              cellIndex: i,
+              ename: kernelMsg.content.ename,
+              evalue: kernelMsg.content.evalue,
+              ...cell,
+            };
+          }
+          i++;
+        }
+      }
+    }
+    return { status: 'ok', ...cell };
   }
 
   /**

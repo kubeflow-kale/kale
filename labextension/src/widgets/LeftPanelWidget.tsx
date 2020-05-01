@@ -68,14 +68,6 @@ enum RUN_CELL_STATUS {
   ERROR = 'error',
 }
 
-interface IRunCellResponse {
-  status: string;
-  cellType?: string;
-  cellIndex?: number;
-  ename?: string;
-  evalue?: string;
-}
-
 export interface ISelectOption {
   label: string;
   value: string;
@@ -783,14 +775,18 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           { source_notebook_path: nbFilePath },
         );
         if (exploration && exploration.is_exploration) {
-          this.clearCellOutputs(this.state.activeNotebook);
-          let runCellResponse = await this.runGlobalCells(
+          NotebookUtils.clearCellOutputs(this.state.activeNotebook);
+          let runCellResponse = await NotebookUtils.runGlobalCells(
             this.state.activeNotebook,
           );
+          this.setState({
+            activeCellIndex: runCellResponse.index,
+            activeCell: runCellResponse.cell,
+          });
           if (runCellResponse.status === RUN_CELL_STATUS.OK) {
             // unmarshalData runs in the same kernel as the .ipynb, so it requires the filename
             await this.unmarshalData(nbFilePath.split('/').pop());
-            const cell = this.getCellByStepName(
+            const cell = CellUtils.getCellByStepName(
               this.state.activeNotebook,
               exploration.step_name,
             );
@@ -799,7 +795,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               `Resuming notebook at step: "${exploration.step_name}"`,
             ];
             if (cell) {
-              this.selectAndScrollToCell(this.state.activeNotebook, cell);
+              NotebookUtils.selectAndScrollToCell(
+                this.state.activeNotebook,
+                cell,
+              );
               currentCell = {
                 activeCell: cell.cell,
                 activeCellIndex: cell.index,
@@ -1472,94 +1471,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     );
   };
 
-  getStepName = (notebook: NotebookPanel, index: number): string => {
-    const names: string[] = (
-      CellUtils.getCellMetaData(notebook.content, index, 'tags') || []
-    )
-      .filter((t: string) => !t.startsWith('prev:'))
-      .map((t: string) => t.replace('block:', ''));
-    return names.length > 0 ? names[0] : '';
-  };
-
-  clearCellOutputs = (notebook: NotebookPanel): void => {
-    for (let i = 0; i < notebook.model.cells.length; i++) {
-      if (!isCodeCellModel(notebook.model.cells.get(i))) {
-        continue;
-      }
-      (notebook.model.cells.get(i) as CodeCellModel).executionCount = null;
-      (notebook.model.cells.get(i) as CodeCellModel).outputs.clear();
-    }
-  };
-
-  selectAndScrollToCell = (
-    notebook: NotebookPanel,
-    cell: { cell: Cell; index: number },
-  ): void => {
-    notebook.content.select(cell.cell);
-    notebook.content.activeCellIndex = cell.index;
-    this.setState({ activeCellIndex: cell.index, activeCell: cell.cell });
-    const cellPosition = (notebook.content.node.childNodes[
-      cell.index
-    ] as HTMLElement).getBoundingClientRect();
-    notebook.content.scrollToPosition(cellPosition.top);
-  };
-
-  runGlobalCells = async (
-    notebook: NotebookPanel,
-  ): Promise<IRunCellResponse> => {
-    for (let i = 0; i < notebook.model.cells.length; i++) {
-      if (!isCodeCellModel(notebook.model.cells.get(i))) {
-        continue;
-      }
-      const blockName = this.getStepName(notebook, i);
-      // If a cell of that type is found, run that
-      // and all consequent cells getting merged to that one
-      if (blockName !== 'skip' && RESERVED_CELL_NAMES.includes(blockName)) {
-        while (i < notebook.model.cells.length) {
-          if (!isCodeCellModel(notebook.model.cells.get(i))) {
-            i++;
-            continue;
-          }
-          const cellName = this.getStepName(notebook, i);
-          if (cellName !== blockName && cellName !== '') {
-            break;
-          }
-          this.selectAndScrollToCell(notebook, {
-            cell: notebook.content.widgets[i],
-            index: i,
-          });
-          const kernelMsg = (await CodeCell.execute(
-            notebook.content.widgets[i] as CodeCell,
-            notebook.session,
-          )) as KernelMessage.IExecuteReplyMsg;
-          if (kernelMsg.content && kernelMsg.content.status === 'error') {
-            return {
-              status: 'error',
-              cellType: blockName,
-              cellIndex: i,
-              ename: kernelMsg.content.ename,
-              evalue: kernelMsg.content.evalue,
-            };
-          }
-          i++;
-        }
-      }
-    }
-    return { status: 'ok' };
-  };
-
-  getCellByStepName = (
-    notebook: NotebookPanel,
-    stepName: string,
-  ): { cell: Cell; index: number } => {
-    for (let i = 0; i < notebook.model.cells.length; i++) {
-      const name = this.getStepName(notebook, i);
-      if (name === stepName) {
-        return { cell: notebook.content.widgets[i], index: i };
-      }
-    }
-  };
-
   onMetadataEnable = (isEnabled: boolean) => {
     this.setState({ isEnabled });
     // When drawing cell metadata on Kale enable/disable, the targetted
@@ -1570,10 +1481,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       this.state.activeCell &&
       this.state.activeCellIndex
     ) {
-      setTimeout(this.selectAndScrollToCell, 200, this.state.activeNotebook, {
-        cell: this.state.activeCell,
-        index: this.state.activeCellIndex,
-      });
+      setTimeout(
+        NotebookUtils.selectAndScrollToCell,
+        200,
+        this.state.activeNotebook,
+        {
+          cell: this.state.activeCell,
+          index: this.state.activeCellIndex,
+        },
+      );
     }
   };
 
