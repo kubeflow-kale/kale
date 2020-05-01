@@ -241,6 +241,65 @@ export const showRpcError = async (
   );
 };
 
+// todo: refactor these legacy functions
+export const _legacy_executeRpc = async (
+  notebook: NotebookPanel,
+  kernel: Kernel.IKernel,
+  func: string,
+  args: any = {},
+  nb_path: string = null,
+) => {
+  if (!nb_path && notebook) {
+    nb_path = notebook.context.path;
+  }
+  let retryRpc = true;
+  let result: any = null;
+  // Kerned aborts the execution if busy
+  // If that is the case, retry the RPC
+  while (retryRpc) {
+    try {
+      result = await executeRpc(kernel, func, args, { nb_path });
+      retryRpc = false;
+    } catch (error) {
+      if (error instanceof KernelError && error.error.status === 'aborted') {
+        continue;
+      }
+      // If kernel not busy, throw the error
+      throw error;
+    }
+  }
+  return result;
+};
+
+// Execute RPC and if an RPCError is caught, show dialog and return null
+// This is our default behavior prior to this commit. This may probably
+// change in the future, setting custom logic for each RPC call. For
+// example, see getBaseImage().
+export const _legacy_executeRpcAndShowRPCError = async (
+  notebook: NotebookPanel,
+  kernel: Kernel.IKernel,
+  func: string,
+  args: any = {},
+  nb_path: string = null,
+) => {
+  try {
+    const result = await _legacy_executeRpc(
+      notebook,
+      kernel,
+      func,
+      args,
+      nb_path,
+    );
+    return result;
+  } catch (error) {
+    if (error instanceof RPCError) {
+      await error.showDialog();
+      return null;
+    }
+    throw error;
+  }
+};
+
 export abstract class BaseError extends Error {
   constructor(message: string, public error: any) {
     super(message);
