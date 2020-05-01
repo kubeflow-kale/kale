@@ -16,7 +16,7 @@
 
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
-import { RESERVED_CELL_NAMES } from '../components/cell-metadata/CellMetadataEditor';
+import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
 import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 
 interface IKaleCellTags {

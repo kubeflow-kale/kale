@@ -26,9 +26,9 @@ import { executeRpc, RPC_CALL_STATUS, RPCError } from '../utils/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from '../utils/NotebookUtils';
 import { useTheme } from '@material-ui/core/styles';
-import { Input } from './Input';
-import { Select } from './Select';
-import { LightTooltip } from './LightTooltip';
+import { Input } from '../components/Input';
+import { Select } from '../components/Select';
+import { LightTooltip } from '../components/LightTooltip';
 
 // python to katib types
 const katibTypeMapper: { [id: string]: string } = {

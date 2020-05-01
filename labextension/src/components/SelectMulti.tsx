@@ -22,7 +22,7 @@ import OutlinedInput from '@material-ui/core/OutlinedInput';
 import FormControl from '@material-ui/core/FormControl';
 import InputLabel from '@material-ui/core/InputLabel';
 import Chip from '@material-ui/core/Chip';
-import ColorUtils from './cell-metadata/ColorUtils';
+import ColorUtils from '../utils/ColorUtils';
 
 const useStyles = makeStyles(() =>
   createStyles({

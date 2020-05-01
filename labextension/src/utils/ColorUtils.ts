@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { RESERVED_CELL_NAMES_CHIP_COLOR } from './CellMetadataEditor';
+import { RESERVED_CELL_NAMES_CHIP_COLOR } from '../widgets/cell-metadata/CellMetadataEditor';
 
 const colorPool = [
   '#695181',

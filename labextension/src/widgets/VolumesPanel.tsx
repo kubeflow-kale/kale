@@ -20,10 +20,10 @@ import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { IVolumeMetadata, ISelectVolumeTypes } from './LeftPanelWidget';
 import { IRPCError, rokErrorTooltip } from '../utils/RPCUtils';
-import { Input } from './Input';
-import { Select } from './Select';
-import { LightTooltip } from './LightTooltip';
-import { AnnotationInput } from './AnnotationInput';
+import { Input } from '../components/Input';
+import { Select } from '../components/Select';
+import { LightTooltip } from '../components/LightTooltip';
+import { AnnotationInput } from '../components/AnnotationInput';
 
 interface IProps {
   volumes: IVolumeMetadata[];

@@ -30,7 +30,7 @@ import {
   rokErrorTooltip,
 } from '../utils/RPCUtils';
 import CellUtils from '../utils/CellUtils';
-import { AdvancedSettings } from './AdvancedSettings';
+import { AdvancedSettings } from '../components/AdvancedSettings';
 import {
   Cell,
   isCodeCellModel,
@@ -39,9 +39,9 @@ import {
 } from '@jupyterlab/cells';
 import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
 import { VolumesPanel } from './VolumesPanel';
-import { SplitDeployButton } from './DeployButton';
+import { SplitDeployButton } from '../components/DeployButton';
 import { KernelMessage, Kernel } from '@jupyterlab/services';
-import { ExperimentInput } from './ExperimentInput';
+import { ExperimentInput } from '../components/ExperimentInput';
 import {
   DeploysProgress,
   DeployProgressState,
@@ -53,8 +53,8 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import { theme } from '../Theme';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import { KatibDialog } from './KatibDialog';
-import { Input } from './Input';
-import { LightTooltip } from './LightTooltip';
+import { Input } from '../components/Input';
+import { LightTooltip } from '../components/LightTooltip';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 

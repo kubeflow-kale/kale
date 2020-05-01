@@ -35,7 +35,7 @@ import * as React from 'react';
 
 import '../style/index.css';
 
-import { KubeflowKaleLeftPanel } from './components/LeftPanelWidget';
+import { KubeflowKaleLeftPanel } from './widgets/LeftPanelWidget';
 import NotebookUtils from './utils/NotebookUtils';
 import {
   executeRpc,

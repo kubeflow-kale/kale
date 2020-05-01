@@ -16,7 +16,7 @@
 
 import * as React from 'react';
 import { Chip, Tooltip } from '@material-ui/core';
-import ColorUtils from './ColorUtils';
+import ColorUtils from '../../utils/ColorUtils';
 import {
   RESERVED_CELL_NAMES,
   RESERVED_CELL_NAMES_HELP_TEXT,
