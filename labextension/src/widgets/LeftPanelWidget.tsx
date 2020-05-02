@@ -46,7 +46,7 @@ import {
   _legacy_executeRpc,
   _legacy_executeRpcAndShowRPCError,
 } from '../lib/RPCUtils';
-import { wait } from '../lib/Utils';
+import { wait, removeIdxFromArray, updateIdxInArray } from '../lib/Utils';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -323,20 +323,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   // init state default values
   state = DefaultState;
 
-  removeIdxFromArray = (index: number, arr: Array<any>): Array<any> => {
-    return arr.slice(0, index).concat(arr.slice(index + 1, arr.length));
-  };
-  updateIdxInArray = (
-    element: any,
-    index: number,
-    arr: Array<any>,
-  ): Array<any> => {
-    return arr
-      .slice(0, index)
-      .concat([element])
-      .concat(arr.slice(index + 1, arr.length));
-  };
-
   updateSelectValue = (val: string) => this.setState({ selectVal: val });
   // update metadata state values: use destructure operator to update nested dict
   updateExperiment = (experiment: IExperiment) =>
@@ -381,10 +367,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     const autosnapshot =
       this.state.volumes.length === 1 ? false : this.state.autosnapshot;
     this.setState({
-      volumes: this.removeIdxFromArray(idx, this.state.volumes),
+      volumes: removeIdxFromArray(idx, this.state.volumes),
       metadata: {
         ...this.state.metadata,
-        volumes: this.removeIdxFromArray(idx, this.state.metadata.volumes),
+        volumes: removeIdxFromArray(idx, this.state.metadata.volumes),
       },
       autosnapshot: autosnapshot,
     });
@@ -570,7 +556,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       if (key === volumeIdx) {
         return {
           ...item,
-          annotations: this.removeIdxFromArray(annotationIdx, item.annotations),
+          annotations: removeIdxFromArray(annotationIdx, item.annotations),
         };
       } else {
         return item;
@@ -597,7 +583,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       if (key === volumeIdx) {
         return {
           ...item,
-          annotations: this.updateIdxInArray(
+          annotations: updateIdxInArray(
             annotation,
             annotationIdx,
             item.annotations,

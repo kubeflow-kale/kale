@@ -17,3 +17,21 @@
 export const wait = (ms: number) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
+
+export const removeIdxFromArray = (
+  index: number,
+  arr: Array<any>,
+): Array<any> => {
+  return arr.slice(0, index).concat(arr.slice(index + 1, arr.length));
+};
+
+export const updateIdxInArray = (
+  element: any,
+  index: number,
+  arr: Array<any>,
+): Array<any> => {
+  return arr
+    .slice(0, index)
+    .concat([element])
+    .concat(arr.slice(index + 1, arr.length));
+};
