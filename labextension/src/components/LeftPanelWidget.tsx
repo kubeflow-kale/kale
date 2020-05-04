@@ -30,7 +30,7 @@ import {
   rokErrorTooltip,
 } from '../utils/RPCUtils';
 import CellUtils from '../utils/CellUtils';
-import { CollapsablePanel, LightTooltip } from './Components';
+import { CollapsablePanel } from './Components';
 import {
   Cell,
   isCodeCellModel,
@@ -54,6 +54,7 @@ import { theme } from '../Theme';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import { KatibDialog } from './KatibDialog';
 import { Input } from './Input';
+import { LightTooltip } from './LightTooltip';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 

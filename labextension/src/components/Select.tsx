@@ -17,8 +17,8 @@
 import * as React from 'react';
 import TextField, { BaseTextFieldProps } from '@material-ui/core/TextField';
 import { MenuItem, Zoom } from '@material-ui/core';
-import { LightTooltip } from './Components';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { LightTooltip } from './LightTooltip';
 
 const useStyles = makeStyles(() =>
   createStyles({

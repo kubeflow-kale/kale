@@ -16,7 +16,6 @@ import {
 import AddIcon from '@material-ui/icons/Add';
 import Help from '@material-ui/icons/Help';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { LightTooltip } from './Components';
 import {
   IKatibMetadata,
   IKatibParameter,
@@ -29,6 +28,7 @@ import NotebookUtils from '../utils/NotebookUtils';
 import { useTheme } from '@material-ui/core/styles';
 import { Input } from './Input';
 import { Select } from './Select';
+import { LightTooltip } from './LightTooltip';
 
 // python to katib types
 const katibTypeMapper: { [id: string]: string } = {

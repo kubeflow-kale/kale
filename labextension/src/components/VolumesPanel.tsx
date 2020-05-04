@@ -18,11 +18,12 @@ import * as React from 'react';
 import { Button, Switch, Tooltip, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { AnnotationInput, LightTooltip } from './Components';
+import { AnnotationInput } from './Components';
 import { IVolumeMetadata, ISelectVolumeTypes } from './LeftPanelWidget';
 import { IRPCError, rokErrorTooltip } from '../utils/RPCUtils';
 import { Input } from './Input';
 import { Select } from './Select';
+import { LightTooltip } from './LightTooltip';
 
 interface IProps {
   volumes: IVolumeMetadata[];

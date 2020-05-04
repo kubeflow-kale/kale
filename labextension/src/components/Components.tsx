@@ -16,22 +16,9 @@
 
 import * as React from 'react';
 import { findDOMNode } from 'react-dom';
-import {
-  makeStyles,
-  useTheme,
-  createStyles,
-  withStyles,
-  Theme,
-} from '@material-ui/core/styles';
-import {
-  MenuItem,
-  Select,
-  Button,
-  Input as MaterialInput,
-  Tooltip,
-  Zoom,
-  Switch,
-} from '@material-ui/core';
+import { Input as MaterialInput } from '@material-ui/core';
+import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
+import { Button, MenuItem, Select, Switch } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import Chip from '@material-ui/core/Chip';
 import InputLabel from '@material-ui/core/InputLabel';
@@ -340,12 +327,3 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = props 
     </div>
   );
 };
-
-export const LightTooltip = withStyles((theme: Theme) => ({
-  tooltip: {
-    backgroundColor: theme.palette.common.white,
-    color: 'rgba(0, 0, 0, 0.87)',
-    boxShadow: theme.shadows[1],
-    fontSize: 'var(--jp-ui-font-size1)',
-  },
-}))(Tooltip);
