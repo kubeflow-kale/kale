@@ -15,7 +15,7 @@
 import os
 import logging
 
-LOG_FMT = "%(asctime)s {} [%(levelname)s] %(message)s"
+LOG_FMT = "%(asctime)s Kale {} [%(levelname)s] %(message)s"
 _loggers = dict()
 
 

@@ -70,8 +70,7 @@ class Kale:
         # setup logging
         level = logging.DEBUG if debug else logging.INFO
         log_path = os.path.join(".", "kale.log")
-        self.logger = get_or_create_logger(module=__name__,
-                                           name="kubeflow-kale", level=level,
+        self.logger = get_or_create_logger(module=__name__, level=level,
                                            log_path=log_path)
 
         # mute other loggers
