@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Kale Authors
+ * Copyright 2020 The Kale Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,20 @@
  */
 
 import * as React from 'react';
-import { useTheme } from '@material-ui/core/styles';
-import { Switch } from '@material-ui/core';
 import { Input } from './Input';
+import { Switch } from '@material-ui/core';
+import { useTheme } from '@material-ui/core/styles';
 
-interface ICollapsablePanel {
+interface AdvancedSettingsProps {
   title: string;
+  debug: boolean;
   dockerImageValue: string;
   dockerImageDefaultValue: string;
   dockerChange: Function;
-  debug: boolean;
   changeDebug: Function;
 }
 
-export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = props => {
+export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = props => {
   const [collapsed, setCollapsed] = React.useState(true);
   const theme = useTheme();
 
@@ -48,7 +48,7 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = prop
         }
       >
         <Input
-          label={'Docker image'}
+          label="Docker image"
           updateValue={props.dockerChange}
           value={props.dockerImageValue}
           placeholder={props.dockerImageDefaultValue}
@@ -56,7 +56,7 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = prop
         />
 
         <div className="toolbar" style={{ padding: '12px 4px 0 4px' }}>
-          <div className={'switch-label'}>Debug</div>
+          <div className="switch-label">Debug</div>
           <Switch
             checked={props.debug}
             onChange={_ => props.changeDebug()}

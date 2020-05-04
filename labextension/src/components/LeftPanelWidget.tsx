@@ -30,7 +30,7 @@ import {
   rokErrorTooltip,
 } from '../utils/RPCUtils';
 import CellUtils from '../utils/CellUtils';
-import { CollapsablePanel } from './Components';
+import { AdvancedSettings } from './AdvancedSettings';
 import {
   Cell,
   isCodeCellModel,
@@ -1765,7 +1765,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
               }
             >
-              <CollapsablePanel
+              <AdvancedSettings
                 title={'Advanced Settings'}
                 dockerImageValue={this.state.metadata.docker_image}
                 dockerImageDefaultValue={DefaultState.metadata.docker_image}
