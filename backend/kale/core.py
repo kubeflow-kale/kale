@@ -30,6 +30,7 @@ from kale.codegen import generate_code
 from kale.utils import utils, graph_utils
 from kale.utils.pod_utils import get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
+from kale.utils.log_utils import get_or_create_logger
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'
 
@@ -67,27 +68,11 @@ class Kale:
         self.detect_environment()
 
         # setup logging
-        self.logger = logging.getLogger("kubeflow-kale")
-        formatter = logging.Formatter(
-            '%(asctime)s | %(name)s |  %(levelname)s: %(message)s',
-            datefmt='%m-%d %H:%M')
-        self.logger.setLevel(logging.DEBUG)
-
-        stream_handler = logging.StreamHandler()
-        if debug:
-            stream_handler.setLevel(logging.DEBUG)
-        else:
-            stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(formatter)
-
-        self.log_dir_path = "."
-        file_handler = logging.FileHandler(
-            filename=self.log_dir_path + '/kale.log', mode='a')
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel(logging.DEBUG)
-
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(stream_handler)
+        level = logging.DEBUG if debug else logging.INFO
+        log_path = os.path.join(".", "kale.log")
+        self.logger = get_or_create_logger(module=__name__,
+                                           name="kubeflow-kale", level=level,
+                                           log_path=log_path)
 
         # mute other loggers
         logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
