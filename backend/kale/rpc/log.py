@@ -15,6 +15,8 @@
 import logging
 import os
 
+from kale.utils import log_utils
+
 # FIXME: We could have a chowned folder in /var/log and use it. But this won't
 # work for other kale installations. It would require that setting in the
 # Dockerfile
@@ -55,18 +57,8 @@ def setup_logging(request):
     _logger.addHandler(root_stream_handler)
 
     # Setup kale.rpc logger
-    rpc_stream_handler = logging.StreamHandler()
-    configure_handler(rpc_stream_handler, RPC_FMT_EXTRAS + "%(message)s")
-
-    os.makedirs(KALE_LOG_DIR, exist_ok=True)
-    rpc_file_handler = logging.FileHandler(filename=KALE_LOG_FILE, mode='a')
-    configure_handler(rpc_file_handler, RPC_FMT_EXTRAS + "%(message)s",
-                      logging.DEBUG)
-    _rpc_logger = logging.getLogger("kale.rpc")
-    _rpc_logger.propagate = False
-    _rpc_logger.setLevel(logging.DEBUG)
-    _rpc_logger.addHandler(rpc_file_handler)
-    _rpc_logger.addHandler(rpc_stream_handler)
+    fmt = FMT_PREFIX + RPC_FMT_EXTRAS + "%(message)s"
+    log_utils.get_or_create_logger("kale.rpc", fmt=fmt, log_path=KALE_LOG_FILE)
 
     # mute other loggers
     logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
