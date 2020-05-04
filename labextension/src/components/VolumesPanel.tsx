@@ -18,10 +18,11 @@ import * as React from 'react';
 import { Button, Switch, Tooltip, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { AnnotationInput, MaterialSelect, LightTooltip } from './Components';
+import { AnnotationInput, LightTooltip } from './Components';
 import { IVolumeMetadata, ISelectVolumeTypes } from './LeftPanelWidget';
 import { IRPCError, rokErrorTooltip } from '../utils/RPCUtils';
 import { Input } from './Input';
+import { Select } from './Select';
 
 interface IProps {
   volumes: IVolumeMetadata[];
@@ -67,7 +68,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
             const mountPointPicker =
               v.type === 'clone' ? (
                 <div>
-                  <MaterialSelect
+                  <Select
+                    variant="standard"
                     label={'Select from currently mounted points'}
                     index={idx}
                     updateValue={this.props.updateVolumeMountPoint}
@@ -100,7 +102,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                     />
                   </div>
                   <div style={{ width: '50%' }}>
-                    <MaterialSelect
+                    <Select
+                      variant="standard"
                       updateValue={this.props.updateVolumeSizeType}
                       values={this.props.selectVolumeSizeTypes}
                       value={v.size_type}
@@ -161,7 +164,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 key={`v-${idx}`}
               >
                 <div className="toolbar">
-                  <MaterialSelect
+                  <Select
+                    variant="standard"
                     updateValue={this.props.updateVolumeType}
                     values={this.props.selectVolumeTypes}
                     value={v.type}

@@ -15,9 +15,9 @@
  */
 
 import * as React from 'react';
-import { MaterialSelect } from './Components';
 import { ISelectOption, IExperiment, NEW_EXPERIMENT } from './LeftPanelWidget';
 import { Input } from './Input';
+import { Select } from './Select';
 
 const regex: string = '^[a-z]([-a-z0-9]*[a-z0-9])?$';
 const regexErrorMsg: string =
@@ -56,8 +56,9 @@ export const ExperimentInput: React.FunctionComponent<IExperimentInput> = props 
 
   return (
     <div>
-      <MaterialSelect
-        label={'Select experiment'}
+      <Select
+        variant="standard"
+        label="Select experiment"
         values={options}
         value={props.selected}
         index={-1}
@@ -69,7 +70,7 @@ export const ExperimentInput: React.FunctionComponent<IExperimentInput> = props 
           <Input
             updateValue={updateValue}
             value={props.value}
-            label={'Experiment Name'}
+            label="Experiment Name"
             regex={regex}
             regexErrorMsg={regexErrorMsg}
             variant="standard"

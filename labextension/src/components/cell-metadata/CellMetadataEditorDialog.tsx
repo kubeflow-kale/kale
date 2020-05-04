@@ -15,7 +15,6 @@
  */
 
 import * as React from 'react';
-import { MaterialSelect } from '../Components';
 import {
   Button,
   Chip,
@@ -28,6 +27,7 @@ import {
 } from '@material-ui/core';
 import ColorUtils from './ColorUtils';
 import { Input } from '../Input';
+import { Select } from '../Select';
 
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },
@@ -153,7 +153,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
               />
             </Grid>
             <Grid item xs={6}>
-              <MaterialSelect
+              <Select
                 disabled={gpuType === undefined}
                 updateValue={(v: string) => {
                   props.updateLimits([

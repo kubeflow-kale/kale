@@ -16,7 +16,7 @@ import {
 import AddIcon from '@material-ui/icons/Add';
 import Help from '@material-ui/icons/Help';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { MaterialSelect, LightTooltip } from './Components';
+import { LightTooltip } from './Components';
 import {
   IKatibMetadata,
   IKatibParameter,
@@ -28,6 +28,7 @@ import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from '../utils/NotebookUtils';
 import { useTheme } from '@material-ui/core/styles';
 import { Input } from './Input';
+import { Select } from './Select';
 
 // python to katib types
 const katibTypeMapper: { [id: string]: string } = {
@@ -670,7 +671,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 )}
                 {metadataParameter &&
                 ['int', 'float'].includes(pyParameterType) ? (
-                  <MaterialSelect
+                  <Select
                     variant={'outlined'}
                     updateValue={updateParameter(
                       parameterName,
@@ -771,7 +772,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         </a>,
       )}
 
-      <MaterialSelect
+      <Select
         variant="outlined"
         label={'Algorithm'}
         values={algorithmOptions}
@@ -809,7 +810,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           <Divider variant="middle" style={{ margin: '10px' }} />
           <Grid container direction="row" justify="center" alignItems="center">
             <Grid item xs={9}>
-              <MaterialSelect
+              <Select
                 variant="outlined"
                 label={'Base Estimator'}
                 values={estimatorOptions}
@@ -838,7 +839,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           </Grid>
           <Grid container direction="row" justify="center" alignItems="center">
             <Grid item xs={5}>
-              <MaterialSelect
+              <Select
                 variant="outlined"
                 label={'Acquisition Function'}
                 values={acqFuncOptions}
@@ -894,7 +895,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
 
       <Grid container direction="row" justify="center" alignItems="center">
         <Grid item xs={4}>
-          <MaterialSelect
+          <Select
             variant="outlined"
             label={'Reference Metric'}
             values={pipelineMetrics}
@@ -905,7 +906,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           />
         </Grid>
         <Grid item xs={4}>
-          <MaterialSelect
+          <Select
             variant="outlined"
             label={'Type'}
             values={[

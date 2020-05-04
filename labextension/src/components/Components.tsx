@@ -23,7 +23,6 @@ import {
   withStyles,
   Theme,
 } from '@material-ui/core/styles';
-import TextField from '@material-ui/core/TextField';
 import {
   MenuItem,
   Select,
@@ -69,106 +68,6 @@ const useStyles = makeStyles(() =>
     },
   }),
 );
-
-interface IMaterialSelect {
-  updateValue: Function;
-  values: any;
-  value: any;
-  label: string;
-  index: number;
-  helperText?: string;
-  variant?: 'filled' | 'standard' | 'outlined';
-  disabled?: boolean;
-  style?: any;
-}
-
-export const MaterialSelect: React.FunctionComponent<IMaterialSelect> = props => {
-  const classes = useStyles({});
-
-  const disableMenuItem = (event: React.MouseEvent, invalidOption: boolean) => {
-    if (invalidOption) {
-      event.stopPropagation();
-    }
-  };
-
-  const getOptionClassNames = (option: any) => {
-    const classNames: string[] = [];
-    if (option.tooltip) {
-      classNames.push('menu-item-tooltip');
-    }
-    return classNames.join(' ');
-  };
-
-  return (
-    <TextField
-      select
-      InputLabelProps={{
-        classes: {
-          root: classes.label,
-        },
-        shrink: props.value !== '',
-      }}
-      InputProps={{
-        classes: {
-          root: classes.input,
-          focused: classes.focused,
-          // notchedOutline: classes.notchedOutline,
-        },
-      }}
-      SelectProps={{
-        MenuProps: {
-          PaperProps: {
-            className: classes.menu,
-          },
-        },
-      }}
-      FormHelperTextProps={{
-        classes: {
-          root: classes.helperLabel,
-        },
-      }}
-      className={classes.textField}
-      style={props.style || {}}
-      id={props.label}
-      label={props.label}
-      value={props.value}
-      onChange={evt =>
-        props.updateValue((evt.target as HTMLInputElement).value, props.index)
-      }
-      margin="dense"
-      variant={props.variant as any}
-      disabled={props.disabled || false}
-      helperText={props.helperText ? props.helperText : null}
-    >
-      {props.values.map((option: any) => (
-        <MenuItem
-          key={option.value}
-          value={option.value}
-          disabled={!!option.invalid}
-          className={getOptionClassNames(option)}
-        >
-          {option.tooltip ? (
-            <LightTooltip
-              title={option.tooltip}
-              placement="top-start"
-              interactive={!(typeof option.tooltip === 'string')}
-              TransitionComponent={Zoom}
-            >
-              <div
-                className="menu-item-label"
-                onClick={ev => disableMenuItem(ev, !!option.invalid)}
-              >
-                {option.label}
-              </div>
-            </LightTooltip>
-          ) : (
-            option.label
-          )}
-        </MenuItem>
-      ))}
-    </TextField>
-  );
-};
 
 const useStylesSelectMulti = makeStyles(() =>
   createStyles({
