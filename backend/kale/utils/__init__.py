@@ -13,5 +13,5 @@
 #  limitations under the License.
 
 from kale.utils import log_utils
-log_utils.get_logger(module=__name__)
+log_utils.get_or_create_logger(module=__name__)
 del log_utils

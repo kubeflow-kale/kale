@@ -19,5 +19,5 @@ from .backends import *
 
 
 from kale.utils import log_utils
-log_utils.get_logger(module=__name__, name="Kale Marshalling")
+log_utils.get_or_create_logger(module=__name__, name="Kale Marshalling")
 del log_utils

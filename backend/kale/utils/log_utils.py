@@ -3,7 +3,7 @@ import logging
 _loggers = dict()
 
 
-def get_logger(module, name=None, level=logging.INFO):
+def get_or_create_logger(module, name=None, level=logging.INFO):
     """Get or create and return module's logger."""
     global _loggers
     log = _loggers.get(module)
