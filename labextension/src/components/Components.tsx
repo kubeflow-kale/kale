@@ -28,7 +28,7 @@ import {
   MenuItem,
   Select,
   Button,
-  Input,
+  Input as MaterialInput,
   Tooltip,
   Zoom,
   Switch,
@@ -38,10 +38,9 @@ import Chip from '@material-ui/core/Chip';
 import InputLabel from '@material-ui/core/InputLabel';
 import FormControl from '@material-ui/core/FormControl';
 import OutlinedInput from '@material-ui/core/OutlinedInput';
-
-import { useDebouncedCallback } from 'use-debounce';
 import { RokInput } from './RokInput';
 import ColorUtils from './cell-metadata/ColorUtils';
+import { Input } from './Input';
 
 // https://codeburst.io/my-journey-to-make-styling-with-material-ui-right-6a44f7c68113
 const useStyles = makeStyles(() =>
@@ -70,141 +69,6 @@ const useStyles = makeStyles(() =>
     },
   }),
 );
-
-export interface IMaterialInput {
-  updateValue: Function;
-  value: string | number;
-  regex?: string;
-  regexErrorMsg?: string;
-  inputIndex?: number;
-  helperText?: string;
-  label: string;
-  numeric?: boolean;
-  readOnly?: boolean;
-  extraInputProps?: any;
-  variant?: 'filled' | 'standard' | 'outlined';
-  validation?: 'int' | 'double';
-  onBeforeUpdate?: (value: string) => boolean;
-  placeholder?: string;
-  disabled?: boolean;
-  style?: any;
-}
-
-export const MaterialInput: React.FunctionComponent<IMaterialInput> = props => {
-  const [value, setValue] = React.useState('' as any);
-  const [error, updateError] = React.useState(false);
-  const classes = useStyles({});
-
-  const getRegex = () => {
-    if (props.regex) {
-      return props.regex;
-    } else if (props.validation && props.validation == 'int') {
-      return /^(-\d)?\d*$/;
-    } else if (props.validation && props.validation == 'double') {
-      return /^(-\d)?\d*(\.\d)?\d*$/;
-    } else {
-      return undefined;
-    }
-  };
-
-  const getRegexMessage = () => {
-    if (props.regexErrorMsg) {
-      return props.regexErrorMsg;
-    } else if (props.validation && props.validation == 'int') {
-      return 'Integer value required';
-    } else if (props.validation && props.validation == 'double') {
-      return 'Double value required';
-    } else {
-      return undefined;
-    }
-  };
-
-  const onChange = (value: string, index: number) => {
-    // if the input domain is restricted by a regex
-    if (!getRegex()) {
-      props.updateValue(value, index);
-      return;
-    }
-
-    let re = new RegExp(getRegex());
-    if (!re.test(value)) {
-      updateError(true);
-    } else {
-      updateError(false);
-      props.updateValue(value, index);
-    }
-  };
-
-  React.useEffect(() => {
-    // need this to set the value when the notebook is loaded
-    // and the metadata is updated
-    setValue(props.value);
-  }, [props.value]); // Only re-run the effect if props.value changes
-
-  const [debouncedCallback] = useDebouncedCallback(
-    // function
-    (value, idx) => {
-      onChange(value, idx);
-    },
-    // delay in ms
-    500,
-  );
-
-  const helperText = error ? getRegexMessage() : props.helperText || null;
-
-  let inputProps = {
-    classes: {
-      root: classes.input,
-      focused: classes.focused,
-      // notchedOutline: classes.notchedOutline,
-    },
-    readOnly: props.readOnly,
-    spellCheck: false,
-  };
-  inputProps = { ...inputProps, ...props.extraInputProps };
-
-  return (
-    <TextField
-      InputLabelProps={{
-        classes: {
-          root: classes.label,
-        },
-        shrink: !!props.placeholder || value !== '',
-      }}
-      InputProps={inputProps}
-      FormHelperTextProps={{
-        classes: {
-          root: classes.helperLabel,
-        },
-      }}
-      className={classes.textField}
-      style={props.style || {}}
-      error={error}
-      label={props.label}
-      value={value}
-      placeholder={props.placeholder}
-      onChange={evt => {
-        setValue(evt.target.value);
-        if (!props.onBeforeUpdate) {
-          debouncedCallback(evt.target.value, props.inputIndex);
-        } else {
-          const r = props.onBeforeUpdate(evt.target.value);
-          if (r) {
-            updateError(true);
-          } else {
-            updateError(false);
-            debouncedCallback(evt.target.value, props.inputIndex);
-          }
-        }
-      }}
-      margin="dense"
-      variant={props.variant as any}
-      type={props.numeric && 'number'}
-      helperText={helperText}
-      disabled={props.disabled || false}
-    />
-  );
-};
 
 interface IMaterialSelect {
   updateValue: Function;
@@ -361,7 +225,7 @@ export const MaterialSelectMulti: React.FunctionComponent<IMaterialSelectMultipl
     : 0;
 
   let inputComponent = (
-    <Input
+    <MaterialInput
       classes={outlined_classes}
       margin="dense"
       name="previous"
@@ -467,11 +331,12 @@ export const CollapsablePanel: React.FunctionComponent<ICollapsablePanel> = prop
           (collapsed && 'p-mod-hidden')
         }
       >
-        <MaterialInput
+        <Input
           label={'Docker image'}
           updateValue={props.dockerChange}
           value={props.dockerImageValue}
           placeholder={props.dockerImageDefaultValue}
+          variant="standard"
         />
 
         <div className="toolbar" style={{ padding: '12px 4px 0 4px' }}>
@@ -536,23 +401,25 @@ export const AnnotationInput: React.FunctionComponent<IAnnotationInput> = props 
         annotationIdx={props.annotationIdx}
       />
     ) : (
-      <MaterialInput
+      <Input
         updateValue={updateValue}
         value={props.annotation.value}
         label={'Value'}
         inputIndex={props.volumeIdx}
+        variant="standard"
       />
     );
 
   return (
     <div className="toolbar">
       <div style={{ marginRight: '10px', width: '50%' }}>
-        <MaterialInput
+        <Input
           updateValue={updateKey}
           value={props.annotation.key}
           label={'Key'}
           inputIndex={props.volumeIdx}
           readOnly={props.cannotBeDeleted || false}
+          variant="standard"
         />
       </div>
       <div style={{ width: '50%' }}>{valueField}</div>

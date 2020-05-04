@@ -16,11 +16,7 @@
 
 import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
-import {
-  MaterialInput,
-  MaterialSelect,
-  MaterialSelectMulti,
-} from '../Components';
+import { MaterialSelect, MaterialSelectMulti } from '../Components';
 import TagsUtils from '../../utils/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@material-ui/icons/Close';
@@ -28,6 +24,7 @@ import ColorUtils from './ColorUtils';
 import { CellMetadataContext } from './CellMetadataContext';
 import { Button, IconButton } from '@material-ui/core';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
+import { Input } from '../Input';
 
 const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
@@ -379,7 +376,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               />
 
               {cellType === 'step' ? (
-                <MaterialInput
+                <Input
                   label={'Step name'}
                   updateValue={this.updateCurrentBlockName}
                   value={this.props.stepName || ''}

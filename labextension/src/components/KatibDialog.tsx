@@ -16,7 +16,7 @@ import {
 import AddIcon from '@material-ui/icons/Add';
 import Help from '@material-ui/icons/Help';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { MaterialSelect, MaterialInput, LightTooltip } from './Components';
+import { MaterialSelect, LightTooltip } from './Components';
 import {
   IKatibMetadata,
   IKatibParameter,
@@ -27,6 +27,7 @@ import { executeRpc, RPC_CALL_STATUS, RPCError } from '../utils/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from '../utils/NotebookUtils';
 import { useTheme } from '@material-ui/core/styles';
+import { Input } from './Input';
 
 // python to katib types
 const katibTypeMapper: { [id: string]: string } = {
@@ -506,7 +507,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   justify="flex-end"
                   alignItems="center"
                 >
-                  <MaterialInput
+                  <Input
                     validation={
                       pyParameterType === 'int'
                         ? 'int'
@@ -577,7 +578,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             alignItems="center"
           >
             <Grid item xs={3}>
-              <MaterialInput
+              <Input
                 validation={metadataParameter.parameterType}
                 variant={'outlined'}
                 label={'Min'}
@@ -591,7 +592,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             </Grid>
 
             <Grid item xs={3}>
-              <MaterialInput
+              <Input
                 validation={metadataParameter.parameterType}
                 variant={'outlined'}
                 label={'Max'}
@@ -604,7 +605,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
               />
             </Grid>
             <Grid item xs={3}>
-              <MaterialInput
+              <Input
                 validation={metadataParameter.parameterType}
                 variant={'outlined'}
                 label={'Step'}
@@ -789,8 +790,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             justify="flex-start"
             alignItems="center"
           >
-            <MaterialInput
-              numeric
+            <Input
+              type="number"
               variant={'outlined'}
               label={'Random State'}
               value={
@@ -822,8 +823,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
               />
             </Grid>
             <Grid item xs={3}>
-              <MaterialInput
-                numeric
+              <Input
+                type="number"
                 variant={'outlined'}
                 label={'N Initial Points'}
                 value={
@@ -851,7 +852,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
               />
             </Grid>
             <Grid item xs={4}>
-              <MaterialInput
+              <Input
                 variant={'outlined'}
                 label={'Acq. Fun. Optimizer'}
                 value={
@@ -863,8 +864,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
               />
             </Grid>
             <Grid item xs={3}>
-              <MaterialInput
-                numeric
+              <Input
+                type="number"
                 variant={'outlined'}
                 label={'Random State'}
                 value={
@@ -918,7 +919,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           />
         </Grid>
         <Grid item xs={4}>
-          <MaterialInput
+          <Input
             validation="double"
             variant={'outlined'}
             label={'Goal'}
@@ -941,7 +942,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
 
       <Grid container direction="row" justify="center" alignItems="center">
         <Grid item xs={4}>
-          <MaterialInput
+          <Input
             validation="int"
             variant={'outlined'}
             label={'Parallel Trial Count'}
@@ -951,7 +952,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           />
         </Grid>
         <Grid item xs={4}>
-          <MaterialInput
+          <Input
             validation="int"
             variant={'outlined'}
             label={'Max Trial Count'}
@@ -961,7 +962,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           />
         </Grid>
         <Grid item xs={4}>
-          <MaterialInput
+          <Input
             validation="int"
             variant={'outlined'}
             label={'max Failed Trial Count'}

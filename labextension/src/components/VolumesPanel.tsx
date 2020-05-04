@@ -18,14 +18,10 @@ import * as React from 'react';
 import { Button, Switch, Tooltip, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
-import {
-  AnnotationInput,
-  MaterialInput,
-  MaterialSelect,
-  LightTooltip,
-} from './Components';
+import { AnnotationInput, MaterialSelect, LightTooltip } from './Components';
 import { IVolumeMetadata, ISelectVolumeTypes } from './LeftPanelWidget';
 import { IRPCError, rokErrorTooltip } from '../utils/RPCUtils';
+import { Input } from './Input';
 
 interface IProps {
   volumes: IVolumeMetadata[];
@@ -81,7 +77,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 </div>
               ) : (
                 <div>
-                  <MaterialInput
+                  <Input
+                    variant="standard"
                     label={'Mount Point'}
                     inputIndex={idx}
                     updateValue={this.props.updateVolumeMountPoint}
@@ -93,12 +90,13 @@ export class VolumesPanel extends React.Component<IProps, any> {
               v.type === 'pvc' ? null : (
                 <div className="toolbar">
                   <div style={{ marginRight: '10px', width: '50%' }}>
-                    <MaterialInput
+                    <Input
                       updateValue={this.props.updateVolumeSize}
                       value={v.size}
                       label={'Volume size'}
                       inputIndex={idx}
-                      numeric
+                      type="number"
+                      variant="standard"
                     />
                   </div>
                   <div style={{ width: '50%' }}>
@@ -193,7 +191,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
 
                 {mountPointPicker}
 
-                <MaterialInput
+                <Input
+                  variant="standard"
                   label={nameLabel + ' Name'}
                   inputIndex={idx}
                   updateValue={this.props.updateVolumeName}
@@ -222,7 +221,8 @@ export class VolumesPanel extends React.Component<IProps, any> {
                 </div>
 
                 {v.snapshot ? (
-                  <MaterialInput
+                  <Input
+                    variant="standard"
                     label={'Snapshot Name'}
                     // key={idx}
                     inputIndex={idx}

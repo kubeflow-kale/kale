@@ -15,8 +15,9 @@
  */
 
 import * as React from 'react';
-import { MaterialInput, MaterialSelect } from './Components';
+import { MaterialSelect } from './Components';
 import { ISelectOption, IExperiment, NEW_EXPERIMENT } from './LeftPanelWidget';
+import { Input } from './Input';
 
 const regex: string = '^[a-z]([-a-z0-9]*[a-z0-9])?$';
 const regexErrorMsg: string =
@@ -65,12 +66,13 @@ export const ExperimentInput: React.FunctionComponent<IExperimentInput> = props 
       />
       {props.selected === NEW_EXPERIMENT.id ? (
         <div>
-          <MaterialInput
+          <Input
             updateValue={updateValue}
             value={props.value}
             label={'Experiment Name'}
             regex={regex}
             regexErrorMsg={regexErrorMsg}
+            variant="standard"
           />
         </div>
       ) : null}

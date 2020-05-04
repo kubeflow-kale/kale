@@ -30,7 +30,7 @@ import {
   rokErrorTooltip,
 } from '../utils/RPCUtils';
 import CellUtils from '../utils/CellUtils';
-import { CollapsablePanel, LightTooltip, MaterialInput } from './Components';
+import { CollapsablePanel, LightTooltip } from './Components';
 import {
   Cell,
   isCodeCellModel,
@@ -53,6 +53,7 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import { theme } from '../Theme';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import { KatibDialog } from './KatibDialog';
+import { Input } from './Input';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -1600,7 +1601,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     );
 
     const pipeline_name_input = (
-      <MaterialInput
+      <Input
+        variant="standard"
         label={'Pipeline Name'}
         updateValue={this.updatePipelineName}
         value={this.state.metadata.pipeline_name}
@@ -1612,7 +1614,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     );
 
     const pipeline_desc_input = (
-      <MaterialInput
+      <Input
+        variant="standard"
         label={'Pipeline Description'}
         updateValue={this.updatePipelineDescription}
         value={this.state.metadata.pipeline_description}
