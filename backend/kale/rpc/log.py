@@ -37,14 +37,14 @@ def create_adapter(logger, trans_id=None, nb_path=None):
 
 def setup_logging(request):
     """Configure logging."""
-    # Setup root logger
+    # Set up root logger
     fmt = FMT_PREFIX + "%(message)s"
     _root_log = log_utils.get_or_create_logger("", fmt=fmt,
                                                file_level=logging.INFO,
                                                log_path=KALE_LOG_FILE)
     _root_log.setLevel(logging.INFO)
 
-    # Setup kale.rpc logger
+    # Set up kale.rpc logger
     fmt = FMT_PREFIX + RPC_FMT_EXTRAS + "%(message)s"
     log_utils.get_or_create_logger("kale.rpc", fmt=fmt, log_path=KALE_LOG_FILE)
 

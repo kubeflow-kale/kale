@@ -67,7 +67,7 @@ class Kale:
         self.pipeline_metadata['abs_working_dir'] = abs_working_dir
         self.detect_environment()
 
-        # setup logging
+        # set up logging
         level = logging.DEBUG if debug else logging.INFO
         log_path = os.path.join(".", "kale.log")
         self.logger = get_or_create_logger(module=__name__, level=level,

@@ -50,7 +50,7 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
                 h.setLevel(level)
         return log
 
-    # Setup logger
+    # Set up logger
     log = logging.getLogger(module)
     # Set propagate to False allowing different logger settings across kale
     # modules without multiple log messages with the same information
@@ -58,7 +58,7 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
     # Set DEBUG level for the root logger and let handlers set their own level
     log.setLevel(logging.DEBUG)
 
-    # Setup handlers
+    # Set up handlers
     log_fmt = fmt or LOG_FMT.format(name or "%(module)s:%(lineno)d")
     stream_handler = logging.StreamHandler()
     _configure_handler(stream_handler, level, logging.Formatter(log_fmt,
