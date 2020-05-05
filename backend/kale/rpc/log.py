@@ -28,12 +28,6 @@ FMT_PREFIX = "%(asctime)s %(module)s:%(lineno)d [%(levelname)s] "
 RPC_FMT_EXTRAS = "[TID=%(trans_id)s] [%(nb_path)s] "
 
 
-def configure_handler(handler, fmt_extras="", level=logging.INFO):
-    """Configure log handler."""
-    handler.setLevel(level)
-    handler.setFormatter(logging.Formatter(FMT_PREFIX + fmt_extras))
-
-
 def create_adapter(logger, trans_id=None, nb_path=None):
     """Create log Adapter."""
     extras = {"trans_id": trans_id or "",
@@ -44,17 +38,11 @@ def create_adapter(logger, trans_id=None, nb_path=None):
 def setup_logging(request):
     """Configure logging."""
     # Setup root logger
-    root_stream_handler = logging.StreamHandler()
-    configure_handler(root_stream_handler, "%(message)s")
-
-    os.makedirs(KALE_LOG_DIR, exist_ok=True)
-    root_file_handler = logging.FileHandler(filename=KALE_LOG_FILE, mode='a')
-    configure_handler(root_stream_handler, "%(message)s")
-
-    _logger = logging.getLogger("")
-    _logger.setLevel(logging.INFO)
-    _logger.addHandler(root_file_handler)
-    _logger.addHandler(root_stream_handler)
+    fmt = FMT_PREFIX + "%(message)s"
+    _root_log = log_utils.get_or_create_logger("", fmt=fmt,
+                                               file_level=logging.INFO,
+                                               log_path=KALE_LOG_FILE)
+    _root_log.setLevel(logging.INFO)
 
     # Setup kale.rpc logger
     fmt = FMT_PREFIX + RPC_FMT_EXTRAS + "%(message)s"
