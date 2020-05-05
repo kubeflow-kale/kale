@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+import os
 import kubernetes
 from kubernetes.client.rest import ApiException
 
@@ -54,11 +56,8 @@ spec:
                 )"
 """
 
-trans_id = None
 
-
-def _get_k8s_co_client():
-    global trans_id
+def _get_k8s_co_client(trans_id):
     try:
         kubernetes.config.load_incluster_config()
     except Exception:  # Not in a notebook server
@@ -91,7 +90,7 @@ def _define_katib_experiment(name, katib_spec, trial_parameters):
 
 def _launch_katib_experiment(request, katib_experiment, namespace):
     """Launch Katib experiment."""
-    k8s_co_client = _get_k8s_co_client()
+    k8s_co_client = _get_k8s_co_client(request.trans_id)
 
     co_group = "kubeflow.org"
     co_version = "v1alpha3"
@@ -134,7 +133,8 @@ def _sanitize_katib_spec(request, katib_spec):
                                 KATIB_DEFAULTS, "Katib")
 
 
-def create_katib_experiment(request, pipeline_id, pipeline_metadata):
+def create_katib_experiment(request, pipeline_id, pipeline_metadata,
+                            output_path):
     """Create and launch a new Katib experiment.
 
     The Katib metadata must include all the information required to create an
@@ -146,11 +146,10 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata):
         request: RPC request object
         pipeline_id: The id of the KFP pipeline that will be run by the Trials
         pipeline_metadata: The Kale notebook metadata
+        output_path: The directory to store the YAML definition
 
     Returns (dict): a dictionary describing the status of the experiment
     """
-    global trans_id
-    trans_id = request.trans_id
     try:
         namespace = pod_utils.get_namespace()
     except Exception:
@@ -177,7 +176,11 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata):
 
     katib_experiment = _define_katib_experiment(katib_name, katib_spec,
                                                 trial_parameters)
-    with open("./%s.yaml" % katib_name, "w") as yaml_file:
+    definition_path = os.path.abspath(
+        os.path.join(output_path, "%s.katib.yaml" % katib_name))
+    request.log.info("Saving Katib experiment definition at %s",
+                     definition_path)
+    with open(definition_path, "w") as yaml_file:
         import yaml
         yaml_text = yaml.dump(katib_experiment)
         yaml_file.write(yaml_text)
@@ -203,7 +206,7 @@ def get_experiment(request, experiment, namespace):
 
     Returns (dict): a dict describing the status of the running experiment
     """
-    k8s_co_client = _get_k8s_co_client()
+    k8s_co_client = _get_k8s_co_client(request.trans_id)
 
     co_group = "kubeflow.org"
     co_version = "v1alpha3"
