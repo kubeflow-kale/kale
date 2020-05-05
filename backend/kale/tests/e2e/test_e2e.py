@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import os
+import logging
 
 from unittest import mock
 
@@ -34,12 +35,12 @@ def test_pipeline_generation_from_gtihub(random_string, abs_working_dir):
     notebook_path, response = urlretrieve(notebook_url)
 
     kale = Kale(source_notebook_path=notebook_path)
+    kale.logger = logging.getLogger(__name__)
+    kale.logger.setLevel(logging.DEBUG)
     pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
     script_path = kale.generate_kfp_executable(pipeline_graph,
                                                pipeline_parameters,
                                                save_to_tmp=True)
-    # TODO: Need to suppress log generation when running tests
-    os.remove(os.path.join(os.getcwd(), 'kale.log'))
 
     target_asset = os.path.join(THIS_DIR,
                                 '../assets/kfp_dsl/',
@@ -59,12 +60,12 @@ def test_pipeline_generation_from_local(random_string, abs_working_dir):
     notebook_path = os.path.join(THIS_DIR, notebook_path)
 
     kale = Kale(source_notebook_path=notebook_path)
+    kale.logger = logging.getLogger(__name__)
+    kale.logger.setLevel(logging.DEBUG)
     pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
     script_path = kale.generate_kfp_executable(pipeline_graph,
                                                pipeline_parameters,
                                                save_to_tmp=True)
-    # TODO: Need to suppress log generation when running tests
-    os.remove(os.path.join(os.getcwd(), 'kale.log'))
 
     target_asset = os.path.join(THIS_DIR,
                                 '../assets/kfp_dsl/',
