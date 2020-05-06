@@ -257,18 +257,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     });
   };
 
-  handleChange(checked: boolean) {
-    this.setState({ checked });
-    this.props.onMetadataEnable(checked);
-
-    if (checked) {
-      this.addMetadataInfo();
-    } else {
-      this.setState({ isEditorVisible: false });
-      this.removeCells();
-    }
-  }
-
   /**
    * Callback passed to the CellMetadataEditor context
    */
