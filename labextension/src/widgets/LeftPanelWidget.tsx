@@ -92,7 +92,6 @@ interface IState {
   runDeployment: boolean;
   deploymentType: string;
   deployDebugMessage: boolean;
-  selectVal: string;
   activeNotebook?: NotebookPanel;
   activeCell?: Cell;
   activeCellIndex?: number;
@@ -247,7 +246,6 @@ const DefaultState: IState = {
   runDeployment: false,
   deploymentType: 'compile',
   deployDebugMessage: false,
-  selectVal: '',
   activeNotebook: null,
   activeCell: null,
   activeCellIndex: 0,
@@ -269,7 +267,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   // init state default values
   state = DefaultState;
 
-  updateSelectValue = (val: string) => this.setState({ selectVal: val });
   // update metadata state values: use destructure operator to update nested dict
   updateExperiment = (experiment: IExperiment) =>
     this.setState({
