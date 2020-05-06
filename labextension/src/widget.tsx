@@ -168,7 +168,6 @@ async function activate(
       <KubeflowKaleLeftPanel
         lab={lab}
         tracker={tracker}
-        notebook={tracker.currentWidget}
         docManager={docManager}
         backend={backend}
         kernel={kernel}
