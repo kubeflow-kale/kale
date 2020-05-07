@@ -50,9 +50,21 @@ interface IUploadPipelineArgs {
   overwrite: boolean;
 }
 
-export interface IUploadPipelineResp {
+interface IUploadPipelineResp {
   already_exists: boolean;
   pipeline: { id: string; name: string };
+}
+
+interface IRunPipelineArgs {
+  pipeline_metadata: Object;
+  pipeline_package_path?: string;
+  pipeline_id?: string;
+}
+
+interface IKatibRunArgs {
+  pipeline_id: string;
+  pipeline_metadata: any;
+  output_path: string;
 }
 
 export default class Commands {
@@ -425,5 +437,89 @@ export default class Commands {
       onUpdate({ pipeline: uploadPipeline });
     }
     return uploadPipeline;
+  };
+
+  runKatib = async (
+    notebookPath: string,
+    metadata: IKaleNotebookMetadata,
+    pipelineId: string,
+    onUpdate: Function,
+  ): Promise<IKatibExperiment> => {
+    onUpdate({ showKatibKFPExperiment: true });
+    // create a new experiment, using the base name of the currently
+    // selected one
+    const newExpName: string =
+      metadata.experiment.name +
+      '-' +
+      Math.random()
+        .toString(36)
+        .slice(2, 7);
+
+    // create new KFP experiment
+    let kfpExperiment: { id: string; name: string };
+    try {
+      kfpExperiment = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'kfp.create_experiment',
+        {
+          experiment_name: newExpName,
+        },
+      );
+      onUpdate({ katibKFPExperiment: kfpExperiment });
+    } catch (error) {
+      onUpdate({
+        showKatibProgress: false,
+        katibKFPExperiment: { id: 'error', name: 'error' },
+      });
+      throw error;
+    }
+
+    onUpdate({ showKatibProgress: true });
+    const runKatibArgs: IKatibRunArgs = {
+      pipeline_id: pipelineId,
+      pipeline_metadata: {
+        ...metadata,
+        experiment_name: kfpExperiment.name,
+      },
+      output_path: notebookPath.substring(0, notebookPath.lastIndexOf('/')),
+    };
+    let katibExperiment: IKatibExperiment = null;
+    try {
+      katibExperiment = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'katib.create_katib_experiment',
+        runKatibArgs,
+      );
+    } catch (error) {
+      onUpdate({ katib: { status: 'error' } });
+      throw error;
+    }
+    return katibExperiment;
+  };
+
+  runPipeline = async (
+    pipelineId: string,
+    compiledPipelineMetadata: IKaleNotebookMetadata,
+    onUpdate: Function,
+  ) => {
+    onUpdate({ showRunProgress: true });
+    const runPipelineArgs: IRunPipelineArgs = {
+      pipeline_metadata: compiledPipelineMetadata,
+      pipeline_id: pipelineId,
+    };
+    const runPipeline = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'kfp.run_pipeline',
+      runPipelineArgs,
+    );
+    if (runPipeline) {
+      onUpdate({ runPipeline });
+    } else {
+      onUpdate({ showRunProgress: false, runPipeline: false });
+    }
+    return runPipeline;
   };
 }

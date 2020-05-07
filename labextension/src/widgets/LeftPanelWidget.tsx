@@ -187,18 +187,6 @@ export interface IKaleNotebookMetadata {
   katib_metadata?: IKatibMetadata;
 }
 
-interface IRunPipelineArgs {
-  pipeline_metadata: Object;
-  pipeline_package_path?: string;
-  pipeline_id?: string;
-}
-
-interface IKatibRunArgs {
-  pipeline_id: string;
-  pipeline_metadata: any;
-  output_path: string;
-}
-
 export interface IKatibExperiment {
   name?: string;
   namespace?: string;
@@ -708,88 +696,26 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // RUN
     if (this.state.deploymentType === 'run') {
       if (metadata.katib_run) {
-        this.updateDeployProgress(_deployIndex, {
-          showKatibKFPExperiment: true,
-        });
-        // create a new experiment, using the base name of the currently
-        // selected one
-        const newExpName: string =
-          metadata.experiment.name +
-          '-' +
-          Math.random()
-            .toString(36)
-            .slice(2, 7);
-
-        // create new KFP experiment
-        let kfpExperiment: { id: string; name: string };
         try {
-          kfpExperiment = await _legacy_executeRpc(
-            this.getActiveNotebook(),
-            this.props.kernel,
-            'kfp.create_experiment',
-            {
-              experiment_name: newExpName,
-            },
+          const katibExperiment = await commands.runKatib(
+            nbFilePath,
+            metadata,
+            uploadPipeline.pipeline.id,
+            _updateDeployProgress,
           );
-          this.updateDeployProgress(_deployIndex, {
-            katibKFPExperiment: kfpExperiment,
-          });
+          commands.pollKatib(katibExperiment, _updateDeployProgress);
         } catch (error) {
-          // stop deploy button icon spin
           this.setState({ runDeployment: false });
-          this.updateDeployProgress(_deployIndex, {
-            showKatibProgress: false,
-            katibKFPExperiment: { id: 'error', name: 'error' },
-          });
           throw error;
         }
-
-        this.updateDeployProgress(_deployIndex, { showKatibProgress: true });
-        const runKatibArgs: IKatibRunArgs = {
-          pipeline_id: uploadPipeline.pipeline.id,
-          pipeline_metadata: {
-            ...metadata,
-            experiment_name: kfpExperiment.name,
-          },
-          output_path: nbFilePath.substring(0, nbFilePath.lastIndexOf('/')),
-        };
-        let katibExperiment: IKatibExperiment = null;
-        try {
-          katibExperiment = await _legacy_executeRpc(
-            this.getActiveNotebook(),
-            this.props.kernel,
-            'katib.create_katib_experiment',
-            runKatibArgs,
-          );
-        } catch (error) {
-          // stop deploy button icon spin
-          this.setState({ runDeployment: false });
-          this.updateDeployProgress(_deployIndex, {
-            katib: { status: 'error' },
-          });
-          throw error;
-        }
-        commands.pollKatib(katibExperiment, _updateDeployProgress);
       } else {
-        this.updateDeployProgress(_deployIndex, { showRunProgress: true });
-        const runPipelineArgs: IRunPipelineArgs = {
-          pipeline_metadata: compileNotebook.pipeline_metadata,
-          pipeline_id: uploadPipeline.pipeline.id,
-        };
-        const runPipeline = await _legacy_executeRpcAndShowRPCError(
-          this.getActiveNotebook(),
-          this.props.kernel,
-          'kfp.run_pipeline',
-          runPipelineArgs,
+        const runPipeline = await commands.runPipeline(
+          uploadPipeline.pipeline.id,
+          compileNotebook.pipeline_metadata,
+          _updateDeployProgress,
         );
         if (runPipeline) {
-          this.updateDeployProgress(_deployIndex, { runPipeline });
           commands.pollRun(runPipeline, _updateDeployProgress);
-        } else {
-          this.updateDeployProgress(_deployIndex, {
-            showRunProgress: false,
-            runPipeline: false,
-          });
         }
       }
     }
