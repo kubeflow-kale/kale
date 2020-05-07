@@ -1145,13 +1145,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // workdir. Instead, the python script has a slightly different name and is
     // generated in the same directory where the notebook lives.
     this.updateDeployProgress(_deployIndex, {
-      compiledPath:
-        nbFilePath.substring(0, nbFilePath.lastIndexOf('/')) +
-        '/' +
-        compileNotebook.pipeline_package_path.replace(
-          'pipeline.tar.gz',
-          'kale.py',
-        ),
+      compiledPath: compileNotebook.pipeline_package_path.replace(
+        'pipeline.yaml',
+        'kale.py',
+      ),
     });
 
     // UPLOAD
