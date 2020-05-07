@@ -28,6 +28,10 @@ import {
   NEW_EXPERIMENT,
 } from '../widgets/LeftPanelWidget';
 import NotebookUtils from './NotebookUtils';
+import {
+  SELECT_VOLUME_SIZE_TYPES,
+  SELECT_VOLUME_TYPES,
+} from '../widgets/VolumesPanel';
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
@@ -104,6 +108,38 @@ export default class Commands {
         volumes,
       },
     );
+  };
+
+  getMountedVolumes = async (currentNotebookVolumes: IVolumeMetadata[]) => {
+    let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'nb.list_volumes',
+    );
+    let availableVolumeTypes = SELECT_VOLUME_TYPES.map(t => {
+      return t.value === 'snap' ? { ...t, invalid: false } : t;
+    });
+
+    if (notebookVolumes) {
+      notebookVolumes = notebookVolumes.map(volume => {
+        const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
+          s => volume.size >= s.base,
+        )[0];
+        volume.size = Math.ceil(volume.size / sizeGroup.base);
+        volume.size_type = sizeGroup.value;
+        volume.annotations = [];
+        return volume;
+      });
+      availableVolumeTypes = availableVolumeTypes.map(t => {
+        return t.value === 'clone' ? { ...t, invalid: false } : t;
+      });
+    } else {
+      notebookVolumes = currentNotebookVolumes;
+    }
+    return {
+      notebookVolumes,
+      selectVolumeTypes: availableVolumeTypes,
+    };
   };
 
   unmarshalData = async (nbFileName: string) => {
