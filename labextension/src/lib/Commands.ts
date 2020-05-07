@@ -36,6 +36,12 @@ import {
   SELECT_VOLUME_TYPES,
 } from '../widgets/VolumesPanel';
 import { IDocumentManager } from '@jupyterlab/docmanager';
+import CellUtils from './CellUtils';
+
+enum RUN_CELL_STATUS {
+  OK = 'ok',
+  ERROR = 'error',
+}
 
 interface ICompileNotebookArgs {
   source_notebook_path: string;
@@ -521,5 +527,53 @@ export default class Commands {
       onUpdate({ showRunProgress: false, runPipeline: false });
     }
     return runPipeline;
+  };
+
+  resumeStateIfExploreNotebook = async (notebookPath: string) => {
+    const exploration = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'nb.explore_notebook',
+      { source_notebook_path: notebookPath },
+    );
+
+    if (!exploration || !exploration.is_exploration) {
+      return;
+    }
+
+    NotebookUtils.clearCellOutputs(this._notebook);
+    let runCellResponse = await NotebookUtils.runGlobalCells(this._notebook);
+    if (runCellResponse.status === RUN_CELL_STATUS.OK) {
+      // unmarshalData runs in the same kernel as the .ipynb, so it requires the
+      // filename
+      await this.unmarshalData(notebookPath.split('/').pop());
+      const cell = CellUtils.getCellByStepName(
+        this._notebook,
+        exploration.step_name,
+      );
+      const title = 'Notebook Exploration';
+      const message = [`Resuming notebook at step: "${exploration.step_name}"`];
+      if (cell) {
+        NotebookUtils.selectAndScrollToCell(this._notebook, cell);
+      } else {
+        message.push(`ERROR: Could not retrieve step's position.`);
+      }
+      await NotebookUtils.showMessage(title, message);
+    } else {
+      await NotebookUtils.showMessage('Notebook Exploration', [
+        `Executing "${runCellResponse.cellType}" cell failed.\n` +
+          `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
+        `Error name: ${runCellResponse.ename}`,
+        `Error value: ${runCellResponse.evalue}`,
+      ]);
+    }
+    await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'nb.remove_marshal_dir',
+      {
+        source_notebook_path: notebookPath,
+      },
+    );
   };
 }
