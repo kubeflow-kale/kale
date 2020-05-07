@@ -24,6 +24,7 @@ import {
 import { wait } from './Utils';
 import {
   IExperiment,
+  IKaleNotebookMetadata,
   IKatibExperiment,
   IVolumeMetadata,
   NEW_EXPERIMENT,
@@ -249,4 +250,28 @@ export default class Commands {
       }
     });
   }
+
+  validateMetadata = async (
+    notebookPath: string,
+    metadata: IKaleNotebookMetadata,
+    onUpdate: Function,
+  ): Promise<boolean> => {
+    onUpdate({ showValidationProgress: true });
+    const validateNotebookArgs = {
+      source_notebook_path: notebookPath,
+      notebook_metadata_overrides: metadata,
+    };
+    const validateNotebook = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'nb.validate_notebook',
+      validateNotebookArgs,
+    );
+    if (!validateNotebook) {
+      onUpdate({ notebookValidation: false });
+      return false;
+    }
+    onUpdate({ notebookValidation: true });
+    return true;
+  };
 }
