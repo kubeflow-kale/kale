@@ -694,7 +694,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         this.setState({ runDeployment: false });
         return;
       }
-      metadata.volumes = await this.replaceClonedVolumes(
+      metadata.volumes = await commands.replaceClonedVolumes(
         task.bucket,
         task.result.event.object,
         task.result.event.version,
@@ -1040,25 +1040,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     } else {
       DefaultState.metadata.docker_image = '';
     }
-  };
-
-  replaceClonedVolumes = async (
-    bucket: string,
-    obj: string,
-    version: string,
-    volumes: IVolumeMetadata[],
-  ) => {
-    return await _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'rok.replace_cloned_volumes',
-      {
-        bucket,
-        obj,
-        version,
-        volumes,
-      },
-    );
   };
 
   unmarshalData = async (nbFileName: string) => {
