@@ -187,13 +187,6 @@ export interface IKaleNotebookMetadata {
   katib_metadata?: IKatibMetadata;
 }
 
-interface ICompileNotebookArgs {
-  source_notebook_path: string;
-  notebook_metadata_overrides: Object;
-  debug: boolean;
-  auto_snapshot: boolean;
-}
-
 interface IUploadPipelineArgs {
   pipeline_package_path: string;
   pipeline_metadata: Object;
@@ -228,7 +221,7 @@ export interface IKatibExperiment {
   maxTrialCount?: number;
 }
 
-const DefaultState: IState = {
+export const DefaultState: IState = {
   metadata: {
     experiment: { id: '', name: '' },
     experiment_name: '',
@@ -623,39 +616,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
   };
 
-  /**
-   * Analyse the current metadata and produce some warning to be shown
-   * under the compilation task
-   * @param metadata Notebook metadata
-   */
-  getCompileWarnings = (metadata: IKaleNotebookMetadata) => {
-    let warningContent = [];
-
-    // in case the notebook's docker base image is different than the default
-    // one (e.g. the one detected in the Notebook Server), alert the user
-    if (
-      DefaultState.metadata.docker_image !== '' &&
-      metadata.docker_image !== DefaultState.metadata.docker_image
-    ) {
-      warningContent.push(
-        'The image you used to create the notebook server is different ' +
-          'from the image you have selected for your pipeline.',
-        '',
-        'Your Kubeflow pipeline will use the following image: <pre><b>' +
-          metadata.docker_image +
-          '</b></pre>',
-        'You created the notebook server using the following image: <pre><b>' +
-          DefaultState.metadata.docker_image +
-          '</b></pre>',
-        '',
-        "To use this notebook server's image as base image" +
-          ' for the pipeline steps, delete the existing docker image' +
-          ' from the Advanced Settings section.',
-      );
-    }
-    return warningContent;
-  };
-
   updateDeployProgress = (index: number, progress: DeployProgressState) => {
     let deploy: { [index: number]: DeployProgressState };
     if (!this.state.deploys[index]) {
@@ -725,47 +685,19 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       );
     }
 
-    // after parsing and validating the metadata, show warnings (if necessary)
-    const compileWarnings = this.getCompileWarnings(metadata);
-
     // CREATE PIPELINE
-    this.updateDeployProgress(_deployIndex, {
-      showCompileProgress: true,
-      docManager: this.props.docManager,
-    });
-    if (compileWarnings.length) {
-      this.updateDeployProgress(_deployIndex, { compileWarnings });
-    }
-    const compileNotebookArgs: ICompileNotebookArgs = {
-      source_notebook_path: nbFilePath,
-      notebook_metadata_overrides: metadata,
-      debug: this.state.deployDebugMessage,
-      auto_snapshot: this.state.autosnapshot,
-    };
-    const compileNotebook = await _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'nb.compile_notebook',
-      compileNotebookArgs,
+    const compileNotebook = await commands.compilePipeline(
+      nbFilePath,
+      metadata,
+      this.props.docManager,
+      this.state.deployDebugMessage,
+      this.state.autosnapshot,
+      _updateDeployProgress,
     );
     if (!compileNotebook) {
-      this.updateDeployProgress(_deployIndex, { compiledPath: 'error' });
       this.setState({ runDeployment: false });
-      await NotebookUtils.showMessage('Operation Failed', [
-        'Could not compile pipeline.',
-      ]);
       return;
     }
-    // Pass to the deploy progress the path to the generated py script:
-    // compileNotebook is the name of the tar package, that generated in the
-    // workdir. Instead, the python script has a slightly different name and is
-    // generated in the same directory where the notebook lives.
-    this.updateDeployProgress(_deployIndex, {
-      compiledPath: compileNotebook.pipeline_package_path.replace(
-        'pipeline.yaml',
-        'kale.py',
-      ),
-    });
 
     // UPLOAD
     let uploadPipeline: IUploadPipelineResp = null;

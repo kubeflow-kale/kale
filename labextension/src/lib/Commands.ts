@@ -23,6 +23,7 @@ import {
 } from './RPCUtils';
 import { wait } from './Utils';
 import {
+  DefaultState,
   IExperiment,
   IKaleNotebookMetadata,
   IKatibExperiment,
@@ -34,6 +35,14 @@ import {
   SELECT_VOLUME_SIZE_TYPES,
   SELECT_VOLUME_TYPES,
 } from '../widgets/VolumesPanel';
+import { IDocumentManager } from '@jupyterlab/docmanager';
+
+interface ICompileNotebookArgs {
+  source_notebook_path: string;
+  notebook_metadata_overrides: IKaleNotebookMetadata;
+  debug: boolean;
+  auto_snapshot: boolean;
+}
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
@@ -273,5 +282,88 @@ export default class Commands {
     }
     onUpdate({ notebookValidation: true });
     return true;
+  };
+
+  /**
+   * Analyse the current metadata and produce some warning to be shown
+   * under the compilation task
+   * @param metadata Notebook metadata
+   */
+  getCompileWarnings = (metadata: IKaleNotebookMetadata) => {
+    let warningContent = [];
+
+    // in case the notebook's docker base image is different than the default
+    // one (e.g. the one detected in the Notebook Server), alert the user
+    if (
+      DefaultState.metadata.docker_image !== '' &&
+      metadata.docker_image !== DefaultState.metadata.docker_image
+    ) {
+      warningContent.push(
+        'The image you used to create the notebook server is different ' +
+          'from the image you have selected for your pipeline.',
+        '',
+        'Your Kubeflow pipeline will use the following image: <pre><b>' +
+          metadata.docker_image +
+          '</b></pre>',
+        'You created the notebook server using the following image: <pre><b>' +
+          DefaultState.metadata.docker_image +
+          '</b></pre>',
+        '',
+        "To use this notebook server's image as base image" +
+          ' for the pipeline steps, delete the existing docker image' +
+          ' from the Advanced Settings section.',
+      );
+    }
+    return warningContent;
+  };
+
+  // todo: docManager needs to be passed to deploysProgress during init
+  // todo: autosnapshot will become part of metadata
+  // todo: deployDebugMessage will be removed (the "Debug" toggle is of no use
+  //  anymore
+  compilePipeline = async (
+    notebookPath: string,
+    metadata: IKaleNotebookMetadata,
+    docManager: IDocumentManager,
+    deployDebugMessage: boolean,
+    autosnapshot: boolean,
+    onUpdate: Function,
+  ) => {
+    // after parsing and validating the metadata, show warnings (if necessary)
+    const compileWarnings = this.getCompileWarnings(metadata);
+    onUpdate({ showCompileProgress: true, docManager: docManager });
+    if (compileWarnings.length) {
+      onUpdate({ compileWarnings });
+    }
+    const compileNotebookArgs: ICompileNotebookArgs = {
+      source_notebook_path: notebookPath,
+      notebook_metadata_overrides: metadata,
+      debug: deployDebugMessage,
+      auto_snapshot: autosnapshot,
+    };
+    const compileNotebook = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'nb.compile_notebook',
+      compileNotebookArgs,
+    );
+    if (!compileNotebook) {
+      onUpdate({ compiledPath: 'error' });
+      await NotebookUtils.showMessage('Operation Failed', [
+        'Could not compile pipeline.',
+      ]);
+    } else {
+      // Pass to the deploy progress the path to the generated py script:
+      // compileNotebook is the name of the tar package, that generated in the
+      // workdir. Instead, the python script has a slightly different name and
+      // is generated in the same directory where the notebook lives.
+      onUpdate({
+        compiledPath: compileNotebook.pipeline_package_path.replace(
+          'pipeline.yaml',
+          'kale.py',
+        ),
+      });
+    }
+    return compileNotebook;
   };
 }
