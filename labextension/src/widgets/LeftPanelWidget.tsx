@@ -56,11 +56,6 @@ import Commands from '../lib/Commands';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
-enum RUN_CELL_STATUS {
-  OK = 'ok',
-  ERROR = 'error',
-}
-
 export interface ISelectOption {
   label: string;
   value: string;
@@ -407,54 +402,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       if (this.props.backend) {
         // Detect whether this is an exploration, i.e., recovery from snapshot
         const nbFilePath = this.getActiveNotebook().context.path;
-        const exploration = await _legacy_executeRpcAndShowRPCError(
-          this.getActiveNotebook(),
-          this.props.kernel,
-          'nb.explore_notebook',
-          { source_notebook_path: nbFilePath },
-        );
-        if (exploration && exploration.is_exploration) {
-          NotebookUtils.clearCellOutputs(this.getActiveNotebook());
-          let runCellResponse = await NotebookUtils.runGlobalCells(
-            this.getActiveNotebook(),
-          );
-          if (runCellResponse.status === RUN_CELL_STATUS.OK) {
-            // unmarshalData runs in the same kernel as the .ipynb, so it requires the filename
-            await commands.unmarshalData(nbFilePath.split('/').pop());
-            const cell = CellUtils.getCellByStepName(
-              this.getActiveNotebook(),
-              exploration.step_name,
-            );
-            const title = 'Notebook Exploration';
-            const message = [
-              `Resuming notebook at step: "${exploration.step_name}"`,
-            ];
-            if (cell) {
-              NotebookUtils.selectAndScrollToCell(
-                this.getActiveNotebook(),
-                cell,
-              );
-            } else {
-              message.push(`ERROR: Could not retrieve step's position.`);
-            }
-            await NotebookUtils.showMessage(title, message);
-          } else {
-            await NotebookUtils.showMessage('Notebook Exploration', [
-              `Executing "${runCellResponse.cellType}" cell failed.\n` +
-                `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
-              `Error name: ${runCellResponse.ename}`,
-              `Error value: ${runCellResponse.evalue}`,
-            ]);
-          }
-          await _legacy_executeRpcAndShowRPCError(
-            this.getActiveNotebook(),
-            this.props.kernel,
-            'nb.remove_marshal_dir',
-            {
-              source_notebook_path: nbFilePath,
-            },
-          );
-        }
+        await commands.resumeStateIfExploreNotebook(nbFilePath);
 
         if (!this.props.rokError) {
           // Get information about volumes currently mounted on the notebook server
