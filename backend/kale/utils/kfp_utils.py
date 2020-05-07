@@ -96,10 +96,9 @@ def compile_pipeline(pipeline_source, pipeline_name):
     spec.loader.exec_module(foo)
 
     # path to generated pipeline package
-    pipeline_package = pipeline_name + '.pipeline.yaml'
-    Compiler().compile(foo.auto_generated_pipeline,
-                       os.path.join(os.path.dirname(pipeline_source),
-                                    pipeline_package))
+    pipeline_package = os.path.join(os.path.dirname(pipeline_source),
+                                    pipeline_name + '.pipeline.yaml')
+    Compiler().compile(foo.auto_generated_pipeline, pipeline_package)
     return pipeline_package
 
 

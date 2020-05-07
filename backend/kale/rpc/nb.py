@@ -87,7 +87,7 @@ def compile_notebook(request, source_notebook_path,
     pipeline_name = instance.pipeline_metadata["pipeline_name"]
     package_path = kfp_utils.compile_pipeline(script_path, pipeline_name)
 
-    return {"pipeline_package_path": package_path,
+    return {"pipeline_package_path": os.path.relpath(package_path),
             "pipeline_metadata": instance.pipeline_metadata}
 
 
