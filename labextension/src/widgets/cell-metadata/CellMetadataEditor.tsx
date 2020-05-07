@@ -16,18 +16,16 @@
 
 import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
-import {
-  MaterialInput,
-  MaterialSelect,
-  MaterialSelectMulti,
-} from '../Components';
-import TagsUtils from '../../utils/TagsUtils';
+import TagsUtils from '../../lib/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@material-ui/icons/Close';
-import ColorUtils from './ColorUtils';
-import { CellMetadataContext } from './CellMetadataContext';
+import ColorUtils from '../../lib/ColorUtils';
+import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Button, IconButton } from '@material-ui/core';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
+import { Input } from '../../components/Input';
+import { Select } from '../../components/Select';
+import { SelectMulti } from '../../components/SelectMulti';
 
 const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
@@ -368,7 +366,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               }
               style={{ borderLeft: `2px solid ${cellColor}` }}
             >
-              <MaterialSelect
+              <Select
                 updateValue={this.updateCurrentCellType}
                 values={CELL_TYPES}
                 value={cellType}
@@ -379,7 +377,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               />
 
               {cellType === 'step' ? (
-                <MaterialInput
+                <Input
                   label={'Step name'}
                   updateValue={this.updateCurrentBlockName}
                   value={this.props.stepName || ''}
@@ -393,7 +391,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                 ''
               )}
               {cellType === 'step' ? (
-                <MaterialSelectMulti
+                <SelectMulti
+                  id="select-previous-blocks"
+                  label="Depends on"
                   disabled={
                     !(this.props.stepName && this.props.stepName.length > 0)
                   }

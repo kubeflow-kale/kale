@@ -22,14 +22,14 @@ import {
   IObservableUndoableList,
 } from '@jupyterlab/observables';
 import { isCodeCellModel, CodeCellModel, ICellModel } from '@jupyterlab/cells';
-import CellUtils from '../../utils/CellUtils';
-import TagsUtils from '../../utils/TagsUtils';
+import CellUtils from '../../lib/CellUtils';
+import TagsUtils from '../../lib/TagsUtils';
 import { InlineMetadata } from './InlineMetadata';
 import {
   CellMetadataEditor,
   IProps as EditorProps,
 } from './CellMetadataEditor';
-import { CellMetadataContext } from './CellMetadataContext';
+import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Switch } from '@material-ui/core';
 
 interface IProps {

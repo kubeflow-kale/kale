@@ -16,7 +16,7 @@ _private/
 
 # for jupyter lab extension
 *.bundle.*
-lib/
+labextension/lib/
 node_modules/
 .DS_Store
 

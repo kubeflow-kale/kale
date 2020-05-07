@@ -17,10 +17,10 @@
 import * as React from 'react';
 import Button from '@material-ui/core/Button';
 import InputAdornment from '@material-ui/core/InputAdornment';
-import { IMaterialInput, MaterialInput } from './Components';
 import BrowseInRokBlue from '../icons/BrowseInRokBlue';
+import { InputProps, Input } from './Input';
 
-interface IRokInput extends IMaterialInput {
+interface IRokInput extends InputProps {
   annotationIdx: number;
 }
 
@@ -82,7 +82,7 @@ export const RokInput: React.FunctionComponent<IRokInput> = props => {
     };
   }, []);
 
-  const extraInputProps = {
+  const InputProps = {
     endAdornment: (
       <InputAdornment position="end">
         <Button
@@ -97,5 +97,5 @@ export const RokInput: React.FunctionComponent<IRokInput> = props => {
     ),
   };
 
-  return <MaterialInput extraInputProps={extraInputProps} {...rest} />;
+  return <Input InputProps={InputProps} {...rest} />;
 };

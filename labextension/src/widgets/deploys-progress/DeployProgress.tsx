@@ -30,7 +30,7 @@ import WarningIcon from '@material-ui/icons/Warning';
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
-import NotebookUtils from '../../utils/NotebookUtils';
+import NotebookUtils from '../../lib/NotebookUtils';
 import { IKatibExperiment } from '../LeftPanelWidget';
 
 enum KatibExperimentStatus {

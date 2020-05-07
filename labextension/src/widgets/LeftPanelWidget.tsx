@@ -20,7 +20,7 @@ import {
   Notebook,
   NotebookPanel,
 } from '@jupyterlab/notebook';
-import NotebookUtils from '../utils/NotebookUtils';
+import NotebookUtils from '../lib/NotebookUtils';
 import {
   executeRpc,
   BaseError,
@@ -28,9 +28,10 @@ import {
   RPCError,
   IRPCError,
   rokErrorTooltip,
-} from '../utils/RPCUtils';
-import CellUtils from '../utils/CellUtils';
-import { CollapsablePanel, LightTooltip, MaterialInput } from './Components';
+} from '../lib/RPCUtils';
+import CellUtils from '../lib/CellUtils';
+import { AdvancedSettings } from '../components/AdvancedSettings';
+
 import {
   Cell,
   isCodeCellModel,
@@ -39,9 +40,9 @@ import {
 } from '@jupyterlab/cells';
 import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
 import { VolumesPanel } from './VolumesPanel';
-import { SplitDeployButton } from './DeployButton';
+import { SplitDeployButton } from '../components/DeployButton';
 import { KernelMessage, Kernel } from '@jupyterlab/services';
-import { ExperimentInput } from './ExperimentInput';
+import { ExperimentInput } from '../components/ExperimentInput';
 import {
   DeploysProgress,
   DeployProgressState,
@@ -53,6 +54,8 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import { theme } from '../Theme';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import { KatibDialog } from './KatibDialog';
+import { Input } from '../components/Input';
+import { LightTooltip } from '../components/LightTooltip';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -1600,7 +1603,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     );
 
     const pipeline_name_input = (
-      <MaterialInput
+      <Input
+        variant="standard"
         label={'Pipeline Name'}
         updateValue={this.updatePipelineName}
         value={this.state.metadata.pipeline_name}
@@ -1612,7 +1616,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     );
 
     const pipeline_desc_input = (
-      <MaterialInput
+      <Input
+        variant="standard"
         label={'Pipeline Description'}
         updateValue={this.updatePipelineDescription}
         value={this.state.metadata.pipeline_description}
@@ -1761,7 +1766,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
               }
             >
-              <CollapsablePanel
+              <AdvancedSettings
                 title={'Advanced Settings'}
                 dockerImageValue={this.state.metadata.docker_image}
                 dockerImageDefaultValue={DefaultState.metadata.docker_image}
