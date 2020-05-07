@@ -419,6 +419,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   setNotebookPanel = async (notebook: NotebookPanel) => {
     // if there at least an open notebook
     if (this.props.tracker.size > 0 && notebook) {
+      const commands = new Commands(
+        this.getActiveNotebook(),
+        this.props.kernel,
+      );
       // wait for the session to be ready before reading metadata
       await notebook.session.ready;
 
@@ -495,7 +499,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           });
         }
         // Detect the base image of the current Notebook Server
-        await this.getBaseImage();
+        const baseImage = await commands.getBaseImage();
+        if (baseImage) {
+          DefaultState.metadata.docker_image = baseImage;
+        } else {
+          DefaultState.metadata.docker_image = '';
+        }
         // Get experiment information last because it may take more time to respond
         await this.getExperiments();
       }
@@ -1018,28 +1027,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       notebookVolumes: notebookVolumes,
       selectVolumeTypes: availableVolumeTypes,
     });
-  };
-
-  getBaseImage = async () => {
-    let baseImage: string = null;
-    try {
-      baseImage = await _legacy_executeRpc(
-        this.getActiveNotebook(),
-        this.props.kernel,
-        'nb.get_base_image',
-      );
-    } catch (error) {
-      if (error instanceof RPCError) {
-        console.warn('Kale is not running in a Notebook Server', error.error);
-      } else {
-        throw error;
-      }
-    }
-    if (baseImage) {
-      DefaultState.metadata.docker_image = baseImage;
-    } else {
-      DefaultState.metadata.docker_image = '';
-    }
   };
 
   unmarshalData = async (nbFileName: string) => {

@@ -16,7 +16,11 @@
 
 import { Kernel } from '@jupyterlab/services';
 import { NotebookPanel } from '@jupyterlab/notebook';
-import { _legacy_executeRpcAndShowRPCError } from './RPCUtils';
+import {
+  _legacy_executeRpc,
+  _legacy_executeRpcAndShowRPCError,
+  RPCError,
+} from './RPCUtils';
 import { wait } from './Utils';
 import { IVolumeMetadata } from '../widgets/LeftPanelWidget';
 
@@ -95,5 +99,23 @@ export default class Commands {
         volumes,
       },
     );
+  };
+
+  getBaseImage = async () => {
+    let baseImage: string = null;
+    try {
+      baseImage = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.get_base_image',
+      );
+    } catch (error) {
+      if (error instanceof RPCError) {
+        console.warn('Kale is not running in a Notebook Server', error.error);
+      } else {
+        throw error;
+      }
+    }
+    return baseImage;
   };
 }
