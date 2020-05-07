@@ -682,7 +682,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     const commands = new Commands(this.getActiveNotebook(), this.props.kernel);
     const _deployIndex = ++deployIndex;
-    const updateDeployProgress = (x: DeployProgressState) => {
+    const _updateDeployProgress = (x: DeployProgressState) => {
       this.updateDeployProgress(_deployIndex, x);
     };
 
@@ -721,7 +721,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata.volumes.filter((v: IVolumeMetadata) => v.type === 'clone')
         .length > 0
     ) {
-      const task = await commands.runSnapshotProcedure(updateDeployProgress);
+      const task = await commands.runSnapshotProcedure(_updateDeployProgress);
       console.log(task);
       if (!task) {
         this.setState({ runDeployment: false });
@@ -906,7 +906,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           });
           throw error;
         }
-        this.pollKatib(_deployIndex, katibExperiment);
+        commands.pollKatib(katibExperiment, _updateDeployProgress);
       } else {
         this.updateDeployProgress(_deployIndex, { showRunProgress: true });
         const runPipelineArgs: IRunPipelineArgs = {
@@ -921,7 +921,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         );
         if (runPipeline) {
           this.updateDeployProgress(_deployIndex, { runPipeline });
-          commands.pollRun(runPipeline, updateDeployProgress);
+          commands.pollRun(runPipeline, _updateDeployProgress);
         } else {
           this.updateDeployProgress(_deployIndex, {
             showRunProgress: false,
@@ -933,29 +933,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // stop deploy button icon spin
     this.setState({ runDeployment: false });
   };
-
-  pollKatib(_deployIndex: number, katibExperiment: IKatibExperiment) {
-    const getExperimentArgs: any = {
-      experiment: katibExperiment.name,
-      namespace: katibExperiment.namespace,
-    };
-    _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'katib.get_experiment',
-      getExperimentArgs,
-    ).then(katib => {
-      if (!katib) {
-        // could not get the experiment
-        this.updateDeployProgress(_deployIndex, { katib: { status: 'error' } });
-        return;
-      }
-      this.updateDeployProgress(_deployIndex, { katib });
-      if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
-        setTimeout(() => this.pollKatib(_deployIndex, katibExperiment), 5000);
-      }
-    });
-  }
 
   onMetadataEnable = (isEnabled: boolean) => {
     this.setState({ isEnabled });

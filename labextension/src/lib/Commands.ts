@@ -24,6 +24,7 @@ import {
 import { wait } from './Utils';
 import {
   IExperiment,
+  IKatibExperiment,
   IVolumeMetadata,
   NEW_EXPERIMENT,
 } from '../widgets/LeftPanelWidget';
@@ -222,6 +223,29 @@ export default class Commands {
       onUpdate({ runPipeline: run });
       if (run && (run.status === 'Running' || run.status === null)) {
         setTimeout(() => this.pollRun(run, onUpdate), 2000);
+      }
+    });
+  }
+
+  pollKatib(katibExperiment: IKatibExperiment, onUpdate: Function) {
+    const getExperimentArgs: any = {
+      experiment: katibExperiment.name,
+      namespace: katibExperiment.namespace,
+    };
+    _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'katib.get_experiment',
+      getExperimentArgs,
+    ).then(katib => {
+      if (!katib) {
+        // could not get the experiment
+        onUpdate({ katib: { status: 'error' } });
+        return;
+      }
+      onUpdate({ katib });
+      if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
+        setTimeout(() => this.pollKatib(katibExperiment, onUpdate), 5000);
       }
     });
   }
