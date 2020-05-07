@@ -52,7 +52,7 @@ import { Button, Switch, Zoom } from '@material-ui/core';
 import { KatibDialog } from './KatibDialog';
 import { Input } from '../components/Input';
 import { LightTooltip } from '../components/LightTooltip';
-import { wait } from '../lib/Utils';
+import Commands from '../lib/Commands';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -590,32 +590,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
   };
 
-  runSnapshotProcedure = async (_deployIndex: number) => {
-    const showSnapshotProgress = true;
-    const snapshot = await this.snapshotNotebook();
-    const taskId = snapshot.task.id;
-    let task = await this.getSnapshotProgress(taskId);
-    this.updateDeployProgress(_deployIndex, { task, showSnapshotProgress });
-
-    while (!['success', 'error', 'canceled'].includes(task.status)) {
-      task = await this.getSnapshotProgress(taskId, 1000);
-      this.updateDeployProgress(_deployIndex, { task });
-    }
-
-    if (task.status === 'success') {
-      console.log('Snapshotting successful!');
-      return task;
-    } else if (task.status === 'error') {
-      console.error('Snapshotting failed');
-      console.error('Stopping the deployment...');
-    } else if (task.status === 'canceled') {
-      console.error('Snapshotting canceled');
-      console.error('Stopping the deployment...');
-    }
-
-    return null;
-  };
-
   /**
    * Analyse the current metadata and produce some warning to be shown
    * under the compilation task
@@ -673,7 +647,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     await this.getActiveNotebook().context.save();
 
+    const commands = new Commands(this.getActiveNotebook(), this.props.kernel);
     const _deployIndex = ++deployIndex;
+    const updateDeployProgress = (x: DeployProgressState) => {
+      this.updateDeployProgress(_deployIndex, x);
+    };
 
     const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
 
@@ -710,7 +688,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata.volumes.filter((v: IVolumeMetadata) => v.type === 'clone')
         .length > 0
     ) {
-      const task = await this.runSnapshotProcedure(_deployIndex);
+      const task = await commands.runSnapshotProcedure(updateDeployProgress);
       console.log(task);
       if (!task) {
         this.setState({ runDeployment: false });
@@ -1062,29 +1040,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     } else {
       DefaultState.metadata.docker_image = '';
     }
-  };
-
-  snapshotNotebook = async () => {
-    return await _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'rok.snapshot_notebook',
-    );
-  };
-
-  getSnapshotProgress = async (task_id: string, ms?: number) => {
-    const task = await _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'rok.get_task',
-      {
-        task_id,
-      },
-    );
-    if (ms) {
-      await wait(ms);
-    }
-    return task;
   };
 
   replaceClonedVolumes = async (
