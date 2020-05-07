@@ -209,4 +209,20 @@ export default class Commands {
       experiment_name: newExperiment.name,
     };
   };
+
+  pollRun(runPipeline: any, onUpdate: Function) {
+    _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'kfp.get_run',
+      {
+        run_id: runPipeline.id,
+      },
+    ).then(run => {
+      onUpdate({ runPipeline: run });
+      if (run && (run.status === 'Running' || run.status === null)) {
+        setTimeout(() => this.pollRun(run, onUpdate), 2000);
+      }
+    });
+  }
 }
