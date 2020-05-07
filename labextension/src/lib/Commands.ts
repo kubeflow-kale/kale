@@ -18,6 +18,7 @@ import { Kernel } from '@jupyterlab/services';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { _legacy_executeRpcAndShowRPCError } from './RPCUtils';
 import { wait } from './Utils';
+import { IVolumeMetadata } from '../widgets/LeftPanelWidget';
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
@@ -75,5 +76,24 @@ export default class Commands {
     }
 
     return null;
+  };
+
+  replaceClonedVolumes = async (
+    bucket: string,
+    obj: string,
+    version: string,
+    volumes: IVolumeMetadata[],
+  ) => {
+    return await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'rok.replace_cloned_volumes',
+      {
+        bucket,
+        obj,
+        version,
+        volumes,
+      },
+    );
   };
 }
