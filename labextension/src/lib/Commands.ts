@@ -44,6 +44,17 @@ interface ICompileNotebookArgs {
   auto_snapshot: boolean;
 }
 
+interface IUploadPipelineArgs {
+  pipeline_package_path: string;
+  pipeline_metadata: Object;
+  overwrite: boolean;
+}
+
+export interface IUploadPipelineResp {
+  already_exists: boolean;
+  pipeline: { id: string; name: string };
+}
+
 export default class Commands {
   private readonly _notebook: NotebookPanel;
   private readonly _kernel: Kernel.IKernel;
@@ -365,5 +376,54 @@ export default class Commands {
       });
     }
     return compileNotebook;
+  };
+
+  uploadPipeline = async (
+    compiledPackagePath: string,
+    compiledPipelineMetadata: IKaleNotebookMetadata,
+    onUpdate: Function,
+  ): Promise<IUploadPipelineResp> => {
+    onUpdate({ showUploadProgress: true });
+    const uploadPipelineArgs: IUploadPipelineArgs = {
+      pipeline_package_path: compiledPackagePath,
+      pipeline_metadata: compiledPipelineMetadata,
+      overwrite: false,
+    };
+    let uploadPipeline: IUploadPipelineResp = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'kfp.upload_pipeline',
+      uploadPipelineArgs,
+    );
+    let result = true;
+    if (!uploadPipeline) {
+      onUpdate({ showUploadProgress: false, pipeline: false });
+      return uploadPipeline;
+    }
+    if (uploadPipeline && uploadPipeline.already_exists) {
+      // show dialog to ask user if they want to overwrite the existing pipeline
+      result = await NotebookUtils.showYesNoDialog('Pipeline Upload Failed', [
+        'Pipeline with name ' +
+          compiledPipelineMetadata.pipeline_name +
+          ' already exists. ',
+        'Would you like to overwrite it?',
+      ]);
+      // OVERWRITE EXISTING PIPELINE
+      if (result) {
+        uploadPipelineArgs.overwrite = true;
+        uploadPipeline = await _legacy_executeRpcAndShowRPCError(
+          this._notebook,
+          this._kernel,
+          'kfp.upload_pipeline',
+          uploadPipelineArgs,
+        );
+      } else {
+        onUpdate({ pipeline: false });
+      }
+    }
+    if (uploadPipeline && result) {
+      onUpdate({ pipeline: uploadPipeline });
+    }
+    return uploadPipeline;
   };
 }

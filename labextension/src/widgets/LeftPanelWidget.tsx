@@ -187,17 +187,6 @@ export interface IKaleNotebookMetadata {
   katib_metadata?: IKatibMetadata;
 }
 
-interface IUploadPipelineArgs {
-  pipeline_package_path: string;
-  pipeline_metadata: Object;
-  overwrite: boolean;
-}
-
-interface IUploadPipelineResp {
-  already_exists: boolean;
-  pipeline: { id: string; name: string };
-}
-
 interface IRunPipelineArgs {
   pipeline_metadata: Object;
   pipeline_package_path?: string;
@@ -700,65 +689,19 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
 
     // UPLOAD
-    let uploadPipeline: IUploadPipelineResp = null;
-    if (
+    const uploadPipeline =
       this.state.deploymentType === 'upload' ||
       this.state.deploymentType === 'run'
-    ) {
-      this.updateDeployProgress(_deployIndex, { showUploadProgress: true });
-      const uploadPipelineArgs: IUploadPipelineArgs = {
-        pipeline_package_path: compileNotebook.pipeline_package_path,
-        pipeline_metadata: compileNotebook.pipeline_metadata,
-        overwrite: false,
-      };
-      uploadPipeline = await _legacy_executeRpcAndShowRPCError(
-        this.getActiveNotebook(),
-        this.props.kernel,
-        'kfp.upload_pipeline',
-        uploadPipelineArgs,
-      );
-      let result = true;
-      if (!uploadPipeline) {
-        this.setState({ runDeployment: false });
-        this.updateDeployProgress(_deployIndex, {
-          showUploadProgress: false,
-          pipeline: false,
-        });
-        return;
-      }
-      if (uploadPipeline && uploadPipeline.already_exists) {
-        // show dialog to ask user if they want to overwrite the existing pipeline
-        result = await NotebookUtils.showYesNoDialog('Pipeline Upload Failed', [
-          'Pipeline with name ' +
-            compileNotebook.pipeline_metadata.pipeline_name +
-            ' already exists. ',
-          'Would you like to overwrite it?',
-        ]);
-        // OVERWRITE EXISTING PIPELINE
-        if (result) {
-          uploadPipelineArgs.overwrite = true;
-          uploadPipeline = await _legacy_executeRpcAndShowRPCError(
-            this.getActiveNotebook(),
-            this.props.kernel,
-            'kfp.upload_pipeline',
-            uploadPipelineArgs,
-          );
-        } else {
-          this.updateDeployProgress(_deployIndex, { pipeline: false });
-        }
-      }
-      if (uploadPipeline && result) {
-        this.updateDeployProgress(_deployIndex, { pipeline: uploadPipeline });
-      }
-    }
+        ? await commands.uploadPipeline(
+            compileNotebook.pipeline_package_path,
+            compileNotebook.pipeline_metadata,
+            _updateDeployProgress,
+          )
+        : null;
 
     if (!uploadPipeline) {
       this.setState({ runDeployment: false });
-      this.updateDeployProgress(_deployIndex, { pipeline: false });
-      console.error(
-        '`uploadPipeline` is null even if it should have a valid ' +
-          'pipeline name and id.',
-      );
+      _updateDeployProgress({ pipeline: false });
       return;
     }
 
