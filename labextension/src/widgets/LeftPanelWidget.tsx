@@ -488,7 +488,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
         if (!this.props.rokError) {
           // Get information about volumes currently mounted on the notebook server
-          await this.getMountedVolumes();
+          const {
+            notebookVolumes,
+            selectVolumeTypes,
+          } = await commands.getMountedVolumes(this.state.notebookVolumes);
+          this.setState({
+            notebookVolumes,
+            selectVolumeTypes,
+          });
         } else {
           this.setState({
             selectVolumeTypes: this.state.selectVolumeTypes.map(t => {
@@ -965,38 +972,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       }
     });
   }
-
-  getMountedVolumes = async () => {
-    let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'nb.list_volumes',
-    );
-    let availableVolumeTypes = SELECT_VOLUME_TYPES.map(t => {
-      return t.value === 'snap' ? { ...t, invalid: false } : t;
-    });
-
-    if (notebookVolumes) {
-      notebookVolumes = notebookVolumes.map(volume => {
-        const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
-          s => volume.size >= s.base,
-        )[0];
-        volume.size = Math.ceil(volume.size / sizeGroup.base);
-        volume.size_type = sizeGroup.value;
-        volume.annotations = [];
-        return volume;
-      });
-      availableVolumeTypes = availableVolumeTypes.map(t => {
-        return t.value === 'clone' ? { ...t, invalid: false } : t;
-      });
-    } else {
-      notebookVolumes = this.state.notebookVolumes;
-    }
-    this.setState({
-      notebookVolumes: notebookVolumes,
-      selectVolumeTypes: availableVolumeTypes,
-    });
-  };
 
   onMetadataEnable = (isEnabled: boolean) => {
     this.setState({ isEnabled });
