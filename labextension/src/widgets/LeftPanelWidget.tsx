@@ -506,7 +506,24 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           DefaultState.metadata.docker_image = '';
         }
         // Get experiment information last because it may take more time to respond
-        await this.getExperiments();
+        this.setState({ gettingExperiments: true });
+        const {
+          experiments,
+          experiment,
+          experiment_name,
+        } = await commands.getExperiments(
+          this.state.metadata.experiment,
+          this.state.metadata.experiment_name,
+        );
+        this.setState({
+          experiments,
+          gettingExperiments: false,
+          metadata: {
+            ...this.state.metadata,
+            experiment,
+            experiment_name,
+          },
+        });
       }
 
       // if the key exists in the notebook's metadata
@@ -948,54 +965,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       }
     });
   }
-
-  getExperiments = async () => {
-    this.setState({ gettingExperiments: true });
-    let list_experiments: IExperiment[] = await _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'kfp.list_experiments',
-    );
-    if (list_experiments) {
-      list_experiments.push(NEW_EXPERIMENT);
-    } else {
-      list_experiments = [NEW_EXPERIMENT];
-    }
-
-    // Fix experiment metadata
-    let experiment: IExperiment = null;
-    let selectedExperiments: IExperiment[] = list_experiments.filter(
-      e =>
-        e.id === this.state.metadata.experiment.id ||
-        e.name === this.state.metadata.experiment.name ||
-        e.name === this.state.metadata.experiment_name,
-    );
-    if (
-      selectedExperiments.length === 0 ||
-      selectedExperiments[0].id === NEW_EXPERIMENT.id
-    ) {
-      let name = list_experiments[0].name;
-      if (name === NEW_EXPERIMENT.name) {
-        name =
-          this.state.metadata.experiment.name !== ''
-            ? this.state.metadata.experiment.name
-            : this.state.metadata.experiment_name;
-      }
-      experiment = { ...list_experiments[0], name: name };
-    } else {
-      experiment = selectedExperiments[0];
-    }
-
-    this.setState({
-      experiments: list_experiments,
-      gettingExperiments: false,
-      metadata: {
-        ...this.state.metadata,
-        experiment: experiment,
-        experiment_name: experiment.name,
-      },
-    });
-  };
 
   getMountedVolumes = async () => {
     let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(

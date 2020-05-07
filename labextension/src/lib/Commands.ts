@@ -22,7 +22,11 @@ import {
   RPCError,
 } from './RPCUtils';
 import { wait } from './Utils';
-import { IVolumeMetadata } from '../widgets/LeftPanelWidget';
+import {
+  IExperiment,
+  IVolumeMetadata,
+  NEW_EXPERIMENT,
+} from '../widgets/LeftPanelWidget';
 import NotebookUtils from './NotebookUtils';
 
 export default class Commands {
@@ -126,5 +130,47 @@ export default class Commands {
       }
     }
     return baseImage;
+  };
+
+  getExperiments = async (
+    experiment: { id: string; name: string },
+    experimentName: string,
+  ) => {
+    let experimentsList: IExperiment[] = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'kfp.list_experiments',
+    );
+    if (experimentsList) {
+      experimentsList.push(NEW_EXPERIMENT);
+    } else {
+      experimentsList = [NEW_EXPERIMENT];
+    }
+
+    // Fix experiment metadata
+    let newExperiment: IExperiment = null;
+    let selectedExperiments: IExperiment[] = experimentsList.filter(
+      e =>
+        e.id === experiment.id ||
+        e.name === experiment.name ||
+        e.name === experimentName,
+    );
+    if (
+      selectedExperiments.length === 0 ||
+      selectedExperiments[0].id === NEW_EXPERIMENT.id
+    ) {
+      let name = experimentsList[0].name;
+      if (name === NEW_EXPERIMENT.name) {
+        name = experiment.name !== '' ? experiment.name : experimentName;
+      }
+      newExperiment = { ...experimentsList[0], name: name };
+    } else {
+      newExperiment = selectedExperiments[0];
+    }
+    return {
+      experiments: experimentsList,
+      experiment: newExperiment,
+      experiment_name: newExperiment.name,
+    };
   };
 }
