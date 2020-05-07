@@ -921,7 +921,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         );
         if (runPipeline) {
           this.updateDeployProgress(_deployIndex, { runPipeline });
-          this.pollRun(_deployIndex, runPipeline);
+          commands.pollRun(runPipeline, updateDeployProgress);
         } else {
           this.updateDeployProgress(_deployIndex, {
             showRunProgress: false,
@@ -933,22 +933,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // stop deploy button icon spin
     this.setState({ runDeployment: false });
   };
-
-  pollRun(_deployIndex: number, runPipeline: any) {
-    _legacy_executeRpcAndShowRPCError(
-      this.getActiveNotebook(),
-      this.props.kernel,
-      'kfp.get_run',
-      {
-        run_id: runPipeline.id,
-      },
-    ).then(run => {
-      this.updateDeployProgress(_deployIndex, { runPipeline: run });
-      if (run && (run.status === 'Running' || run.status === null)) {
-        setTimeout(() => this.pollRun(_deployIndex, run), 2000);
-      }
-    });
-  }
 
   pollKatib(_deployIndex: number, katibExperiment: IKatibExperiment) {
     const getExperimentArgs: any = {
