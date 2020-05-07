@@ -450,7 +450,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           );
           if (runCellResponse.status === RUN_CELL_STATUS.OK) {
             // unmarshalData runs in the same kernel as the .ipynb, so it requires the filename
-            await this.unmarshalData(nbFilePath.split('/').pop());
+            await commands.unmarshalData(nbFilePath.split('/').pop());
             const cell = CellUtils.getCellByStepName(
               this.getActiveNotebook(),
               exploration.step_name,
@@ -1027,18 +1027,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       notebookVolumes: notebookVolumes,
       selectVolumeTypes: availableVolumeTypes,
     });
-  };
-
-  unmarshalData = async (nbFileName: string) => {
-    const cmd: string =
-      `from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n` +
-      `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
-    console.log('Executing command: ' + cmd);
-    await NotebookUtils.sendKernelRequestFromNotebook(
-      this.getActiveNotebook(),
-      cmd,
-      {},
-    );
   };
 
   onMetadataEnable = (isEnabled: boolean) => {

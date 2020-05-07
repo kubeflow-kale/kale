@@ -23,6 +23,7 @@ import {
 } from './RPCUtils';
 import { wait } from './Utils';
 import { IVolumeMetadata } from '../widgets/LeftPanelWidget';
+import NotebookUtils from './NotebookUtils';
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
@@ -99,6 +100,14 @@ export default class Commands {
         volumes,
       },
     );
+  };
+
+  unmarshalData = async (nbFileName: string) => {
+    const cmd: string =
+      `from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n` +
+      `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
+    console.log('Executing command: ' + cmd);
+    await NotebookUtils.sendKernelRequestFromNotebook(this._notebook, cmd, {});
   };
 
   getBaseImage = async () => {
