@@ -38,8 +38,6 @@ interface IRunCellResponse {
   cellIndex?: number;
   ename?: string;
   evalue?: string;
-  cell?: Cell;
-  index?: number;
 }
 
 /** Contains utility functions for manipulating/handling notebooks in the application. */
@@ -61,7 +59,7 @@ export default class NotebookUtilities {
   /**
    * Scroll the notebook to the specified cell, making it active
    * @param notebook NotebookPanel
-   * @param cell The cell to be actived
+   * @param cell The cell to be activated
    */
   public static selectAndScrollToCell(
     notebook: NotebookPanel,
@@ -305,14 +303,13 @@ export default class NotebookUtilities {
               cellIndex: i,
               ename: kernelMsg.content.ename,
               evalue: kernelMsg.content.evalue,
-              ...cell,
             };
           }
           i++;
         }
       }
     }
-    return { status: 'ok', ...cell };
+    return { status: 'ok' };
   }
 
   /**

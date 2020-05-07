@@ -30,7 +30,6 @@ import {
 } from '../lib/RPCUtils';
 import CellUtils from '../lib/CellUtils';
 import { AdvancedSettings } from '../components/AdvancedSettings';
-import { Cell } from '@jupyterlab/cells';
 import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
 import {
   ISelectVolumeTypes,
@@ -91,8 +90,6 @@ interface IState {
   runDeployment: boolean;
   deploymentType: string;
   deployDebugMessage: boolean;
-  activeCell?: Cell;
-  activeCellIndex?: number;
   experiments: IExperiment[];
   gettingExperiments: boolean;
   notebookVolumes?: IVolumeMetadata[];
@@ -244,8 +241,6 @@ const DefaultState: IState = {
   runDeployment: false,
   deploymentType: 'compile',
   deployDebugMessage: false,
-  activeCell: null,
-  activeCellIndex: 0,
   experiments: [],
   gettingExperiments: false,
   notebookVolumes: [],
@@ -417,13 +412,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
   };
 
-  handleActiveCellChanged = async (notebook: Notebook, activeCell: Cell) => {
-    this.setState({
-      activeCell: activeCell,
-      activeCellIndex: notebook.activeCellIndex,
-    });
-  };
-
   /**
    * Read new notebook and assign its metadata to the state.
    * @param notebook active NotebookPanel
@@ -433,11 +421,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     if (this.props.tracker.size > 0 && notebook) {
       // wait for the session to be ready before reading metadata
       await notebook.session.ready;
-      notebook.content.activeCellChanged.connect(this.handleActiveCellChanged);
-      let currentCell = {
-        activeCell: notebook.content.activeCell,
-        activeCellIndex: notebook.content.activeCellIndex,
-      };
 
       // get notebook metadata
       const notebookMetadata = NotebookUtils.getMetaData(
@@ -461,10 +444,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           let runCellResponse = await NotebookUtils.runGlobalCells(
             this.getActiveNotebook(),
           );
-          this.setState({
-            activeCellIndex: runCellResponse.index,
-            activeCell: runCellResponse.cell,
-          });
           if (runCellResponse.status === RUN_CELL_STATUS.OK) {
             // unmarshalData runs in the same kernel as the .ipynb, so it requires the filename
             await this.unmarshalData(nbFilePath.split('/').pop());
@@ -481,19 +460,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 this.getActiveNotebook(),
                 cell,
               );
-              currentCell = {
-                activeCell: cell.cell,
-                activeCellIndex: cell.index,
-              };
             } else {
               message.push(`ERROR: Could not retrieve step's position.`);
             }
             await NotebookUtils.showMessage(title, message);
           } else {
-            currentCell = {
-              activeCell: notebook.content.widgets[runCellResponse.cellIndex],
-              activeCellIndex: runCellResponse.cellIndex,
-            };
             await NotebookUtils.showMessage('Notebook Exploration', [
               `Executing "${runCellResponse.cellType}" cell failed.\n` +
                 `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
@@ -600,7 +571,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           metadata: metadata,
           useNotebookVolumes: useNotebookVolumes,
           autosnapshot: !this.props.rokError && stateVolumes.length > 0,
-          ...currentCell,
         });
       } else {
         this.setState({
@@ -613,7 +583,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             !this.props.rokError && this.state.notebookVolumes.length > 0,
           autosnapshot:
             !this.props.rokError && this.state.notebookVolumes.length > 0,
-          ...currentCell,
         });
       }
     } else {
@@ -1151,24 +1120,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   onMetadataEnable = (isEnabled: boolean) => {
     this.setState({ isEnabled });
-    // When drawing cell metadata on Kale enable/disable, the targetted
-    // cell may be lost. Therefore, we select and scroll to the active
-    // cell.
-    if (
-      this.getActiveNotebook() &&
-      this.state.activeCell &&
-      this.state.activeCellIndex
-    ) {
-      setTimeout(
-        NotebookUtils.selectAndScrollToCell,
-        200,
-        this.getActiveNotebook(),
-        {
-          cell: this.state.activeCell,
-          index: this.state.activeCellIndex,
-        },
-      );
-    }
   };
 
   render() {
@@ -1287,7 +1238,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               <InlineCellsMetadata
                 onMetadataEnable={this.onMetadataEnable}
                 notebook={this.getActiveNotebook()}
-                activeCellIndex={this.state.activeCellIndex}
               />
             </div>
 
