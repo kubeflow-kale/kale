@@ -334,6 +334,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
             v.type === 'clone' ? (
               <div>
                 <Select
+                  variant="standard"
                   label="Select from currently mounted points"
                   index={idx}
                   updateValue={updateVolumeMountPoint}
@@ -367,6 +368,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
                 </div>
                 <div style={{ width: '50%' }}>
                   <Select
+                    variant="standard"
                     updateValue={updateVolumeSizeType}
                     values={SELECT_VOLUME_SIZE_TYPES}
                     value={v.size_type}
@@ -425,6 +427,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
             <div className="input-container volume-container" key={`v-${idx}`}>
               <div className="toolbar">
                 <Select
+                  variant="standard"
                   updateValue={updateVolumeType}
                   values={props.selectVolumeTypes}
                   value={v.type}
