@@ -1,4 +1,5 @@
 import kfp.dsl as dsl
+import json
 import kfp.components as comp
 from collections import OrderedDict
 from kubernetes import client as k8s_client
@@ -714,6 +715,8 @@ results_op = comp.func_to_container_op(results)
 )
 def auto_generated_pipeline():
     pvolumes_dict = OrderedDict()
+    volume_step_names = []
+    volume_name_parameters = []
 
     marshal_vop = dsl.VolumeOp(
         name="kale_marshal_volume",
@@ -721,7 +724,12 @@ def auto_generated_pipeline():
         modes=dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
+    volume_step_names.append(marshal_vop.name)
+    volume_name_parameters.append(marshal_vop.outputs["name"].full_name)
     pvolumes_dict['/marshal'] = marshal_vop.volume
+
+    volume_step_names.sort()
+    volume_name_parameters.sort()
 
     loaddata_task = loaddata_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -734,6 +742,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'loaddata': '/loaddata.html'})
     loaddata_task.output_artifact_paths.update(output_artifacts)
+    dep_names = loaddata_task.dependent_names + volume_step_names
+    loaddata_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        loaddata_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     datapreprocessing_task = datapreprocessing_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -746,6 +761,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'datapreprocessing': '/datapreprocessing.html'})
     datapreprocessing_task.output_artifact_paths.update(output_artifacts)
+    dep_names = datapreprocessing_task.dependent_names + volume_step_names
+    datapreprocessing_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        datapreprocessing_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     featureengineering_task = featureengineering_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -758,6 +780,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'featureengineering': '/featureengineering.html'})
     featureengineering_task.output_artifact_paths.update(output_artifacts)
+    dep_names = featureengineering_task.dependent_names + volume_step_names
+    featureengineering_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        featureengineering_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     decisiontree_task = decisiontree_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -770,6 +799,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'decisiontree': '/decisiontree.html'})
     decisiontree_task.output_artifact_paths.update(output_artifacts)
+    dep_names = decisiontree_task.dependent_names + volume_step_names
+    decisiontree_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        decisiontree_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     svm_task = svm_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -782,6 +818,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'svm': '/svm.html'})
     svm_task.output_artifact_paths.update(output_artifacts)
+    dep_names = svm_task.dependent_names + volume_step_names
+    svm_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        svm_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     naivebayes_task = naivebayes_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -794,6 +837,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'naivebayes': '/naivebayes.html'})
     naivebayes_task.output_artifact_paths.update(output_artifacts)
+    dep_names = naivebayes_task.dependent_names + volume_step_names
+    naivebayes_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        naivebayes_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     logisticregression_task = logisticregression_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -806,6 +856,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'logisticregression': '/logisticregression.html'})
     logisticregression_task.output_artifact_paths.update(output_artifacts)
+    dep_names = logisticregression_task.dependent_names + volume_step_names
+    logisticregression_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        logisticregression_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     randomforest_task = randomforest_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -818,6 +875,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'randomforest': '/randomforest.html'})
     randomforest_task.output_artifact_paths.update(output_artifacts)
+    dep_names = randomforest_task.dependent_names + volume_step_names
+    randomforest_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        randomforest_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     results_task = results_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -830,6 +894,13 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'results': '/results.html'})
     results_task.output_artifact_paths.update(output_artifacts)
+    dep_names = results_task.dependent_names + volume_step_names
+    results_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        results_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
 
 if __name__ == "__main__":

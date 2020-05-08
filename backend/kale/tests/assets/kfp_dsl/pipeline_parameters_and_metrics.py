@@ -1,4 +1,5 @@
 import kfp.dsl as dsl
+import json
 import kfp.components as comp
 from collections import OrderedDict
 from kubernetes import client as k8s_client
@@ -103,6 +104,8 @@ sum_matrix_op = comp.func_to_container_op(sum_matrix)
 )
 def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
     pvolumes_dict = OrderedDict()
+    volume_step_names = []
+    volume_name_parameters = []
 
     marshal_vop = dsl.VolumeOp(
         name="kale_marshal_volume",
@@ -110,7 +113,12 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         modes=dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
+    volume_step_names.append(marshal_vop.name)
+    volume_name_parameters.append(marshal_vop.outputs["name"].full_name)
     pvolumes_dict['/marshal'] = marshal_vop.volume
+
+    volume_step_names.sort()
+    volume_name_parameters.sort()
 
     create_matrix_task = create_matrix_op(d1, d2)\
         .add_pvolumes(pvolumes_dict)\
@@ -127,6 +135,13 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'create_matrix': '/create_matrix.html'})
     create_matrix_task.output_artifact_paths.update(output_artifacts)
+    dep_names = create_matrix_task.dependent_names + volume_step_names
+    create_matrix_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        create_matrix_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
     sum_matrix_task = sum_matrix_op()\
         .add_pvolumes(pvolumes_dict)\
@@ -140,6 +155,13 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'sum_matrix': '/sum_matrix.html'})
     sum_matrix_task.output_artifact_paths.update(output_artifacts)
+    dep_names = sum_matrix_task.dependent_names + volume_step_names
+    sum_matrix_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
+    if volume_name_parameters:
+        sum_matrix_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(volume_name_parameters))
 
 
 if __name__ == "__main__":
