@@ -83,6 +83,52 @@ limitations imposed by the Kale data marshalling model.
 
 ## Contribute
 
+#### Backend
+
+Create a new Python virtual environment with `Python >= 3.6`. Then:
+
+```bash
+cd backend/
+pip install -e .[dev]
+
+# run tests
+pytest -x -vv
+```
+
+#### Labextension
+
+The JupyterLab Python package comes with its own yarn wrapper, called `jlpm`.
+While using the previously installed venv, install JupyterLab by running:
+
+```bash
+pip install "jupyterlab<2.0.0"
+```
+
+You can then run the following to install the Kale extension:
+
+```bash
+cd labextension/
+
+# install dependencies from package.lock
+jlpm install
+# build extension
+jlpm run build
+
+# list installed jp extensions
+jlpm labextension list
+# install Kale extension
+jlpm labextension install .
+
+# for development:
+# build and watch
+jlpm run watch
+
+# in another shell, run JupyterLab in watch mode
+jupyter lab --no-browser --watch
+```
+
+#### Git Hooks
+
 This repository uses
 [husky](https://github.com/typicode/husky)
 to set up git hooks.
