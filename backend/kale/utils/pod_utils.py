@@ -300,3 +300,12 @@ def patch_pod(name, namespace, patch):
     """Patch a pod."""
     k8s_client = _get_k8s_v1_client()
     k8s_client.patch_namespaced_pod(name=name, namespace=namespace, body=patch)
+
+
+def get_pod(name, namespace):
+    """Get a pod.
+
+    This function seems redundant but it can save a few repeated lines of code.
+    """
+    k8s_client = _get_k8s_v1_client()
+    return k8s_client.read_namespaced_pod(name, namespace)
