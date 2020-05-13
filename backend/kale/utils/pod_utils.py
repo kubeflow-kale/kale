@@ -15,6 +15,7 @@
 import os
 import re
 import json
+import hashlib
 import logging
 import tabulate
 import kubernetes.client as k8s
@@ -43,6 +44,7 @@ K8S_SIZE_UNITS = {"E": 10 ** 18,
                   "Ki": 2 ** 10}
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
+KFP_COMPONENT_SPEC_ANNOTATION_KEY = "pipelines.kubeflow.org/component_spec"
 
 log = logging.getLogger(__name__)
 
@@ -319,3 +321,20 @@ def get_workflow(name, namespace):
     co_client = _get_k8s_custom_objects_client()
     return co_client.get_namespaced_custom_object(api_group, api_version,
                                                   namespace, co_name, name)
+
+
+def compute_component_id(pod):
+    """Compute unique component ID.
+
+    Kale steps are KFP SDK Components. This is the way MetadataWriter generates
+    unique names for such components.
+    """
+    component_spec_text = pod.metadata.annotations.get(
+        KFP_COMPONENT_SPEC_ANNOTATION_KEY)
+    if not component_spec_text:
+        raise ValueError("KFP component spec annotation not found in pod")
+    component_spec = json.loads(component_spec_text)
+    component_spec_digest = hashlib.sha256(
+        component_spec_text.encode()).hexdigest()
+    component_name = component_spec.get("name")
+    return component_name + "@sha256=" + component_spec_digest
