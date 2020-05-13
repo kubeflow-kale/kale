@@ -309,3 +309,13 @@ def get_pod(name, namespace):
     """
     k8s_client = _get_k8s_v1_client()
     return k8s_client.read_namespaced_pod(name, namespace)
+
+
+def get_workflow(name, namespace):
+    """Get a workflow."""
+    api_group = "argoproj.io"
+    api_version = "v1alpha1"
+    co_name = "workflows"
+    co_client = _get_k8s_custom_objects_client()
+    return co_client.get_namespaced_custom_object(api_group, api_version,
+                                                  namespace, co_name, name)
