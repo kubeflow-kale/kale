@@ -21,7 +21,12 @@ import {
   IObservableList,
   IObservableUndoableList,
 } from '@jupyterlab/observables';
-import { isCodeCellModel, CodeCellModel, ICellModel } from '@jupyterlab/cells';
+import {
+  Cell,
+  CodeCellModel,
+  ICellModel,
+  isCodeCellModel,
+} from '@jupyterlab/cells';
 import CellUtils from '../../lib/CellUtils';
 import TagsUtils from '../../lib/TagsUtils';
 import { InlineMetadata } from './InlineMetadata';
@@ -31,16 +36,17 @@ import {
 } from './CellMetadataEditor';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Switch } from '@material-ui/core';
+import NotebookUtils from '../../lib/NotebookUtils';
 
 interface IProps {
   notebook: NotebookPanel;
-  activeCellIndex: number;
   onMetadataEnable: (isEnabled: boolean) => void;
 }
 
 type Editors = { [index: string]: EditorProps };
 
 interface IState {
+  activeCellIndex: number;
   prevBlockName?: string;
   metadataCmp?: JSX.Element[];
   checked?: boolean;
@@ -49,6 +55,7 @@ interface IState {
 }
 
 const DefaultState: IState = {
+  activeCellIndex: 0,
   prevBlockName: null,
   metadataCmp: [],
   checked: false,
@@ -66,13 +73,19 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     this.onEditorVisibilityChange = this.onEditorVisibilityChange.bind(this);
   }
 
+  componentDidMount = () => {
+    if (this.props.notebook) {
+      this.connectAndInitWhenReady(this.props.notebook);
+    }
+  };
+
   componentDidUpdate = async (
     prevProps: Readonly<IProps>,
     prevState: Readonly<IState>,
   ) => {
     if (!this.props.notebook && prevProps.notebook) {
       // no notebook
-      this.clearMetadataAndEditorsState();
+      this.clearEditorsPropsAndInlineMetadata();
     }
 
     const preNotebookId = prevProps.notebook ? prevProps.notebook.id : '';
@@ -80,69 +93,62 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     if (preNotebookId !== notebookId) {
       // notebook changed
       if (prevProps.notebook) {
-        prevProps.notebook.context.saveState.disconnect(this.handleSaveState);
-        // prevProps.notebook.model is null
-        // potential memory leak ??
-        // prevProps.notebook.model.cells.changed.disconnect(this.handleCellChange);
+        this.disconnectHandlersFromNotebook(prevProps.notebook);
       }
       if (this.props.notebook) {
-        this.props.notebook.context.ready.then(() => {
-          this.props.notebook.context.saveState.connect(this.handleSaveState);
-          this.props.notebook.model.cells.changed.connect(
-            this.handleCellChange,
-          );
-          this.resetMetadataComponents();
-        });
+        this.connectAndInitWhenReady(this.props.notebook);
       }
-
       // hide editor on notebook change
       this.setState({ isEditorVisible: false });
     }
   };
 
-  /**
-   * Event handler for the global Kale switch (the one below the Kale title in
-   * the left panel). Enabling the switch propagates to the father component
-   * (LeftPanelWidget) to enable the rest of the UI.
-   */
-  toggleGlobalKaleSwitch(checked: boolean) {
-    this.setState({ checked });
-    this.props.onMetadataEnable(checked);
+  connectAndInitWhenReady = (notebook: NotebookPanel) => {
+    notebook.context.ready.then(() => {
+      this.connectHandlersToNotebook(this.props.notebook);
+      this.refreshEditorsPropsAndInlineMetadata();
+      this.setState({
+        activeCellIndex: notebook.content.activeCellIndex,
+      });
+    });
+  };
 
-    if (checked) {
-      this.addMetadataInfo();
-    } else {
-      this.setState({ isEditorVisible: false });
-      this.clearMetadataAndEditorsState();
-    }
-  }
+  connectHandlersToNotebook = (notebook: NotebookPanel) => {
+    notebook.context.saveState.connect(this.handleSaveState);
+    notebook.content.activeCellChanged.connect(this.onActiveCellChanged);
+    notebook.model.cells.changed.connect(this.handleCellChange);
+  };
 
-  /**
-   * Callback that is called every time the Notebook is saved. This function
-   * is set in componentDidUpdate every time the current notebook changes.
-   */
-  handleSaveState = (context: DocumentRegistry.Context, state: SaveState) => {
-    if (state === 'completed') {
-      if (this.state.checked) {
-        this.addMetadataInfo();
-      }
+  disconnectHandlersFromNotebook = (notebook: NotebookPanel) => {
+    notebook.context.saveState.disconnect(this.handleSaveState);
+    notebook.content.activeCellChanged.disconnect(this.onActiveCellChanged);
+    // when closing the notebook tab, notebook.model becomes null
+    if (notebook.model) {
+      notebook.model.cells.changed.disconnect(this.handleCellChange);
     }
   };
 
-  /**
-   * Callback that is called every time the active cell changes. This function
-   * is set in componentDidUpdate every time the current notebook changes.
-   */
+  onActiveCellChanged = (notebook: Notebook, activeCell: Cell) => {
+    this.setState({
+      activeCellIndex: notebook.activeCellIndex,
+    });
+  };
+
+  handleSaveState = (context: DocumentRegistry.Context, state: SaveState) => {
+    if (this.state.checked && state === 'completed') {
+      this.generateEditorsPropsAndInlineMetadata();
+    }
+  };
+
   handleCellChange = (
     cells: IObservableUndoableList<ICellModel>,
     args: IObservableList.IChangedArgs<ICellModel>,
   ) => {
-    this.resetMetadataComponents();
+    this.refreshEditorsPropsAndInlineMetadata();
 
     const prevValue = args.oldValues[0];
-
     // Change type 'set' is when a cell changes its type. Even if a user changes
-    // multiple cells using Shift + click the args.oldValues has only one chell
+    // multiple cells using Shift + click the args.oldValues has only one cell
     // each time.
     if (args.type === 'set' && prevValue instanceof CodeCellModel) {
       CellUtils.setCellMetaData(
@@ -161,18 +167,47 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   };
 
   /**
-   * Remove all the inline cell metadata info components and the editors.
+   * Event handler for the global Kale switch (the one below the Kale title in
+   * the left panel). Enabling the switch propagates to the father component
+   * (LeftPanelWidget) to enable the rest of the UI.
    */
-  resetMetadataComponents() {
+  toggleGlobalKaleSwitch(checked: boolean) {
+    this.setState({ checked });
+    this.props.onMetadataEnable(checked);
+
+    if (checked) {
+      this.generateEditorsPropsAndInlineMetadata();
+
+      // When drawing cell metadata on Kale enable/disable, the targeted
+      // cell may be lost. Therefore, we select and scroll to the active
+      // cell.
+      if (this.props.notebook && this.props.notebook.content.activeCellIndex) {
+        setTimeout(
+          NotebookUtils.selectAndScrollToCell,
+          200,
+          this.props.notebook,
+          {
+            cell: this.props.notebook.content.activeCell,
+            index: this.props.notebook.content.activeCellIndex,
+          },
+        );
+      }
+    } else {
+      this.setState({ isEditorVisible: false });
+      this.clearEditorsPropsAndInlineMetadata();
+    }
+  }
+
+  refreshEditorsPropsAndInlineMetadata() {
     if (this.state.checked) {
-      this.clearMetadataAndEditorsState(() => {
-        this.addMetadataInfo();
+      this.clearEditorsPropsAndInlineMetadata(() => {
+        this.generateEditorsPropsAndInlineMetadata();
       });
       this.setState({ isEditorVisible: false });
     }
   }
 
-  clearMetadataAndEditorsState = (callback?: () => void) => {
+  clearEditorsPropsAndInlineMetadata = (callback?: () => void) => {
     // triggers cleanup in InlineMetadata
     this.setState({ metadataCmp: [], editors: {} }, () => {
       if (callback) {
@@ -181,23 +216,13 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     });
   };
 
-  /**
-   * Parse the entire notebook cells and, based on the existing kale cell
-   * metadata, create a new CellMetadataEditor component (actually, we store
-   * just the props), and an InlineMetadata component (used to visualize
-   * metadata information above the cells) for every code cell.
-   *
-   * This function is used as callback to `removeCells`.
-   */
-  addMetadataInfo = () => {
+  generateEditorsPropsAndInlineMetadata = () => {
     if (!this.props.notebook) {
       return;
     }
-
-    const cells = this.props.notebook.model.cells;
-    const allTags: any[] = [];
     const metadata: any[] = [];
     const editors: Editors = {};
+    const cells = this.props.notebook.model.cells;
     for (let index = 0; index < cells.length; index++) {
       const isCodeCell = isCodeCellModel(
         this.props.notebook.model.cells.get(index),
@@ -213,7 +238,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           prevBlockNames: [],
         };
       }
-      allTags.push(tags);
       let previousBlockName = '';
 
       if (!tags.blockName) {
@@ -222,13 +246,12 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           index,
         );
       }
-      const editorProps: EditorProps = {
+      editors[index] = {
         notebook: this.props.notebook,
         stepName: tags.blockName || '',
         stepDependencies: tags.prevBlockNames || [],
         limits: tags.limits || {},
       };
-      editors[index] = editorProps;
       metadata.push(
         <InlineMetadata
           key={index}
@@ -248,15 +271,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     });
   };
 
-  removeCells = (callback?: () => void) => {
-    // triggers cleanup in InlineMetadata
-    this.setState({ metadataCmp: [], editors: {} }, () => {
-      if (callback) {
-        callback();
-      }
-    });
-  };
-
   /**
    * Callback passed to the CellMetadataEditor context
    */
@@ -268,7 +282,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     // Get the editor props of the active cell, so that just one editor is
     // rendered at any given time.
     const editorProps: EditorProps = {
-      ...this.state.editors[this.props.activeCellIndex],
+      ...this.state.editors[this.state.activeCellIndex],
     };
     return (
       <React.Fragment>
@@ -286,7 +300,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         <div className="hidden">
           <CellMetadataContext.Provider
             value={{
-              activeCellIndex: this.props.activeCellIndex,
+              activeCellIndex: this.state.activeCellIndex,
               isEditorVisible: this.state.isEditorVisible,
               onEditorVisibilityChange: this.onEditorVisibilityChange,
             }}
