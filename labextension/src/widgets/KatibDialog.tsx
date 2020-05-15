@@ -16,15 +16,10 @@ import {
 import AddIcon from '@material-ui/icons/Add';
 import Help from '@material-ui/icons/Help';
 import DeleteIcon from '@material-ui/icons/Delete';
-import {
-  IKatibMetadata,
-  IKatibParameter,
-  ISelectOption,
-} from './LeftPanelWidget';
+import { IKatibMetadata, IKatibParameter } from './LeftPanelWidget';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { executeRpc, RPC_CALL_STATUS, RPCError } from '../lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
-import NotebookUtils from '../lib/NotebookUtils';
 import { useTheme } from '@material-ui/core/styles';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';

@@ -20,6 +20,11 @@ import { RokInput } from './RokInput';
 import { Button } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 
+export interface IAnnotation {
+  key: string;
+  value: string;
+}
+
 interface AnnotationInputProps {
   label: string;
   volumeIdx: number;

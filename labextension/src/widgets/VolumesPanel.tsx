@@ -18,12 +18,12 @@ import * as React from 'react';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { IAnnotation, ISelectOption, IVolumeMetadata } from './LeftPanelWidget';
+import { IVolumeMetadata } from './LeftPanelWidget';
 import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import { Input } from '../components/Input';
-import { Select } from '../components/Select';
+import { Select, ISelectOption } from '../components/Select';
 import { LightTooltip } from '../components/LightTooltip';
-import { AnnotationInput } from '../components/AnnotationInput';
+import { AnnotationInput, IAnnotation } from '../components/AnnotationInput';
 import { removeIdxFromArray, updateIdxInArray } from '../lib/Utils';
 
 const DEFAULT_EMPTY_VOLUME: IVolumeMetadata = {
@@ -56,12 +56,7 @@ enum VOLUME_TOOLTIP {
   USE_EXISTING_VOLUME = 'Mount an existing volume on your pipeline steps',
 }
 
-export interface ISelectVolumeTypes extends ISelectOption {
-  invalid: boolean;
-  tooltip: any;
-}
-
-export const SELECT_VOLUME_TYPES: ISelectVolumeTypes[] = [
+export const SELECT_VOLUME_TYPES: ISelectOption[] = [
   {
     label: 'Create Empty Volume',
     value: 'new_pvc',
@@ -93,7 +88,7 @@ interface VolumesPanelProps {
   notebookVolumes: IVolumeMetadata[];
   metadataVolumes: IVolumeMetadata[];
   notebookMountPoints: { label: string; value: string }[];
-  selectVolumeTypes: ISelectVolumeTypes[];
+  selectVolumeTypes: ISelectOption[];
   useNotebookVolumes: boolean;
   autosnapshot: boolean;
   rokError: IRPCError;
