@@ -20,6 +20,13 @@ import { MenuItem, Zoom } from '@material-ui/core';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { LightTooltip } from './LightTooltip';
 
+export interface ISelectOption {
+  label: string;
+  value: string;
+  tooltip?: any;
+  invalid?: boolean;
+}
+
 const useStyles = makeStyles(() =>
   createStyles({
     label: {
@@ -44,7 +51,7 @@ const useStyles = makeStyles(() =>
 
 interface SelectProps extends BaseTextFieldProps {
   index: number;
-  values: { value: string; label: string; tooltip?: string }[];
+  values: ISelectOption[];
   variant?: 'filled' | 'standard' | 'outlined';
   updateValue: Function;
 }

@@ -15,28 +15,12 @@
  */
 
 import * as React from 'react';
-import {
-  INotebookTracker,
-  Notebook,
-  NotebookPanel,
-} from '@jupyterlab/notebook';
+import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 import NotebookUtils from '../lib/NotebookUtils';
-import {
-  _legacy_executeRpc,
-  _legacy_executeRpcAndShowRPCError,
-  IRPCError,
-  rokErrorTooltip,
-  RPCError,
-} from '../lib/RPCUtils';
-import CellUtils from '../lib/CellUtils';
+import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import { AdvancedSettings } from '../components/AdvancedSettings';
 import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
-import {
-  ISelectVolumeTypes,
-  SELECT_VOLUME_SIZE_TYPES,
-  SELECT_VOLUME_TYPES,
-  VolumesPanel,
-} from './VolumesPanel';
+import { SELECT_VOLUME_TYPES, VolumesPanel } from './VolumesPanel';
 import { SplitDeployButton } from '../components/DeployButton';
 import { Kernel } from '@jupyterlab/services';
 import { ExperimentInput } from '../components/ExperimentInput';
@@ -53,13 +37,10 @@ import { KatibDialog } from './KatibDialog';
 import { Input } from '../components/Input';
 import { LightTooltip } from '../components/LightTooltip';
 import Commands from '../lib/Commands';
+import { IAnnotation } from '../components/AnnotationInput';
+import { ISelectOption } from '../components/Select';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
-
-export interface ISelectOption {
-  label: string;
-  value: string;
-}
 
 export interface IExperiment {
   id: string;
@@ -89,17 +70,12 @@ interface IState {
   gettingExperiments: boolean;
   notebookVolumes?: IVolumeMetadata[];
   volumes?: IVolumeMetadata[];
-  selectVolumeTypes: ISelectVolumeTypes[];
+  selectVolumeTypes: ISelectOption[];
   useNotebookVolumes: boolean;
   autosnapshot: boolean;
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
   katibDialog: boolean;
-}
-
-export interface IAnnotation {
-  key: string;
-  value: string;
 }
 
 // Katib types: https://github.com/kubeflow/katib/blob/master/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
