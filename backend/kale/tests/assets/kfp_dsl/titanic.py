@@ -764,7 +764,7 @@ def auto_generated_pipeline():
     volume_name_parameters = []
 
     marshal_vop = dsl.VolumeOp(
-        name="kale_marshal_volume",
+        name="kale-marshal-volume",
         resource_name="kale-marshal-pvc",
         modes=dsl.VOLUME_MODE_RWM,
         size="1Gi"
