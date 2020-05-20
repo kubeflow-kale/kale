@@ -94,30 +94,30 @@ interface DeployProgress extends DeployProgressState {
 
 export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
   const getWarningBadge = (title: string, content: any) => {
-    return content ? (
-      <a
-        onClick={_ => {
-          NotebookUtils.showMessage(title, content);
-        }}
-      >
-        <WarningIcon style={{ color: color.alert, height: 18, width: 18 }} />
-      </a>
-    ) : (
-      ''
+    return (
+      content && (
+        <a
+          onClick={_ => {
+            NotebookUtils.showMessage(title, content);
+          }}
+        >
+          <WarningIcon style={{ color: color.alert, height: 18, width: 18 }} />
+        </a>
+      )
     );
   };
 
   const getInfoBadge = (title: string, content: any) => {
-    return content ? (
-      <a
-        onClick={_ => {
-          NotebookUtils.showMessage(title, content);
-        }}
-      >
-        <InfoIcon style={{ color: color.blue, height: 18, width: 18 }} />
-      </a>
-    ) : (
-      ''
+    return (
+      content && (
+        <a
+          onClick={_ => {
+            NotebookUtils.showMessage(title, content);
+          }}
+        >
+          <InfoIcon style={{ color: color.blue, height: 18, width: 18 }} />
+        </a>
+      )
     );
   };
 
