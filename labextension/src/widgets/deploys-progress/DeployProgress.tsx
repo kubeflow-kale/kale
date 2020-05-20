@@ -15,6 +15,7 @@
  */
 
 import * as React from 'react';
+import * as yaml from 'js-yaml';
 import { LinearProgress, CircularProgress } from '@material-ui/core';
 import CloseIcon from '@material-ui/icons/Close';
 import LinkIcon from '@material-ui/icons/Link';
@@ -118,6 +119,18 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     ) : (
       ''
     );
+  };
+
+  const getKatibBestResultInfo = (katib: any) => {
+    let optimal = katib ? katib.currentOptimalTrial : null;
+    // currentOptimalTrial is _never_ null,
+    // so if there's no best trial so far we don't show the object
+    return optimal && optimal.bestTrialName
+      ? [yaml.safeDump(optimal)]
+      : [
+          'There are no results yet',
+          'To have a result, there must be at least one successful trial',
+        ];
   };
 
   const getSnapshotLink = (task: any) => {
@@ -575,7 +588,13 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             <div className="deploy-progress-label">
               Running Katib experiment...
             </div>
-            <div className="deploy-progress-value">{katibTpl}</div>
+            <div className="deploy-progress-value">
+              {katibTpl}
+              {getInfoBadge(
+                'Katib current best result',
+                getKatibBestResultInfo(props.katib),
+              )}
+            </div>
           </div>
           <div className="deploy-progress-row">{katibRunsTpl}</div>
         </div>
