@@ -228,7 +228,8 @@ def get_experiment(request, experiment, namespace):
             "trialsFailed": exp["status"].get("trialsFailed", 0),
             "trialsRunning": exp["status"].get("trialsRunning", 0),
             "trialsSucceeded": exp["status"].get("trialsSucceeded", 0),
-            "maxTrialCount": exp["spec"]["maxTrialCount"]}
+            "maxTrialCount": exp["spec"]["maxTrialCount"],
+            "currentOptimalTrial": exp["status"].get("currentOptimalTrial")}
 
 
 def _get_experiment_status(experiment_status):

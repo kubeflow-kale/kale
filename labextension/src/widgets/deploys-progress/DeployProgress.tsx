@@ -15,6 +15,7 @@
  */
 
 import * as React from 'react';
+import * as yaml from 'js-yaml';
 import { LinearProgress, CircularProgress } from '@material-ui/core';
 import CloseIcon from '@material-ui/icons/Close';
 import LinkIcon from '@material-ui/icons/Link';
@@ -26,6 +27,7 @@ import SkippedIcon from '@material-ui/icons/SkipNext';
 import SuccessIcon from '@material-ui/icons/CheckCircle';
 import CancelIcon from '@material-ui/icons/Cancel';
 import WarningIcon from '@material-ui/icons/Warning';
+import InfoIcon from '@material-ui/icons/Info';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
@@ -92,17 +94,43 @@ interface DeployProgress extends DeployProgressState {
 
 export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
   const getWarningBadge = (title: string, content: any) => {
-    return content ? (
-      <a
-        onClick={_ => {
-          NotebookUtils.showMessage(title, content);
-        }}
-      >
-        <WarningIcon style={{ color: color.alert, height: 18, width: 18 }} />
-      </a>
-    ) : (
-      ''
+    return (
+      content && (
+        <a
+          onClick={_ => {
+            NotebookUtils.showMessage(title, content);
+          }}
+        >
+          <WarningIcon style={{ color: color.alert, height: 18, width: 18 }} />
+        </a>
+      )
     );
+  };
+
+  const getInfoBadge = (title: string, content: any) => {
+    return (
+      content && (
+        <a
+          onClick={_ => {
+            NotebookUtils.showMessage(title, content);
+          }}
+        >
+          <InfoIcon style={{ color: color.blue, height: 18, width: 18 }} />
+        </a>
+      )
+    );
+  };
+
+  const getKatibBestResultInfo = (katib: any) => {
+    let optimal = katib ? katib.currentOptimalTrial : null;
+    // currentOptimalTrial is _never_ null,
+    // so if there's no best trial so far we don't show the object
+    return optimal && optimal.bestTrialName
+      ? [yaml.safeDump(optimal)]
+      : [
+          'There are no results yet',
+          'To have a result, there must be at least one successful trial',
+        ];
   };
 
   const getSnapshotLink = (task: any) => {
@@ -560,7 +588,13 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             <div className="deploy-progress-label">
               Running Katib experiment...
             </div>
-            <div className="deploy-progress-value">{katibTpl}</div>
+            <div className="deploy-progress-value">
+              {katibTpl}
+              {getInfoBadge(
+                'Katib current best result',
+                getKatibBestResultInfo(props.katib),
+              )}
+            </div>
           </div>
           <div className="deploy-progress-row">{katibRunsTpl}</div>
         </div>
