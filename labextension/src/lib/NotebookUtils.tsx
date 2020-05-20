@@ -81,7 +81,7 @@ export default class NotebookUtilities {
    */
   private static buildDialogBody(msg: string[]): ReactElement {
     return (
-      <div>
+      <div className="dialog-body">
         {msg.map((s: string, i: number) => {
           return (
             <React.Fragment key={`msg-${i}`}>

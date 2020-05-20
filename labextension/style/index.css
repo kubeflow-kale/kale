@@ -481,3 +481,7 @@ a {
 .material-switch input {
   height: 100%;
 }
+
+.dialog-body {
+  white-space: pre;
+}
