@@ -787,6 +787,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'loaddata': '/loaddata.html'})
     loaddata_task.output_artifact_paths.update(output_artifacts)
+    loaddata_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = loaddata_task.dependent_names + volume_step_names
     loaddata_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -806,6 +808,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'datapreprocessing': '/datapreprocessing.html'})
     datapreprocessing_task.output_artifact_paths.update(output_artifacts)
+    datapreprocessing_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = datapreprocessing_task.dependent_names + volume_step_names
     datapreprocessing_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -825,6 +829,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'featureengineering': '/featureengineering.html'})
     featureengineering_task.output_artifact_paths.update(output_artifacts)
+    featureengineering_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = featureengineering_task.dependent_names + volume_step_names
     featureengineering_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -844,6 +850,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'decisiontree': '/decisiontree.html'})
     decisiontree_task.output_artifact_paths.update(output_artifacts)
+    decisiontree_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = decisiontree_task.dependent_names + volume_step_names
     decisiontree_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -863,6 +871,7 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'svm': '/svm.html'})
     svm_task.output_artifact_paths.update(output_artifacts)
+    svm_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
     dep_names = svm_task.dependent_names + volume_step_names
     svm_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -882,6 +891,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'naivebayes': '/naivebayes.html'})
     naivebayes_task.output_artifact_paths.update(output_artifacts)
+    naivebayes_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = naivebayes_task.dependent_names + volume_step_names
     naivebayes_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -901,6 +912,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'logisticregression': '/logisticregression.html'})
     logisticregression_task.output_artifact_paths.update(output_artifacts)
+    logisticregression_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = logisticregression_task.dependent_names + volume_step_names
     logisticregression_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -920,6 +933,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'randomforest': '/randomforest.html'})
     randomforest_task.output_artifact_paths.update(output_artifacts)
+    randomforest_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = randomforest_task.dependent_names + volume_step_names
     randomforest_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -939,6 +954,8 @@ def auto_generated_pipeline():
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'results': '/results.html'})
     results_task.output_artifact_paths.update(output_artifacts)
+    results_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = results_task.dependent_names + volume_step_names
     results_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))

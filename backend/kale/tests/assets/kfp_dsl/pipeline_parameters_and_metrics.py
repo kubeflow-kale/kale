@@ -145,6 +145,8 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'create_matrix': '/create_matrix.html'})
     create_matrix_task.output_artifact_paths.update(output_artifacts)
+    create_matrix_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = create_matrix_task.dependent_names + volume_step_names
     create_matrix_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
@@ -165,6 +167,8 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     output_artifacts.update({'sum_matrix': '/sum_matrix.html'})
     sum_matrix_task.output_artifact_paths.update(output_artifacts)
+    sum_matrix_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
     dep_names = sum_matrix_task.dependent_names + volume_step_names
     sum_matrix_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))

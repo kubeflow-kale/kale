@@ -135,6 +135,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     output_artifacts.update({'{{ name }}': '/{{ name }}.html'})
     {%- endif %}
     {{ name }}_task.output_artifact_paths.update(output_artifacts)
+    {{ name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
     dep_names = {{ name }}_task.dependent_names + volume_step_names
     {{ name }}_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
