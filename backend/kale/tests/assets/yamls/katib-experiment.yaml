@@ -40,10 +40,10 @@ spec:
         \  namespace: {{.NameSpace}}\nspec:\n  backoffLimit: 0\n  template:\n    metadata:\n\
         \      annotations:\n        sidecar.istio.io/inject: \"false\"\n    spec:\n\
         \      restartPolicy: Never\n      containers:\n        - name: {{.Trial}}\n\
-        \          image: gcr.io/arrikto-playground/elikatsis/kale/trials:1b82d32\n\
-        \          command:\n            - python3 -u -c \"from kale.utils.kfp_utils\
-        \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
-        \                    pipeline_id='12345',                    run_name='{{.Trial}}',\
+        \          image: gcr.io/arrikto/katib-kfp-trial:ba82feb\n          command:\n\
+        \            - python3 -u -c \"from kale.utils.kfp_utils                import\
+        \ create_and_wait_kfp_run;                create_and_wait_kfp_run(       \
+        \             pipeline_id='12345',                    run_name='{{.Trial}}',\
         \                    experiment_name='katib-test',                    {{-\
         \ with .HyperParameters }} {{- range .}}\n                        {{.Name}}='{{.Value}}',\
         \                    {{- end }} {{- end }}                )\"\n"
