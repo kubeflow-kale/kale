@@ -34,7 +34,7 @@ def list_experiments(request):
     c = _get_client()
     experiments = [{"name": e.name,
                     "id": e.id}
-                   for e in c.list_experiments().experiments]
+                   for e in c.list_experiments().experiments or []]
     return experiments
 
 
