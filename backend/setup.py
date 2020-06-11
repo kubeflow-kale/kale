@@ -48,7 +48,7 @@ setup(
         'ipykernel >= 5.1.4',
         'kfp-server-api == 0.1.18.3',
         'packaging > 20',
-        'ml_metadata > 0.21, < 0.22',
+#        'ml_metadata > 0.21, < 0.22',
     ],
     extras_require={
         'dev': [
