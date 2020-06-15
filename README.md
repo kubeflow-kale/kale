@@ -8,8 +8,8 @@
 <a target="_blank" href="https://pypi.org/project/kubeflow-kale/">
     <img alt="PyPI Version" src="https://badgen.net/pypi/v/kubeflow-kale">
 </a>
-<a target="_blank" href="https://www.npmjs.com/package/kubeflow-kale-launcher">
-  <img alt="npm Version" src="https://badgen.net/npm/v/kubeflow-kale-launcher">
+<a target="_blank" href="https://www.npmjs.com/package/kubeflow-kale-labextension">
+  <img alt="npm Version" src="https://badgen.net/npm/v/kubeflow-kale-labextension">
 </a>
 <a target="_blank" href="https://github.com/kubeflow-kale/kale/actions">
   <img alt="Kale CI Workflow Status" src="https://github.com/kubeflow-kale/kale/workflows/CI/badge.svg">
@@ -53,7 +53,7 @@ pip install kubeflow-kale
 pip install "jupyterlab<2.0.0"
 
 # install the extension
-jupyter labextension install kubeflow-kale-launcher
+jupyter labextension install kubeflow-kale-labextension
 # verify extension status
 jupyter labextension list
 

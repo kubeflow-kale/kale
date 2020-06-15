@@ -1,15 +1,15 @@
 {
-  "name": "kubeflow-kale-launcher",
-  "version": "1.4.0",
-  "description": "Deployment interface for Kubeflow Pipelines.",
+  "name": "kubeflow-kale-labextension",
+  "version": "0.5.0",
+  "description": "Convert Notebooks to Kubeflow pipelines with Kale",
   "keywords": [
     "jupyter",
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/kubeflow-kale/jupyterlab-kubeflow-kale",
+  "homepage": "https://github.com/kubeflow-kale/kale",
   "bugs": {
-    "url": "https://github.com/kubeflow-kale/jupyterlab-kubeflow-kale/issues"
+    "url": "https://github.com/kubeflow-kale/kale/issues"
   },
   "license": "BSD-3-Clause",
   "author": "Stefano Fioravanzo <stefano.fioravanzo@gmail.com>",
