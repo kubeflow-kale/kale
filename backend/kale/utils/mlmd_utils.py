@@ -93,7 +93,7 @@ class MLMetadata(object):
 
         workflow_annotations = self.workflow["metadata"].get("annotations", {})
         pipeline_spec = json.loads(workflow_annotations.get(
-            "pipelines.kubeflow.org/pipeline_spec", {}))
+            "pipelines.kubeflow.org/pipeline_spec", "{}"))
         self.pipeline_name = pipeline_spec.get("name", self.workflow_name)
 
         self.component_id = pod_utils.compute_component_id(self.pod)
