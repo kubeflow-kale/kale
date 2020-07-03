@@ -11,6 +11,7 @@
     "jsx": "react",
     "strict": true,
     "strictNullChecks": false,
+    "esModuleInterop": true,
     "types": []
   },
   "include": ["src/*"]

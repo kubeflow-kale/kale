@@ -75,9 +75,9 @@ interface IKatibRunArgs {
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
-  private readonly _kernel: Kernel.IKernel;
+  private readonly _kernel: Kernel.IKernelConnection;
 
-  constructor(notebook: NotebookPanel, kernel: Kernel.IKernel) {
+  constructor(notebook: NotebookPanel, kernel: Kernel.IKernelConnection) {
     this._notebook = notebook;
     this._kernel = kernel;
   }

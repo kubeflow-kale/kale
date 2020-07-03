@@ -17,7 +17,7 @@
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { KernelMessage, Kernel } from '@jupyterlab/services';
-import { CommandRegistry } from '@phosphor/commands';
+import { CommandRegistry } from '@lumino/commands';
 // @ts-ignore
 import SanitizedHTML from 'react-sanitized-html';
 import * as React from 'react';
@@ -30,7 +30,7 @@ import {
 } from '@jupyterlab/cells';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
 import CellUtilities from './CellUtils';
-import { nbformat } from '@jupyterlab/coreutils';
+// import { nbformat } from '@jupyterlab/nbformat';
 
 interface IRunCellResponse {
   status: string;
@@ -294,7 +294,7 @@ export default class NotebookUtilities {
           // this.setState({ activeCellIndex: cell.index, activeCell: cell.cell });
           const kernelMsg = (await CodeCell.execute(
             notebook.content.widgets[i] as CodeCell,
-            notebook.session,
+            notebook.sessionContext,
           )) as KernelMessage.IExecuteReplyMsg;
           if (kernelMsg.content && kernelMsg.content.status === 'error') {
             return {
@@ -318,13 +318,13 @@ export default class NotebookUtilities {
    */
   public static async createNewKernel() {
     // Get info about the available kernels and start a new one.
-    let options: Kernel.IOptions = await Kernel.getSpecs().then(kernelSpecs => {
+    let options: Kernel.IKernelConnection.IOptions = await Kernel.IKernelConnection.spec.then(kernelSpecs => {
       // console.log('Default spec:', kernelSpecs.default);
       // console.log('Available specs', Object.keys(kernelSpecs.kernelspecs));
       // use the default name
       return { name: kernelSpecs.default };
     });
-    return await Kernel.startNew(options).then(_kernel => {
+    return await Kernel.IManager.startNew(options).then(_kernel => {
       return _kernel;
     });
   }
@@ -392,7 +392,7 @@ export default class NotebookUtilities {
     }
 
     // Wait for kernel to be ready before sending request
-    await kernel.ready;
+    await kernel.info;
 
     const message: KernelMessage.IShellMessage = await kernel.requestExecute({
       allow_stdin: allowStdIn,
@@ -443,11 +443,11 @@ export default class NotebookUtilities {
     }
 
     // Wait for notebook panel to be ready
-    await notebookPanel.activated;
-    await notebookPanel.session.ready;
+    await notebookPanel.activate;
+    await notebookPanel.sessionContext.ready;
 
     return this.sendKernelRequest(
-      notebookPanel.session.kernel,
+      notebookPanel.sessionContext.kernel,
       runCode,
       userExpressions,
       runSilent,

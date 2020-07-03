@@ -121,7 +121,7 @@ export const Input: React.FunctionComponent<InputProps> = props => {
 
   const [debouncedCallback] = useDebouncedCallback(
     // function
-    (value, idx) => {
+    (value: string, idx: number) => {
       onChange(value, idx);
     },
     // delay in ms
