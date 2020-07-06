@@ -151,18 +151,28 @@ export default class NotebookUtilities {
    * triggering reloading the page.
    * @param title The title for the message popup
    * @param msg The message
-   * @param buttonLabel The label to use for the button. Default is 'Refresh'
-   * @param buttonClassName The  classname to give to the 'refresh' button.
+   * @param refreshButtonLabel The label to use for the refresh button. Default is 'Refresh'
+   * @param refreshButtonClassName The  classname to give to the refresh button
+   * @param dismissButtonLabel The label to use for the dismiss button. Default is 'Dismiss'
+   * @param dismissButtonClassName The classname to give to the dismiss button
    * @returns Promise<void> - A promise once the message is closed.
    */
   public static async showRefreshDialog(
     title: string,
     msg: string[],
-    buttonLabel: string = 'Refresh',
-    buttonClassName: string = '',
+    refreshButtonLabel: string = 'Refresh',
+    dismissButtonLabel: string = 'Dismiss',
+    refreshButtonClassName: string = '',
+    dismissButtonClassName: string = '',
   ): Promise<void> {
-    await this.showMessage(title, msg, buttonLabel, buttonClassName);
-    location.reload();
+    (await this.showYesNoDialog(
+      title,
+      msg,
+      refreshButtonLabel,
+      dismissButtonLabel,
+      refreshButtonClassName,
+      dismissButtonClassName,
+    )) && location.reload();
   }
 
   /**
