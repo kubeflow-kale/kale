@@ -64,7 +64,7 @@ interface KabitDialog {
   katibMetadata: IKatibMetadata;
   updateKatibMetadata: Function;
   activeNotebook: NotebookPanel;
-  kernel: Kernel.IKernel;
+  kernel: Kernel.IKernelConnection;
 }
 
 export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {

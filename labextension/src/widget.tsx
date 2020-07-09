@@ -29,8 +29,8 @@ import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { ReactWidget } from '@jupyterlab/apputils';
 
-import { Token } from '@phosphor/coreutils';
-import { Widget } from '@phosphor/widgets';
+import { Token } from '@lumino/coreutils';
+import { Widget } from '@lumino/widgets';
 import * as React from 'react';
 
 import '../style/index.css';
@@ -76,7 +76,7 @@ async function activate(
   docManager: IDocumentManager,
 ): Promise<IKubeflowKale> {
   let widget: ReactWidget;
-  const kernel: Kernel.IKernel = await NotebookUtils.createNewKernel();
+  const kernel: Kernel.IKernelConnection = await NotebookUtils.createNewKernel();
   window.addEventListener('beforeunload', () => kernel.shutdown());
   window.addEventListener('unhandledrejection', globalUnhandledRejection);
   // TODO: backend can become an Enum that indicates the type of
@@ -126,7 +126,7 @@ async function activate(
   /**
    * Detect if Kale is installed
    */
-  async function getBackend(kernel: Kernel.IKernel) {
+  async function getBackend(kernel: Kernel.IKernelConnection) {
     try {
       await NotebookUtils.sendKernelRequest(kernel, `import kale`, {});
     } catch (error) {

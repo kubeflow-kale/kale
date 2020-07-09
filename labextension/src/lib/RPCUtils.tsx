@@ -244,7 +244,7 @@ export const showRpcError = async (
 // todo: refactor these legacy functions
 export const _legacy_executeRpc = async (
   notebook: NotebookPanel,
-  kernel: Kernel.IKernel,
+  kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
   nb_path: string = null,
@@ -277,7 +277,7 @@ export const _legacy_executeRpc = async (
 // example, see getBaseImage().
 export const _legacy_executeRpcAndShowRPCError = async (
   notebook: NotebookPanel,
-  kernel: Kernel.IKernel,
+  kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
   nb_path: string = null,

@@ -7,11 +7,12 @@
     "noEmitOnError": true,
     "noUnusedLocals": false,
     "outDir": "./lib",
-    "target": "es2015",
+    "target": "es2017",
     "jsx": "react",
     "strict": true,
     "strictNullChecks": false,
-    "types": []
+    "types": [],
+    "esModuleInterop": true
   },
   "include": ["src/*"]
 }
