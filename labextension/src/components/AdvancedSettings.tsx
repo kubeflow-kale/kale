@@ -43,7 +43,7 @@ export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = 
       </div>
       <div
         className={
-          'input-container p-Panel jp-Collapse-contents ' +
+          'input-container lm-Panel jp-Collapse-contents ' +
           (collapsed && 'p-mod-hidden')
         }
       >

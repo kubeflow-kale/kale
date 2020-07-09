@@ -57,7 +57,7 @@ interface IProps {
   tracker: INotebookTracker;
   docManager: IDocumentManager;
   backend: boolean;
-  kernel: Kernel.IKernel;
+  kernel: Kernel.IKernelConnection;
   rokError: IRPCError;
 }
 
@@ -365,7 +365,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         this.props.kernel,
       );
       // wait for the session to be ready before reading metadata
-      await notebook.session.ready;
+      await notebook.sessionContext.ready;
 
       // get notebook metadata
       const notebookMetadata = NotebookUtils.getMetaData(

@@ -16,8 +16,13 @@
 
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { NotebookPanel } from '@jupyterlab/notebook';
-import { KernelMessage, Kernel } from '@jupyterlab/services';
-import { CommandRegistry } from '@phosphor/commands';
+import {
+  KernelMessage,
+  Kernel,
+  KernelManager,
+  KernelSpecAPI,
+} from '@jupyterlab/services';
+import { CommandRegistry } from '@lumino/commands';
 // @ts-ignore
 import SanitizedHTML from 'react-sanitized-html';
 import * as React from 'react';
@@ -30,7 +35,6 @@ import {
 } from '@jupyterlab/cells';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
 import CellUtilities from './CellUtils';
-import { nbformat } from '@jupyterlab/coreutils';
 
 interface IRunCellResponse {
   status: string;
@@ -183,12 +187,15 @@ export default class NotebookUtilities {
   public static async createNewNotebook(
     command: CommandRegistry,
   ): Promise<NotebookPanel> {
-    const notebook: any = await command.execute('notebook:create-new', {
-      activate: true,
-      path: '',
-      preferredLanguage: '',
-    });
-    await notebook.session.ready;
+    const notebook: NotebookPanel = await command.execute(
+      'notebook:create-new',
+      {
+        activate: true,
+        path: '',
+        preferredLanguage: '',
+      },
+    );
+    await notebook.sessionContext.ready;
     return notebook;
   }
 
@@ -304,7 +311,7 @@ export default class NotebookUtilities {
           // this.setState({ activeCellIndex: cell.index, activeCell: cell.cell });
           const kernelMsg = (await CodeCell.execute(
             notebook.content.widgets[i] as CodeCell,
-            notebook.session,
+            notebook.sessionContext,
           )) as KernelMessage.IExecuteReplyMsg;
           if (kernelMsg.content && kernelMsg.content.status === 'error') {
             return {
@@ -327,16 +334,10 @@ export default class NotebookUtilities {
    * Source code here: https://github.com/jupyterlab/jupyterlab/tree/473348d25bcb258ca2f0c127dd8fb5b193217135/packages/services
    */
   public static async createNewKernel() {
-    // Get info about the available kernels and start a new one.
-    let options: Kernel.IOptions = await Kernel.getSpecs().then(kernelSpecs => {
-      // console.log('Default spec:', kernelSpecs.default);
-      // console.log('Available specs', Object.keys(kernelSpecs.kernelspecs));
-      // use the default name
-      return { name: kernelSpecs.default };
-    });
-    return await Kernel.startNew(options).then(_kernel => {
-      return _kernel;
-    });
+    const defaultKernelSpec = await KernelSpecAPI.getSpecs().then(
+      (res: KernelSpecAPI.ISpecModels) => res.default,
+    );
+    return await new KernelManager().startNew({ name: defaultKernelSpec });
   }
 
   // TODO: We can use this context manager to execute commands inside a new kernel
@@ -401,9 +402,6 @@ export default class NotebookUtilities {
       throw new Error('Kernel is null or undefined.');
     }
 
-    // Wait for kernel to be ready before sending request
-    await kernel.ready;
-
     const message: KernelMessage.IShellMessage = await kernel.requestExecute({
       allow_stdin: allowStdIn,
       code: runCode,
@@ -453,11 +451,10 @@ export default class NotebookUtilities {
     }
 
     // Wait for notebook panel to be ready
-    await notebookPanel.activated;
-    await notebookPanel.session.ready;
+    await notebookPanel.sessionContext.ready;
 
     return this.sendKernelRequest(
-      notebookPanel.session.kernel,
+      notebookPanel.sessionContext.session.kernel,
       runCode,
       userExpressions,
       runSilent,
