@@ -60,10 +60,10 @@ const acqFuncOptions = [
 
 interface KabitDialog {
   open: boolean;
+  nbFilePath: string;
   toggleDialog: Function;
   katibMetadata: IKatibMetadata;
   updateKatibMetadata: Function;
-  activeNotebook: NotebookPanel;
   kernel: Kernel.IKernelConnection;
 }
 
@@ -88,8 +88,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
   const onKatibShowPanel = async () => {
     // Send an RPC to Kale to get the pipeline parameters
     // that are currently defined in the notebook
-    const nbFilePath = props.activeNotebook.context.path;
-    const args = { source_notebook_path: nbFilePath };
+    const args = { source_notebook_path: props.nbFilePath };
 
     let rpcPipelineParameters = [];
     try {

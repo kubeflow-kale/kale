@@ -39,6 +39,7 @@ import { LightTooltip } from '../components/LightTooltip';
 import Commands from '../lib/Commands';
 import { IAnnotation } from '../components/AnnotationInput';
 import { ISelectOption } from '../components/Select';
+import { PageConfig } from '@jupyterlab/coreutils';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 
@@ -209,6 +210,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   getActiveNotebook = () => {
     return this.props.tracker.currentWidget;
+  };
+
+  getActiveNotebookPath = () => {
+    return (
+      this.getActiveNotebook() &&
+      // absolute path to the notebook's root (--notebook-dir option, if set)
+      PageConfig.getOption('serverRoot') +
+        '/' +
+        // relative path wrt to 'serverRoot'
+        this.getActiveNotebook().context.path
+    );
   };
 
   // update metadata state values: use destructure operator to update nested dict
@@ -384,7 +396,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
       if (this.props.backend) {
         // Detect whether this is an exploration, i.e., recovery from snapshot
-        const nbFilePath = this.getActiveNotebook().context.path;
+        const nbFilePath = this.getActiveNotebookPath();
         await commands.resumeStateIfExploreNotebook(nbFilePath);
 
         if (!this.props.rokError) {
@@ -561,7 +573,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata.docker_image = DefaultState.metadata.docker_image;
     }
 
-    const nbFilePath = this.getActiveNotebook().context.path;
+    const nbFilePath = this.getActiveNotebookPath();
 
     // VALIDATE METADATA
     const validationSucceeded = await commands.validateMetadata(
@@ -873,12 +885,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
           <KatibDialog
             open={this.state.katibDialog}
+            nbFilePath={this.getActiveNotebookPath()}
             toggleDialog={this.toggleKatibDialog}
             katibMetadata={
               this.state.metadata.katib_metadata || DefaultKatibMetadata
             }
             updateKatibMetadata={this.updateKatibMetadata}
-            activeNotebook={this.getActiveNotebook()}
             kernel={this.props.kernel}
           />
         </div>

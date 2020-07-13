@@ -33,8 +33,13 @@ KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
 logger = create_adapter(logging.getLogger(__name__))
 
 
-def resume_notebook_path(request):
-    """Get the relative path of the notebook found in KALE_NOTEBOOK_PATH."""
+def resume_notebook_path(request, server_root=None):
+    """Get the relative path of the notebook found in KALE_NOTEBOOK_PATH.
+
+    server_root is the path to where the jupyter server is running
+    (--notebook-dir path, if set, otherwise location of the `jupyter` was run)
+    The path is not absolute, but starts with `~` if under HOME.
+    """
     p = os.environ.get("KALE_NOTEBOOK_PATH")
     if p and not os.path.isfile(p):
         raise RuntimeError("env path KALE_NOTEBOOK_PATH=%s is not a file" % p)
@@ -45,10 +50,16 @@ def resume_notebook_path(request):
     if not home.endswith('/'):
         home = home + '/'
 
-    # JupyterLab needs a relative path to open a file
-    # JP should always run form the HOME directory, so we strip the
-    # leading HOME from the absolute path
-    if p.startswith(home):
+    # JupyterLab needs a relative path to open a file. If server_root is not
+    # defined, assume jupyter is running under HOME
+    if server_root:
+        server_root = os.path.expanduser(server_root)
+        if not p.startswith(server_root):
+            raise ValueError("Trying to resume a notebook from path %s, but"
+                             " the provided server root %s does not match the"
+                             " notebook's path." % (p, server_root))
+        return p[len(server_root):]
+    elif p.startswith(home):
         return p[len(home):]
     else:
         return p
@@ -104,6 +115,7 @@ def get_pipeline_parameters(request, source_notebook_path):
     # read notebook
     log = request.log if hasattr(request, "log") else logger
     try:
+        source_notebook_path = os.path.expanduser(source_notebook_path)
         notebook = nbformat.read(source_notebook_path,
                                  as_version=nbformat.NO_CONVERT)
         params_source = parser.get_pipeline_parameters_source(notebook)
@@ -129,6 +141,7 @@ def get_pipeline_metrics(request, source_notebook_path):
     # read notebook
     log = request.log if hasattr(request, "log") else logger
     try:
+        source_notebook_path = os.path.expanduser(source_notebook_path)
         notebook = nbformat.read(source_notebook_path,
                                  as_version=nbformat.NO_CONVERT)
         metrics_source = parser.get_pipeline_metrics_source(notebook)
@@ -155,6 +168,7 @@ def _get_kale_marshal_dir(source_notebook_path):
 
 def unmarshal_data(source_notebook_path):
     """Unmarshal data from the marshal directory."""
+    source_notebook_path = os.path.expanduser(source_notebook_path)
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if not os.path.exists(kale_marshal_dir):
         return {}
@@ -169,6 +183,7 @@ def unmarshal_data(source_notebook_path):
 
 def explore_notebook(request, source_notebook_path):
     """Check if the notebook is to be resumed at a specific pipeline step."""
+    source_notebook_path = os.path.expanduser(source_notebook_path)
     step_name = os.getenv(KALE_PIPELINE_STEP_ENV, None)
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
 
@@ -181,6 +196,7 @@ def explore_notebook(request, source_notebook_path):
 
 def remove_marshal_dir(request, source_notebook_path):
     """Remove the marshal directory."""
+    source_notebook_path = os.path.expanduser(source_notebook_path)
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if os.path.exists(kale_marshal_dir):
         shutil.rmtree(kale_marshal_dir)
