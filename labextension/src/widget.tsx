@@ -46,6 +46,7 @@ import {
   RPC_CALL_STATUS,
 } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
+import { PageConfig } from '@jupyterlab/coreutils';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
@@ -139,9 +140,11 @@ async function activate(
   async function loadPanel() {
     let reveal_widget = undefined;
     if (backend) {
-      // Check if NOTEBOOK_PATH env variable exists and if so load
+      // Check if KALE_NOTEBOOK_PATH env variable exists and if so load
       // that Notebook
-      const path = await executeRpc(kernel, 'nb.resume_notebook_path');
+      const path = await executeRpc(kernel, 'nb.resume_notebook_path', {
+        server_root: PageConfig.getOption('serverRoot'),
+      });
       if (path) {
         console.log('Resuming notebook ' + path);
         // open the notebook panel

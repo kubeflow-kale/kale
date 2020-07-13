@@ -43,7 +43,7 @@ class Kale:
                  debug: bool = False,
                  auto_snapshot: bool = False):
         self.auto_snapshot = auto_snapshot
-        self.source_path = str(source_notebook_path)
+        self.source_path = os.path.expanduser(str(source_notebook_path))
         if not os.path.exists(self.source_path):
             raise ValueError("Path {} does not exist".format(self.source_path))
 
