@@ -24,6 +24,13 @@ import logging
 
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.metadata_store import metadata_store
+# FIXME: We make use of metadata_store.errors which is essentially this:
+# from tensorflow.python.framework import errors
+# https://github.com/google/ml-metadata/blob/v0.21.2/ml_metadata/metadata_store/metadata_store.py#L36  # noqa:E501
+# We need to track the following issue/PR and, if anything changes, change this
+# accordingly.
+# https://github.com/google/ml-metadata/issues/25
+# https://github.com/google/ml-metadata/pull/35
 
 from kale.utils import utils, pod_utils
 
@@ -209,11 +216,24 @@ class MLMetadata(object):
                                          type_name: str,
                                          property_types: dict = None,
                                          properties: dict = None):
+        log.info("Creating context '%s' of type '%s'...", context_name,
+                 type_name)
         context = self._get_context_by_name(context_name)
         if not context:
-            context = self._create_context_with_type(
-                context_name=context_name, type_name=type_name,
-                property_types=property_types, properties=properties)
+            try:
+                context = self._create_context_with_type(
+                    context_name=context_name, type_name=type_name,
+                    property_types=property_types, properties=properties)
+                log.info("Succesfully created context")
+            except metadata_store.errors.AlreadyExistsError:
+                # XXX: We get here if two concurrent steps try to create this
+                # new context
+                log.info("Context already exists")
+                context = self._get_context_by_name(context_name)
+        else:
+            log.info("Context already exists")
+        log.info("ContextType ID: %s - Context ID: %s", context.type_id,
+                 context.id)
 
         return context
 
