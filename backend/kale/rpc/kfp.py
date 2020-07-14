@@ -50,6 +50,13 @@ def get_experiment(request, experiment_name):
         else:
             # Unexpected exception
             raise
+    except TypeError as e:
+        # In case the installed KFP client does not contain the following fix:
+        # https://github.com/kubeflow/pipelines/pull/4177
+        err_msg = "'NoneType' object is not iterable"
+        if err_msg in str(e):
+            return None
+        raise
     return {"id": experiment.id, "name": experiment.name}
 
 
