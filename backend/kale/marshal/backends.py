@@ -76,9 +76,9 @@ def resource_pandas_load(uri, **kwargs):
         return fallback_load(uri, **kwargs)
 
 
-@resource_save.register(r'pandas\..*')
+@resource_save.register(r'pandas\..*(DataFrame|Series)')
 def resource_pandas_save(obj, path, **kwargs):
-    """Save a pandas resource."""
+    """Save a pandas DataFrame or Series."""
     try:
         import pandas as pd  # noqa: F401
         log.info("Saving pandas obj: %s", _get_obj_name(path))
