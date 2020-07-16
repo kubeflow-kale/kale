@@ -70,7 +70,6 @@ def datapreprocessing():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     test_df = _kale_marshal_utils.load("test_df")
     train_df = _kale_marshal_utils.load("train_df")
     # -----------------------DATA LOADING END----------------------------------
@@ -198,7 +197,6 @@ def featureengineering():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     PREDICTION_LABEL = _kale_marshal_utils.load("PREDICTION_LABEL")
     test_df = _kale_marshal_utils.load("test_df")
     train_df = _kale_marshal_utils.load("train_df")
@@ -363,7 +361,6 @@ def decisiontree():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     train_df = _kale_marshal_utils.load("train_df")
     train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -425,7 +422,6 @@ def svm():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     train_df = _kale_marshal_utils.load("train_df")
     train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -487,7 +483,6 @@ def naivebayes():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     train_df = _kale_marshal_utils.load("train_df")
     train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -549,7 +544,6 @@ def logisticregression():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     train_df = _kale_marshal_utils.load("train_df")
     train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -611,7 +605,6 @@ def randomforest():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     train_df = _kale_marshal_utils.load("train_df")
     train_labels = _kale_marshal_utils.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -673,7 +666,6 @@ def results():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     acc_decision_tree = _kale_marshal_utils.load("acc_decision_tree")
     acc_gaussian = _kale_marshal_utils.load("acc_gaussian")
     acc_linear_svc = _kale_marshal_utils.load("acc_linear_svc")

@@ -14,10 +14,13 @@
 
 from .resource_save import resource_save
 from .resource_load import resource_load
+from .utils import save, load
 
 from .backends import *
 
 
 from kale.utils import log_utils
-log_utils.get_or_create_logger(module=__name__, name="marshalling")
+log_utils.get_or_create_logger(module=__name__, name="marshalling",
+                                # XXX: Should we have this as default in `get_or_create_logger`??
+                               log_path="kale.log")
 del log_utils

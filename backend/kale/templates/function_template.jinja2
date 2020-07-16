@@ -31,7 +31,6 @@ def {{ step_name }}({%- for arg in parameters_names -%}
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("{{ marshal_path }}")
-    _kale_marshal_utils.set_kale_directory_file_names()
 {%- for in_var in in_variables %}
     {{ in_var }} = _kale_marshal_utils.load("{{ in_var }}")
 {%- endfor %}
