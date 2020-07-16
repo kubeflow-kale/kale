@@ -66,7 +66,9 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
     log.addHandler(stream_handler)
 
     if log_path:
-        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        # if log_path is just a file name, dirname will be empty
+        if os.path.dirname(log_path):
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
         file_handler = logging.FileHandler(filename=os.path.abspath(log_path),
                                            mode='a')
         _configure_handler(file_handler, file_level,

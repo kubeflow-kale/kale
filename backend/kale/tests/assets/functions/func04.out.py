@@ -6,7 +6,6 @@ def test():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("")
-    _kale_marshal_utils.set_kale_directory_file_names()
     v1 = _kale_marshal_utils.load("v1")
     # -----------------------DATA LOADING END----------------------------------
     '''

@@ -1,10 +1,57 @@
 import os
+import sys
+import logging
 
 from kale.marshal import resource_save
 from kale.marshal import resource_load
 
 KALE_DATA_DIRECTORY = ""
-KALE_DIRECTORY_FILE_NAMES = []
+
+KALE_MARSHALLING_ERROR_SUFFIX = """
+The error was: %s
+
+Please help us improve Kale by opening a new issue at
+https://github.com/kubeflow-kale/kale/issues.
+"""
+
+KALE_SAVE_ERROR_MSG = """
+During data passing, Kale could not marshal the following object:
+
+  - path: '%s'
+  - type: '%s'
+""" + KALE_MARSHALLING_ERROR_SUFFIX
+
+KALE_LOAD_ERROR_MSG = """
+During data passing, Kale could not load the following file:
+
+  - name: '%s'
+""" + KALE_MARSHALLING_ERROR_SUFFIX
+
+KALE_UNKNOWN_MARSHALLING_ERROR = """
+During data passing, Kale experienced an error.
+""" + KALE_MARSHALLING_ERROR_SUFFIX
+
+
+# exc_info() -> (type, value, traceback)
+EXC_INFO_TRACEBACK = 2
+
+
+class KaleMarshalException(Exception):
+    """Errors that may happen while Kale marshals objects between steps."""
+    def __init__(self, original_exc, original_traceback, msg=None, obj=None,
+                 obj_name=None, operation=None):
+        if msg is None:
+            # Set some default useful error message
+            msg = "Kale experienced an error while marshalling %s" % obj
+        super(KaleMarshalException, self).__init__(msg)
+        self.obj = obj
+        self.obj_name = obj_name
+        self.operation = operation
+        self.original_exc = original_exc
+        self.with_traceback(original_traceback)
+
+
+log = logging.getLogger(__name__)
 
 
 def set_kale_data_directory(path):
@@ -16,14 +63,27 @@ def set_kale_data_directory(path):
         os.makedirs(KALE_DATA_DIRECTORY, exist_ok=True)
 
 
-def set_kale_directory_file_names():
-    """Set the list of filenames present in the Kale data directory path."""
-    global KALE_DIRECTORY_FILE_NAMES
-    KALE_DIRECTORY_FILE_NAMES = [
-        os.path.splitext(f)[0]
-        for f in os.listdir(KALE_DATA_DIRECTORY)
-        if os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f))
-    ]
+def _save(obj, obj_path):
+    #  resource_save will automatically add the correct extension
+    try:
+        resource_save(obj, obj_path)
+    # Most of the pickling errors will raise these Exceptions
+    except (TypeError, AttributeError) as e:
+        raise KaleMarshalException(
+            original_exc=e,
+            original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
+            msg=KALE_SAVE_ERROR_MSG % (obj_path, type(obj), e),
+            obj=obj,
+            obj_name=os.path.basename(obj_path),
+            operation="save")
+    except Exception as e:
+        raise KaleMarshalException(
+            original_exc=e,
+            original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
+            msg=KALE_UNKNOWN_MARSHALLING_ERROR % e,
+            obj=obj,
+            obj_name=os.path.basename(obj_path),
+            operation="save")
 
 
 def save(obj, obj_name):
@@ -33,34 +93,54 @@ def save(obj, obj_name):
         obj: The Python object to be saved
         obj_name: The variable name of 'obj'
     """
-    #  resource_save will automatically add the correct extension
-    resource_save(
-        obj,
-        os.path.join(KALE_DATA_DIRECTORY, obj_name))
+    try:
+        _save(obj, os.path.join(KALE_DATA_DIRECTORY, obj_name))
+    except KaleMarshalException as e:
+        log.error(e)
+        log.debug("Original Traceback", exc_info=e.__traceback__)
+        sys.exit(1)
 
 
-def load(var_name):
-    """Load an object using Kale's marshalling backends.
+def _load(file_name):
+    try:
+        _kale_load_file_name = [
+            f
+            for f in os.listdir(KALE_DATA_DIRECTORY)
+            if (os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f))
+                and os.path.splitext(f)[0] == file_name)
+        ]
+        if len(_kale_load_file_name) > 1:
+            raise ValueError("Found multiple files with name %s: %s"
+                             % (file_name, str(_kale_load_file_name)))
+        _kale_load_file_name = _kale_load_file_name[0]
+
+        return resource_load(os.path.join(KALE_DATA_DIRECTORY,
+                                          _kale_load_file_name))
+    except ValueError as e:
+        raise KaleMarshalException(
+            original_exc=e,
+            original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
+            msg=KALE_LOAD_ERROR_MSG % (file_name, e),
+            obj_name=file_name, operation="load")
+    except Exception as e:
+        raise KaleMarshalException(
+            original_exc=e,
+            original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
+            msg=KALE_UNKNOWN_MARSHALLING_ERROR % e,
+            obj_name=file_name, operation="load")
+
+
+def load(file_name):
+    """Load a file using Kale's marshalling backends.
 
     Args:
-        var_name: The name of the object to be loaded
+        file_name: The name of the serialized object to be loaded
 
     Returns: loaded object
     """
-    # First check that the variable exists in the path
-    if var_name not in KALE_DIRECTORY_FILE_NAMES:
-        raise ValueError("Failed to load variable %s" % var_name)
-
-    # Load variable
-    _kale_load_file_name = [
-        f
-        for f in os.listdir(KALE_DATA_DIRECTORY)
-        if (os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f))
-            and os.path.splitext(f)[0] == var_name)
-    ]
-    if len(_kale_load_file_name) > 1:
-        raise ValueError("Found multiple files with name %s: %s"
-                         % (var_name, str(_kale_load_file_name)))
-    _kale_load_file_name = _kale_load_file_name[0]
-    return resource_load(os.path.join(KALE_DATA_DIRECTORY,
-                                      _kale_load_file_name))
+    try:
+        return _load(file_name)
+    except KaleMarshalException as e:
+        log.error(e)
+        log.debug("Original Traceback", exc_info=e.__traceback__)
+        sys.exit(1)

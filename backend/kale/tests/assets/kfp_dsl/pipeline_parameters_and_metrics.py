@@ -64,7 +64,6 @@ def sum_matrix():
     # -----------------------DATA LOADING START--------------------------------
     from kale.marshal import utils as _kale_marshal_utils
     _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.set_kale_directory_file_names()
     rnd_matrix = _kale_marshal_utils.load("rnd_matrix")
     # -----------------------DATA LOADING END----------------------------------
     '''
