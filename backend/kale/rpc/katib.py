@@ -221,9 +221,12 @@ def get_experiment(request, experiment, namespace):
         raise RPCUnhandledError(message="Failed to get Katib experiment",
                                 details=str(e), trans_id=request.trans_id)
 
+    status, reason, message = _get_experiment_status(exp["status"])
     return {"name": experiment,
             "namespace": namespace,
-            "status": _get_experiment_status(exp["status"]),
+            "status": status,
+            "reason": reason,
+            "message": message,
             "trials": exp["status"].get("trials", 0),
             "trialsFailed": exp["status"].get("trialsFailed", 0),
             "trialsRunning": exp["status"].get("trialsRunning", 0),
@@ -241,5 +244,5 @@ def _get_experiment_status(experiment_status):
     for status in KATIB_EXPERIMENT_STATUS:
         for condition in experiment_status["conditions"]:
             if _is_status(condition, status):
-                return status
-    return None
+                return status, condition["reason"], condition["message"]
+    return None, None, None
