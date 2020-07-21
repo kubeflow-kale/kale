@@ -340,6 +340,8 @@ def compute_component_id(pod):
     Kale steps are KFP SDK Components. This is the way MetadataWriter generates
     unique names for such components.
     """
+    log.info("Computing component ID for pod %s/%s...", pod.metadata.namespace,
+             pod.metadata.name)
     component_spec_text = pod.metadata.annotations.get(
         KFP_COMPONENT_SPEC_ANNOTATION_KEY)
     if not component_spec_text:
@@ -348,4 +350,6 @@ def compute_component_id(pod):
     component_spec_digest = hashlib.sha256(
         component_spec_text.encode()).hexdigest()
     component_name = component_spec.get("name")
-    return component_name + "@sha256=" + component_spec_digest
+    component_id = component_name + "@sha256=" + component_spec_digest
+    log.info("Computed component ID: %s", component_id)
+    return component_id
