@@ -180,6 +180,7 @@ def print_volumes():
 
 def create_rok_bucket(bucket, client=None):
     """Create a new Rok bucket."""
+    log.info("Creating Rok bucket '%s'...", bucket)
     from rok_gw_client.client import RokClient, GatewayClientError
     if client is None:
         client = RokClient()
@@ -189,22 +190,28 @@ def create_rok_bucket(bucket, client=None):
     # obviously has a small race, which should be removed by extending the Rok
     # API with an exclusive creation API call.
     try:
-        return False, client.bucket_info(bucket)
+        bucket_info = client.bucket_info(bucket)
+        log.info("Rok bucket '%s' already exists", bucket)
+        return False, bucket_info
     except GatewayClientError as e:
         if e.response.status_code != 404:
             raise
 
-        log.info("Creating bucket: %s", bucket)
-        return client.bucket_create(bucket)
+        created, bucket_info = client.bucket_create(bucket)
+        log.info("Successfully created Rok bucket '%s'", bucket)
+        return created, bucket_info
 
 
 def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     """Take a snapshot of a pipeline step with Rok."""
     # Mark the start of the snapshotting procedure
-    log.info("-" * 100)
+    log.info("%s Starting Rok snapshot procedure... (%s) %s", "-" * 10,
+             "before" if before else "after", "-" * 10)
     from rok_gw_client.client import RokClient
 
+    log.info("Retrieving KFP run ID...")
     run_uuid = get_run_uuid()
+    log.info("Retrieved KFP run ID: %s", run_uuid)
     bucket = kfp_utils.get_experiment_from_run_id(run_uuid).name
     obj = "{}-{}".format(pipeline, run_uuid)
     commit_title = "Step: {} ({})".format(step, "start" if before else "end")
@@ -221,13 +228,14 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     rok = RokClient()
     # Create the bucket in case it does not exist
     create_rok_bucket(bucket, client=rok)
+    log.info("Registering Rok version for '%s/%s'...", bucket, obj)
     task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
-
     # FIXME: How do we retrieve the base URL of the ROK UI?
     version = task_info["task"]["result"]["event"]["version"]
     url_path = ("/rok/buckets/%s/files/%s/versions/%s"
                 % (encode_url_component(bucket), encode_url_component(obj),
                    encode_url_component(version)))
+    log.info("Successfully registered Rok version '%s'", version)
 
     log.info("Successfully created snapshot for step '%s'", step)
     if before:
@@ -251,7 +259,8 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
         with open("/mlpipeline-ui-metadata.json", "w") as f:
             json.dump(metadata, f)
     # Mark the end of the snapshotting procedure
-    log.info("-" * 100)
+    log.info("%s Successfully ran Rok snapshot procedure (%s) %s", "-" * 10,
+             "before" if before else "after", "-" * 10)
 
     return task_info
 
