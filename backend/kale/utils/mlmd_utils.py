@@ -85,31 +85,62 @@ mlmd_instance = None
 class MLMetadata(object):
     """Contains all context for a Kale step's ML-Metadata representation."""
     def __init__(self):
+        log.info("%s Initializing MLMD context... %s", "-" * 10, "-" * 10)
+        log.info("Connecting to MLMD...")
         self.store = self._connect()
+        log.info("Successfully connected to MLMD")
+        log.info("Getting step details...")
+        log.info("Getting pod name...")
         self.pod_name = pod_utils.get_pod_name()
+        log.info("Successfully retrieved pod name: %s", self.pod_name)
+        log.info("Getting pod namespace...")
         self.pod_namespace = pod_utils.get_namespace()
+        log.info("Successfully retrieved pod namespace: %s",
+                 self.pod_namespace)
+        log.info("Getting pod...")
         self.pod = pod_utils.get_pod(self.pod_name, self.pod_namespace)
+        log.info("Successfully retrieved pod")
+        log.info("Getting workflow name from pod...")
         self.workflow_name = self.pod.metadata.labels.get(
             ARGO_WORKFLOW_LABEL_KEY)
+        log.info("Successfully retrieved workflow name: %s",
+                 self.workflow_name)
+        log.info("Getting workflow...")
         self.workflow = pod_utils.get_workflow(self.workflow_name,
                                                self.pod_namespace)
+        log.info("Successfully retrieved workflow")
 
         workflow_labels = self.workflow["metadata"].get("labels", {})
         self.run_uuid = workflow_labels.get(pod_utils.KFP_RUN_ID_LABEL_KEY,
                                             self.workflow_name)
+        log.info("Successfully retrieved KFP run ID: %s", self.run_uuid)
 
         workflow_annotations = self.workflow["metadata"].get("annotations", {})
         pipeline_spec = json.loads(workflow_annotations.get(
             "pipelines.kubeflow.org/pipeline_spec", "{}"))
         self.pipeline_name = pipeline_spec.get("name", self.workflow_name)
+        if self.pipeline_name:
+            log.info("Successfully retrieved KFP pipeline_name: %s",
+                     self.pipeline_name)
+        else:
+            log.info("Could not retrieve KFP pipeline name")
 
         self.component_id = pod_utils.compute_component_id(self.pod)
         self.execution_hash = self.pod.metadata.annotations.get(
-            MLMD_EXECUTION_HASH_PROPERTY_KEY, utils.random_string(10))
+            MLMD_EXECUTION_HASH_PROPERTY_KEY)
+        if self.execution_hash:
+            log.info("Successfully retrieved execution hash: %s",
+                     self.execution_hash)
+        else:
+            self.execution_hash = utils.random_string(10)
+            log.info("Failed to retrieve execution hash."
+                     " Generating random string...: %s", self.execution_hash)
 
         self.run_context = self._get_or_create_run_context()
         self.execution = self._create_execution_in_run_context()
         self._label_with_context_and_execution()
+        log.info("%s Successfully initialized MLMD context %s", "-" * 10,
+                 "-" * 10)
 
     @staticmethod
     def _connect():
@@ -171,12 +202,16 @@ class MLMetadata(object):
                                    property_types: dict = None,
                                    properties: dict = None,
                                    custom_properties: dict = None):
+        log.info("Creating artifact of type '%s'...", type_name)
         artifact_type = self._get_or_create_artifact_type(
             type_name=type_name, properties=property_types)
         artifact = metadata_store_pb2.Artifact(
             uri=uri, type_id=artifact_type.id, properties=properties,
             custom_properties=custom_properties)
         artifact.id = self.store.put_artifacts([artifact])[0]
+        log.info("Successfully created artifact")
+        log.info("ArtifactType ID: %s - Artifact ID: %s", artifact_type.id,
+                 artifact.id)
         return artifact
 
     def _create_execution_with_type(self, type_name: str,
@@ -184,6 +219,7 @@ class MLMetadata(object):
                                     properties: dict = None,
                                     custom_properties: dict = None,
                                     state=None):
+        log.info("Creating execution of type '%s'...", type_name)
         execution_type = self._get_or_create_execution_type(
             type_name=type_name, properties=property_types)
         execution = metadata_store_pb2.Execution(
@@ -191,6 +227,9 @@ class MLMetadata(object):
             custom_properties=custom_properties,
             last_known_state=state)
         execution.id = self.store.put_executions([execution])[0]
+        log.info("Successfully created execution")
+        log.info("ExecutionType ID: %s - Execution ID: %s", execution_type.id,
+                 execution.id)
         return execution
 
     def _create_context_with_type(self, context_name: str, type_name: str,
@@ -327,6 +366,8 @@ class MLMetadata(object):
                                  ids)
 
     def _link_artifact(self, artifact, event_type):
+        log.info("Linking artifact with ID '%s' as '%s'...", artifact.id,
+                 event_type)
         artifact_name = artifact.properties["name"].string_value
         step = metadata_store_pb2.Event.Path.Step(key=artifact_name)
         path = metadata_store_pb2.Event.Path(steps=[step])
@@ -336,6 +377,7 @@ class MLMetadata(object):
                                          path=path)
 
         self.store.put_events([event])
+        log.info("Successfully linked artifact")
 
     def _link_artifact_as_output(self, artifact):
         self._link_artifact(artifact, metadata_store_pb2.Event.OUTPUT)
@@ -348,14 +390,16 @@ class MLMetadata(object):
         self._link_artifact(artifact, metadata_store_pb2.Event.INPUT)
 
     def _create_rok_artifact_from_task(self, task):
-        from rok_gw_client.client import RokClient
-        rok_client = RokClient()
         result = task["task"]["result"]
         snapshot_id = result["event"]["id"]
         version = result["event"]["version"]
         obj = result["event"]["object"]
         bucket = task["task"]["bucket"]
         artifact_name = task["task"]["action_params"]["params"]["commit_title"]
+        log.info("Creating %s artifact for '%s/%s?version=%s...'",
+                 ROK_SNAPSHOT_ARTIFACT_TYPE_NAME, bucket, obj, version)
+        from rok_gw_client.client import RokClient
+        rok_client = RokClient()
         task_info = rok_client.version_info(bucket, obj, version)
         members = int(task_info["group_member_count"])
         url = task_info["rok_url"]
