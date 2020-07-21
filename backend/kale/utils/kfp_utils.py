@@ -40,6 +40,8 @@ _logger = None
 _k8s_co_client = None
 _k8s_watch = None
 
+log = logging.getLogger(__name__)
+
 
 def _get_k8s_co_client():
     global _k8s_co_client
@@ -228,6 +230,7 @@ def get_experiment_from_run_id(run_id: str):
 
     Returns: ApiExperiment - the KFP Experiment which owns the run
     """
+    log.info("Getting experiment from run with ID '%s'...", run_id)
     client = _get_kfp_client()
     run = client.runs.get_run(run_id=run_id).run
     experiment_id = None
@@ -239,6 +242,7 @@ def get_experiment_from_run_id(run_id: str):
             experiment_id = ref.key.id
     # NOTE: It is safe to assume that a resource reference of type EXPERIMENT
     # exists, as well as an experiment with that ID
+    log.info("Successfully retrieved experiment ID: %s", experiment_id)
     return client.experiments.get_experiment(id=experiment_id)
 
 
