@@ -16,6 +16,7 @@ import os
 import sys
 import time
 import signal
+import logging
 import nbformat
 import threading
 
@@ -25,6 +26,8 @@ from kale.utils.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
 
 from packaging import version as pkg_version
+
+log = logging.getLogger(__name__)
 
 HTML_TEMPLATE = '''
 <html><head>
@@ -225,6 +228,7 @@ def run_code(source: tuple, kernel_name='python3'):
         source (tuple): source code blocks
         kernel_name: name of the kernel (form the kernel spec) to be created
     """
+    log.info("Running user code...")
     import IPython
     if pkg_version.parse(IPython.__version__) < pkg_version.parse('7.6.0'):
         raise RuntimeError("IPython version {} not supported."
@@ -279,6 +283,7 @@ def run_code(source: tuple, kernel_name='python3'):
         # start preprocessor: run each code cell and capture the output
         ep.preprocess(notebook, resources, km=km)
     except KaleKernelException:
+        log.error("Failed to run user code")
         # exit gracefully with error
         sys.exit(-1)
     # Give some time to the stream watcher thread to receive all messages from
@@ -287,4 +292,5 @@ def run_code(source: tuple, kernel_name='python3'):
     km.shutdown_kernel()
 
     result = process_outputs(notebook.cells)
+    log.info("Successfully ran user code")
     return result
