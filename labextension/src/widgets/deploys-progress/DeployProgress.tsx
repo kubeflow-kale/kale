@@ -16,9 +16,8 @@
 
 import * as React from 'react';
 import * as yaml from 'js-yaml';
-import { LinearProgress, CircularProgress } from '@material-ui/core';
+import { LinearProgress } from '@material-ui/core';
 import CloseIcon from '@material-ui/icons/Close';
-import LinkIcon from '@material-ui/icons/Link';
 import LaunchIcon from '@material-ui/icons/Launch';
 import ErrorIcon from '@material-ui/icons/Error';
 import UnknownIcon from '@material-ui/icons/Help';
@@ -26,14 +25,12 @@ import PendingIcon from '@material-ui/icons/Schedule';
 import SkippedIcon from '@material-ui/icons/SkipNext';
 import SuccessIcon from '@material-ui/icons/CheckCircle';
 import CancelIcon from '@material-ui/icons/Cancel';
-import WarningIcon from '@material-ui/icons/Warning';
-import InfoIcon from '@material-ui/icons/Info';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
-import NotebookUtils from '../../lib/NotebookUtils';
 import { IKatibExperiment } from '../LeftPanelWidget';
+import DeployUtils from './DeployUtils';
 
 enum KatibExperimentStatus {
   CREATED = 'Created',
@@ -57,70 +54,11 @@ enum PipelineStatus {
   UNKNOWN = 'Unknown',
 }
 
-const color = {
-  // From kubeflow/pipelines repo
-  activeBg: '#eaf1fd',
-  alert: '#f9ab00', // Google yellow 600
-  background: '#fff',
-  blue: '#4285f4', // Google blue 500
-  disabledBg: '#ddd',
-  divider: '#e0e0e0',
-  errorBg: '#fbe9e7',
-  errorText: '#d50000',
-  foreground: '#000',
-  graphBg: '#f2f2f2',
-  grey: '#5f6368', // Google grey 500
-  inactive: '#5f6368',
-  lightGrey: '#eee', // Google grey 200
-  lowContrast: '#80868b', // Google grey 600
-  secondaryText: 'rgba(0, 0, 0, .88)',
-  separator: '#e8e8e8',
-  strong: '#202124', // Google grey 900
-  success: '#34a853',
-  successWeak: '#e6f4ea', // Google green 50
-  terminated: '#80868b',
-  theme: '#1a73e8',
-  themeDarker: '#0b59dc',
-  warningBg: '#f9f9e1',
-  warningText: '#ee8100',
-  weak: '#9aa0a6',
-  // From Rok repo
-  canceled: '#ff992a',
-};
-
 interface DeployProgress extends DeployProgressState {
   onRemove?: () => void;
 }
 
 export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
-  const getWarningBadge = (title: string, content: any) => {
-    return (
-      content && (
-        <a
-          onClick={_ => {
-            NotebookUtils.showMessage(title, content);
-          }}
-        >
-          <WarningIcon style={{ color: color.alert, height: 18, width: 18 }} />
-        </a>
-      )
-    );
-  };
-
-  const getInfoBadge = (title: string, content: any) => {
-    return (
-      content && (
-        <a
-          onClick={_ => {
-            NotebookUtils.showMessage(title, content);
-          }}
-        >
-          <InfoIcon style={{ color: color.blue, height: 18, width: 18 }} />
-        </a>
-      )
-    );
-  };
-
   const getKatibBestResultInfo = (katib: any) => {
     let optimal = katib ? katib.currentOptimalTrial : null;
     // currentOptimalTrial is _never_ null,
@@ -183,27 +121,27 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     switch (pipeline.status) {
       case PipelineStatus.ERROR:
         IconComponent = ErrorIcon;
-        iconColor = color.errorText;
+        iconColor = DeployUtils.color.errorText;
         // title = 'Error';
         break;
       case PipelineStatus.FAILED:
         IconComponent = ErrorIcon;
-        iconColor = color.errorText;
+        iconColor = DeployUtils.color.errorText;
         // title = 'Failed';
         break;
       case PipelineStatus.PENDING:
         IconComponent = PendingIcon;
-        iconColor = color.weak;
+        iconColor = DeployUtils.color.weak;
         // title = 'Pendig';
         break;
       case PipelineStatus.RUNNING:
         IconComponent = StatusRunning;
-        iconColor = color.blue;
+        iconColor = DeployUtils.color.blue;
         // title = 'Running';
         break;
       case PipelineStatus.TERMINATING:
         IconComponent = StatusRunning;
-        iconColor = color.blue;
+        iconColor = DeployUtils.color.blue;
         // title = 'Terminating';
         break;
       case PipelineStatus.SKIPPED:
@@ -212,12 +150,12 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         break;
       case PipelineStatus.SUCCEEDED:
         IconComponent = SuccessIcon;
-        iconColor = color.success;
+        iconColor = DeployUtils.color.success;
         // title = 'Succeeded';
         break;
       case PipelineStatus.TERMINATED:
         IconComponent = TerminatedIcon;
-        iconColor = color.terminated;
+        iconColor = DeployUtils.color.terminated;
         // title = 'Terminated';
         break;
       case PipelineStatus.UNKNOWN:
@@ -260,17 +198,17 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     switch (katib.status) {
       case KatibExperimentStatus.FAILED:
         IconComponent = ErrorIcon;
-        iconColor = color.errorText;
+        iconColor = DeployUtils.color.errorText;
         break;
       case KatibExperimentStatus.CREATED:
       case KatibExperimentStatus.RUNNING:
       case KatibExperimentStatus.RESTARTING:
         IconComponent = StatusRunning;
-        iconColor = color.blue;
+        iconColor = DeployUtils.color.blue;
         break;
       case KatibExperimentStatus.SUCCEEDED:
         IconComponent = SuccessIcon;
-        iconColor = color.success;
+        iconColor = DeployUtils.color.success;
         break;
       default:
         break;
@@ -298,7 +236,11 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         <React.Fragment>
           Unknown status
           <UnknownIcon
-            style={{ color: color.terminated, height: 18, width: 18 }}
+            style={{
+              color: DeployUtils.color.terminated,
+              height: 18,
+              width: 18,
+            }}
           />
         </React.Fragment>
       );
@@ -318,7 +260,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     let getLink: (task: any) => string = () => '#';
     let message = props.task.message;
     let IconComponent: any = UnknownIcon;
-    let iconColor = color.blue;
+    let iconColor = DeployUtils.color.blue;
 
     switch (props.task.status) {
       case 'success':
@@ -329,12 +271,12 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
       case 'error':
         getLink = getTaskLink;
         IconComponent = ErrorIcon;
-        iconColor = color.errorText;
+        iconColor = DeployUtils.color.errorText;
         break;
       case 'canceled':
         IconComponent = CancelIcon;
         getLink = getTaskLink;
-        iconColor = color.canceled;
+        iconColor = DeployUtils.color.canceled;
         break;
     }
 
@@ -352,13 +294,17 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   if (props.notebookValidation === true) {
     validationTpl = (
       <React.Fragment>
-        <SuccessIcon style={{ color: color.success, height: 18, width: 18 }} />
+        <SuccessIcon
+          style={{ color: DeployUtils.color.success, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   } else if (props.notebookValidation === false) {
     validationTpl = (
       <React.Fragment>
-        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+        <ErrorIcon
+          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   } else {
@@ -372,7 +318,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         <a onClick={_ => props.docManager.openOrReveal(props.compiledPath)}>
           Done
           <SuccessIcon
-            style={{ color: color.success, height: 18, width: 18 }}
+            style={{ color: DeployUtils.color.success, height: 18, width: 18 }}
           />
         </a>
       </React.Fragment>
@@ -380,7 +326,9 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   } else if (props.compiledPath === 'error') {
     compileTpl = (
       <React.Fragment>
-        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+        <ErrorIcon
+          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   } else {
@@ -404,7 +352,9 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   } else if (props.pipeline === false) {
     uploadTpl = (
       <React.Fragment>
-        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+        <ErrorIcon
+          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   } else {
@@ -427,7 +377,9 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   } else if (props.runPipeline == false) {
     runTpl = (
       <React.Fragment>
-        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+        <ErrorIcon
+          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   } else {
@@ -440,7 +392,9 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   } else if (props.katib.status == 'error') {
     katibTpl = (
       <React.Fragment>
-        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+        <ErrorIcon
+          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   } else {
@@ -476,7 +430,9 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   } else {
     katibKfpExpTpl = (
       <React.Fragment>
-        <ErrorIcon style={{ color: color.errorText, height: 18, width: 18 }} />
+        <ErrorIcon
+          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+        />
       </React.Fragment>
     );
   }
@@ -525,7 +481,10 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           <div className="deploy-progress-label">Validating notebook...</div>
           <div className="deploy-progress-value">
             {validationTpl}
-            {getWarningBadge('Validation Warnings', props.validationWarnings)}
+            {DeployUtils.getWarningBadge(
+              'Validation Warnings',
+              props.validationWarnings,
+            )}
           </div>
         </div>
       ) : null}
@@ -535,7 +494,10 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           <div className="deploy-progress-label">Taking snapshot...</div>
           <div className="deploy-progress-value">
             {getSnapshotTpl()}{' '}
-            {getWarningBadge('Snapshot Warnings', props.snapshotWarnings)}
+            {DeployUtils.getWarningBadge(
+              'Snapshot Warnings',
+              props.snapshotWarnings,
+            )}
           </div>
         </div>
       ) : null}
@@ -545,7 +507,10 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           <div className="deploy-progress-label">Compiling notebook...</div>
           <div className="deploy-progress-value">
             {compileTpl}
-            {getWarningBadge('Compile Warnings', props.compileWarnings)}
+            {DeployUtils.getWarningBadge(
+              'Compile Warnings',
+              props.compileWarnings,
+            )}
           </div>
         </div>
       ) : null}
@@ -555,7 +520,10 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           <div className="deploy-progress-label">Uploading pipeline...</div>
           <div className="deploy-progress-value">
             {uploadTpl}
-            {getWarningBadge('Upload Warnings', props.uploadWarnings)}
+            {DeployUtils.getWarningBadge(
+              'Upload Warnings',
+              props.uploadWarnings,
+            )}
           </div>
         </div>
       ) : null}
@@ -565,7 +533,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           <div className="deploy-progress-label">Running pipeline...</div>
           <div className="deploy-progress-value">
             {runTpl}
-            {getWarningBadge('Run Warnings', props.runWarnings)}
+            {DeployUtils.getWarningBadge('Run Warnings', props.runWarnings)}
           </div>
         </div>
       ) : null}
@@ -590,7 +558,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             </div>
             <div className="deploy-progress-value">
               {katibTpl}
-              {getInfoBadge(
+              {DeployUtils.getInfoBadge(
                 'Katib current best result',
                 getKatibBestResultInfo(props.katib),
               )}
