@@ -15,7 +15,6 @@
  */
 
 import * as React from 'react';
-import * as yaml from 'js-yaml';
 import { LinearProgress } from '@material-ui/core';
 import CloseIcon from '@material-ui/icons/Close';
 import LaunchIcon from '@material-ui/icons/Launch';
@@ -29,17 +28,8 @@ import CancelIcon from '@material-ui/icons/Cancel';
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
-import { IKatibExperiment } from '../LeftPanelWidget';
 import DeployUtils from './DeployUtils';
-
-enum KatibExperimentStatus {
-  CREATED = 'Created',
-  RUNNING = 'Running',
-  RESTARTING = 'Restarting',
-  SUCCEEDED = 'Succeeded',
-  FAILED = 'Failed',
-  UNKNOWN = 'Unknown',
-}
+import { KatibProgress } from './KatibProgress';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -59,18 +49,6 @@ interface DeployProgress extends DeployProgressState {
 }
 
 export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
-  const getKatibBestResultInfo = (katib: any) => {
-    let optimal = katib ? katib.currentOptimalTrial : null;
-    // currentOptimalTrial is _never_ null,
-    // so if there's no best trial so far we don't show the object
-    return optimal && optimal.bestTrialName
-      ? [yaml.safeDump(optimal)]
-      : [
-          'There are no results yet',
-          'To have a result, there must be at least one successful trial',
-        ];
-  };
-
   const getSnapshotLink = (task: any) => {
     if (!task.result || !task.result.event) {
       return '#';
@@ -167,56 +145,6 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     return (
       <React.Fragment>
         {getRunText(pipeline)}
-        <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
-      </React.Fragment>
-    );
-  };
-
-  const getKatibLink = (katib: IKatibExperiment) => {
-    // link: /_/katib/#/katib/hp_monitor/<namespace>/<name>
-    if (!katib.name && !katib.namespace) {
-      return '#';
-    }
-    return `${window.location.origin}/_/katib/#/katib/hp_monitor/${katib.namespace}/${katib.name}`;
-  };
-
-  const getKatibText = (katib: IKatibExperiment) => {
-    switch (katib.status) {
-      case KatibExperimentStatus.FAILED:
-        return 'Failed';
-      case KatibExperimentStatus.SUCCEEDED:
-        return 'Done';
-      default:
-        return 'View';
-    }
-  };
-
-  const getKatibComponent = (katib: IKatibExperiment) => {
-    let IconComponent: any = UnknownIcon;
-    let iconColor = '#5f6368';
-
-    switch (katib.status) {
-      case KatibExperimentStatus.FAILED:
-        IconComponent = ErrorIcon;
-        iconColor = DeployUtils.color.errorText;
-        break;
-      case KatibExperimentStatus.CREATED:
-      case KatibExperimentStatus.RUNNING:
-      case KatibExperimentStatus.RESTARTING:
-        IconComponent = StatusRunning;
-        iconColor = DeployUtils.color.blue;
-        break;
-      case KatibExperimentStatus.SUCCEEDED:
-        IconComponent = SuccessIcon;
-        iconColor = DeployUtils.color.success;
-        break;
-      default:
-        break;
-    }
-
-    return (
-      <React.Fragment>
-        {getKatibText(katib)}
         <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
       </React.Fragment>
     );
@@ -386,31 +314,6 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     runTpl = <LinearProgress color="primary" />;
   }
 
-  let katibTpl;
-  if (!props.katib) {
-    katibTpl = <LinearProgress color="primary" />;
-  } else if (props.katib.status == 'error') {
-    katibTpl = (
-      <React.Fragment>
-        <ErrorIcon
-          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
-        />
-      </React.Fragment>
-    );
-  } else {
-    katibTpl = (
-      <React.Fragment>
-        <a
-          href={getKatibLink(props.katib)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {getKatibComponent(props.katib)}
-        </a>
-      </React.Fragment>
-    );
-  }
-
   let katibKfpExpTpl;
   if (!props.katibKFPExperiment) {
     katibKfpExpTpl = <LinearProgress color="primary" />;
@@ -433,29 +336,6 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         <ErrorIcon
           style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
         />
-      </React.Fragment>
-    );
-  }
-
-  let katibRunsTpl = undefined;
-  if (!props.katib || props.katib.trials === 0) {
-    katibRunsTpl = (
-      <React.Fragment>
-        <div className="deploy-progress-label">Gathering suggestions...</div>
-        <div className="deploy-progress-value">
-          <LinearProgress color="primary" />
-        </div>
-      </React.Fragment>
-    );
-  } else if (props.katib.status !== 'error') {
-    // we have some katib trials
-    katibRunsTpl = (
-      <React.Fragment>
-        <div className="deploy-progress-label labels-indented">
-          <p>Running: {props.katib.trialsRunning}</p>
-          <p>Succeeded: {props.katib.trialsSucceeded}</p>
-          <p>Failed: {props.katib.trialsFailed}</p>
-        </div>
       </React.Fragment>
     );
   }
@@ -548,24 +428,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
       ) : null}
 
       {props.showKatibProgress ? (
-        <div>
-          <div
-            className="deploy-progress-row"
-            style={{ borderBottom: 'transparent', paddingBottom: 0 }}
-          >
-            <div className="deploy-progress-label">
-              Running Katib experiment...
-            </div>
-            <div className="deploy-progress-value">
-              {katibTpl}
-              {DeployUtils.getInfoBadge(
-                'Katib current best result',
-                getKatibBestResultInfo(props.katib),
-              )}
-            </div>
-          </div>
-          <div className="deploy-progress-row">{katibRunsTpl}</div>
-        </div>
+        <KatibProgress experiment={props.katib} />
       ) : null}
     </div>
   );
