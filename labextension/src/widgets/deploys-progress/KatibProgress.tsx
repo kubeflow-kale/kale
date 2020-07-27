@@ -16,13 +16,14 @@
 
 import * as React from 'react';
 import * as yaml from 'js-yaml';
-import { LinearProgress } from '@material-ui/core';
+import { LinearProgress, Zoom } from '@material-ui/core';
 import UnknownIcon from '@material-ui/icons/Help';
 import ErrorIcon from '@material-ui/icons/Error';
 import SuccessIcon from '@material-ui/icons/CheckCircle';
 
 import StatusRunning from '../../icons/statusRunning';
 import { IKatibExperiment } from '../LeftPanelWidget';
+import { LightTooltip } from '../../components/LightTooltip';
 import DeployUtils from './DeployUtils';
 
 enum KatibExperimentStatus {
@@ -34,11 +35,43 @@ enum KatibExperimentStatus {
   UNKNOWN = 'Unknown',
 }
 
+enum KatibExperimentStatusReason {
+  CREATED = 'ExperimentCreated',
+  RUNNING = 'ExperimentRunning',
+  RESTARTING = 'ExperimentRestarting',
+  GOAL_REACHED = 'ExperimentGoalReached',
+  MAX_TRIALS_REACHED = 'ExperimentMaxTrialsReached',
+  SUGGESTION_END_REACHED = 'ExperimentSuggestionEndReached',
+  FAILED = 'ExperimentFailed',
+  KILLED = 'ExperimentKilled',
+}
+
+enum KatibExperimentStatusMessage {
+  SUGGESTION_EXHAUSTED = 'Suggestion is exhausted',
+}
+
 interface IKatibProgressProps {
   experiment: IKatibExperiment;
 }
 
 export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props => {
+  // Katib controller sets experiment's status, along with a reason and
+  // message for the status. If the experiment is 'Succeeded' or 'Failed' and
+  // the reason is 'MaxTrialsReached' or 'SuggestionEndReached' or there's a
+  // message regarding Suggestion exhaustion, then we can derive that the goal
+  // was not reached.
+  const isKatibGoalNotReached = (experiment: IKatibExperiment) => {
+    const isSucceedOrFailed =
+      experiment.status === KatibExperimentStatus.SUCCEEDED ||
+      experiment.status === KatibExperimentStatus.FAILED;
+    const isMaxTrialsOrEndReached =
+      experiment.reason === KatibExperimentStatusReason.MAX_TRIALS_REACHED ||
+      experiment.reason === KatibExperimentStatusReason.SUGGESTION_END_REACHED;
+    const isExhausted =
+      experiment.message === KatibExperimentStatusMessage.SUGGESTION_EXHAUSTED;
+    return isSucceedOrFailed && (isMaxTrialsOrEndReached || isExhausted);
+  };
+
   const getLink = (experiment: IKatibExperiment) => {
     // link: /_/katib/#/katib/hp_monitor/<namespace>/<name>
     if (!experiment.name || !experiment.namespace) {
@@ -77,7 +110,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
   const getText = (experiment: IKatibExperiment) => {
     switch (experiment.status) {
       case KatibExperimentStatus.FAILED:
-        return 'Failed';
+        return isKatibGoalNotReached(experiment) ? 'GoalNotReached' : 'Failed';
       case KatibExperimentStatus.SUCCEEDED:
         return 'Done';
       default:
@@ -85,33 +118,81 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
     }
   };
 
+  const getStatusWarningBadge = (
+    experiment: IKatibExperiment,
+    tooltip: string,
+  ) => {
+    const title =
+      experiment.status === KatibExperimentStatus.SUCCEEDED
+        ? 'Experiment succeeded!'
+        : 'Experiment failed!';
+    return (
+      <LightTooltip
+        title={tooltip}
+        placement="top-start"
+        TransitionComponent={Zoom}
+      >
+        {DeployUtils.getWarningBadge(title, [
+          tooltip,
+          `Status: ${experiment.status}`,
+          `Reason: ${experiment.reason}`,
+          `Message: ${experiment.message}`,
+        ])}
+      </LightTooltip>
+    );
+  };
+
   const getComponent = (experiment: IKatibExperiment) => {
-    let IconComponent: any = UnknownIcon;
-    let iconColor = '#5f6368';
+    let tooltipSet = false;
+    let styles = { color: '#5f6368', height: 18, width: 18 };
+    let IconComponent = <UnknownIcon style={styles} />;
 
     switch (experiment.status) {
+      case KatibExperimentStatus.SUCCEEDED:
       case KatibExperimentStatus.FAILED:
-        IconComponent = ErrorIcon;
-        iconColor = DeployUtils.color.errorText;
+        isKatibGoalNotReached(experiment)
+          ? (() => {
+              tooltipSet = true;
+              IconComponent = getStatusWarningBadge(
+                experiment,
+                'The experiment has completed but the goal was not reached',
+              );
+            })()
+          : (IconComponent =
+              experiment.status === KatibExperimentStatus.SUCCEEDED ? (
+                <SuccessIcon
+                  style={{ ...styles, color: DeployUtils.color.success }}
+                />
+              ) : (
+                <ErrorIcon
+                  style={{ ...styles, color: DeployUtils.color.errorText }}
+                />
+              ));
         break;
       case KatibExperimentStatus.CREATED:
       case KatibExperimentStatus.RUNNING:
       case KatibExperimentStatus.RESTARTING:
-        IconComponent = StatusRunning;
-        iconColor = DeployUtils.color.blue;
-        break;
-      case KatibExperimentStatus.SUCCEEDED:
-        IconComponent = SuccessIcon;
-        iconColor = DeployUtils.color.success;
+        IconComponent = (
+          <StatusRunning style={{ ...styles, color: DeployUtils.color.blue }} />
+        );
         break;
       default:
         break;
     }
 
-    return (
+    return tooltipSet ? (
       <React.Fragment>
-        {getText(experiment)}
-        <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
+        <a href={getLink(experiment)} target="_blank" rel="noopener noreferrer">
+          {getText(experiment)}
+        </a>
+        {IconComponent}
+      </React.Fragment>
+    ) : (
+      <React.Fragment>
+        <a href={getLink(experiment)} target="_blank" rel="noopener noreferrer">
+          {getText(experiment)}
+          {IconComponent}
+        </a>
       </React.Fragment>
     );
   };
@@ -128,17 +209,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
       </React.Fragment>
     );
   } else {
-    katibTpl = (
-      <React.Fragment>
-        <a
-          href={getLink(props.experiment)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {getComponent(props.experiment)}
-        </a>
-      </React.Fragment>
-    );
+    katibTpl = getComponent(props.experiment);
   }
 
   let katibRunsTpl = undefined;

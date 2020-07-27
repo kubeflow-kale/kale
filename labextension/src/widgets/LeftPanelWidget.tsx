@@ -162,6 +162,8 @@ export interface IKatibExperiment {
   name?: string;
   namespace?: string;
   status: string;
+  reason: string;
+  message: string;
   trials?: number;
   trialsFailed?: number;
   trialsRunning?: number;
