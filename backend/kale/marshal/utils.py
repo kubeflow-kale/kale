@@ -4,6 +4,7 @@ import logging
 
 from kale.marshal import resource_save
 from kale.marshal import resource_load
+from kale.utils import utils
 
 KALE_DATA_DIRECTORY = ""
 
@@ -98,7 +99,7 @@ def save(obj, obj_name):
     except KaleMarshalException as e:
         log.error(e)
         log.debug("Original Traceback", exc_info=e.__traceback__)
-        sys.exit(1)
+        utils.graceful_exit(1)
 
 
 def _load(file_name):
@@ -143,4 +144,4 @@ def load(file_name):
     except KaleMarshalException as e:
         log.error(e)
         log.debug("Original Traceback", exc_info=e.__traceback__)
-        sys.exit(1)
+        utils.graceful_exit(1)

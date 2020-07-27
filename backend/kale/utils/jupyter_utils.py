@@ -103,6 +103,11 @@ class KaleKernelException(Exception):
     pass
 
 
+class KaleGracefulExit(Exception):
+    """Raised to exit an IPython process."""
+    pass
+
+
 def generate_html_output(outputs):
     """Transform a notebook cell rich outputs into a html page.
 
@@ -210,15 +215,20 @@ def capture_streams(kc, exit_on_error=False):
                                           .format(content['name']))
         if msg_type == 'error':  # error and exceptions
             # traceback is a list of strings (jupyter protocol spec)
-            traceback = map(remove_ansi_color_sequences,
-                            content['traceback'])
-            sys.stderr.write('\n'.join(traceback) + '\n')
-            if exit_on_error:
-                # when receiving an error from the kernel, we don't want
-                # to just print the exception to stderr, otherwise the
-                # pipeline step would complete successfully.
-                # kill sends the signal to the specific pid (main thread)
+            if content['ename'] == KaleGracefulExit.__name__:
+                log.error("Received a %s exception. Exiting..." %
+                          KaleGracefulExit.__name__)
                 os.kill(os.getpid(), signal.SIGUSR1)
+            else:
+                traceback = map(remove_ansi_color_sequences,
+                                content['traceback'])
+                sys.stderr.write('\n'.join(traceback) + '\n')
+                if exit_on_error:
+                    # when receiving an error from the kernel, we don't want
+                    # to just print the exception to stderr, otherwise the
+                    # pipeline step would complete successfully.
+                    # kill sends the signal to the specific pid (main thread)
+                    os.kill(os.getpid(), signal.SIGUSR1)
 
 
 def run_code(source: tuple, kernel_name='python3'):

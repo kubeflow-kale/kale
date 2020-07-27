@@ -14,6 +14,7 @@
 
 import os
 import re
+import sys
 import random
 import string
 import urllib
@@ -50,3 +51,38 @@ def sanitize_k8s_name(name):
     """Sanitize a string to conform to Kubernetes naming conventions."""
     name = re.sub("-+", "-", re.sub("[^-0-9a-z]+", "-", name.lower()))
     return name.lstrip("-").rstrip("-")
+
+
+def is_ipython() -> bool:
+    """Returns whether the code is running in a ipython kernel."""
+    try:
+        import IPython
+        ipy = IPython.get_ipython()
+        if ipy is None:
+            return False
+    except ImportError:
+        return False
+    return True
+
+
+def graceful_exit(exit_code):
+    """Exit the program gracefully.
+
+    Running the function `sys.exit()` raises a special exception `SystemExit`
+    that is not caught by the python REPL, making it exit the program.
+    IPython's REPL, instead, does catch `SystemExit`. It displays the message
+    and then goes back to the REPL.
+
+    Code that could either run in an IPython kernel (because the Kale pipeline
+    was produced from a notebook) or in a standard Python process, needs to
+    handle the exit process seamlessly, regardless of where it's running.
+
+    In case the code is running inside an IPython kernel, this function raises
+    a `KaleGracefulExit` exception. This exception is expected to ke captured
+    inside the `kale.utils.jupyter_utils.capture_streams` function.
+    """
+    if is_ipython():
+        from kale.utils.jupyter_utils import KaleGracefulExit
+        raise KaleGracefulExit
+    else:
+        sys.exit(exit_code)
