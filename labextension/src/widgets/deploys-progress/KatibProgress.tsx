@@ -39,7 +39,7 @@ interface IKatibProgressProps {
 }
 
 export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props => {
-  const getKatibLink = (experiment: IKatibExperiment) => {
+  const getLink = (experiment: IKatibExperiment) => {
     // link: /_/katib/#/katib/hp_monitor/<namespace>/<name>
     if (!experiment.name || !experiment.namespace) {
       return '#';
@@ -59,7 +59,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
         ];
   };
 
-  const getKatibText = (experiment: IKatibExperiment) => {
+  const getText = (experiment: IKatibExperiment) => {
     switch (experiment.status) {
       case KatibExperimentStatus.FAILED:
         return 'Failed';
@@ -70,7 +70,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
     }
   };
 
-  const getKatibComponent = (experiment: IKatibExperiment) => {
+  const getComponent = (experiment: IKatibExperiment) => {
     let IconComponent: any = UnknownIcon;
     let iconColor = '#5f6368';
 
@@ -95,7 +95,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
 
     return (
       <React.Fragment>
-        {getKatibText(experiment)}
+        {getText(experiment)}
         <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
       </React.Fragment>
     );
@@ -116,11 +116,11 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
     katibTpl = (
       <React.Fragment>
         <a
-          href={getKatibLink(props.experiment)}
+          href={getLink(props.experiment)}
           target="_blank"
           rel="noopener noreferrer"
         >
-          {getKatibComponent(props.experiment)}
+          {getComponent(props.experiment)}
         </a>
       </React.Fragment>
     );
