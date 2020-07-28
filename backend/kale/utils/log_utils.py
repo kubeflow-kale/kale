@@ -15,8 +15,24 @@
 import os
 import logging
 
-LOG_FMT = "%(asctime)s Kale {} [%(levelname)s] %(message)s"
+LOG_FMT = "%(asctime)s Kale {} %(levelname)-10s %(message)s"
 _loggers = dict()
+
+
+class CustomLogRecord(logging.LogRecord):
+    """Custom log record.
+
+    We use a custom log record in order to create custom and compound log
+    elements that can be used by the Formatter just like standard properties.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.origin = f"{self.module}:{self.lineno}"
+        # override the default levelname
+        self.levelname = f"[{self.levelname}]"
+
+
+logging.setLogRecordFactory(CustomLogRecord)
 
 
 def _configure_handler(handler, level, formatter):
@@ -59,7 +75,8 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
     log.setLevel(logging.DEBUG)
 
     # Set up handlers
-    log_fmt = fmt or LOG_FMT.format(name or "%(module)s:%(lineno)d")
+    log_fmt = fmt or LOG_FMT.format("%-20s" % name if name
+                                    else "%(origin)-20s")
     stream_handler = logging.StreamHandler()
     _configure_handler(stream_handler, level, logging.Formatter(log_fmt,
                                                                 "%H:%M:%S"))
