@@ -238,7 +238,8 @@ def run_code(source: tuple, kernel_name='python3'):
         source (tuple): source code blocks
         kernel_name: name of the kernel (form the kernel spec) to be created
     """
-    log.info("Running user code...")
+    log.info("%s Running user code... %s", "-" * 10, "-" * 10)
+    log.newline(lines=3)
     import IPython
     if pkg_version.parse(IPython.__version__) < pkg_version.parse('7.6.0'):
         raise RuntimeError("IPython version {} not supported."
@@ -293,7 +294,8 @@ def run_code(source: tuple, kernel_name='python3'):
         # start preprocessor: run each code cell and capture the output
         ep.preprocess(notebook, resources, km=km)
     except KaleKernelException:
-        log.error("Failed to run user code")
+        log.newline(lines=3)
+        log.error("%s Failed to run user code %s", "-" * 10, "-" * 10)
         # exit gracefully with error
         sys.exit(-1)
     # Give some time to the stream watcher thread to receive all messages from
@@ -302,5 +304,6 @@ def run_code(source: tuple, kernel_name='python3'):
     km.shutdown_kernel()
 
     result = process_outputs(notebook.cells)
-    log.info("Successfully ran user code")
+    log.newline(lines=3)
+    log.info("%s Successfully ran user code %s", "-" * 10, "-" * 10)
     return result
