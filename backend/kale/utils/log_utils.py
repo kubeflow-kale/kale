@@ -15,7 +15,11 @@
 import os
 import logging
 
+from typing import List, Sequence
+
+
 LOG_FMT = "%(asctime)s Kale {} %(levelname)-10s %(message)s"
+BLANK_FMT = logging.Formatter(fmt="")
 _loggers = dict()
 
 
@@ -32,7 +36,53 @@ class CustomLogRecord(logging.LogRecord):
         self.levelname = f"[{self.levelname}]"
 
 
+def _suppress_handlers(log: logging.Logger) -> List[List[logging.Formatter]]:
+    def _suppress_handlers_for_logger(log: logging.Logger) -> (
+            List[logging.Formatter]):
+        formatters = []
+        for h in log.handlers:
+            formatters.append(h.formatter)
+            h.setFormatter(BLANK_FMT)
+        return formatters
+
+    formatters = [_suppress_handlers_for_logger(log)]
+    while log.propagate and log.parent:
+        log = log.parent
+        formatters.append(_suppress_handlers_for_logger(log))
+    return formatters
+
+
+def _restore_handlers(log: logging.Logger,
+                      formatters: Sequence[logging.Formatter]) -> None:
+    for i in range(len(formatters)):
+        for handler, fmt in zip(log.handlers, formatters[i]):
+            handler.setFormatter(fmt)
+        log = log.parent
+
+
+class KaleLogger(logging.Logger):
+    """Custom logger.
+
+    We use a custom logger so that we can have custom methods and attributes.
+    """
+    def newline(self, lines: int = 1):
+        """Log an empty line by suppressing logger's formatters.
+
+        NOTE: This function is not thread safe
+        """
+        # Back up and suppress current formatters
+        # XXX: We need to suppress handlers recursively up until we find a
+        # logger with `propagate == False` or `parent == None`
+        original_formatters = _suppress_handlers(self)
+        # Log empty lines
+        for _ in range(lines):
+            self.info('')
+        # Restore original formatters
+        _restore_handlers(self, original_formatters)
+
+
 logging.setLogRecordFactory(CustomLogRecord)
+logging.setLoggerClass(KaleLogger)
 
 
 def _configure_handler(handler, level, formatter):
