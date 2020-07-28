@@ -167,6 +167,11 @@ export interface IKatibExperiment {
   trialsRunning?: number;
   trialsSucceeded?: number;
   maxTrialCount?: number;
+  currentOptimalTrial?: {
+    bestTrialName: string;
+    parameterAssignments: { name: string; value: string }[];
+    observation: { metrics: { name: string; value: number }[] };
+  };
 }
 
 export const DefaultState: IState = {
