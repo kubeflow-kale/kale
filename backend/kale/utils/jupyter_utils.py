@@ -294,6 +294,7 @@ def run_code(source: tuple, kernel_name='python3'):
         # start preprocessor: run each code cell and capture the output
         ep.preprocess(notebook, resources, km=km)
     except KaleKernelException:
+        sys.stdout.flush()
         log.newline(lines=3)
         log.error("%s Failed to run user code %s", "-" * 10, "-" * 10)
         # exit gracefully with error
@@ -304,6 +305,7 @@ def run_code(source: tuple, kernel_name='python3'):
     km.shutdown_kernel()
 
     result = process_outputs(notebook.cells)
+    sys.stdout.flush()
     log.newline(lines=3)
     log.info("%s Successfully ran user code %s", "-" * 10, "-" * 10)
     return result
