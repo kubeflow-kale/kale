@@ -47,7 +47,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
     return `${window.location.origin}/_/katib/#/katib/hp_monitor/${experiment.namespace}/${experiment.name}`;
   };
 
-  const getKatibBestResultInfo = (experiment: any) => {
+  const getKatibBestResultInfo = (experiment: IKatibExperiment) => {
     let optimal = experiment ? experiment.currentOptimalTrial : null;
     // currentOptimalTrial is _never_ null,
     // so if there's no best trial so far we don't show the object
@@ -57,6 +57,21 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
           'There are no results yet',
           'To have a result, there must be at least one successful trial',
         ];
+  };
+
+  const getKatibBestResultBadge = (experiment: IKatibExperiment) => {
+    return (
+      <LightTooltip
+        title={'Show current best result'}
+        placement="top-start"
+        TransitionComponent={Zoom}
+      >
+        {DeployUtils.getInfoBadge(
+          'Katib current best result',
+          getKatibBestResultInfo(experiment),
+        )}
+      </LightTooltip>
+    );
   };
 
   const getText = (experiment: IKatibExperiment) => {
@@ -158,10 +173,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
         <div className="deploy-progress-label">Running Katib experiment...</div>
         <div className="deploy-progress-value">
           {katibTpl}
-          {DeployUtils.getInfoBadge(
-            'Katib current best result',
-            getKatibBestResultInfo(props.experiment),
-          )}
+          {getKatibBestResultBadge(props.experiment)}
         </div>
       </div>
       <div className="deploy-progress-row">{katibRunsTpl}</div>
