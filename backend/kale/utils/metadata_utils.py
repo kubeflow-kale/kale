@@ -29,7 +29,8 @@ DEFAULT_METADATA = {
     'abs_working_dir': None,
     'marshal_volume': False,
     'marshal_path': '',
-    'autosnapshot': False
+    'snapshot_volumes': False,
+    'autosnapshot': False,
 }
 
 METADATA_REQUIRED_KEYS = (
