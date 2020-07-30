@@ -73,7 +73,6 @@ interface IState {
   volumes?: IVolumeMetadata[];
   selectVolumeTypes: ISelectOption[];
   useNotebookVolumes: boolean;
-  autosnapshot: boolean;
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
   katibDialog: boolean;
@@ -155,6 +154,7 @@ export interface IKaleNotebookMetadata {
   pipeline_description: string;
   docker_image: string;
   volumes: IVolumeMetadata[];
+  autosnapshot: boolean;
   katib_run: boolean;
   katib_metadata?: IKatibMetadata;
 }
@@ -185,6 +185,7 @@ export const DefaultState: IState = {
     pipeline_description: '',
     docker_image: '',
     volumes: [],
+    autosnapshot: false,
     katib_run: false,
   },
   runDeployment: false,
@@ -196,7 +197,6 @@ export const DefaultState: IState = {
   volumes: [],
   selectVolumeTypes: SELECT_VOLUME_TYPES,
   useNotebookVolumes: false,
-  autosnapshot: false,
   deploys: {},
   isEnabled: false,
   katibDialog: false,
@@ -258,9 +258,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     });
   };
   updateAutosnapshotSwitch = (autosnapshot?: boolean) =>
-    autosnapshot === undefined
-      ? this.setState({ autosnapshot: !this.state.autosnapshot })
-      : this.setState({ autosnapshot });
+    this.setState({
+      metadata: {
+        ...this.state.metadata,
+        autosnapshot:
+          autosnapshot === undefined
+            ? !this.state.metadata.autosnapshot
+            : autosnapshot,
+      },
+    });
 
   getNotebookMountPoints = (): { label: string; value: string }[] => {
     const mountPoints: { label: string; value: string }[] = [];
@@ -505,6 +511,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             notebookMetadata['docker_image'] ||
             DefaultState.metadata.docker_image,
           volumes: metadataVolumes,
+          autosnapshot: !this.props.rokError && stateVolumes.length > 0,
           katib_run:
             notebookMetadata['katib_run'] || DefaultState.metadata.katib_run,
           katib_metadata: {
@@ -516,18 +523,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           volumes: stateVolumes,
           metadata: metadata,
           useNotebookVolumes: useNotebookVolumes,
-          autosnapshot: !this.props.rokError && stateVolumes.length > 0,
         });
       } else {
         this.setState({
           metadata: {
             volumes: this.state.notebookVolumes,
+            autosnapshot:
+              !this.props.rokError && this.state.notebookVolumes.length > 0,
             ...DefaultState.metadata,
           },
           volumes: this.state.notebookVolumes,
           useNotebookVolumes:
-            !this.props.rokError && this.state.notebookVolumes.length > 0,
-          autosnapshot:
             !this.props.rokError && this.state.notebookVolumes.length > 0,
         });
       }
@@ -611,7 +617,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata,
       this.props.docManager,
       this.state.deployDebugMessage,
-      this.state.autosnapshot,
       _updateDeployProgress,
     );
     if (!compileNotebook) {
@@ -759,7 +764,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         selectVolumeTypes={this.state.selectVolumeTypes}
         useNotebookVolumes={this.state.useNotebookVolumes}
         updateVolumesSwitch={this.updateVolumesSwitch}
-        autosnapshot={this.state.autosnapshot}
+        autosnapshot={this.state.metadata.autosnapshot}
         updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
         rokError={this.props.rokError}
         updateVolumes={this.updateVolumes}
