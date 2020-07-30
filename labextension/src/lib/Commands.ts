@@ -47,7 +47,6 @@ interface ICompileNotebookArgs {
   source_notebook_path: string;
   notebook_metadata_overrides: IKaleNotebookMetadata;
   debug: boolean;
-  auto_snapshot: boolean;
 }
 
 interface IUploadPipelineArgs {
@@ -355,7 +354,6 @@ export default class Commands {
     metadata: IKaleNotebookMetadata,
     docManager: IDocumentManager,
     deployDebugMessage: boolean,
-    autosnapshot: boolean,
     onUpdate: Function,
   ) => {
     // after parsing and validating the metadata, show warnings (if necessary)
@@ -368,7 +366,6 @@ export default class Commands {
       source_notebook_path: notebookPath,
       notebook_metadata_overrides: metadata,
       debug: deployDebugMessage,
-      auto_snapshot: autosnapshot,
     };
     const compileNotebook = await _legacy_executeRpcAndShowRPCError(
       this._notebook,
