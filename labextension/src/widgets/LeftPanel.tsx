@@ -477,7 +477,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           experiment_name = notebookMetadata['experiment_name'];
         }
 
-        let useNotebookVolumes = this.state.notebookVolumes.length > 0;
         let metadataVolumes = (notebookMetadata['volumes'] || []).filter(
           (v: IVolumeMetadata) => v.type !== 'clone',
         );
@@ -496,7 +495,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
           metadataVolumes = stateVolumes = this.state.notebookVolumes;
         } else {
-          useNotebookVolumes = false;
           metadataVolumes = metadataVolumes.concat(this.state.notebookVolumes);
           stateVolumes = stateVolumes.concat(this.state.notebookVolumes);
         }
@@ -511,14 +509,20 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             notebookMetadata['docker_image'] ||
             DefaultState.metadata.docker_image,
           volumes: metadataVolumes,
-          snapshot_volumes: useNotebookVolumes,
-          autosnapshot: !this.props.rokError && stateVolumes.length > 0,
           katib_run:
             notebookMetadata['katib_run'] || DefaultState.metadata.katib_run,
           katib_metadata: {
             ...DefaultKatibMetadata,
             ...(notebookMetadata['katib_metadata'] || {}),
           },
+          autosnapshot:
+            notebookMetadata['autosnapshot'] === undefined
+              ? !this.props.rokError && this.state.notebookVolumes.length > 0
+              : notebookMetadata['autosnapshot'],
+          snapshot_volumes:
+            notebookMetadata['snapshot_volumes'] === undefined
+              ? !this.props.rokError && this.state.notebookVolumes.length > 0
+              : notebookMetadata['snapshot_volumes'],
         };
         this.setState({
           volumes: stateVolumes,
@@ -527,12 +531,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       } else {
         this.setState({
           metadata: {
+            ...DefaultState.metadata,
             volumes: this.state.notebookVolumes,
             snapshot_volumes:
               !this.props.rokError && this.state.notebookVolumes.length > 0,
             autosnapshot:
               !this.props.rokError && this.state.notebookVolumes.length > 0,
-            ...DefaultState.metadata,
           },
           volumes: this.state.notebookVolumes,
         });
