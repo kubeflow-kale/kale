@@ -22,7 +22,7 @@ import ErrorIcon from '@material-ui/icons/Error';
 import SuccessIcon from '@material-ui/icons/CheckCircle';
 
 import StatusRunning from '../../icons/statusRunning';
-import { IKatibExperiment } from '../LeftPanelWidget';
+import { IKatibExperiment } from '../LeftPanel';
 import { LightTooltip } from '../../components/LightTooltip';
 import DeployUtils from './DeployUtils';
 

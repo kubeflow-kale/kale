@@ -169,7 +169,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   /**
    * Event handler for the global Kale switch (the one below the Kale title in
    * the left panel). Enabling the switch propagates to the father component
-   * (LeftPanelWidget) to enable the rest of the UI.
+   * (LeftPanel) to enable the rest of the UI.
    */
   toggleGlobalKaleSwitch(checked: boolean) {
     this.setState({ checked });

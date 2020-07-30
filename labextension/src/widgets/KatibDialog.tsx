@@ -16,7 +16,7 @@ import {
 import AddIcon from '@material-ui/icons/Add';
 import Help from '@material-ui/icons/Help';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { IKatibMetadata, IKatibParameter } from './LeftPanelWidget';
+import { IKatibMetadata, IKatibParameter } from './LeftPanel';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { executeRpc, RPC_CALL_STATUS, RPCError } from '../lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
