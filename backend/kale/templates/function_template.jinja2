@@ -3,7 +3,7 @@ def {{ step_name }}({%- for arg in parameters_names -%}
     {%- if loop.index < parameters_names|length -%},
     {%- endif -%}
     {%- endfor -%}):
-{%- if not auto_snapshot and in_variables|length == 0 and out_variables|length == 0 and function_body|length == 0 %}
+{%- if not autosnapshot and in_variables|length == 0 and out_variables|length == 0 and function_body|length == 0 %}
     pass
 {%- elif parameters_names|length > 0 %}
     pipeline_parameters_block = '''
@@ -12,11 +12,11 @@ def {{ step_name }}({%- for arg in parameters_names -%}
 {%- endfor %}
     '''.format({{ parameters_names|join(', ') }})
 {% endif %}
-{%- if auto_snapshot or in_variables|length > 0 or out_variables|length > 0 or function_body|length > 0 %}
+{%- if autosnapshot or in_variables|length > 0 or out_variables|length > 0 or function_body|length > 0 %}
     from kale.utils import mlmd_utils as _kale_mlmd_utils
     _kale_mlmd_utils.init_metadata()
 {% endif %}
-{% if auto_snapshot and step_name != 'final_auto_snapshot'  %}
+{% if autosnapshot and step_name != 'final_auto_snapshot'  %}
     from kale.utils import pod_utils as _kale_pod_utils
     _kale_mlmd_utils.call("link_input_rok_artifacts")
     _kale_pod_utils.snapshot_pipeline_step(
@@ -72,7 +72,7 @@ def {{ step_name }}({%- for arg in parameters_names -%}
     _kale_update_uimetadata('{{ step_name }}')
 {% endif -%}
 
-{%- if auto_snapshot %}
+{%- if autosnapshot %}
 {%- if step_name == 'final_auto_snapshot' %}
     from kale.utils import pod_utils as _kale_pod_utils
     _kale_mlmd_utils.call("link_input_rok_artifacts")
@@ -84,6 +84,6 @@ def {{ step_name }}({%- for arg in parameters_names -%}
         before=False)
     _kale_mlmd_utils.call("submit_output_rok_artifact", _rok_snapshot_task)
 {% endif %}
-{%- if auto_snapshot or in_variables|length > 0 or out_variables|length > 0 or function_body|length > 0 %}
+{%- if autosnapshot or in_variables|length > 0 or out_variables|length > 0 or function_body|length > 0 %}
     _kale_mlmd_utils.call("mark_execution_complete")
 {%- endif %}

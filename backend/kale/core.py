@@ -40,9 +40,7 @@ class Kale:
     def __init__(self,
                  source_notebook_path: str,
                  notebook_metadata_overrides: dict = None,
-                 debug: bool = False,
-                 auto_snapshot: bool = False):
-        self.auto_snapshot = auto_snapshot
+                 debug: bool = False):
         self.source_path = os.path.expanduser(str(source_notebook_path))
         if not os.path.exists(self.source_path):
             raise ValueError("Path {} does not exist".format(self.source_path))
@@ -121,7 +119,7 @@ class Kale:
         # if there are multiple DAG leaves, add an empty step at the end of the
         # pipeline for final snapshot
         leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
-        if self.auto_snapshot and len(leaf_steps) > 1:
+        if self.pipeline_metadata.get("autosnapshot") and len(leaf_steps) > 1:
             auto_snapshot_name = 'final_auto_snapshot'
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
@@ -144,8 +142,7 @@ class Kale:
         gen_args = {"nb_graph": pipeline_graph,
                     "nb_path": os.path.abspath(self.source_path),
                     "pipeline_parameters": pipeline_parameters,
-                    "metadata": self.pipeline_metadata,
-                    "auto_snapshot": self.auto_snapshot}
+                    "metadata": self.pipeline_metadata}
         kfp_code = generate_code.gen_kfp_code(**gen_args)
 
         if save_to_tmp:

@@ -124,7 +124,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
     {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     output_artifacts = {}
-    {%- if auto_snapshot %}
+    {%- if autosnapshot %}
     output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     {%- endif %}
     {%- if nb_graph.nodes(data=True)[name].get("metrics") %}
