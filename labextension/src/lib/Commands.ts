@@ -29,7 +29,7 @@ import {
   IKatibExperiment,
   IVolumeMetadata,
   NEW_EXPERIMENT,
-} from '../widgets/LeftPanelWidget';
+} from '../widgets/LeftPanel';
 import NotebookUtils from './NotebookUtils';
 import {
   SELECT_VOLUME_SIZE_TYPES,

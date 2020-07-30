@@ -17,7 +17,7 @@
 import * as React from 'react';
 import { Input } from './Input';
 import { Select, ISelectOption } from './Select';
-import { IExperiment, NEW_EXPERIMENT } from '../widgets/LeftPanelWidget';
+import { IExperiment, NEW_EXPERIMENT } from '../widgets/LeftPanel';
 
 const regex: string = '^[a-z]([-a-z0-9]*[a-z0-9])?$';
 const regexErrorMsg: string =

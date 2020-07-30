@@ -19,7 +19,7 @@ import { CircularProgress } from '@material-ui/core';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';
-import { IKatibExperiment } from '../LeftPanelWidget';
+import { IKatibExperiment } from '../LeftPanel';
 
 export type DeployProgressState = {
   showValidationProgress?: boolean;
