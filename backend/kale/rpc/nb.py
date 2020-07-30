@@ -84,11 +84,9 @@ def get_base_image(request):
 
 
 def compile_notebook(request, source_notebook_path,
-                     notebook_metadata_overrides=None, debug=False,
-                     auto_snapshot=False):
+                     notebook_metadata_overrides=None, debug=False):
     """Compile the notebook to KFP DSL."""
-    instance = Kale(source_notebook_path, notebook_metadata_overrides,
-                    debug, auto_snapshot)
+    instance = Kale(source_notebook_path, notebook_metadata_overrides, debug)
     instance.logger = request.log if hasattr(request, "log") else logger
 
     pipeline_graph, pipeline_parameters = instance.notebook_to_graph()

@@ -199,8 +199,7 @@ def generate_pipeline(template, nb_graph, step_names, lightweight_components,
     return autopep8.fix_code(pipeline_code)
 
 
-def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
-                 auto_snapshot):
+def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata):
     """Generate a Python KFP DSL executable starting from the nx graph.
 
     Takes a NetworkX workflow graph with the following properties
@@ -217,8 +216,6 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
         nb_path (str): path to the notebook
         pipeline_parameters (dict): pipeline parameters
         metadata (dict): metadata to be passed to the Jinja templates
-        auto_snapshot (bool): True if pipeline runs auto snapshot at each
-            pipeline step
 
     Returns (str): A Python executable script
     """
@@ -235,8 +232,6 @@ def gen_kfp_code(nb_graph, nb_path, pipeline_parameters, metadata,
     metadata.update(get_marshal_data(wd=wd, volumes=volumes, nb_path=nb_path))
     # get 'function_args', 'pipeline_args' and 'pipeline_args_names'
     metadata.update(get_args(pipeline_parameters))
-    # TODO: Have this automatically inside metadata before calling gen_kfp_code
-    metadata.update({'auto_snapshot': auto_snapshot})
 
     # initialize the function template
     function_template = template_env.get_template('function_template.jinja2')
