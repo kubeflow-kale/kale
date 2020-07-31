@@ -22,10 +22,10 @@ from tabulate import tabulate
 from kale.core import Kale
 from kale.nbparser import parser
 from kale.static_analysis import ast
-from kale.common import podutils, kfputils
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
 from kale.rpc.errors import RPCInternalError
+from kale.common import podutils, kfputils, kfutils
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
@@ -198,3 +198,19 @@ def remove_marshal_dir(request, source_notebook_path):
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
     if os.path.exists(kale_marshal_dir):
         shutil.rmtree(kale_marshal_dir)
+
+
+def find_poddefault_labels_on_server(request):
+    """Find server's labels that correspond to poddefaults applied."""
+    request.log.info("Retrieving PodDefaults applied to server...")
+    applied_poddefaults = kfutils.find_applied_poddefaults(
+        podutils.get_pod(podutils.get_pod_name(),
+                         podutils.get_namespace()),
+        kfutils.list_poddefaults())
+    pd_names = [pd["metadata"]["name"] for pd in applied_poddefaults]
+    request.log.info("Retrieved applied PodDefaults: %s", pd_names)
+
+    labels = kfutils.get_poddefault_labels(applied_poddefaults)
+    request.log.info("PodDefault labels applied on server: %s",
+                     ", ".join(["%s: %s" % (k, v) for k, v in labels.items()]))
+    return labels
