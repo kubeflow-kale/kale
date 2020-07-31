@@ -27,7 +27,7 @@ from kubernetes.config import ConfigException
 from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
-from kale.utils import utils, graph_utils
+from kale.utils import utils, graphutils
 from kale.utils.podutils import get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
 from kale.utils.log_utils import get_or_create_logger
@@ -118,7 +118,7 @@ class Kale:
 
         # if there are multiple DAG leaves, add an empty step at the end of the
         # pipeline for final snapshot
-        leaf_steps = graph_utils.get_leaf_nodes(pipeline_graph)
+        leaf_steps = graphutils.get_leaf_nodes(pipeline_graph)
         if self.pipeline_metadata.get("autosnapshot") and len(leaf_steps) > 1:
             auto_snapshot_name = 'final_auto_snapshot'
             # add a link from all the last steps of the pipeline to

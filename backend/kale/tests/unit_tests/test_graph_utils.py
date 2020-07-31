@@ -14,7 +14,7 @@
 
 import networkx as nx
 
-from kale.utils import graph_utils
+from kale.utils import graphutils
 
 
 def test_get_ordered_ancestors():
@@ -32,10 +32,10 @@ def test_get_ordered_ancestors():
     g.add_edge("E", "R")
 
     ancs = ["B", "A"]
-    assert graph_utils.get_ordered_ancestors(g, "E") == ancs
+    assert graphutils.get_ordered_ancestors(g, "E") == ancs
 
     ancs = ["B", "A"]
-    assert graph_utils.get_ordered_ancestors(g, "C") == ancs
+    assert graphutils.get_ordered_ancestors(g, "C") == ancs
 
     ancs = ["C", "D", "E", "B", "A"]
-    assert graph_utils.get_ordered_ancestors(g, "R") == ancs
+    assert graphutils.get_ordered_ancestors(g, "R") == ancs
