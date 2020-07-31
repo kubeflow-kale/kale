@@ -300,7 +300,8 @@ def parse_notebook(notebook, metadata):
         if c.cell_type != "code":
             continue
 
-        steps_defaults = parse_steps_defaults(metadata.get("steps_defaults", []))
+        steps_defaults = metadata.get("steps_defaults", [])
+        parsed_step_defaults = parse_steps_defaults(steps_defaults)
         tags = parse_metadata(c.metadata)
 
         if len(tags['step_names']) > 1:
@@ -336,11 +337,11 @@ def parse_notebook(notebook, metadata):
 
         # if none of the above apply, then we are parsing a code cell with
         # a block names and (possibly) some dependencies
-        cell_annotations = dict(**steps_defaults.get("annotations", {}),
+        cell_annotations = dict(**parsed_step_defaults.get("annotations", {}),
                                 **tags.get("annotations", {}))
-        cell_labels = dict(**steps_defaults.get("labels", {}),
+        cell_labels = dict(**parsed_step_defaults.get("labels", {}),
                            **tags.get("labels", {}))
-        cell_limits = dict(**steps_defaults.get("limits", {}),
+        cell_limits = dict(**parsed_step_defaults.get("limits", {}),
                            **tags.get("limits", {}))
 
         # if the cell was not tagged with a step name,

@@ -157,6 +157,7 @@ export interface IKaleNotebookMetadata {
   autosnapshot: boolean;
   katib_run: boolean;
   katib_metadata?: IKatibMetadata;
+  steps_defaults?: string[];
 }
 
 export interface IKatibExperiment {
@@ -188,6 +189,7 @@ export const DefaultState: IState = {
     snapshot_volumes: false,
     autosnapshot: false,
     katib_run: false,
+    steps_defaults: [],
   },
   runDeployment: false,
   deploymentType: 'compile',
@@ -431,6 +433,19 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         } else {
           DefaultState.metadata.docker_image = '';
         }
+
+        // Detect poddefault labels applied on server and add them as steps defaults
+        // fixme: This RPC could be called just when starting the widget
+        //        and not every time we set a new notebook
+        const podDefaultLabels = await commands.findPodDefaultLabelsOnServer();
+        Object.keys(podDefaultLabels)
+          .map(key => `label:${key}:${podDefaultLabels[key]}`)
+          .forEach(label => {
+            if (!DefaultState.metadata.steps_defaults.includes(label)) {
+              DefaultState.metadata.steps_defaults.push(label);
+            }
+          });
+
         // Get experiment information last because it may take more time to respond
         this.setState({ gettingExperiments: true });
         const {
@@ -523,6 +538,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             notebookMetadata['snapshot_volumes'] === undefined
               ? !this.props.rokError && this.state.notebookVolumes.length > 0
               : notebookMetadata['snapshot_volumes'],
+          // fixme: for now we are using the 'steps_defaults' field just for poddefaults
+          //        so we replace any existing value every time
+          steps_defaults: DefaultState.metadata.steps_defaults,
         };
         this.setState({
           volumes: stateVolumes,
