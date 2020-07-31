@@ -19,7 +19,7 @@ import networkx as nx
 from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
-from kale.utils import utils, graph_utils
+from kale.utils import utils, graphutils
 from kale.static_analysis import ast as kale_ast
 
 
@@ -215,7 +215,7 @@ def dependencies_detection(nb_graph: nx.DiGraph,
         # The ancestors are the the nodes that have a path to `step`, ordered
         # by path length.
         ins_left = ins.copy()
-        for anc in (graph_utils.get_ordered_ancestors(nb_graph, step)):
+        for anc in (graphutils.get_ordered_ancestors(nb_graph, step)):
             if not ins_left:
                 # if there are no more variables that need to be marshalled,
                 # stop the graph traverse
@@ -301,7 +301,7 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
     # create a temporary step at the end of the pipeline to simplify the
     # iteration from the leaf steps
     tmp_step = "_tmp"
-    leaf_steps = graph_utils.get_leaf_nodes(nb_graph)
+    leaf_steps = graphutils.get_leaf_nodes(nb_graph)
     if not leaf_steps:
         return
     [nb_graph.add_edge(node, tmp_step) for node in leaf_steps]
@@ -315,7 +315,7 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
     # XXX: parsing of the RPC result
     rev_pipeline_metrics = {v: k for k, v in pipeline_metrics.items()}
     metrics_left = set(rev_pipeline_metrics.keys())
-    for anc in graph_utils.get_ordered_ancestors(nb_graph, tmp_step):
+    for anc in graphutils.get_ordered_ancestors(nb_graph, tmp_step):
         if not metrics_left:
             break
 
