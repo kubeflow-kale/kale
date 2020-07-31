@@ -28,7 +28,7 @@ from kale.nbparser import parser
 from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils import utils, graph_utils
-from kale.utils.pod_utils import get_docker_base_image
+from kale.utils.podutils import get_docker_base_image
 from kale.utils.metadata_utils import parse_metadata
 from kale.utils.log_utils import get_or_create_logger
 

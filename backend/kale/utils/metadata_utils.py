@@ -16,7 +16,7 @@ import re
 import copy
 
 from kale.utils.utils import random_string
-from kale.utils.pod_utils import is_workspace_dir
+from kale.utils.podutils import is_workspace_dir
 
 DEFAULT_METADATA = {
     'experiment_name': '',

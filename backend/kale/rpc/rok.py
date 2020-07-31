@@ -16,7 +16,7 @@ import os
 import copy
 import logging
 
-from kale.utils import pod_utils
+from kale.utils import podutils
 from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
 from kale.rpc.log import create_adapter
 
@@ -54,7 +54,7 @@ def snapshot_notebook(request, bucket=DEFAULT_BUCKET, obj=None):
     """Perform a snapshot over the notebook's pod."""
     rok = _get_client()
     hostname = os.getenv("HOSTNAME")
-    namespace = pod_utils.get_namespace()
+    namespace = podutils.get_namespace()
     commit_title = "Snapshot of notebook {}".format(hostname)
     commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(hostname,
                                                              namespace)
@@ -62,9 +62,9 @@ def snapshot_notebook(request, bucket=DEFAULT_BUCKET, obj=None):
               "commit_title": commit_title,
               "commit_message": commit_message}
 
-    obj = obj or pod_utils.get_pod_name()
+    obj = obj or podutils.get_pod_name()
     # Create the bucket in case it does not exist
-    pod_utils.create_rok_bucket(bucket, client=rok)
+    podutils.create_rok_bucket(bucket, client=rok)
     return rok.version_register(bucket, obj, "jupyter", params)
 
 
@@ -132,8 +132,8 @@ def check_rok_availability(request):
         raise RPCServiceUnavailableError(details="Failed to access Rok",
                                          trans_id=request.trans_id)
 
-    name = pod_utils.get_pod_name()
-    namespace = pod_utils.get_namespace()
+    name = podutils.get_pod_name()
+    namespace = podutils.get_namespace()
     try:
         suggestions = rok.version_register_suggest(DEFAULT_BUCKET, name,
                                                    "jupyter", "params:lab",
