@@ -16,7 +16,7 @@ import pytest
 
 from testfixtures import mock
 
-from kale.utils import jupyter_utils as ju
+from kale.utils import jputils as ju
 
 
 def _output_display(data):
@@ -43,7 +43,7 @@ def test_generate_html_output(outputs, target):
     assert target == ju.generate_html_output(outputs)
 
 
-@mock.patch('kale.utils.jupyter_utils.process_outputs', new=lambda x: x)
+@mock.patch('kale.utils.jputils.process_outputs', new=lambda x: x)
 def test_run_code():
     """Test that Python code runs inside a jupyter kernel successfully."""
     # test standard code
