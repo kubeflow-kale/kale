@@ -31,6 +31,7 @@ DEFAULT_METADATA = {
     'marshal_path': '',
     'snapshot_volumes': False,
     'autosnapshot': False,
+    'steps_defaults': [],
 }
 
 METADATA_REQUIRED_KEYS = (

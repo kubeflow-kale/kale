@@ -15,6 +15,8 @@
 import re
 import warnings
 
+from typing import List
+
 import networkx as nx
 
 SKIP_TAG = r'^skip$'
@@ -50,6 +52,10 @@ _TAGS_LANGUAGE = [SKIP_TAG,
                   ANNOTATION_TAG,
                   LABEL_TAG,
                   LIMITS_TAG]
+# These tags are applied to every step of the pipeline
+_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG,
+                            LABEL_TAG,
+                            LIMITS_TAG]
 
 
 def parse_metadata(metadata):
@@ -263,12 +269,14 @@ def get_pipeline_metrics_source(notebook):
     return _get_reserved_tag_source(notebook, PIPELINE_METRICS_TAG)
 
 
-def parse_notebook(notebook):
+def parse_notebook(notebook, metadata):
     """Creates a NetworkX graph based on the input notebook's tags.
 
     Cell's source code are embedded into the graph as node attributes.
 
-    Args (nbformat.notebook): Notebook object
+    Args:
+        notebook (nbformat.notebook): Notebook object
+        metadata (dict): The parsed notebook metadata
     """
     # output graph
     nb_graph = nx.DiGraph()
@@ -292,6 +300,7 @@ def parse_notebook(notebook):
         if c.cell_type != "code":
             continue
 
+        steps_defaults = parse_steps_defaults(metadata.get("steps_defaults", []))
         tags = parse_metadata(c.metadata)
 
         if len(tags['step_names']) > 1:
@@ -327,9 +336,12 @@ def parse_notebook(notebook):
 
         # if none of the above apply, then we are parsing a code cell with
         # a block names and (possibly) some dependencies
-        cell_annotations = tags.get("annotations", {})
-        cell_labels = tags.get("labels", {})
-        cell_limits = tags.get("limits", {})
+        cell_annotations = dict(**steps_defaults.get("annotations", {}),
+                                **tags.get("annotations", {}))
+        cell_labels = dict(**steps_defaults.get("labels", {}),
+                           **tags.get("labels", {}))
+        cell_limits = dict(**steps_defaults.get("limits", {}),
+                           **tags.get("limits", {}))
 
         # if the cell was not tagged with a step name,
         # add the code to the previous cell
@@ -398,3 +410,33 @@ def _get_annotation_or_label_from_tag_parts(tag_parts):
 
 def _get_limit_from_tag_parts(tag_parts):
     return tag_parts.pop(0), tag_parts.pop(0)
+
+
+def parse_steps_defaults(conf: List[str] = None):
+    """Parse common step configuration defined in notebook metadata."""
+    result = dict()
+    if not conf:
+        return result
+
+    for c in conf:
+        if any(re.match(_c, c) for _c in _STEPS_DEFAULTS_LANGUAGE) is False:
+            raise ValueError("Unrecognized common step configuration:"
+                             " {}".format(c))
+
+        parts = c.split(":")
+
+        conf_type = parts.pop(0)
+        if conf_type in ["annotation", "label"]:
+            result_key = "{}s".format(conf_type)
+            if result_key not in result:
+                result[result_key] = dict()
+            key, value = _get_annotation_or_label_from_tag_parts(parts)
+            result[result_key][key] = value
+
+        if conf_type == "limit":
+            if "limits" not in result:
+                result["limits"] = dict()
+            key, value = _get_limit_from_tag_parts(parts)
+            result["limits"][key] = value
+
+    return result

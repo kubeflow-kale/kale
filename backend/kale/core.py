@@ -98,7 +98,8 @@ class Kale:
         (pipeline_graph,
          pipeline_parameters_source,
          pipeline_metrics_source,
-         imports_and_functions) = parser.parse_notebook(self.notebook)
+         imports_and_functions) = parser.parse_notebook(self.notebook,
+                                                        self.pipeline_metadata)
 
         # get a dict from the 'pipeline parameters' cell source code
         pipeline_parameters_dict = ast.parse_assignments_expressions(
