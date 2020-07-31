@@ -17,7 +17,7 @@ import argparse
 from argparse import RawTextHelpFormatter
 
 from kale.core import Kale
-from kale.utils import kfputils
+from kale.common import kfputils
 
 ARGS_DESC = """
 KALE: Kubeflow Automated pipeLines Engine\n
@@ -130,7 +130,7 @@ def kale_volumes():
     import tabulate
     from pathlib import Path
     import json
-    from kale.utils import podutils
+    from kale.common import podutils
 
     # Add logger
     # Log to stdout. Set logging level according to --debug flag

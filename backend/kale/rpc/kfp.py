@@ -15,7 +15,7 @@
 import kfp
 from kfp_server_api.rest import ApiException
 
-from kale.utils import kfputils
+from kale.common import kfputils
 
 _client = None
 

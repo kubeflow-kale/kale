@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from kale.utils import utils
+from kale.common import utils
 
 
 def test_comment_magic_commands():
-    """Test the magic utils properly comments a multiline code block."""
+    """Test the magic common properly comments a multiline code block."""
     code = '''
 %%a magic cell command
 some code

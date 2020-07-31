@@ -79,10 +79,10 @@ def graceful_exit(exit_code):
 
     In case the code is running inside an IPython kernel, this function raises
     a `KaleGracefulExit` exception. This exception is expected to ke captured
-    inside the `kale.utils.jputils.capture_streams` function.
+    inside the `kale.common.jputils.capture_streams` function.
     """
     if is_ipython():
-        from kale.utils.jputils import KaleGracefulExit
+        from kale.common.jputils import KaleGracefulExit
         raise KaleGracefulExit
     else:
         sys.exit(exit_code)

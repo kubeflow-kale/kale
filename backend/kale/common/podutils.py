@@ -21,8 +21,8 @@ import tabulate
 import kubernetes.client as k8s
 import kubernetes.config as k8s_config
 
-from kale.utils.utils import encode_url_component
-from kale.utils import kfputils
+from kale.common.utils import encode_url_component
+from kale.common import kfputils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"

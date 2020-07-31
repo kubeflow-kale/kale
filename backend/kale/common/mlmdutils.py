@@ -32,7 +32,7 @@ from ml_metadata.metadata_store import metadata_store
 # https://github.com/google/ml-metadata/issues/25
 # https://github.com/google/ml-metadata/pull/35
 
-from kale.utils import utils, podutils
+from kale.common import utils, podutils
 
 
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"

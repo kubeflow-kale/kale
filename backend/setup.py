@@ -28,7 +28,7 @@ setup(
               'kale.static_analysis',
               'kale.marshal',
               'kale.codegen',
-              'kale.utils',
+              'kale.common',
               'kale.rpc'
               ],
     install_requires=[

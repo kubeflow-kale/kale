@@ -11,7 +11,7 @@ def create_matrix(d1: int, d2: int):
     d2 = {}
     '''.format(d1, d2)
 
-    from kale.utils import mlmdutils as _kale_mlmdutils
+    from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
     block1 = '''
@@ -23,7 +23,7 @@ def create_matrix(d1: int, d2: int):
     '''
 
     block3 = '''
-    from kale.utils import kfputils as _kale_kfputils
+    from kale.common import kfputils as _kale_kfputils
     _kale_kfp_metrics = {
         "d1": d1,
         "d2": d2
@@ -40,8 +40,8 @@ def create_matrix(d1: int, d2: int):
     '''
 
     # run the code blocks inside a jupyter kernel
-    from kale.utils.jputils import run_code as _kale_run_code
-    from kale.utils.kfputils import \
+    from kale.common.jputils import run_code as _kale_run_code
+    from kale.common.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (pipeline_parameters_block,
               block1,
@@ -57,7 +57,7 @@ def create_matrix(d1: int, d2: int):
 
 
 def sum_matrix():
-    from kale.utils import mlmdutils as _kale_mlmdutils
+    from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
     data_loading_block = '''
@@ -77,7 +77,7 @@ def sum_matrix():
     '''
 
     block3 = '''
-    from kale.utils import kfputils as _kale_kfputils
+    from kale.common import kfputils as _kale_kfputils
     _kale_kfp_metrics = {
         "sum-result": sum_result
     }
@@ -85,8 +85,8 @@ def sum_matrix():
     '''
 
     # run the code blocks inside a jupyter kernel
-    from kale.utils.jputils import run_code as _kale_run_code
-    from kale.utils.kfputils import \
+    from kale.common.jputils import run_code as _kale_run_code
+    from kale.common.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('hp-tuning')
 
     # Submit a pipeline run
-    from kale.utils.kfputils import generate_run_name
+    from kale.common.kfputils import generate_run_name
     run_name = generate_run_name('hp-test-rnd')
     run_result = client.run_pipeline(
         experiment.id, run_name, pipeline_filename, {})

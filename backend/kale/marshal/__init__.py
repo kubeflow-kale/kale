@@ -19,7 +19,7 @@ from .utils import save, load
 from .backends import *
 
 
-from kale.utils import logutils
+from kale.common import logutils
 logutils.get_or_create_logger(module=__name__, name="marshalling",
                               # XXX: Should we have this as default in
                               # `get_or_create_logger`??

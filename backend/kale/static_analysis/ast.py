@@ -17,7 +17,7 @@ import ast
 import astor
 
 from collections import deque
-from kale.utils import utils
+from kale.common import utils
 from functools import lru_cache
 
 

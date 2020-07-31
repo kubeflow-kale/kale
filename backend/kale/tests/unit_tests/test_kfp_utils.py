@@ -16,10 +16,10 @@ import os
 import json
 
 from testfixtures import mock
-from kale.utils import kfputils
+from kale.common import kfputils
 
 
-@mock.patch('kale.utils.kfputils.podutils')
+@mock.patch('kale.common.kfputils.podutils')
 def test_update_uimetadata_not_exists(podutils, tmpdir):
     """Test the uimetadata file is created when it does not exists."""
     podutils.get_pod_name.return_value = 'test_pod'
@@ -41,7 +41,7 @@ def test_update_uimetadata_not_exists(podutils, tmpdir):
     assert updated == target
 
 
-@mock.patch('kale.utils.kfputils.podutils')
+@mock.patch('kale.common.kfputils.podutils')
 def test_update_uimetadata_from_empty(podutils, tmpdir):
     """Test that the uimetadata file is updated inplace correctly."""
     podutils.get_pod_name.return_value = 'test_pod'
@@ -66,7 +66,7 @@ def test_update_uimetadata_from_empty(podutils, tmpdir):
     assert updated == target
 
 
-@mock.patch('kale.utils.kfputils.podutils')
+@mock.patch('kale.common.kfputils.podutils')
 def test_update_uimetadata_from_not_empty(podutils, tmpdir):
     """Test that the uimetadata file is updated inplace correctly."""
     podutils.get_pod_name.return_value = 'test_pod'
