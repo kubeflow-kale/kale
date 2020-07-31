@@ -573,4 +573,22 @@ export default class Commands {
       },
     );
   };
+
+  findPodDefaultLabelsOnServer = async (): Promise<{
+    [key: string]: string;
+  }> => {
+    let labels: {
+      [key: string]: string;
+    } = {};
+    try {
+      return await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.find_poddefault_labels_on_server',
+      );
+    } catch (error) {
+      console.error('Failed to retrieve PodDefaults applied on server', error);
+      return labels;
+    }
+  };
 }
