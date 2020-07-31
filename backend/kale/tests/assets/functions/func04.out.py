@@ -1,6 +1,6 @@
 def test():
-    from kale.utils import mlmd_utils as _kale_mlmd_utils
-    _kale_mlmd_utils.init_metadata()
+    from kale.utils import mlmdutils as _kale_mlmdutils
+    _kale_mlmdutils.init_metadata()
 
     data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -21,4 +21,4 @@ def test():
         f.write(html_artifact)
     _kale_update_uimetadata('test')
 
-    _kale_mlmd_utils.call("mark_execution_complete")
+    _kale_mlmdutils.call("mark_execution_complete")
