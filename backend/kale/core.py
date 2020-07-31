@@ -29,7 +29,7 @@ from kale.static_analysis import dependencies, ast
 from kale.codegen import generate_code
 from kale.utils import utils, graphutils
 from kale.utils.podutils import get_docker_base_image
-from kale.utils.metadata_utils import parse_metadata
+from kale.utils.metadatautils import parse_metadata
 from kale.utils.logutils import get_or_create_logger
 
 KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook'

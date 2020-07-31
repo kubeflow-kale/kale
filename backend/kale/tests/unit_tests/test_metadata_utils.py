@@ -16,7 +16,7 @@ import copy
 import pytest
 
 from unittest import mock
-from kale.utils import metadata_utils
+from kale.utils import metadatautils
 
 
 @pytest.mark.parametrize("volumes,target", [
@@ -52,7 +52,7 @@ from kale.utils import metadata_utils
 ])
 def test_validate_volumes_metadata(volumes, target):
     """Tests volumes validation method."""
-    assert target == metadata_utils._parse_volumes_metadata(volumes)
+    assert target == metadatautils._parse_volumes_metadata(volumes)
 
 
 @pytest.mark.parametrize("volumes,match", [
@@ -81,16 +81,16 @@ def test_validate_volumes_metadata(volumes, target):
 def test_convert_volume_annotations_exc(volumes, match):
     """Tests that volume spec errors are caught."""
     with pytest.raises(ValueError, match=match):
-        metadata_utils._parse_volumes_metadata(volumes)
+        metadatautils._parse_volumes_metadata(volumes)
 
 
 @pytest.mark.parametrize("metadata,target", [
     ({'pipeline_name': 'test',
       'experiment_name': 'test',
       'volumes': []},
-     copy.deepcopy(metadata_utils.DEFAULT_METADATA)),
+     copy.deepcopy(metadatautils.DEFAULT_METADATA)),
 ])
-@mock.patch('kale.utils.metadata_utils.random_string')
+@mock.patch('kale.utils.metadatautils.random_string')
 def test_validate_metadata(random_string, metadata, target):
     """Tests metadata is parsed correctly."""
     random_string.return_value = 'rnd'
@@ -98,13 +98,13 @@ def test_validate_metadata(random_string, metadata, target):
     # metadata dict
     target.update({'pipeline_name': metadata['pipeline_name'] + '-rnd'})
     target.update({'experiment_name': metadata['experiment_name']})
-    assert target == metadata_utils.parse_metadata(metadata)
+    assert target == metadatautils.parse_metadata(metadata)
 
 
 def test_validate_metadata_missing_required():
     """Tests that required metadata keys are checked for."""
     with pytest.raises(ValueError, match=r"Key experiment_name not found.*"):
-        metadata_utils.parse_metadata({})
+        metadatautils.parse_metadata({})
 
     with pytest.raises(ValueError, match=r"Key pipeline_name not found.*"):
-        metadata_utils.parse_metadata({'experiment_name': 'test'})
+        metadatautils.parse_metadata({'experiment_name': 'test'})
