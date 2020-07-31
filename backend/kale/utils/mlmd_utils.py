@@ -32,7 +32,7 @@ from ml_metadata.metadata_store import metadata_store
 # https://github.com/google/ml-metadata/issues/25
 # https://github.com/google/ml-metadata/pull/35
 
-from kale.utils import utils, pod_utils
+from kale.utils import utils, podutils
 
 
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
@@ -91,14 +91,14 @@ class MLMetadata(object):
         log.info("Successfully connected to MLMD")
         log.info("Getting step details...")
         log.info("Getting pod name...")
-        self.pod_name = pod_utils.get_pod_name()
+        self.pod_name = podutils.get_pod_name()
         log.info("Successfully retrieved pod name: %s", self.pod_name)
         log.info("Getting pod namespace...")
-        self.pod_namespace = pod_utils.get_namespace()
+        self.pod_namespace = podutils.get_namespace()
         log.info("Successfully retrieved pod namespace: %s",
                  self.pod_namespace)
         log.info("Getting pod...")
-        self.pod = pod_utils.get_pod(self.pod_name, self.pod_namespace)
+        self.pod = podutils.get_pod(self.pod_name, self.pod_namespace)
         log.info("Successfully retrieved pod")
         log.info("Getting workflow name from pod...")
         self.workflow_name = self.pod.metadata.labels.get(
@@ -106,12 +106,12 @@ class MLMetadata(object):
         log.info("Successfully retrieved workflow name: %s",
                  self.workflow_name)
         log.info("Getting workflow...")
-        self.workflow = pod_utils.get_workflow(self.workflow_name,
-                                               self.pod_namespace)
+        self.workflow = podutils.get_workflow(self.workflow_name,
+                                              self.pod_namespace)
         log.info("Successfully retrieved workflow")
 
         workflow_labels = self.workflow["metadata"].get("labels", {})
-        self.run_uuid = workflow_labels.get(pod_utils.KFP_RUN_ID_LABEL_KEY,
+        self.run_uuid = workflow_labels.get(podutils.KFP_RUN_ID_LABEL_KEY,
                                             self.workflow_name)
         log.info("Successfully retrieved KFP run ID: %s", self.run_uuid)
 
@@ -125,7 +125,7 @@ class MLMetadata(object):
         else:
             log.info("Could not retrieve KFP pipeline name")
 
-        self.component_id = pod_utils.compute_component_id(self.pod)
+        self.component_id = podutils.compute_component_id(self.pod)
         self.execution_hash = self.pod.metadata.annotations.get(
             MLMD_EXECUTION_HASH_PROPERTY_KEY)
         if self.execution_hash:
@@ -333,18 +333,18 @@ class MLMetadata(object):
         return execution
 
     def _label_with_context_and_execution(self):
-        self.pod = pod_utils.get_pod(self.pod_name, self.pod_namespace)
+        self.pod = podutils.get_pod(self.pod_name, self.pod_namespace)
         labels = self.pod.metadata.labels
 
         labels.setdefault(METADATA_EXECUTION_ID_LABEL_KEY,
                           str(self.execution.id))
         labels.setdefault(METADATA_CONTEXT_ID_LABEL_KEY,
                           str(self.run_context.id))
-        pod_utils.patch_pod(self.pod_name, self.pod_namespace,
-                            {"metadata": {"labels": labels}})
+        podutils.patch_pod(self.pod_name, self.pod_namespace,
+                           {"metadata": {"labels": labels}})
 
     def _annotate_artifacts(self, annotation_key, ids):
-        self.pod = pod_utils.get_pod(self.pod_name, self.pod_namespace)
+        self.pod = podutils.get_pod(self.pod_name, self.pod_namespace)
         annotations = self.pod.metadata.annotations
 
         all_ids_str = annotations.get(annotation_key, "[]")
@@ -354,8 +354,8 @@ class MLMetadata(object):
         all_ids_str = json.dumps(all_ids)
         annotations[annotation_key] = all_ids_str
 
-        pod_utils.patch_pod(self.pod_name, self.pod_namespace,
-                            {"metadata": {"annotations": annotations}})
+        podutils.patch_pod(self.pod_name, self.pod_namespace,
+                           {"metadata": {"annotations": annotations}})
 
     def _annotate_artifact_inputs(self, ids):
         self._annotate_artifacts(METADATA_INPUT_ARTIFACT_IDS_ANNOTATION_KEY,
@@ -470,7 +470,7 @@ class MLMetadata(object):
 
             output_artifact_ids = []
             annotation = METADATA_OUTPUT_ARTIFACT_IDS_ANNOTATION_KEY
-            k8s_client = pod_utils._get_k8s_v1_client()
+            k8s_client = podutils._get_k8s_v1_client()
             for name in pod_names:
                 pod = k8s_client.read_namespaced_pod(name, self.pod_namespace)
                 ids = json.loads(pod.metadata.annotations.get(annotation,

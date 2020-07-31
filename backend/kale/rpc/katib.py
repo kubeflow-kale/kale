@@ -16,7 +16,7 @@ import os
 import kubernetes
 from kubernetes.client.rest import ApiException
 
-from kale.utils import pod_utils
+from kale.utils import podutils
 from kale.rpc.errors import RPCNotFoundError, RPCUnhandledError
 
 KATIB_PARAMETER_NAMES = ("objective", "algorithm", "parallelTrialCount",
@@ -151,7 +151,7 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata,
     Returns (dict): a dictionary describing the status of the experiment
     """
     try:
-        namespace = pod_utils.get_namespace()
+        namespace = podutils.get_namespace()
     except Exception:
         # XXX: When not running from within a pod, get_namespace() fails
         # XXX: If that's the case, use the 'kubeflow-user' one

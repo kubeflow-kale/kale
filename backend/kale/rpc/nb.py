@@ -22,7 +22,7 @@ from tabulate import tabulate
 from kale.core import Kale
 from kale.nbparser import parser
 from kale.static_analysis import ast
-from kale.utils import pod_utils, kfputils
+from kale.utils import podutils, kfputils
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
 from kale.rpc.errors import RPCInternalError
@@ -67,7 +67,7 @@ def resume_notebook_path(request, server_root=None):
 
 def list_volumes(request):
     """Get the list of mounted volumes."""
-    volumes = pod_utils.list_volumes()
+    volumes = podutils.list_volumes()
     volumes_out = [{"type": "clone",
                     "name": volume.name,
                     "mount_point": path,
@@ -80,7 +80,7 @@ def list_volumes(request):
 
 def get_base_image(request):
     """Get the current pod's docker base image."""
-    return pod_utils.get_docker_base_image()
+    return podutils.get_docker_base_image()
 
 
 def compile_notebook(request, source_notebook_path,

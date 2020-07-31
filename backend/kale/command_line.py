@@ -130,7 +130,7 @@ def kale_volumes():
     import tabulate
     from pathlib import Path
     import json
-    from kale.utils import pod_utils
+    from kale.utils import podutils
 
     # Add logger
     # Log to stdout. Set logging level according to --debug flag
@@ -158,7 +158,7 @@ def kale_volumes():
 
     def list_volumes(args, logger):
         """This function gets invoked by the sub-command 'list'."""
-        volumes = pod_utils.list_volumes()
+        volumes = podutils.list_volumes()
 
         if args.output == "table":
             headers = ["Mount Path", "Volume Name", "PVC Name", "Volume Size"]

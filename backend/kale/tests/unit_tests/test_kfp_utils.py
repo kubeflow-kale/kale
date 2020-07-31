@@ -19,12 +19,12 @@ from testfixtures import mock
 from kale.utils import kfputils
 
 
-@mock.patch('kale.utils.kfputils.pod_utils')
-def test_update_uimetadata_not_exists(pod_utils, tmpdir):
+@mock.patch('kale.utils.kfputils.podutils')
+def test_update_uimetadata_not_exists(podutils, tmpdir):
     """Test the uimetadata file is created when it does not exists."""
-    pod_utils.get_pod_name.return_value = 'test_pod'
-    pod_utils.get_namespace.return_value = 'test_ns'
-    pod_utils.get_workflow_name.return_value = 'test_wk'
+    podutils.get_pod_name.return_value = 'test_pod'
+    podutils.get_namespace.return_value = 'test_ns'
+    podutils.get_workflow_name.return_value = 'test_wk'
 
     filepath = os.path.join(tmpdir, 'tmp_uimetadata.json')
 
@@ -41,12 +41,12 @@ def test_update_uimetadata_not_exists(pod_utils, tmpdir):
     assert updated == target
 
 
-@mock.patch('kale.utils.kfputils.pod_utils')
-def test_update_uimetadata_from_empty(pod_utils, tmpdir):
+@mock.patch('kale.utils.kfputils.podutils')
+def test_update_uimetadata_from_empty(podutils, tmpdir):
     """Test that the uimetadata file is updated inplace correctly."""
-    pod_utils.get_pod_name.return_value = 'test_pod'
-    pod_utils.get_namespace.return_value = 'test_ns'
-    pod_utils.get_workflow_name.return_value = 'test_wk'
+    podutils.get_pod_name.return_value = 'test_pod'
+    podutils.get_namespace.return_value = 'test_ns'
+    podutils.get_workflow_name.return_value = 'test_wk'
 
     # create base tmp file
     base = {"outputs": []}
@@ -66,12 +66,12 @@ def test_update_uimetadata_from_empty(pod_utils, tmpdir):
     assert updated == target
 
 
-@mock.patch('kale.utils.kfputils.pod_utils')
-def test_update_uimetadata_from_not_empty(pod_utils, tmpdir):
+@mock.patch('kale.utils.kfputils.podutils')
+def test_update_uimetadata_from_not_empty(podutils, tmpdir):
     """Test that the uimetadata file is updated inplace correctly."""
-    pod_utils.get_pod_name.return_value = 'test_pod'
-    pod_utils.get_namespace.return_value = 'test_ns'
-    pod_utils.get_workflow_name.return_value = 'test_wk'
+    podutils.get_pod_name.return_value = 'test_pod'
+    podutils.get_namespace.return_value = 'test_ns'
+    podutils.get_workflow_name.return_value = 'test_wk'
 
     # create base tmp file
     markdown = {
