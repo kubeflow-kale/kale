@@ -116,6 +116,16 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     for k, v in step_annotations.items():
         {{ name }}_task.add_pod_annotation(k, v)
     {%- endif %}
+    {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
+    step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
+    for k, v in step_annotations.items():
+      {{ name }}_task.add_pod_annotation(k, v)
+    {%- endif %}
+    {%- if nb_graph.nodes(data=True)[name].get("labels") %}
+    step_labels = {{ nb_graph.nodes(data=True)[name].get("labels", {}) }}
+    for k, v in step_labels.items():
+      {{ name }}_task.add_pod_label(k, v)
+    {%- endif %}
     {%- if nb_graph.nodes(data=True)[name].get("limits") %}
     step_limits = {{ nb_graph.nodes(data=True)[name].get("limits", {}) }}
     for k, v in step_limits.items():
