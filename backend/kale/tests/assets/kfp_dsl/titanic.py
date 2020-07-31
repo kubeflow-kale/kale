@@ -48,7 +48,7 @@ def loaddata():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (
         block1,
@@ -169,7 +169,7 @@ def datapreprocessing():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -330,7 +330,7 @@ def featureengineering():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -400,7 +400,7 @@ def decisiontree():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -461,7 +461,7 @@ def svm():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -522,7 +522,7 @@ def naivebayes():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -583,7 +583,7 @@ def logisticregression():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -644,7 +644,7 @@ def randomforest():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -705,7 +705,7 @@ def results():
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -969,7 +969,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('titanic')
 
     # Submit a pipeline run
-    from kale.utils.kfp_utils import generate_run_name
+    from kale.utils.kfputils import generate_run_name
     run_name = generate_run_name('titanic-ml-rnd')
     run_result = client.run_pipeline(
         experiment.id, run_name, pipeline_filename, {})

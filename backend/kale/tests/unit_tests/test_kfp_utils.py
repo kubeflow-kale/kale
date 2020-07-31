@@ -16,10 +16,10 @@ import os
 import json
 
 from testfixtures import mock
-from kale.utils import kfp_utils
+from kale.utils import kfputils
 
 
-@mock.patch('kale.utils.kfp_utils.pod_utils')
+@mock.patch('kale.utils.kfputils.pod_utils')
 def test_update_uimetadata_not_exists(pod_utils, tmpdir):
     """Test the uimetadata file is created when it does not exists."""
     pod_utils.get_pod_name.return_value = 'test_pod'
@@ -29,7 +29,7 @@ def test_update_uimetadata_not_exists(pod_utils, tmpdir):
     filepath = os.path.join(tmpdir, 'tmp_uimetadata.json')
 
     # update tmp file
-    kfp_utils.update_uimetadata('test', uimetadata_path=filepath)
+    kfputils.update_uimetadata('test', uimetadata_path=filepath)
 
     # check file has been updated correctly
     updated = json.loads(open(filepath).read())
@@ -41,7 +41,7 @@ def test_update_uimetadata_not_exists(pod_utils, tmpdir):
     assert updated == target
 
 
-@mock.patch('kale.utils.kfp_utils.pod_utils')
+@mock.patch('kale.utils.kfputils.pod_utils')
 def test_update_uimetadata_from_empty(pod_utils, tmpdir):
     """Test that the uimetadata file is updated inplace correctly."""
     pod_utils.get_pod_name.return_value = 'test_pod'
@@ -54,7 +54,7 @@ def test_update_uimetadata_from_empty(pod_utils, tmpdir):
     json.dump(base, open(filepath, 'w'))
 
     # update tmp file
-    kfp_utils.update_uimetadata('test', uimetadata_path=filepath)
+    kfputils.update_uimetadata('test', uimetadata_path=filepath)
 
     # check file has been updated correctly
     updated = json.loads(open(filepath).read())
@@ -66,7 +66,7 @@ def test_update_uimetadata_from_empty(pod_utils, tmpdir):
     assert updated == target
 
 
-@mock.patch('kale.utils.kfp_utils.pod_utils')
+@mock.patch('kale.utils.kfputils.pod_utils')
 def test_update_uimetadata_from_not_empty(pod_utils, tmpdir):
     """Test that the uimetadata file is updated inplace correctly."""
     pod_utils.get_pod_name.return_value = 'test_pod'
@@ -84,7 +84,7 @@ def test_update_uimetadata_from_not_empty(pod_utils, tmpdir):
     json.dump(base, open(filepath, 'w'))
 
     # update tmp file
-    kfp_utils.update_uimetadata('test', uimetadata_path=filepath)
+    kfputils.update_uimetadata('test', uimetadata_path=filepath)
 
     # check file has been updated correctly
     updated = json.loads(open(filepath).read())

@@ -44,7 +44,7 @@ spec:
         - name: {{.Trial}}
           image: {image}
           command:
-            - python3 -u -c "from kale.utils.kfp_utils\
+            - python3 -u -c "from kale.utils.kfputils\
                 import create_and_wait_kfp_run;\
                 create_and_wait_kfp_run(\
                     pipeline_id='{pipeline_id}',\

@@ -41,7 +41,7 @@ spec:
         \      annotations:\n        sidecar.istio.io/inject: \"false\"\n    spec:\n\
         \      restartPolicy: Never\n      containers:\n        - name: {{.Trial}}\n\
         \          image: gcr.io/arrikto/katib-kfp-trial:acbe872\n          command:\n\
-        \            - python3 -u -c \"from kale.utils.kfp_utils                import\
+        \            - python3 -u -c \"from kale.utils.kfputils                import\
         \ create_and_wait_kfp_run;                create_and_wait_kfp_run(       \
         \             pipeline_id='12345',                    run_name='{{.Trial}}',\
         \                    experiment_name='katib-test',                    {{-\
