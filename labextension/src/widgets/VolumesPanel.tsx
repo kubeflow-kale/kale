@@ -554,7 +554,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       >
         <div className="toolbar">
           <div className="switch-label">
-            Take Rok snapshots before each step
+            Take Rok snapshots during each step
           </div>
           <Switch
             checked={props.autosnapshot}
