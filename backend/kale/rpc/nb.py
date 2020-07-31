@@ -22,7 +22,7 @@ from tabulate import tabulate
 from kale.core import Kale
 from kale.nbparser import parser
 from kale.static_analysis import ast
-from kale.utils import pod_utils, kfp_utils
+from kale.utils import pod_utils, kfputils
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
 from kale.rpc.errors import RPCInternalError
@@ -94,7 +94,7 @@ def compile_notebook(request, source_notebook_path,
                                                    pipeline_parameters)
 
     pipeline_name = instance.pipeline_metadata["pipeline_name"]
-    package_path = kfp_utils.compile_pipeline(script_path, pipeline_name)
+    package_path = kfputils.compile_pipeline(script_path, pipeline_name)
 
     return {"pipeline_package_path": os.path.relpath(package_path),
             "pipeline_metadata": instance.pipeline_metadata}

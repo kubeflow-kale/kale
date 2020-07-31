@@ -17,7 +17,7 @@ import argparse
 from argparse import RawTextHelpFormatter
 
 from kale.core import Kale
-from kale.utils import kfp_utils
+from kale.utils import kfputils
 
 ARGS_DESC = """
 KALE: Kubeflow Automated pipeLines Engine\n
@@ -95,20 +95,20 @@ def main():
                                                pipeline_parameters)
     # compile the pipeline to kfp tar package
     pipeline_name = kale.pipeline_metadata['pipeline_name']
-    pipeline_package_path = kfp_utils.compile_pipeline(script_path,
-                                                       pipeline_name)
+    pipeline_package_path = kfputils.compile_pipeline(script_path,
+                                                      pipeline_name)
 
     if args.upload_pipeline:
-        kfp_utils.upload_pipeline(
+        kfputils.upload_pipeline(
             pipeline_package_path=pipeline_package_path,
             pipeline_name=kale.pipeline_metadata['pipeline_name'],
             host=kale.pipeline_metadata.get('kfp_host', None)
         )
 
     if args.run_pipeline:
-        run_name = kfp_utils.generate_run_name(
+        run_name = kfputils.generate_run_name(
             kale.pipeline_metadata['pipeline_name'])
-        kfp_utils.run_pipeline(
+        kfputils.run_pipeline(
             run_name=run_name,
             experiment_name=kale.pipeline_metadata['experiment_name'],
             pipeline_package_path=pipeline_package_path,

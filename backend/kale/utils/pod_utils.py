@@ -22,7 +22,7 @@ import kubernetes.client as k8s
 import kubernetes.config as k8s_config
 
 from kale.utils.utils import encode_url_component
-from kale.utils import kfp_utils
+from kale.utils import kfputils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
@@ -212,7 +212,7 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     log.info("Retrieving KFP run ID...")
     run_uuid = get_run_uuid()
     log.info("Retrieved KFP run ID: %s", run_uuid)
-    bucket = kfp_utils.get_experiment_from_run_id(run_uuid).name
+    bucket = kfputils.get_experiment_from_run_id(run_uuid).name
     obj = "{}-{}".format(pipeline, run_uuid)
     commit_title = "Step: {} ({})".format(step, "start" if before else "end")
     commit_message = "Autosnapshot {} step '{}' of pipeline run '{}'".format(

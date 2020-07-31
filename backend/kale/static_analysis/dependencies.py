@@ -275,11 +275,11 @@ def dependencies_detection(nb_graph: nx.DiGraph,
 
 
 METRICS_TEMPLATE = '''\
-from kale.utils import kfp_utils as _kale_kfp_utils
+from kale.utils import kfputils as _kale_kfputils
 _kale_kfp_metrics = {
 %s
 }
-_kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
+_kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
 '''
 
 

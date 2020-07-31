@@ -23,12 +23,12 @@ def create_matrix(d1: int, d2: int):
     '''
 
     block3 = '''
-    from kale.utils import kfp_utils as _kale_kfp_utils
+    from kale.utils import kfputils as _kale_kfputils
     _kale_kfp_metrics = {
         "d1": d1,
         "d2": d2
     }
-    _kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)
+    _kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)
     '''
 
     data_saving_block = '''
@@ -41,7 +41,7 @@ def create_matrix(d1: int, d2: int):
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (pipeline_parameters_block,
               block1,
@@ -77,16 +77,16 @@ def sum_matrix():
     '''
 
     block3 = '''
-    from kale.utils import kfp_utils as _kale_kfp_utils
+    from kale.utils import kfputils as _kale_kfputils
     _kale_kfp_metrics = {
         "sum-result": sum_result
     }
-    _kale_kfp_utils.generate_mlpipeline_metrics(_kale_kfp_metrics)
+    _kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)
     '''
 
     # run the code blocks inside a jupyter kernel
     from kale.utils.jupyter_utils import run_code as _kale_run_code
-    from kale.utils.kfp_utils import \
+    from kale.utils.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     blocks = (data_loading_block,
               block1,
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('hp-tuning')
 
     # Submit a pipeline run
-    from kale.utils.kfp_utils import generate_run_name
+    from kale.utils.kfputils import generate_run_name
     run_name = generate_run_name('hp-test-rnd')
     run_result = client.run_pipeline(
         experiment.id, run_name, pipeline_filename, {})
