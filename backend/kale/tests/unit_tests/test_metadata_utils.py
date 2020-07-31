@@ -16,7 +16,7 @@ import copy
 import pytest
 
 from unittest import mock
-from kale.utils import metadatautils
+from kale.common import metadatautils
 
 
 @pytest.mark.parametrize("volumes,target", [
@@ -90,7 +90,7 @@ def test_convert_volume_annotations_exc(volumes, match):
       'volumes': []},
      copy.deepcopy(metadatautils.DEFAULT_METADATA)),
 ])
-@mock.patch('kale.utils.metadatautils.random_string')
+@mock.patch('kale.common.metadatautils.random_string')
 def test_validate_metadata(random_string, metadata, target):
     """Tests metadata is parsed correctly."""
     random_string.return_value = 'rnd'

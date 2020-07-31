@@ -19,7 +19,7 @@ import networkx as nx
 from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
-from kale.utils import utils, graphutils
+from kale.common import utils, graphutils
 from kale.static_analysis import ast as kale_ast
 
 
@@ -275,7 +275,7 @@ def dependencies_detection(nb_graph: nx.DiGraph,
 
 
 METRICS_TEMPLATE = '''\
-from kale.utils import kfputils as _kale_kfputils
+from kale.common import kfputils as _kale_kfputils
 _kale_kfp_metrics = {
 %s
 }

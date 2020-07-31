@@ -22,7 +22,7 @@ from tabulate import tabulate
 from kale.core import Kale
 from kale.nbparser import parser
 from kale.static_analysis import ast
-from kale.utils import podutils, kfputils
+from kale.common import podutils, kfputils
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
 from kale.rpc.errors import RPCInternalError

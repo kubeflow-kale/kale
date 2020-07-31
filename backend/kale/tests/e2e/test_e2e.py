@@ -25,7 +25,7 @@ EX_REPO = "https://raw.githubusercontent.com/kubeflow-kale/examples/master/"
 
 
 @mock.patch('kale.core.utils.get_abs_working_dir')
-@mock.patch('kale.utils.metadatautils.random_string')
+@mock.patch('kale.common.metadatautils.random_string')
 def test_pipeline_generation_from_gtihub(random_string, abs_working_dir):
     """Test code generation end to end from notebook to DSL."""
     abs_working_dir.return_value = '/kale'
@@ -51,7 +51,7 @@ def test_pipeline_generation_from_gtihub(random_string, abs_working_dir):
 
 
 @mock.patch('kale.core.utils.get_abs_working_dir')
-@mock.patch('kale.utils.metadatautils.random_string')
+@mock.patch('kale.common.metadatautils.random_string')
 def test_pipeline_generation_from_local(random_string, abs_working_dir):
     """Test code generation end to end from notebook to DSL."""
     abs_working_dir.return_value = '/kale'

@@ -28,7 +28,7 @@ from kfp import Client
 from kfp.compiler import Compiler
 from kfp_server_api.rest import ApiException
 
-from kale.utils import utils, podutils
+from kale.common import utils, podutils
 
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"

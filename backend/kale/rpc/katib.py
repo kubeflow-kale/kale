@@ -16,7 +16,7 @@ import os
 import kubernetes
 from kubernetes.client.rest import ApiException
 
-from kale.utils import podutils
+from kale.common import podutils
 from kale.rpc.errors import RPCNotFoundError, RPCUnhandledError
 
 KATIB_PARAMETER_NAMES = ("objective", "algorithm", "parallelTrialCount",
@@ -44,7 +44,7 @@ spec:
         - name: {{.Trial}}
           image: {image}
           command:
-            - python3 -u -c "from kale.utils.kfputils\
+            - python3 -u -c "from kale.common.kfputils\
                 import create_and_wait_kfp_run;\
                 create_and_wait_kfp_run(\
                     pipeline_id='{pipeline_id}',\

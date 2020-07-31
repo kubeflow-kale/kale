@@ -1,8 +1,8 @@
 def test():
-    from kale.utils import mlmdutils as _kale_mlmdutils
+    from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.utils import podutils as _kale_podutils
+    from kale.common import podutils as _kale_podutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_podutils.snapshot_pipeline_step(
         "T",

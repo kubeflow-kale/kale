@@ -4,7 +4,7 @@ import logging
 
 from kale.marshal import resource_save
 from kale.marshal import resource_load
-from kale.utils import utils
+from kale.common import utils
 
 KALE_DATA_DIRECTORY = ""
 

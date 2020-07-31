@@ -16,7 +16,7 @@ import os
 import copy
 import logging
 
-from kale.utils import podutils
+from kale.common import podutils
 from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
 from kale.rpc.log import create_adapter
 

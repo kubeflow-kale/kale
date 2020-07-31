@@ -18,7 +18,7 @@ import autopep8
 
 import networkx as nx
 
-from kale.utils import graphutils
+from kale.common import graphutils
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
 

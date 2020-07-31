@@ -22,7 +22,7 @@ import threading
 
 from queue import Empty
 from jupyter_client.kernelspec import get_kernel_spec
-from kale.utils.utils import remove_ansi_color_sequences
+from kale.common.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
 
 from packaging import version as pkg_version
