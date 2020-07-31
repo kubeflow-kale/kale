@@ -15,7 +15,7 @@
 import logging
 import os
 
-from kale.utils import log_utils
+from kale.utils import logutils
 
 # FIXME: We could have a chowned folder in /var/log and use it. But this won't
 # work for other kale installations. It would require that setting in the
@@ -39,14 +39,14 @@ def setup_logging(request):
     """Configure logging."""
     # Set up root logger
     fmt = FMT_PREFIX + "%(message)s"
-    _root_log = log_utils.get_or_create_logger("", fmt=fmt,
-                                               file_level=logging.INFO,
-                                               log_path=KALE_LOG_FILE)
+    _root_log = logutils.get_or_create_logger("", fmt=fmt,
+                                              file_level=logging.INFO,
+                                              log_path=KALE_LOG_FILE)
     _root_log.setLevel(logging.INFO)
 
     # Set up kale.rpc logger
     fmt = FMT_PREFIX + RPC_FMT_EXTRAS + "%(message)s"
-    log_utils.get_or_create_logger("kale.rpc", fmt=fmt, log_path=KALE_LOG_FILE)
+    logutils.get_or_create_logger("kale.rpc", fmt=fmt, log_path=KALE_LOG_FILE)
 
     # mute other loggers
     logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
