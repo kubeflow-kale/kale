@@ -34,6 +34,7 @@ PIPELINE_METRICS_TAG = r'^pipeline-metrics$'
 segment = "[a-zA-Z0-9]+([a-zA-Z0-9-_.]*[a-zA-Z0-9])?"
 K8S_ANNOTATION_KEY = "%s([/]%s)?" % (segment, segment)
 ANNOTATION_TAG = r'^annotation:%s:(.*)$' % K8S_ANNOTATION_KEY
+LABEL_TAG = r'^label:%s:(.*)$' % K8S_ANNOTATION_KEY
 # Limits map to K8s limits, like CPU, Mem, GPU, ...
 # E.g.: limit:nvidia.com/gpu:2
 LIMITS_TAG = r'^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$'
@@ -47,6 +48,7 @@ _TAGS_LANGUAGE = [SKIP_TAG,
                   PIPELINE_PARAMETERS_TAG,
                   PIPELINE_METRICS_TAG,
                   ANNOTATION_TAG,
+                  LABEL_TAG,
                   LIMITS_TAG]
 
 
@@ -71,6 +73,7 @@ def parse_metadata(metadata):
     # define intermediate variables so that dicts are not added to a steps
     # when they are empty
     cell_annotations = dict()
+    cell_labels = dict()
     cell_limits = dict()
 
     # the notebook cell was not tagged
@@ -107,16 +110,16 @@ def parse_metadata(metadata):
         tag_name = tag_parts.pop(0)
 
         if tag_name == "annotation":
-            annotation_key = tag_parts.pop(0)
-            # Since an annotation value can be anything, merge together
-            # everything that's left.
-            annotation_value = ''.join(tag_parts)
-            cell_annotations.update({annotation_key: annotation_value})
+            key, value = _get_annotation_or_label_from_tag_parts(tag_parts)
+            cell_annotations.update({key: value})
+
+        if tag_name == "label":
+            key, value = _get_annotation_or_label_from_tag_parts(tag_parts)
+            cell_labels.update({key: value})
 
         if tag_name == "limit":
-            limit_key = tag_parts.pop(0)
-            limit_value = tag_parts.pop(0)
-            cell_limits.update({limit_key: limit_value})
+            key, value = _get_limit_from_tag_parts(tag_parts)
+            cell_limits.update({key: value})
 
         # name of the future Pipeline step
         # TODO: Deprecate `block` in future release
@@ -324,8 +327,9 @@ def parse_notebook(notebook):
 
         # if none of the above apply, then we are parsing a code cell with
         # a block names and (possibly) some dependencies
-        cell_annotations = tags.get('annotations', {})
-        cell_limits = tags.get('limits', {})
+        cell_annotations = tags.get("annotations", {})
+        cell_labels = tags.get("labels", {})
+        cell_limits = tags.get("limits", {})
 
         # if the cell was not tagged with a step name,
         # add the code to the previous cell
@@ -358,6 +362,7 @@ def parse_notebook(notebook):
                 nb_graph.add_node(step_name, source=[c.source],
                                   ins=set(), outs=set(),
                                   annotations=cell_annotations,
+                                  labels=cell_labels,
                                   limits=cell_limits)
                 for _prev_step in tags['prev_steps']:
                     if _prev_step not in nb_graph.nodes:
@@ -384,3 +389,12 @@ def parse_notebook(notebook):
     imports_and_functions = "\n".join(imports_block + functions_block)
     return (nb_graph, pipeline_parameters, pipeline_metrics,
             imports_and_functions)
+
+
+def _get_annotation_or_label_from_tag_parts(tag_parts):
+    # Since value can be anything, merge together everything that's left.
+    return tag_parts[0], "".join(tag_parts[1:])
+
+
+def _get_limit_from_tag_parts(tag_parts):
+    return tag_parts.pop(0), tag_parts.pop(0)
