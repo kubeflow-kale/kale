@@ -38,12 +38,13 @@ spec:
     goTemplate:
       rawTemplate: "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: {{.Trial}}\n\
         \  namespace: {{.NameSpace}}\nspec:\n  backoffLimit: 0\n  template:\n    metadata:\n\
-        \      annotations:\n        sidecar.istio.io/inject: \"false\"\n    spec:\n\
-        \      restartPolicy: Never\n      containers:\n        - name: {{.Trial}}\n\
-        \          image: gcr.io/arrikto/katib-kfp-trial:acbe872\n          command:\n\
-        \            - python3 -u -c \"from kale.common.kfputils                import\
-        \ create_and_wait_kfp_run;                create_and_wait_kfp_run(       \
-        \             pipeline_id='12345',                    run_name='{{.Trial}}',\
+        \      annotations:\n        sidecar.istio.io/inject: \"false\"\n      labels:\n\
+        \        access-ml-pipeline: \"true\"\n    spec:\n      restartPolicy: Never\n\
+        \      serviceAccountName: pipeline-runner\n      containers:\n        - name:\
+        \ {{.Trial}}\n          image: gcr.io/arrikto/katib-kfp-trial:f1c9b6a\n  \
+        \        command:\n            - python3 -u -c \"from kale.common.kfputils\
+        \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
+        \                    pipeline_id='12345',                    run_name='{{.Trial}}',\
         \                    experiment_name='katib-test',                    {{-\
         \ with .HyperParameters }} {{- range .}}\n                        {{.Name}}='{{.Value}}',\
         \                    {{- end }} {{- end }}                )\"\n"
