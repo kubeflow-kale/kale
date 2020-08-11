@@ -126,7 +126,13 @@ class Kale:
             # the final auto snapshot one.
             for node in leaf_steps:
                 pipeline_graph.add_edge(node, auto_snapshot_name)
-            data = {auto_snapshot_name: {'source': '', 'ins': [], 'outs': []}}
+            step_defaults = parser.parse_steps_defaults(
+                self.pipeline_metadata.get("steps_defaults", []))
+            data = {auto_snapshot_name: {
+                "source": "", "ins": [], "outs": [],
+                "annotations": step_defaults.get("annotations"),
+                "labels": step_defaults.get("labels"),
+                "limits": step_defaults.get("limits")}}
             nx.set_node_attributes(pipeline_graph, data)
 
         # TODO: Additional Step required:
