@@ -47,7 +47,10 @@ setup(
         'nbconvert >= 5.6.1, < 6.0.0',
         'ipykernel >= 5.1.4',
         'packaging > 20',
-        'ml_metadata > 0.21, < 0.22',
+        # XXX: remove this once https://github.com/google/ml-metadata/pull/60
+        # is merged.
+        'grpcio >= 1.8.6',
+        'ml_metadata == 0.23.0',
     ],
     extras_require={
         'dev': [
