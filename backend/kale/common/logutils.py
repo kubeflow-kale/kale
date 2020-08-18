@@ -19,6 +19,7 @@ from typing import List, Sequence
 
 
 LOG_FMT = "%(asctime)s Kale {} %(levelname)-10s %(message)s"
+DATE_FMT = "%Y-%m-%d %H:%M:%S"
 BLANK_FMT = logging.Formatter(fmt="")
 _loggers = dict()
 
@@ -129,7 +130,7 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
                                     else "%(origin)-20s")
     stream_handler = logging.StreamHandler()
     _configure_handler(stream_handler, level, logging.Formatter(log_fmt,
-                                                                "%H:%M:%S"))
+                                                                DATE_FMT))
     log.addHandler(stream_handler)
 
     if log_path:
@@ -139,8 +140,7 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
         file_handler = logging.FileHandler(filename=os.path.abspath(log_path),
                                            mode='a')
         _configure_handler(file_handler, file_level,
-                           logging.Formatter(file_fmt or log_fmt,
-                                             "%Y-%m-%d %H:%M:%S"))
+                           logging.Formatter(file_fmt or log_fmt, DATE_FMT))
         log.addHandler(file_handler)
 
     _loggers[module] = log
