@@ -26,6 +26,8 @@ KATIB_DEFAULTS = {"parallelTrialCount": 3, "maxTrialCount": 12,
 KATIB_EXPERIMENT_STATUS = ["Failed", "Succeeded", "Restarting", "Running",
                            "Created"]
 
+KATIB_TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:7a304af-feaafdd"
+
 RAW_TEMPLATE = """\
 apiVersion: batch/v1
 kind: Job
@@ -172,7 +174,7 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata,
     katib_spec = _sanitize_katib_spec(request, katib_spec)
 
     trial_parameters = {
-        "image": "gcr.io/arrikto/katib-kfp-trial:f1c9b6a",
+        "image": KATIB_TRIAL_IMAGE,
         "pipeline_id": pipeline_id,
         "experiment_name": pipeline_metadata.get(
             "experiment_name")}
