@@ -13,63 +13,33 @@
 #  limitations under the License.
 
 import os
-import logging
+import pytest
 
 from unittest import mock
 
-from kale.core import Kale
-from urllib.request import urlretrieve
+from kale import Compiler, NotebookProcessor
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-EX_REPO = "https://raw.githubusercontent.com/kubeflow-kale/examples/master/"
+EXAMPLES_DIR = os.path.join(THIS_DIR, "../../../../examples/")
 
 
-@mock.patch('kale.core.utils.get_abs_working_dir')
-@mock.patch('kale.common.metadatautils.random_string')
-def test_pipeline_generation_from_gtihub(random_string, abs_working_dir):
+@pytest.mark.parametrize("notebook_path,dsl_path", [
+    (os.path.join(EXAMPLES_DIR, "titanic-ml-dataset/titanic_dataset_ml.ipynb"),
+     os.path.join(THIS_DIR, "../assets/kfp_dsl/", "titanic.py")),
+    (os.path.join(THIS_DIR,
+                  "../assets/notebooks/pipeline_parameters_and_metrics.ipynb"),
+     os.path.join(THIS_DIR, "../assets/kfp_dsl/",
+                  "pipeline_parameters_and_metrics.py")),
+])
+@mock.patch("kale.common.utils.random_string")
+def test_notebook_to_dsl(random_string, notebook_path, dsl_path):
     """Test code generation end to end from notebook to DSL."""
-    abs_working_dir.return_value = '/kale'
-    random_string.return_value = 'rnd'
-    notebook_url = EX_REPO + "titanic-ml-dataset/titanic_dataset_ml.ipynb"
-    # download notebook to tmp dir
-    notebook_path, response = urlretrieve(notebook_url)
+    random_string.return_value = "rnd"
 
-    kale = Kale(source_notebook_path=notebook_path)
-    kale.logger = logging.getLogger(__name__)
-    kale.logger.setLevel(logging.DEBUG)
-    pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
-    script_path = kale.generate_kfp_executable(pipeline_graph,
-                                               pipeline_parameters,
-                                               save_to_tmp=True)
+    overrides = {"abs_working_dir": "/kale"}
+    pipeline = NotebookProcessor(notebook_path, overrides).to_pipeline()
+    dsl_script_path = Compiler(pipeline).compile()
 
-    target_asset = os.path.join(THIS_DIR,
-                                '../assets/kfp_dsl/',
-                                'titanic.py')
-    expected_result = open(target_asset).read()
-    result = open(script_path).read()
-    assert result == expected_result
-
-
-@mock.patch('kale.core.utils.get_abs_working_dir')
-@mock.patch('kale.common.metadatautils.random_string')
-def test_pipeline_generation_from_local(random_string, abs_working_dir):
-    """Test code generation end to end from notebook to DSL."""
-    abs_working_dir.return_value = '/kale'
-    random_string.return_value = 'rnd'
-    notebook_path = "../assets/notebooks/pipeline_parameters_and_metrics.ipynb"
-    notebook_path = os.path.join(THIS_DIR, notebook_path)
-
-    kale = Kale(source_notebook_path=notebook_path)
-    kale.logger = logging.getLogger(__name__)
-    kale.logger.setLevel(logging.DEBUG)
-    pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
-    script_path = kale.generate_kfp_executable(pipeline_graph,
-                                               pipeline_parameters,
-                                               save_to_tmp=True)
-
-    target_asset = os.path.join(THIS_DIR,
-                                '../assets/kfp_dsl/',
-                                'pipeline_parameters_and_metrics.py')
-    expected_result = open(target_asset).read()
-    result = open(script_path).read()
+    expected_result = open(dsl_path).read()
+    result = open(dsl_script_path).read()
     assert result == expected_result
