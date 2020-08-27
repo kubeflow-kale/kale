@@ -5,13 +5,13 @@ def test():
     from kale.common import podutils as _kale_podutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_podutils.snapshot_pipeline_step(
-        "T",
+        "test",
         "test",
         "/path/to/nb",
         before=True)
 
     _rok_snapshot_task = _kale_podutils.snapshot_pipeline_step(
-        "T",
+        "test",
         "test",
         "/path/to/nb",
         before=False)

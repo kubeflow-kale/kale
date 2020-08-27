@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 import pytest
-import networkx as nx
 
+from kale import Pipeline, Step
 from kale.static_analysis import dependencies
 
 
@@ -62,235 +62,212 @@ def foo():
     )
 
 
-def test_dependencies_detection_free_variable():
-    """Test dependencies detection with free variables."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+def _prepend_to_source(source, prefix):
+    return [prefix + "\n" + "\n".join(source)]
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
+
+def test_dependencies_detection_free_variable(dummy_nb_config):
+    """Test dependencies detection with free variables."""
+    pipeline = Pipeline(dummy_nb_config)
+
+    _source = ['''
 x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step1", source=_source))
+
+    _source = ['''
 def foo():
    print(x)
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+
+    _source = ['''
 foo()
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == ['x']
-    assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['foo', 'x']
-    assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == ["x"]
+    assert sorted(pipeline.get_step("step2").ins) == ["x"]
+    assert sorted(pipeline.get_step("step2").outs) == ["foo", "x"]
+    assert sorted(pipeline.get_step("step3").ins) == ["foo", "x"]
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_inner_function():
+def test_dependencies_detection_inner_function(dummy_nb_config):
     """Test dependencies detection with inner functions."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
-x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+    _source = ["x = 5"]
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 def foo():
     def bar(x):
         print(x)
     bar(5)
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ['''
 foo()
 print(x)
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == ['x']
-    assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == ['foo']
-    assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == ['x']
+    assert sorted(pipeline.get_step("step2").ins) == []
+    assert sorted(pipeline.get_step("step2").outs) == ['foo']
+    assert sorted(pipeline.get_step("step3").ins) == ['foo', 'x']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_inner_function_free_variable():
+def test_dependencies_detection_inner_function_free_variable(dummy_nb_config):
     """Test dependencies detection with free variables and inner function."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
-x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+    _source = ["x = 5"]
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 def foo():
     def bar():
         print(x)
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-foo()
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ["foo()"]
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == ['x']
-    assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['foo', 'x']
-    assert g.nodes(data=True)['step3']['ins'] == ['foo', 'x']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == ['x']
+    assert sorted(pipeline.get_step("step2").ins) == ['x']
+    assert sorted(pipeline.get_step("step2").outs) == ['foo', 'x']
+    assert sorted(pipeline.get_step("step3").ins) == ['foo', 'x']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_with_parameter():
+def test_dependencies_detection_with_parameter(dummy_nb_config):
     """Test dependencies detection with function with parameter."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
-x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+    _source = ["x = 5"]
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 def foo(x):
     def bar():
         print(x)
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-foo(5)
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ["foo(5)"]
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == []
-    assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == ['foo']
-    assert g.nodes(data=True)['step3']['ins'] == ['foo']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == []
+    assert sorted(pipeline.get_step("step2").ins) == []
+    assert sorted(pipeline.get_step("step2").outs) == ['foo']
+    assert sorted(pipeline.get_step("step3").ins) == ['foo']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_with_globals():
+def test_dependencies_detection_with_globals(dummy_nb_config):
     """Test dependencies detection with inner function and globals."""
     imports_and_functions = "import math"
-    pipeline_parameters = {}
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
-x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+    pipeline = Pipeline(dummy_nb_config)
+
+    _source = ["x = 5"]
+    pipeline.add_step(Step(name="step1",
+                           source=_prepend_to_source(_source,
+                                                     imports_and_functions)))
+    _source = ['''
 def foo(x):
     def bar():
         math.sqrt(x)
     bar()
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-foo(5)
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2",
+                           source=_prepend_to_source(_source,
+                                                     imports_and_functions)))
+    _source = ["foo(5)"]
+    pipeline.add_step(Step(name="step3",
+                           source=_prepend_to_source(_source,
+                                                     imports_and_functions)))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == []
-    assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == ['foo']
-    assert g.nodes(data=True)['step3']['ins'] == ['foo']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline, imports_and_functions)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == []
+    assert sorted(pipeline.get_step("step2").ins) == []
+    assert sorted(pipeline.get_step("step2").outs) == ['foo']
+    assert sorted(pipeline.get_step("step3").ins) == ['foo']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_with_pipeline_parameters():
+def test_dependencies_detection_with_pipeline_parameters(dummy_nb_config):
     """Test dependencies are detected with pipeline parameters and globals."""
     imports_and_functions = "import math"
-    pipeline_parameters = {"y": (5, 'int')}
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
-x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+    pipeline = Pipeline(dummy_nb_config)
+    pipeline.pipeline_parameters = {"y": (5, 'int')}
+
+    _source = ["x = 5"]
+    pipeline.add_step(Step(name="step1",
+                           source=_prepend_to_source(_source,
+                                                     imports_and_functions)))
+    _source = ['''
 def foo(x):
     def bar():
         math.sqrt(x + y)
     bar()
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-foo(5)
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2",
+                           source=_prepend_to_source(_source,
+                                                     imports_and_functions)))
+    _source = ["foo(5)"]
+    pipeline.add_step(Step(name="step3",
+                           source=_prepend_to_source(_source,
+                                                     imports_and_functions)))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == []
-    assert g.nodes(data=True)['step2']['ins'] == []
-    assert g.nodes(data=True)['step2']['outs'] == ['foo']
-    assert g.nodes(data=True)['step2']['parameters'] == {"y": (5, 'int')}
-    assert g.nodes(data=True)['step3']['ins'] == ['foo']
-    assert g.nodes(data=True)['step3']['outs'] == []
-    assert g.nodes(data=True)['step3']['parameters'] == {"y": (5, 'int')}
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline, imports_and_functions)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == []
+    assert sorted(pipeline.get_step("step2").ins) == []
+    assert sorted(pipeline.get_step("step2").outs) == ['foo']
+    assert pipeline.get_step("step2").parameters == {"y": (5, 'int')}
+    assert sorted(pipeline.get_step("step3").ins) == ['foo']
+    assert sorted(pipeline.get_step("step3").outs) == []
+    assert pipeline.get_step("step3").parameters == {"y": (5, 'int')}
 
 
-def test_dependencies_detection_with_try_except():
+def test_dependencies_detection_with_try_except(dummy_nb_config):
     """Test dependencies are detected with functions inside try."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
+    _source = ['''
 x = 5
 y = 6
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 try:
     def foo():
         print(x)
@@ -298,192 +275,168 @@ try:
         print(y)
 except:
     pass
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ['''
 foo()
 bar()
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == ['x', 'y']
-    assert g.nodes(data=True)['step2']['ins'] == ['x', 'y']
-    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x', 'y']
-    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x', 'y']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == ['x', 'y']
+    assert sorted(pipeline.get_step("step2").ins) == ['x', 'y']
+    assert sorted(pipeline.get_step("step2").outs) == ['bar', 'foo', 'x', 'y']
+    assert sorted(pipeline.get_step("step3").ins) == ['bar', 'foo', 'x', 'y']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_recursive():
+def test_dependencies_detection_recursive(dummy_nb_config):
     """Test dependencies are detected even with a chain of functions calls."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
-x = 5
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+    _source = ["x = 5"]
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 def foo():
     print(x)
 def bar():
     foo()
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-bar()
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ["bar()"]
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == ['x']
-    assert g.nodes(data=True)['step2']['ins'] == ['x']
-    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x']
-    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == ['x']
+    assert sorted(pipeline.get_step("step2").ins) == ['x']
+    assert sorted(pipeline.get_step("step2").outs) == ['bar', 'foo', 'x']
+    assert sorted(pipeline.get_step("step3").ins) == ['bar', 'foo', 'x']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_recursive_different_steps():
+def test_dependencies_detection_recursive_different_steps(dummy_nb_config):
     """Test dependencies are detected even with a chain of functions calls."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
+    _source = ['''
 x = 5
 def foo():
     print(x)
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 def bar():
     foo()
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-bar()
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ["bar()"]
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step1']['ins'] == []
-    assert g.nodes(data=True)['step1']['outs'] == ['foo', 'x']
-    assert g.nodes(data=True)['step2']['ins'] == ['foo', 'x']
-    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'x']
-    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'x']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step1").ins) == []
+    assert sorted(pipeline.get_step("step1").outs) == ['foo', 'x']
+    assert sorted(pipeline.get_step("step2").ins) == ['foo', 'x']
+    assert sorted(pipeline.get_step("step2").outs) == ['bar', 'foo', 'x']
+    assert sorted(pipeline.get_step("step3").ins) == ['bar', 'foo', 'x']
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_recursive_different_steps_triple():
+def test_deps_detection_recursive_different_steps_long(dummy_nb_config):
     """Test dependencies are detected even with a long chain of fns calls."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step0", ins=list(), outs=list(), source=['''
-    %s
+    _source = ['''
 x = 5
 def init():
     print(x)
-        ''' % imports_and_functions])
-    g.add_node("step1", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step0", source=_source))
+    _source = ['''
 def foo():
     init()
-    ''' % imports_and_functions])
-    g.add_node("step2", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step1", source=_source))
+    _source = ['''
 def bar():
     foo()
-    ''' % imports_and_functions])
-    g.add_node("step3", ins=list(), outs=list(), source=['''
-%s
-bar()
-    ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step0", "step1")
-    g.add_edge("step1", "step2")
-    g.add_edge("step2", "step3")
+''']
+    pipeline.add_step(Step(name="step2", source=_source))
+    _source = ["bar()"]
+    pipeline.add_step(Step(name="step3", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step0']['ins'] == []
-    assert g.nodes(data=True)['step0']['outs'] == ['init', 'x']
-    assert g.nodes(data=True)['step1']['ins'] == ['init', 'x']
-    assert g.nodes(data=True)['step1']['outs'] == ['foo', 'init', 'x']
-    assert g.nodes(data=True)['step2']['ins'] == ['foo', 'init', 'x']
-    assert g.nodes(data=True)['step2']['outs'] == ['bar', 'foo', 'init', 'x']
-    assert g.nodes(data=True)['step3']['ins'] == ['bar', 'foo', 'init', 'x']
-    assert g.nodes(data=True)['step3']['outs'] == []
+    pipeline.add_edge("step0", "step1")
+    pipeline.add_edge("step1", "step2")
+    pipeline.add_edge("step2", "step3")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step0").ins) == []
+    assert sorted(pipeline.get_step("step0").outs) == ['init', 'x']
+    assert sorted(pipeline.get_step("step1").ins) == ['init', 'x']
+    assert sorted(pipeline.get_step("step1").outs) == ['foo', 'init', 'x']
+    assert sorted(pipeline.get_step("step2").ins) == ['foo', 'init', 'x']
+    assert (sorted(pipeline.get_step("step2").outs)
+            == ['bar', 'foo', 'init', 'x'])
+    assert (sorted(pipeline.get_step("step3").ins)
+            == ['bar', 'foo', 'init', 'x'])
+    assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_recursive_different_steps_branch():
+def test_deps_detection_recursive_different_steps_branch(dummy_nb_config):
     """Test dependencies when fns are passed from multiple branches."""
-    imports_and_functions = ""
-    pipeline_parameters = {}
+    pipeline = Pipeline(dummy_nb_config)
 
-    g = nx.DiGraph()
-    # NODES
-    g.add_node("step0", ins=list(), outs=list(), source=['''
-    %s
+    _source = ['''
 x = 5
 y = 6
-        ''' % imports_and_functions])
-    g.add_node("stepL", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="step0", source=_source))
+    _source = ['''
 def foo():
     print(x)
-    ''' % imports_and_functions])
-    g.add_node("stepR", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="stepL", source=_source))
+    _source = ['''
 def bar():
     print(y)
-    ''' % imports_and_functions])
-    g.add_node("stepM", ins=list(), outs=list(), source=['''
-%s
+''']
+    pipeline.add_step(Step(name="stepR", source=_source))
+    _source = ['''
 def result():
     foo()
     bar()
-    ''' % imports_and_functions])
-    g.add_node("stepF", ins=list(), outs=list(), source=['''
-%s
-result()
-        ''' % imports_and_functions])
-    # EDGES
-    g.add_edge("step0", "stepL")
-    g.add_edge("step0", "stepR")
-    g.add_edge("stepL", "stepM")
-    g.add_edge("stepR", "stepM")
-    g.add_edge("stepM", "stepF")
+''']
+    pipeline.add_step(Step(name="stepM", source=_source))
+    _source = ["result()"]
+    pipeline.add_step(Step(name="stepF", source=_source))
 
-    dependencies.dependencies_detection(g, pipeline_parameters,
-                                        imports_and_functions)
-    assert g.nodes(data=True)['step0']['ins'] == []
-    assert g.nodes(data=True)['step0']['outs'] == ['x', 'y']
-    assert g.nodes(data=True)['stepL']['ins'] == ['x']
-    assert g.nodes(data=True)['stepL']['outs'] == ['foo', 'x']
-    assert g.nodes(data=True)['stepR']['ins'] == ['y']
-    assert g.nodes(data=True)['stepR']['outs'] == ['bar', 'y']
-    assert g.nodes(data=True)['stepM']['ins'] == ['bar', 'foo', 'x', 'y']
-    assert (g.nodes(data=True)['stepM']['outs']
+    pipeline.add_edge("step0", "stepL")
+    pipeline.add_edge("step0", "stepR")
+    pipeline.add_edge("stepL", "stepM")
+    pipeline.add_edge("stepR", "stepM")
+    pipeline.add_edge("stepM", "stepF")
+
+    dependencies.dependencies_detection(pipeline)
+    assert sorted(pipeline.get_step("step0").ins) == []
+    assert sorted(pipeline.get_step("step0").outs) == ['x', 'y']
+    assert sorted(pipeline.get_step("stepL").ins) == ['x']
+    assert sorted(pipeline.get_step("stepL").outs) == ['foo', 'x']
+    assert sorted(pipeline.get_step("stepR").ins) == ['y']
+    assert sorted(pipeline.get_step("stepR").outs) == ['bar', 'y']
+    assert sorted(pipeline.get_step("stepM").ins) == ['bar', 'foo', 'x', 'y']
+    assert (sorted(pipeline.get_step("stepM").outs)
             == ['bar', 'foo', 'result', 'x', 'y'])
-    assert (g.nodes(data=True)['stepF']['ins']
+    assert (sorted(pipeline.get_step("stepF").ins)
             == ['bar', 'foo', 'result', 'x', 'y'])
-    assert g.nodes(data=True)['stepF']['outs'] == []
+    assert sorted(pipeline.get_step("stepF").outs) == []
