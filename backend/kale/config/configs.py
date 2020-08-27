@@ -84,6 +84,7 @@ class NotebookConfig(Config):
     snapshot_volumes = Field(type=bool, default=False)
     autosnapshot = Field(type=bool, default=False)
     steps_defaults = Field(type=list, default=[])
+    kfp_host = Field(type=str)
 
     def _postprocess(self):
         self._randomize_pipeline_name()
