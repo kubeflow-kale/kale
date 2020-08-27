@@ -19,6 +19,13 @@ import astor
 from collections import deque
 from kale.common import utils
 from functools import lru_cache
+from typing import NamedTuple
+
+
+class PipelineParam(NamedTuple):
+    """A pipeline parameter."""
+    param_type: str
+    param_value: any
 
 
 def walk(node, stop_at=tuple(), ignore=tuple()):

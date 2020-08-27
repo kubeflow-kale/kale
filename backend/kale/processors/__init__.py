@@ -12,11 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .step import Step
-from .pipeline import Pipeline
-from .compiler import Compiler
-from .processors import NotebookProcessor
-
-from kale.common import logutils
-logutils.get_or_create_logger(module=__name__, name="kale")
-del logutils
+from .nbprocessor import NotebookProcessor
