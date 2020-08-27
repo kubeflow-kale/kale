@@ -14,11 +14,10 @@
 
 import re
 
-import networkx as nx
-
 from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
+from kale import Pipeline
 from kale.common import utils, graphutils
 from kale.static_analysis import ast as kale_ast
 
@@ -156,8 +155,7 @@ def detect_fns_free_variables(source_code, imports_and_functions="",
     return fns_free_vars
 
 
-def dependencies_detection(nb_graph: nx.DiGraph,
-                           pipeline_parameters: dict = None,
+def dependencies_detection(pipeline: Pipeline,
                            imports_and_functions: str = ""):
     """Detect the data dependencies between nodes in the graph.
 
@@ -182,31 +180,28 @@ def dependencies_detection(nb_graph: nx.DiGraph,
          add to `step`'s `ins` and to `anc`'s `outs` these free variables.
 
     Args:
-        nb_graph: nx DiGraph with pipeline code blocks
-        pipeline_parameters: Pipeline parameters dict
+        pipeline: Pipeline object
         imports_and_functions: Multiline Python source that is prepended to
             every pipeline step
 
     Returns: annotated graph
     """
     # resolve the data dependencies between steps, looping through the graph
-    for step in nx.topological_sort(nb_graph):
-        step_data = nb_graph.nodes(data=True)[step]
-
+    for step in pipeline.steps:
         # detect the INS dependencies of the CURRENT node----------------------
-        step_source_code = '\n'.join(step_data['source'])
+        step_source = '\n'.join(step.source)
         # get the variables that this step is missing and the pipeline
         # parameters that it actually needs.
         ins, parameters = detect_in_dependencies(
-            source_code=step_source_code,
-            pipeline_parameters=pipeline_parameters)
+            source_code=step_source,
+            pipeline_parameters=pipeline.pipeline_parameters)
         fns_free_variables = detect_fns_free_variables(
-            step_source_code, imports_and_functions, pipeline_parameters)
+            step_source, imports_and_functions, pipeline.pipeline_parameters)
 
         # Get all the function calls. This will be used below to check if any
         # of the ancestors declare any of these functions. Is that is so, the
         # free variables of those functions will have to be loaded.
-        fn_calls = kale_ast.get_function_calls(step_source_code)
+        fn_calls = kale_ast.get_function_calls(step_source)
 
         # add OUT dependencies annotations in the PARENT nodes-----------------
         # Intersect the missing names of this father's child with all
@@ -215,13 +210,13 @@ def dependencies_detection(nb_graph: nx.DiGraph,
         # The ancestors are the the nodes that have a path to `step`, ordered
         # by path length.
         ins_left = ins.copy()
-        for anc in (graphutils.get_ordered_ancestors(nb_graph, step)):
+        for anc in (graphutils.get_ordered_ancestors(pipeline, step.name)):
             if not ins_left:
                 # if there are no more variables that need to be marshalled,
                 # stop the graph traverse
                 break
-            anc_data = nb_graph.nodes(data=True)[anc]
-            anc_source = '\n'.join(anc_data['source'])
+            anc_step = pipeline.get_step(anc)
+            anc_source = '\n'.join(anc_step.source)
             # get all the marshal candidates from father's source and intersect
             # with the required names of the current node
             marshal_candidates = kale_ast.get_marshal_candidates(anc_source)
@@ -231,7 +226,7 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             # Include free variables
             to_remove = set()
             for fn_call in fn_calls:
-                anc_fns_free_vars = anc_data.get("fns_free_variables", {})
+                anc_fns_free_vars = anc_step.fns_free_variables
                 if fn_call in anc_fns_free_vars.keys():
                     # the current step needs to load these variables
                     fn_free_vars, used_params = anc_fns_free_vars[fn_call]
@@ -250,7 +245,7 @@ def dependencies_detection(nb_graph: nx.DiGraph,
                     # add the parameters used by the function to the list
                     # of pipeline parameters used by the step
                     for param in used_params:
-                        parameters[param] = pipeline_parameters[param]
+                        parameters[param] = pipeline.pipeline_parameters[param]
                     # Remove this function as it has been served. We don't want
                     # other ancestors to save free variables for this function.
                     # Using the helper to_remove because the set can not be
@@ -265,13 +260,11 @@ def dependencies_detection(nb_graph: nx.DiGraph,
             fn_calls.difference_update(to_remove)
             # Add to ancestor the new outs annotations. First merge the current
             # outs present in the anc with the new ones
-            outs.update(anc_data.get('outs', []))
-            nx.set_node_attributes(nb_graph, {anc: {'outs': sorted(outs)}})
+            anc_step.outs.update(outs)
 
-        new_data = {'ins': sorted(ins),
-                    'fns_free_variables': fns_free_variables,
-                    'parameters': parameters}
-        nx.set_node_attributes(nb_graph, {step: new_data})
+        step.ins = sorted(ins)
+        step.parameters = parameters
+        step.fns_free_variables = fns_free_variables
 
 
 METRICS_TEMPLATE = '''\
@@ -283,7 +276,7 @@ _kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
 '''
 
 
-def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
+def assign_metrics(pipeline: Pipeline, pipeline_metrics: dict):
     """Assign pipeline metrics to specific pipeline steps.
 
     This assignment follows a similar logic to the detection of `out`
@@ -293,18 +286,18 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
     is assigned to the step.
 
     Args:
-        nb_graph: nx DiGraph with pipeline code blocks
+        pipeline: Pipeline object
         pipeline_metrics (dict): a dict of pipeline metrics where the key is
             the KFP sanitized name and the value the name of the original
             variable.
     """
     # create a temporary step at the end of the pipeline to simplify the
     # iteration from the leaf steps
-    tmp_step = "_tmp"
-    leaf_steps = graphutils.get_leaf_nodes(nb_graph)
+    tmp_step_name = "_tmp"
+    leaf_steps = pipeline.get_leaf_steps()
     if not leaf_steps:
         return
-    [nb_graph.add_edge(node, tmp_step) for node in leaf_steps]
+    [pipeline.add_edge(step.name, tmp_step_name) for step in leaf_steps]
 
     # pipeline_metrics is a dict having sanitized variable names as keys and
     # the corresponding variable names as values. Here we need to refer to
@@ -315,12 +308,12 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
     # XXX: parsing of the RPC result
     rev_pipeline_metrics = {v: k for k, v in pipeline_metrics.items()}
     metrics_left = set(rev_pipeline_metrics.keys())
-    for anc in graphutils.get_ordered_ancestors(nb_graph, tmp_step):
+    for anc in graphutils.get_ordered_ancestors(pipeline, tmp_step_name):
         if not metrics_left:
             break
 
-        anc_data = nb_graph.nodes(data=True)[anc]
-        anc_source = '\n'.join(anc_data['source'])
+        anc_step = pipeline.get_step(anc)
+        anc_source = '\n'.join(anc_step.source)
         # get all the marshal candidates from father's source and intersect
         # with the metrics that have not been matched yet
         marshal_candidates = kale_ast.get_marshal_candidates(anc_source)
@@ -332,9 +325,9 @@ def assign_metrics(nb_graph: nx.DiGraph, pipeline_metrics: dict):
             code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
                 ['"%s": %s' % (rev_pipeline_metrics[x], x)
                  for x in sorted(assigned_metrics)]))
-            anc_data['source'].append(code)
+            anc_step.source.append(code)
         # need to have a `metrics` flag set to true in order to set the
         # metrics output artifact in the pipeline template
-        nx.set_node_attributes(nb_graph, {anc: {'metrics': True}})
+        anc_step.metrics = True
 
-    nb_graph.remove_node(tmp_step)
+    pipeline.remove_node(tmp_step_name)

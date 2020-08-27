@@ -12,7 +12,7 @@ from kubernetes import client as k8s_client
 {% endfor -%}
 
 {# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
-{%- for name in step_names -%}
+{%- for name in pipeline.steps_names -%}
 {% if docker_image != '' %}
 _kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }}, base_image='{{ docker_image }}')
 {% else %}
@@ -25,9 +25,9 @@ _kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }})
    name='{{ pipeline_name }}',
    description='{{ pipeline_description }}'
 )
-def auto_generated_pipeline({%- for arg in parameters_names -%}
-    {{ arg }}='{{ parameters_values[loop.index-1] }}'
-    {%- if loop.index < parameters_values|length -%},
+def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
+    {{ arg }}='{{ (pipeline.pps_values)[loop.index-1] }}'
+    {%- if loop.index < pipeline.pps_values|length -%},
     {%- endif -%}
     {%- endfor -%}):
     _kale_pvolumes_dict = OrderedDict()
@@ -37,7 +37,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
-    {% set pvc_size = vol['size']|default ('') + vol['size_type']|default ('') %}
+    {% set pvc_size = vol['size']|string|default ('') + vol['size_type']|default ('') %}
     {% set annotations = vol['annotations']|default({}) %}
     _kale_annotations = {{ annotations }}
 
@@ -109,51 +109,46 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     _kale_volume_step_names.sort()
     _kale_volume_name_parameters.sort()
 
-    {% for name in step_names %}
-    _kale_{{ name }}_task = _kale_{{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
-                            .add_pvolumes(_kale_pvolumes_dict)\
-                            .after({{ step_prevs[ name ]| map('add_prefix', '_kale_') | map('add_suffix', '_task') |join(', ') }})
-    {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
-    _kale_step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
+    {% for step in pipeline.steps %}
+    _kale_{{ step.name }}_task = _kale_{{ step.name }}_op({{ pipeline.all_steps_parameters[step.name]|join(', ') }})\
+                                 .add_pvolumes(_kale_pvolumes_dict)\
+                                 .after({{ pipeline.pipeline_dependencies_tasks[ step.name ]|map('add_prefix', '_kale_')|map('add_suffix', '_task')|join(', ') }})
+    {%- if step.annotations %}
+    _kale_step_annotations = {{ step.annotations }}
     for _kale_k, _kale_v in _kale_step_annotations.items():
-        {{ name }}_task.add_pod_annotation(_kale_k, _kale_v)
+        _kale_{{ step.name }}_task.add_pod_annotation(_kale_k, _kale_v)
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
-    _kale_step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
-    for _kale_k, _kale_v in _kale_step_annotations.items():
-      _kale_{{ name }}_task.add_pod_annotation(_kale_k, _kale_v)
-    {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("labels") %}
-    _kale_step_labels = {{ nb_graph.nodes(data=True)[name].get("labels", {}) }}
+    {%- if step.labels %}
+    _kale_step_labels = {{ step.labels }}
     for _kale_k, _kale_v in _kale_step_labels.items():
-      _kale_{{ name }}_task.add_pod_label(_kale_k, _kale_v)
+      _kale_{{ step.name }}_task.add_pod_label(_kale_k, _kale_v)
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("limits") %}
-    _kale_step_limits = {{ nb_graph.nodes(data=True)[name].get("limits", {}) }}
+    {%- if step.limits %}
+    _kale_step_limits = {{ step.limits }}
     for _kale_k, _kale_v in _kale_step_limits.items():
-      _kale_{{ name }}_task.container.add_resource_limit(_kale_k, _kale_v)
+      _kale_{{ step.name }}_task.container.add_resource_limit(_kale_k, _kale_v)
     {%- endif %}
-    _kale_{{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
-    _kale_{{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
+    _kale_{{ step.name }}_task.container.working_dir = "{{ abs_working_dir }}"
+    _kale_{{ step.name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     _kale_output_artifacts = {}
     {%- if autosnapshot %}
     _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("metrics") %}
+    {%- if step.metrics %}
     _kale_output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
     {%- endif %}
-    {%- if name != "final_auto_snapshot" and name != "pipeline_metrics" %}
+    {%- if step.name != "final_auto_snapshot" and step.name != "pipeline_metrics" %}
     _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    _kale_output_artifacts.update({'{{ name }}': '/{{ name }}.html'})
+    _kale_output_artifacts.update({'{{ step.name }}': '/{{ step.name }}.html'})
     {%- endif %}
-    _kale_{{ name }}_task.output_artifact_paths.update(_kale_output_artifacts)
-    _kale_{{ name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
-    _kale_dep_names = (_kale_{{ name }}_task.dependent_names +
-                        _kale_volume_step_names)
-    _kale_{{ name }}_task.add_pod_annotation(
+    _kale_{{ step.name }}_task.output_artifact_paths.update(_kale_output_artifacts)
+    _kale_{{ step.name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
+    _kale_dep_names = (_kale_{{ step.name }}_task.dependent_names +
+                       _kale_volume_step_names)
+    _kale_{{ step.name }}_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(_kale_dep_names))
     if _kale_volume_name_parameters:
-        _kale_{{ name }}_task.add_pod_annotation(
+        _kale_{{ step.name }}_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
             json.dumps(_kale_volume_name_parameters))
     {% endfor %}
@@ -164,7 +159,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     _kale_snapshot{{ loop.index }} = _kfp_dsl.VolumeSnapshotOp(
         name='snapshot-volume-{{ loop.index }}',
         resource_name='{{ vol['snapshot_name'] }}',
-        volume=_kale_vop{{ loop.index }}.volume.after({{ leaf_steps| map('add_prefix', '_kale_') | map('add_suffix', '_task') | join(', ') }})
+        volume=_kale_vop{{ loop.index }}.volume.after({{ pipeline.get_leaf_nodes()|map('add_prefix', '_kale_')|map('add_suffix', '_task')|join(', ') }})
     )
     {% endif %}
     {% endfor %}

@@ -15,15 +15,13 @@
 import os
 import shutil
 import logging
-import nbformat
 
 from tabulate import tabulate
 
-from kale.core import Kale
-from kale.nbparser import parser
 from kale.static_analysis import ast
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
+from kale import Compiler, NotebookProcessor
 from kale.rpc.errors import RPCInternalError
 from kale.common import podutils, kfputils, kfutils
 
@@ -83,28 +81,30 @@ def get_base_image(request):
     return podutils.get_docker_base_image()
 
 
+# fixme: Remove the debug argument from the labextension RPC call.
 def compile_notebook(request, source_notebook_path,
                      notebook_metadata_overrides=None, debug=False):
     """Compile the notebook to KFP DSL."""
-    instance = Kale(source_notebook_path, notebook_metadata_overrides, debug)
-    instance.logger = request.log if hasattr(request, "log") else logger
+    processor = NotebookProcessor(source_notebook_path,
+                                  notebook_metadata_overrides)
+    pipeline = processor.to_pipeline()
+    script_path = Compiler(pipeline).compile()
+    # FIXME: Why were we tapping into the Kale logger?
+    # instance = Kale(source_notebook_path, notebook_metadata_overrides, debug)
+    # instance.logger = request.log if hasattr(request, "log") else logger
 
-    pipeline_graph, pipeline_parameters = instance.notebook_to_graph()
-    script_path = instance.generate_kfp_executable(pipeline_graph,
-                                                   pipeline_parameters)
-
-    pipeline_name = instance.pipeline_metadata["pipeline_name"]
-    package_path = kfputils.compile_pipeline(script_path, pipeline_name)
+    package_path = kfputils.compile_pipeline(script_path,
+                                             pipeline.config.pipeline_name)
 
     return {"pipeline_package_path": os.path.relpath(package_path),
-            "pipeline_metadata": instance.pipeline_metadata}
+            "pipeline_metadata": pipeline.config.to_dict()}
 
 
 def validate_notebook(request, source_notebook_path,
                       notebook_metadata_overrides=None):
     """Validate notebook metadata."""
     # Notebook metadata is validated at class instantiation
-    Kale(source_notebook_path, notebook_metadata_overrides)
+    NotebookProcessor(source_notebook_path, notebook_metadata_overrides)
     return True
 
 
@@ -113,10 +113,9 @@ def get_pipeline_parameters(request, source_notebook_path):
     # read notebook
     log = request.log if hasattr(request, "log") else logger
     try:
-        source_notebook_path = os.path.expanduser(source_notebook_path)
-        notebook = nbformat.read(source_notebook_path,
-                                 as_version=nbformat.NO_CONVERT)
-        params_source = parser.get_pipeline_parameters_source(notebook)
+        processor = NotebookProcessor(os.path.expanduser(source_notebook_path),
+                                      skip_validation=True)
+        params_source = processor.get_pipeline_parameters_source()
         if params_source == '':
             raise ValueError("No pipeline parameters found. Please tag a cell"
                              " of the notebook with the `pipeline-parameters`"
@@ -139,10 +138,9 @@ def get_pipeline_metrics(request, source_notebook_path):
     # read notebook
     log = request.log if hasattr(request, "log") else logger
     try:
-        source_notebook_path = os.path.expanduser(source_notebook_path)
-        notebook = nbformat.read(source_notebook_path,
-                                 as_version=nbformat.NO_CONVERT)
-        metrics_source = parser.get_pipeline_metrics_source(notebook)
+        processor = NotebookProcessor(os.path.expanduser(source_notebook_path),
+                                      skip_validation=True)
+        metrics_source = processor.get_pipeline_metrics_source()
         if metrics_source == '':
             raise ValueError("No pipeline metrics found. Please tag a cell"
                              " of the notebook with the `pipeline-metrics`"
