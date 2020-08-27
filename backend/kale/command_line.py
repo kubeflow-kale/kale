@@ -16,7 +16,7 @@ import argparse
 
 from argparse import RawTextHelpFormatter
 
-from kale.core import Kale
+from kale import NotebookProcessor, Compiler
 from kale.common import kfputils
 
 ARGS_DESC = """
@@ -85,34 +85,28 @@ def main():
                                for a in mt_overrides_group._group_actions
                                if getattr(args, a.dest, None) is not None}
 
-    kale = Kale(
-        source_notebook_path=args.nb,
-        notebook_metadata_overrides=mt_overrides_group_dict,
-        debug=args.debug
-    )
-    pipeline_graph, pipeline_parameters = kale.notebook_to_graph()
-    script_path = kale.generate_kfp_executable(pipeline_graph,
-                                               pipeline_parameters)
-    # compile the pipeline to kfp tar package
-    pipeline_name = kale.pipeline_metadata['pipeline_name']
-    pipeline_package_path = kfputils.compile_pipeline(script_path,
+    # FIXME: We are removing the `debug` arg. This shouldn't be an issue
+    processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
+    pipeline = processor.to_pipeline()
+    dsl_script_path = Compiler(pipeline).compile()
+    pipeline_name = pipeline.config.pipeline_name
+    pipeline_package_path = kfputils.compile_pipeline(dsl_script_path,
                                                       pipeline_name)
 
     if args.upload_pipeline:
         kfputils.upload_pipeline(
             pipeline_package_path=pipeline_package_path,
-            pipeline_name=kale.pipeline_metadata['pipeline_name'],
-            host=kale.pipeline_metadata.get('kfp_host', None)
+            pipeline_name=pipeline_name,
+            host=pipeline.config.kfp_host
         )
 
     if args.run_pipeline:
-        run_name = kfputils.generate_run_name(
-            kale.pipeline_metadata['pipeline_name'])
+        run_name = kfputils.generate_run_name(pipeline_name)
         kfputils.run_pipeline(
             run_name=run_name,
-            experiment_name=kale.pipeline_metadata['experiment_name'],
+            experiment_name=pipeline.config.experiment_name,
             pipeline_package_path=pipeline_package_path,
-            host=kale.pipeline_metadata.get('kfp_host', None)
+            host=pipeline.config.kfp_host
         )
 
 
