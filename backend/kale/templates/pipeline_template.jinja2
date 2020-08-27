@@ -9,7 +9,7 @@ from kubernetes import client as k8s_client
 {% endfor -%}
 
 {# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
-{%- for name in step_names -%}
+{%- for name in pipeline.steps_names -%}
 {% if docker_image != '' %}
 {{ name }}_op = comp.func_to_container_op({{ name }}, base_image='{{ docker_image }}')
 {% else %}
@@ -23,9 +23,9 @@ import kfp.dsl as dsl
    name='{{ pipeline_name }}',
    description='{{ pipeline_description }}'
 )
-def auto_generated_pipeline({%- for arg in parameters_names -%}
-    {{ arg }}='{{ parameters_values[loop.index-1] }}'
-    {%- if loop.index < parameters_values|length -%},
+def auto_generated_pipeline({%- for arg in pipeline.pipeline_parameters|pps_names -%}
+    {{ arg }}='{{ (pipeline.pipeline_parameters|pps_values)[loop.index-1] }}'
+    {%- if loop.index < pipeline.pipeline_parameters|pps_values|length -%},
     {%- endif -%}
     {%- endfor -%}):
     pvolumes_dict = OrderedDict()
@@ -35,7 +35,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
-    {% set pvc_size = vol['size']|default ('') + vol['size_type']|default ('') %}
+    {% set pvc_size = vol['size']|string|default ('') + vol['size_type']|default ('') %}
     {% set annotations = vol['annotations']|default({}) %}
     annotations = {{ annotations }}
 
@@ -107,50 +107,45 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     volume_step_names.sort()
     volume_name_parameters.sort()
 
-    {% for name in step_names %}
-    {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
+    {% for step in pipeline.steps %}
+    {{ step.name }}_task = {{ step.name }}_op({{ pipeline.all_steps_parameters[step.name]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)\
-                            .after({{ step_prevs[ name ]|join(', ') }})
-    {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
-    step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
+                            .after({{ pipeline.pipeline_dependencies_tasks[ step.name ]|join(', ') }})
+    {%- if step.annotations %}
+    step_annotations = {{ step.annotations }}
     for k, v in step_annotations.items():
-        {{ name }}_task.add_pod_annotation(k, v)
+        {{ step.name }}_task.add_pod_annotation(k, v)
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
-    step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
-    for k, v in step_annotations.items():
-      {{ name }}_task.add_pod_annotation(k, v)
-    {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("labels") %}
-    step_labels = {{ nb_graph.nodes(data=True)[name].get("labels", {}) }}
+    {%- if step.labels %}
+    step_labels = {{ step.labels }}
     for k, v in step_labels.items():
-      {{ name }}_task.add_pod_label(k, v)
+      {{ step.name }}_task.add_pod_label(k, v)
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("limits") %}
-    step_limits = {{ nb_graph.nodes(data=True)[name].get("limits", {}) }}
+    {%- if step.limits %}
+    step_limits = {{ step.limits }}
     for k, v in step_limits.items():
-      {{ name }}_task.container.add_resource_limit(k, v)
+      {{ step.name }}_task.container.add_resource_limit(k, v)
     {%- endif %}
-    {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
-    {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
+    {{ step.name }}_task.container.working_dir = "{{ abs_working_dir }}"
+    {{ step.name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     output_artifacts = {}
     {%- if autosnapshot %}
     output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     {%- endif %}
-    {%- if nb_graph.nodes(data=True)[name].get("metrics") %}
+    {%- if step.metrics %}
     output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
     {%- endif %}
-    {%- if name != "final_auto_snapshot" and name != "pipeline_metrics" %}
+    {%- if step.name != "final_auto_snapshot" and step.name != "pipeline_metrics" %}
     output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'{{ name }}': '/{{ name }}.html'})
+    output_artifacts.update({'{{ step.name }}': '/{{ step.name }}.html'})
     {%- endif %}
-    {{ name }}_task.output_artifact_paths.update(output_artifacts)
-    {{ name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = {{ name }}_task.dependent_names + volume_step_names
-    {{ name }}_task.add_pod_annotation(
+    {{ step.name }}_task.output_artifact_paths.update(output_artifacts)
+    {{ step.name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
+    dep_names = {{ step.name }}_task.dependent_names + volume_step_names
+    {{ step.name }}_task.add_pod_annotation(
         "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
     if volume_name_parameters:
-        {{ name }}_task.add_pod_annotation(
+        {{ step.name }}_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
             json.dumps(volume_name_parameters))
     {% endfor %}
@@ -161,7 +156,7 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     snapshot{{ loop.index }} = dsl.VolumeSnapshotOp(
         name='snapshot-volume-{{ loop.index }}',
         resource_name='{{ vol['snapshot_name'] }}',
-        volume=vop{{ loop.index }}.volume.after({{ leaf_steps| map('add_suffix', '_task') | join(', ') }})
+        volume=vop{{ loop.index }}.volume.after({{ pipeline.get_leaf_nodes()| map('add_suffix', '_task') | join(', ') }})
     )
     {% endif %}
     {% endfor %}

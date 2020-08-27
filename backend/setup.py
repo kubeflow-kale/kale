@@ -24,11 +24,11 @@ setup(
     author_email='stefano.fioravanzo@gmail.com',
     license='Apache License Version 2.0',
     packages=['kale',
-              'kale.nbparser',
               'kale.static_analysis',
+              'kale.processors',
               'kale.marshal',
-              'kale.codegen',
               'kale.common',
+              'kale.config',
               'kale.rpc'
               ],
     install_requires=[
