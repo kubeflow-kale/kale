@@ -51,6 +51,7 @@ setup(
         # is merged.
         'grpcio >= 1.8.6',
         'ml_metadata == 0.23.0',
+        'progress >= 1.5',
     ],
     extras_require={
         'dev': [
