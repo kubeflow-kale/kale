@@ -48,6 +48,7 @@ setup(
         'ipykernel >= 5.1.4',
         'packaging > 20',
         'ml_metadata == 0.24.0',
+        'progress >= 1.5',
     ],
     extras_require={
         'dev': [
