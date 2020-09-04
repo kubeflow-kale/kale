@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import sys
 import logging
 
 from typing import List, Sequence
@@ -128,7 +129,7 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
     # Set up handlers
     log_fmt = fmt or LOG_FMT.format("%-20s" % name if name
                                     else "%(origin)-20s")
-    stream_handler = logging.StreamHandler()
+    stream_handler = logging.StreamHandler(stream=sys.stdout)
     _configure_handler(stream_handler, level, logging.Formatter(log_fmt,
                                                                 DATE_FMT))
     log.addHandler(stream_handler)
