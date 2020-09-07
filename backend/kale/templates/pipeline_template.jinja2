@@ -111,18 +111,18 @@ def auto_generated_pipeline({%- for arg in pipeline.pipeline_parameters|pps_name
     {{ step.name }}_task = {{ step.name }}_op({{ pipeline.all_steps_parameters[step.name]|join(', ') }})\
                             .add_pvolumes(pvolumes_dict)\
                             .after({{ pipeline.pipeline_dependencies_tasks[ step.name ]|join(', ') }})
-    {%- if step.annotations %}
-    step_annotations = {{ step.annotations }}
+    {%- if step.config.annotations %}
+    step_annotations = {{ step.config.annotations }}
     for k, v in step_annotations.items():
         {{ step.name }}_task.add_pod_annotation(k, v)
     {%- endif %}
-    {%- if step.labels %}
-    step_labels = {{ step.labels }}
+    {%- if step.config.labels %}
+    step_labels = {{ step.config.labels }}
     for k, v in step_labels.items():
       {{ step.name }}_task.add_pod_label(k, v)
     {%- endif %}
-    {%- if step.limits %}
-    step_limits = {{ step.limits }}
+    {%- if step.config.limits %}
+    step_limits = {{ step.config.limits }}
     for k, v in step_limits.items():
       {{ step.name }}_task.container.add_resource_limit(k, v)
     {%- endif %}

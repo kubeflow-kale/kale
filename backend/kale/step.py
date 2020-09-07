@@ -14,13 +14,25 @@
 
 import logging
 
+from kale.config import Config, Field, validators
+
 log = logging.getLogger(__name__)
 
 
-# NOTE: This is not implemented as a NamedTuple because we plan to extend
-#       its functionality with some custom functions.
+class StepConfig(Config):
+    """Config class used for the Step object."""
+    name = Field(type=str, required=True,
+                 validators=[validators.StepNameValidator])
+    labels = Field(type=dict, default=dict(),
+                   validators=[validators.K8sLabelsValidator])
+    annotations = Field(type=dict, default=dict(),
+                        validators=[validators.K8sAnnotationsValidator])
+    limits = Field(type=dict, default=dict(),
+                   validators=[validators.K8sLimitsValidator])
+
+
 class Step:
-    """Dummy class used to store information about a Step of the pipeline."""
+    """Class used to store information about a Step of the pipeline."""
     def __init__(self,
                  name: str,
                  source: list,
@@ -29,16 +41,23 @@ class Step:
                  annotations=None,
                  limits=None,
                  labels=None):
-        self.name = name
         self.source = source
         self.ins = ins or set()
         self.outs = outs or set()
-        self.annotations = annotations
-        self.limits = limits
-        self.labels = labels
+
+        self.config = StepConfig(name=name,
+                                 annotations=annotations,
+                                 limits=limits,
+                                 labels=labels)
+
         # whether the step produces KFP metrics or not
         self.metrics = False
         # the pipeline parameters consumed by the step
         self.parameters = dict()
         # used to keep track of the "free variables" used by the step
         self.fns_free_variables = dict()
+
+    @property
+    def name(self):
+        """Get the name of the step."""
+        return self.config.name

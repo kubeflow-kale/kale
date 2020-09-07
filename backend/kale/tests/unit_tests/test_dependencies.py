@@ -406,37 +406,37 @@ y = 6
 def foo():
     print(x)
 ''']
-    pipeline.add_step(Step(name="stepL", source=_source))
+    pipeline.add_step(Step(name="step_l", source=_source))
     _source = ['''
 def bar():
     print(y)
 ''']
-    pipeline.add_step(Step(name="stepR", source=_source))
+    pipeline.add_step(Step(name="step_r", source=_source))
     _source = ['''
 def result():
     foo()
     bar()
 ''']
-    pipeline.add_step(Step(name="stepM", source=_source))
+    pipeline.add_step(Step(name="step_m", source=_source))
     _source = ["result()"]
-    pipeline.add_step(Step(name="stepF", source=_source))
+    pipeline.add_step(Step(name="step_f", source=_source))
 
-    pipeline.add_edge("step0", "stepL")
-    pipeline.add_edge("step0", "stepR")
-    pipeline.add_edge("stepL", "stepM")
-    pipeline.add_edge("stepR", "stepM")
-    pipeline.add_edge("stepM", "stepF")
+    pipeline.add_edge("step0", "step_l")
+    pipeline.add_edge("step0", "step_r")
+    pipeline.add_edge("step_l", "step_m")
+    pipeline.add_edge("step_r", "step_m")
+    pipeline.add_edge("step_m", "step_f")
 
     dependencies.dependencies_detection(pipeline)
     assert sorted(pipeline.get_step("step0").ins) == []
     assert sorted(pipeline.get_step("step0").outs) == ['x', 'y']
-    assert sorted(pipeline.get_step("stepL").ins) == ['x']
-    assert sorted(pipeline.get_step("stepL").outs) == ['foo', 'x']
-    assert sorted(pipeline.get_step("stepR").ins) == ['y']
-    assert sorted(pipeline.get_step("stepR").outs) == ['bar', 'y']
-    assert sorted(pipeline.get_step("stepM").ins) == ['bar', 'foo', 'x', 'y']
-    assert (sorted(pipeline.get_step("stepM").outs)
+    assert sorted(pipeline.get_step("step_l").ins) == ['x']
+    assert sorted(pipeline.get_step("step_l").outs) == ['foo', 'x']
+    assert sorted(pipeline.get_step("step_r").ins) == ['y']
+    assert sorted(pipeline.get_step("step_r").outs) == ['bar', 'y']
+    assert sorted(pipeline.get_step("step_m").ins) == ['bar', 'foo', 'x', 'y']
+    assert (sorted(pipeline.get_step("step_m").outs)
             == ['bar', 'foo', 'result', 'x', 'y'])
-    assert (sorted(pipeline.get_step("stepF").ins)
+    assert (sorted(pipeline.get_step("step_f").ins)
             == ['bar', 'foo', 'result', 'x', 'y'])
-    assert sorted(pipeline.get_step("stepF").outs) == []
+    assert sorted(pipeline.get_step("step_f").outs) == []
