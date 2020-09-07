@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from .config import Config, Field
-from .configs import NotebookConfig, VolumeConfig
 
 from kale.common import logutils
 logutils.get_or_create_logger(module=__name__, name="config")

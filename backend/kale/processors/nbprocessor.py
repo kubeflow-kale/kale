@@ -18,8 +18,8 @@ import warnings
 
 import nbformat as nb
 
-from kale import Pipeline, Step
-from kale.config import NotebookConfig
+from kale.config import Field
+from kale import Pipeline, Step, PipelineConfig
 from kale.static_analysis import dependencies, ast
 
 # fixme: Change the name of this key to `kale_metadata`
@@ -62,6 +62,28 @@ _TAGS_LANGUAGE = [SKIP_TAG,
 _STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG,
                             LABEL_TAG,
                             LIMITS_TAG]
+
+
+class NotebookConfig(PipelineConfig):
+    """Config store for a notebook.
+
+    This config extends the base pipeline config to take into account some
+    small differences in the handling of a notebook.
+    """
+    notebook_path = Field(type=str, required=True)
+    # FIXME: Probably this can be removed. The labextension passes both
+    #  'experiment_name' and 'experiment', but the latter is not used in the
+    #  backend.
+    experiment = Field(type=dict)
+    # Used in the UI to keep per-notebook state of the volumes snapshot toggle
+    snapshot_volumes = Field(type=bool, default=False)
+    # override from PipelineConfig: set the default value to False
+    autosnapshot = Field(type=bool, default=False)
+
+    @property
+    def source_path(self):
+        """Get the path to the source notebook."""
+        return self.notebook_path
 
 
 class NotebookProcessor:

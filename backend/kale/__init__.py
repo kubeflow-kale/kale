@@ -13,9 +13,9 @@
 #  limitations under the License.
 
 from .step import Step
-from .pipeline import Pipeline
+from .pipeline import Pipeline, PipelineConfig
 from .compiler import Compiler
-from .processors import NotebookProcessor
+from .processors import NotebookProcessor, NotebookConfig
 
 from kale.common import logutils
 logutils.get_or_create_logger(module=__name__, name="kale")
