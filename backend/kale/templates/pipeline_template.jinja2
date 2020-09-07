@@ -113,20 +113,20 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_{{ step.name }}_task = _kale_{{ step.name }}_op({{ pipeline.all_steps_parameters[step.name]|join(', ') }})\
                                  .add_pvolumes(_kale_pvolumes_dict)\
                                  .after({{ pipeline.pipeline_dependencies_tasks[ step.name ]|map('add_prefix', '_kale_')|map('add_suffix', '_task')|join(', ') }})
-    {%- if step.annotations %}
-    _kale_step_annotations = {{ step.annotations }}
+    {%- if step.config.annotations %}
+    _kale_step_annotations = {{ step.config.annotations }}
     for _kale_k, _kale_v in _kale_step_annotations.items():
         _kale_{{ step.name }}_task.add_pod_annotation(_kale_k, _kale_v)
     {%- endif %}
-    {%- if step.labels %}
-    _kale_step_labels = {{ step.labels }}
+    {%- if step.config.labels %}
+    _kale_step_labels = {{ step.config.labels }}
     for _kale_k, _kale_v in _kale_step_labels.items():
-      _kale_{{ step.name }}_task.add_pod_label(_kale_k, _kale_v)
+        _kale_{{ step.name }}_task.add_pod_label(_kale_k, _kale_v)
     {%- endif %}
-    {%- if step.limits %}
-    _kale_step_limits = {{ step.limits }}
+    {%- if step.config.limits %}
+    _kale_step_limits = {{ step.config.limits }}
     for _kale_k, _kale_v in _kale_step_limits.items():
-      _kale_{{ step.name }}_task.container.add_resource_limit(_kale_k, _kale_v)
+        _kale_{{ step.name }}_task.container.add_resource_limit(_kale_k, _kale_v)
     {%- endif %}
     _kale_{{ step.name }}_task.container.working_dir = "{{ abs_working_dir }}"
     _kale_{{ step.name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
