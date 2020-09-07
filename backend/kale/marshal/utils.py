@@ -104,16 +104,18 @@ def save(obj, obj_name):
 
 def _load(file_name):
     try:
-        _kale_load_file_name = [
-            f
-            for f in os.listdir(KALE_DATA_DIRECTORY)
-            if (os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f))
-                and os.path.splitext(f)[0] == file_name)
-        ]
+        _kale_load_file_name = _get_files(file_name)
+        _kale_load_folder_name = _get_folders(file_name)
+
         if len(_kale_load_file_name) > 1:
             raise ValueError("Found multiple files with name %s: %s"
                              % (file_name, str(_kale_load_file_name)))
-        _kale_load_file_name = _kale_load_file_name[0]
+        if len(_kale_load_folder_name) > 1:
+            raise ValueError("Found multiple folders with name %s: %s"
+                             % (file_name, str(_kale_load_folder_name)))
+
+        _names = _kale_load_file_name + _kale_load_folder_name
+        _kale_load_file_name = _names[0]
 
         return resource_load(os.path.join(KALE_DATA_DIRECTORY,
                                           _kale_load_file_name))
@@ -129,6 +131,20 @@ def _load(file_name):
             original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
             msg=KALE_UNKNOWN_MARSHALLING_ERROR % e,
             obj_name=file_name, operation="load")
+
+
+def _get_files(file_name):
+    files = [f for f in os.listdir(KALE_DATA_DIRECTORY)
+             if (os.path.isfile(os.path.join(KALE_DATA_DIRECTORY, f))
+             and os.path.splitext(f)[0] == file_name)]
+    return files
+
+
+def _get_folders(folder_name):
+    folders = [f for f in os.listdir(KALE_DATA_DIRECTORY)
+               if (os.path.isdir(os.path.join(KALE_DATA_DIRECTORY, f))
+               and os.path.splitext(f)[0] == folder_name)]
+    return folders
 
 
 def load(file_name):
