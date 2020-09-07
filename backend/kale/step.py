@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 class StepConfig(Config):
     """Config class used for the Step object."""
+
     name = Field(type=str, required=True,
                  validators=[validators.StepNameValidator])
     labels = Field(type=dict, default=dict(),
