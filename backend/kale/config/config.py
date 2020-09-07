@@ -105,6 +105,10 @@ class Config(ABC):
     initialization/validation checks, over multiple fields, or postprocess
     the validated fields, override the `_validate` and `_postprocess`
     functions, respectively.
+
+    To preprocess the incoming fields, even before they get validated or
+    type-checked, override the `_preprocess` function. Check the functions'
+    docstring for more details.
     """
     _fields: Dict[str, Field] = dict()
 
@@ -138,6 +142,7 @@ class Config(ABC):
         return new_class
 
     def __init__(self, **kwargs):
+        self._preprocess(kwargs)
         for input_var in kwargs.keys():
             if input_var not in self._fields.keys():
                 raise RuntimeError(
@@ -215,6 +220,16 @@ class Config(ABC):
             else:
                 config_dict[field_name] = attr_value
         return config_dict
+
+    def _preprocess(self, kwargs):
+        """Preprocess the input values before they get validated.
+
+        NOTE: Edit inplace the input dictionary to process it.
+
+        Args:
+            kwargs (dict): raw input arguments
+        """
+        pass
 
     def _validate(self):
         """Validate configs after single Field-validations.
