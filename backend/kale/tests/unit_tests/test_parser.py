@@ -15,8 +15,7 @@
 import pytest
 import nbformat
 
-from kale import Pipeline, Step
-from kale.config import NotebookConfig
+from kale import Pipeline, Step, NotebookConfig
 
 
 def test_merge_code(dummy_nb_config):
