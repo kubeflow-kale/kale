@@ -133,3 +133,25 @@ def resource_keras_save(obj, path, **kwargs):
         obj.save(path + ".keras")
     except ImportError:
         fallback_save(obj, path, **kwargs)
+
+
+@resource_load.register(r'.*\.tfkeras')
+def resource_tf_load(uri, **kwargs):
+    """Load a Keras model."""
+    try:
+        from tensorflow.keras.models import load_model
+        log.info(f"Loading tf.Keras model: {uri}")
+        obj_tfkeras = load_model(uri)
+        return obj_tfkeras
+    except ImportError:
+        return fallback_load(uri, **kwargs)
+
+
+@resource_save.register(r'tensorflow.python.keras.*')
+def resource_tf_save(obj, path, **kwargs):
+    """Save a tf.Keras model."""
+    try:
+        log.info("Saving Keras model: %s", _get_obj_name(path))
+        obj.save(path + ".tfkeras")
+    except ImportError:
+        fallback_save(obj, path, **kwargs)
