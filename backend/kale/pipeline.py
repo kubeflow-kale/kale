@@ -83,7 +83,7 @@ class PipelineConfig(Config):
     marshal_volume = Field(type=bool, default=True)
     marshal_path = Field(type=str, default="/marshal")
     autosnapshot = Field(type=bool, default=True)
-    steps_defaults = Field(type=list, default=[])
+    steps_defaults = Field(type=dict, default=dict())
     kfp_host = Field(type=str)
 
     @property

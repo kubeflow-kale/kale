@@ -64,6 +64,29 @@ _STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG,
                             LIMITS_TAG]
 
 
+def get_annotation_or_label_from_tag(tag_parts):
+    """Get the key and value from an annotation or label tag.
+
+    Args:
+        tag_parts: annotation or label notebook tag
+
+    Returns (tuple): key (annotation or label name), values
+    """
+    # Since value can be anything, merge together everything that's left.
+    return tag_parts[0], "".join(tag_parts[1:])
+
+
+def get_limit_from_tag(tag_parts):
+    """Get the key and value from a notebook limit tag.
+
+    Args:
+        tag_parts: annotation or label notebook tag
+
+    Returns (tuple): key (limit name), values
+    """
+    return tag_parts.pop(0), tag_parts.pop(0)
+
+
 class NotebookConfig(PipelineConfig):
     """Config store for a notebook.
 
@@ -84,6 +107,41 @@ class NotebookConfig(PipelineConfig):
     def source_path(self):
         """Get the path to the source notebook."""
         return self.notebook_path
+
+    def _preprocess(self, kwargs):
+        k = "steps_defaults"
+        kwargs[k] = self._parse_steps_defaults(kwargs.get(k))
+
+    def _parse_steps_defaults(self, steps_defaults):
+        """Parse common step configuration defined in the metadata."""
+        result = dict()
+
+        if not isinstance(steps_defaults, list):
+            return steps_defaults
+
+        for c in steps_defaults:
+            if any(re.match(_c, c)
+                   for _c in _STEPS_DEFAULTS_LANGUAGE) is False:
+                raise ValueError("Unrecognized common step configuration:"
+                                 " {}".format(c))
+
+            parts = c.split(":")
+
+            conf_type = parts.pop(0)
+            if conf_type in ["annotation", "label"]:
+                result_key = "{}s".format(conf_type)
+                if result_key not in result:
+                    result[result_key] = dict()
+                key, value = get_annotation_or_label_from_tag(
+                    parts)
+                result[result_key][key] = value
+
+            if conf_type == "limit":
+                if "limits" not in result:
+                    result["limits"] = dict()
+                key, value = get_limit_from_tag(parts)
+                result["limits"][key] = value
+        return result
 
 
 class NotebookProcessor:
@@ -152,13 +210,18 @@ class NotebookProcessor:
         leaf_steps = self.pipeline.get_leaf_steps()
         if self.config.autosnapshot and len(leaf_steps) > 1:
             _name = "final_auto_snapshot"
-            self.pipeline.add_step(Step(name=_name,
-                                        source=[],
-                                        **self.parse_steps_defaults()))
+            self.pipeline.add_step(Step(name=_name, source=[]))
             # add a link from all the last steps of the pipeline to
             # the final auto snapshot one.
             for step in leaf_steps:
                 self.pipeline.add_edge(step.name, _name)
+
+        # FIXME: Move this to a base class Processor, to be executed by default
+        #  after `to_pipeline`, so that it is agnostic to the type of
+        #  processor.
+        for step in self.pipeline.steps:
+            step.config.update(self.pipeline.config.steps_defaults,
+                               patch=False)
 
         # TODO: Additional action required:
         #  Run a static analysis over every step to check that pipeline
@@ -189,8 +252,6 @@ class NotebookProcessor:
         pipeline_parameters = list()
         # Variables that will become pipeline metrics
         pipeline_metrics = list()
-
-        step_defaults = self.parse_steps_defaults()
 
         for c in self.notebook.cells:
             if c.cell_type != "code":
@@ -232,13 +293,6 @@ class NotebookProcessor:
 
             # if none of the above apply, then we are parsing a code cell with
             # a block names and (possibly) some dependencies
-            cell_annotations = dict(
-                **step_defaults.get("annotations", {}),
-                **tags.get("annotations", {}))
-            cell_labels = dict(**step_defaults.get("labels", {}),
-                               **tags.get("labels", {}))
-            cell_limits = dict(**step_defaults.get("limits", {}),
-                               **tags.get("limits", {}))
 
             # if the cell was not tagged with a step name,
             # add the code to the previous cell
@@ -269,9 +323,10 @@ class NotebookProcessor:
                 # add node to DAG, adding tags and source code of notebook cell
                 if step_name not in self.pipeline.nodes:
                     step = Step(name=step_name, source=[c.source],
-                                annotations=cell_annotations, ins=set(),
-                                outs=set(), limits=cell_limits,
-                                labels=cell_labels)
+                                ins=set(), outs=set(),
+                                limits=tags.get("limits", {}),
+                                labels=tags.get("labels", {}),
+                                annotations=tags.get("annotations", {}))
                     self.pipeline.add_step(step)
                     for _prev_step in tags['prev_steps']:
                         if _prev_step not in self.pipeline.nodes:
@@ -357,17 +412,15 @@ class NotebookProcessor:
             tag_name = tag_parts.pop(0)
 
             if tag_name == "annotation":
-                key, value = self._get_annotation_or_label_from_tag_parts(
-                    tag_parts)
+                key, value = get_annotation_or_label_from_tag(tag_parts)
                 cell_annotations.update({key: value})
 
             if tag_name == "label":
-                key, value = self._get_annotation_or_label_from_tag_parts(
-                    tag_parts)
+                key, value = get_annotation_or_label_from_tag(tag_parts)
                 cell_labels.update({key: value})
 
             if tag_name == "limit":
-                key, value = self._get_limit_from_tag_parts(tag_parts)
+                key, value = get_limit_from_tag(tag_parts)
                 cell_limits.update({key: value})
 
             # name of the future Pipeline step
@@ -403,44 +456,6 @@ class NotebookProcessor:
                     " cell that does not declare a step name.")
             parsed_tags['limits'] = cell_limits
         return parsed_tags
-
-    def parse_steps_defaults(self):
-        """Parse common step configuration defined in the metadata."""
-        result = dict()
-        if not self.config.steps_defaults:
-            return result
-
-        for c in self.config.steps_defaults:
-            if any(re.match(_c, c)
-                   for _c in _STEPS_DEFAULTS_LANGUAGE) is False:
-                raise ValueError("Unrecognized common step configuration:"
-                                 " {}".format(c))
-
-            parts = c.split(":")
-
-            conf_type = parts.pop(0)
-            if conf_type in ["annotation", "label"]:
-                result_key = "{}s".format(conf_type)
-                if result_key not in result:
-                    result[result_key] = dict()
-                key, value = self._get_annotation_or_label_from_tag_parts(
-                    parts)
-                result[result_key][key] = value
-
-            if conf_type == "limit":
-                if "limits" not in result:
-                    result["limits"] = dict()
-                key, value = self._get_limit_from_tag_parts(parts)
-                result["limits"][key] = value
-
-        return result
-
-    def _get_annotation_or_label_from_tag_parts(self, tag_parts):
-        # Since value can be anything, merge together everything that's left.
-        return tag_parts[0], "".join(tag_parts[1:])
-
-    def _get_limit_from_tag_parts(sellf, tag_parts):
-        return tag_parts.pop(0), tag_parts.pop(0)
 
     def get_pipeline_parameters_source(self):
         """Get just pipeline parameters cells from the notebook.
