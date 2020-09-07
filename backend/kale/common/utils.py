@@ -12,12 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import __main__
+
 import os
 import re
 import sys
 import random
 import string
 import urllib
+
+
+def get_main_source_path():
+    """Get the absolute path to the program entrypoint source."""
+    return os.path.abspath(__main__.__file__)
 
 
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
