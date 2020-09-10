@@ -39,8 +39,8 @@ EXC_INFO_TRACEBACK = 2
 
 class KaleMarshalException(Exception):
     """Errors that may happen while Kale marshals objects between steps."""
-    def __init__(self, original_exc, original_traceback, msg=None, obj=None,
-                 obj_name=None, operation=None):
+    def __init__(self, original_exc=None, original_traceback=None, msg=None,
+                 obj=None, obj_name=None, operation=None):
         if msg is None:
             # Set some default useful error message
             msg = "Kale experienced an error while marshalling %s" % obj
@@ -115,6 +115,11 @@ def _load(file_name):
                              % (file_name, str(_kale_load_folder_name)))
 
         _names = _kale_load_file_name + _kale_load_folder_name
+        if len(_names) == 0:
+            _msg = KALE_LOAD_ERROR_MSG % (file_name,
+                                          "No file or folder was found with"
+                                          " the requested name.")
+            raise KaleMarshalException(msg=_msg)
         _kale_load_file_name = _names[0]
 
         return resource_load(os.path.join(KALE_DATA_DIRECTORY,
