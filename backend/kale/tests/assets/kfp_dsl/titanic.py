@@ -1,6 +1,8 @@
-import kfp.dsl as dsl
 import json
-import kfp.components as comp
+
+import kfp.dsl as __kfp_dsl
+import kfp.components as __kfp_components
+
 from collections import OrderedDict
 from kubernetes import client as k8s_client
 
@@ -719,242 +721,265 @@ def results():
     _kale_mlmdutils.call("mark_execution_complete")
 
 
-loaddata_op = comp.func_to_container_op(loaddata)
+__kale_loaddata_op = __kfp_components.func_to_container_op(loaddata)
 
 
-datapreprocessing_op = comp.func_to_container_op(datapreprocessing)
+__kale_datapreprocessing_op = __kfp_components.func_to_container_op(
+    datapreprocessing)
 
 
-featureengineering_op = comp.func_to_container_op(featureengineering)
+__kale_featureengineering_op = __kfp_components.func_to_container_op(
+    featureengineering)
 
 
-decisiontree_op = comp.func_to_container_op(decisiontree)
+__kale_decisiontree_op = __kfp_components.func_to_container_op(decisiontree)
 
 
-svm_op = comp.func_to_container_op(svm)
+__kale_svm_op = __kfp_components.func_to_container_op(svm)
 
 
-naivebayes_op = comp.func_to_container_op(naivebayes)
+__kale_naivebayes_op = __kfp_components.func_to_container_op(naivebayes)
 
 
-logisticregression_op = comp.func_to_container_op(logisticregression)
+__kale_logisticregression_op = __kfp_components.func_to_container_op(
+    logisticregression)
 
 
-randomforest_op = comp.func_to_container_op(randomforest)
+__kale_randomforest_op = __kfp_components.func_to_container_op(randomforest)
 
 
-results_op = comp.func_to_container_op(results)
+__kale_results_op = __kfp_components.func_to_container_op(results)
 
 
-@dsl.pipeline(
+@__kfp_dsl.pipeline(
     name='titanic-ml-rnd',
     description='Predict which passengers survived the Titanic shipwreck'
 )
 def auto_generated_pipeline():
-    pvolumes_dict = OrderedDict()
-    volume_step_names = []
-    volume_name_parameters = []
+    __kale_pvolumes_dict = OrderedDict()
+    __kale_volume_step_names = []
+    __kale_volume_name_parameters = []
 
-    marshal_vop = dsl.VolumeOp(
+    __kale_marshal_vop = __kfp_dsl.VolumeOp(
         name="kale-marshal-volume",
         resource_name="kale-marshal-pvc",
-        modes=dsl.VOLUME_MODE_RWM,
+        modes=__kfp_dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
-    volume_step_names.append(marshal_vop.name)
-    volume_name_parameters.append(marshal_vop.outputs["name"].full_name)
-    pvolumes_dict['/marshal'] = marshal_vop.volume
+    __kale_volume_step_names.append(__kale_marshal_vop.name)
+    __kale_volume_name_parameters.append(
+        __kale_marshal_vop.outputs["name"].full_name)
+    __kale_pvolumes_dict['/marshal'] = __kale_marshal_vop.volume
 
-    volume_step_names.sort()
-    volume_name_parameters.sort()
+    __kale_volume_step_names.sort()
+    __kale_volume_name_parameters.sort()
 
-    loaddata_task = loaddata_op()\
-        .add_pvolumes(pvolumes_dict)\
+    __kale_loaddata_task = __kale_loaddata_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
         .after()
-    loaddata_task.container.working_dir = "/kale"
-    loaddata_task.container.set_security_context(
+    __kale_loaddata_task.container.working_dir = "/kale"
+    __kale_loaddata_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'loaddata': '/loaddata.html'})
-    loaddata_task.output_artifact_paths.update(output_artifacts)
-    loaddata_task.add_pod_label(
+    __kale_output_artifacts.update({'loaddata': '/loaddata.html'})
+    __kale_loaddata_task.output_artifact_paths.update(__kale_output_artifacts)
+    __kale_loaddata_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = loaddata_task.dependent_names + volume_step_names
-    loaddata_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        loaddata_task.add_pod_annotation(
+    __kale_dep_names = (__kale_loaddata_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_loaddata_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_loaddata_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    datapreprocessing_task = datapreprocessing_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(loaddata_task)
-    datapreprocessing_task.container.working_dir = "/kale"
-    datapreprocessing_task.container.set_security_context(
+    __kale_datapreprocessing_task = __kale_datapreprocessing_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_loaddata_task)
+    __kale_datapreprocessing_task.container.working_dir = "/kale"
+    __kale_datapreprocessing_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'datapreprocessing': '/datapreprocessing.html'})
-    datapreprocessing_task.output_artifact_paths.update(output_artifacts)
-    datapreprocessing_task.add_pod_label(
+    __kale_output_artifacts.update(
+        {'datapreprocessing': '/datapreprocessing.html'})
+    __kale_datapreprocessing_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_datapreprocessing_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = datapreprocessing_task.dependent_names + volume_step_names
-    datapreprocessing_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        datapreprocessing_task.add_pod_annotation(
+    __kale_dep_names = (__kale_datapreprocessing_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_datapreprocessing_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_datapreprocessing_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    featureengineering_task = featureengineering_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(datapreprocessing_task)
-    featureengineering_task.container.working_dir = "/kale"
-    featureengineering_task.container.set_security_context(
+    __kale_featureengineering_task = __kale_featureengineering_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_datapreprocessing_task)
+    __kale_featureengineering_task.container.working_dir = "/kale"
+    __kale_featureengineering_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'featureengineering': '/featureengineering.html'})
-    featureengineering_task.output_artifact_paths.update(output_artifacts)
-    featureengineering_task.add_pod_label(
+    __kale_output_artifacts.update(
+        {'featureengineering': '/featureengineering.html'})
+    __kale_featureengineering_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_featureengineering_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = featureengineering_task.dependent_names + volume_step_names
-    featureengineering_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        featureengineering_task.add_pod_annotation(
+    __kale_dep_names = (__kale_featureengineering_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_featureengineering_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_featureengineering_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    decisiontree_task = decisiontree_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(featureengineering_task)
-    decisiontree_task.container.working_dir = "/kale"
-    decisiontree_task.container.set_security_context(
+    __kale_decisiontree_task = __kale_decisiontree_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_featureengineering_task)
+    __kale_decisiontree_task.container.working_dir = "/kale"
+    __kale_decisiontree_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'decisiontree': '/decisiontree.html'})
-    decisiontree_task.output_artifact_paths.update(output_artifacts)
-    decisiontree_task.add_pod_label(
+    __kale_output_artifacts.update({'decisiontree': '/decisiontree.html'})
+    __kale_decisiontree_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_decisiontree_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = decisiontree_task.dependent_names + volume_step_names
-    decisiontree_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        decisiontree_task.add_pod_annotation(
+    __kale_dep_names = (__kale_decisiontree_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_decisiontree_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_decisiontree_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    svm_task = svm_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(featureengineering_task)
-    svm_task.container.working_dir = "/kale"
-    svm_task.container.set_security_context(
+    __kale_svm_task = __kale_svm_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_featureengineering_task)
+    __kale_svm_task.container.working_dir = "/kale"
+    __kale_svm_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'svm': '/svm.html'})
-    svm_task.output_artifact_paths.update(output_artifacts)
-    svm_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = svm_task.dependent_names + volume_step_names
-    svm_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        svm_task.add_pod_annotation(
-            "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
-
-    naivebayes_task = naivebayes_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(featureengineering_task)
-    naivebayes_task.container.working_dir = "/kale"
-    naivebayes_task.container.set_security_context(
-        k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'naivebayes': '/naivebayes.html'})
-    naivebayes_task.output_artifact_paths.update(output_artifacts)
-    naivebayes_task.add_pod_label(
+    __kale_output_artifacts.update({'svm': '/svm.html'})
+    __kale_svm_task.output_artifact_paths.update(__kale_output_artifacts)
+    __kale_svm_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = naivebayes_task.dependent_names + volume_step_names
-    naivebayes_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        naivebayes_task.add_pod_annotation(
+    __kale_dep_names = (__kale_svm_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_svm_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_svm_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    logisticregression_task = logisticregression_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(featureengineering_task)
-    logisticregression_task.container.working_dir = "/kale"
-    logisticregression_task.container.set_security_context(
+    __kale_naivebayes_task = __kale_naivebayes_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_featureengineering_task)
+    __kale_naivebayes_task.container.working_dir = "/kale"
+    __kale_naivebayes_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'logisticregression': '/logisticregression.html'})
-    logisticregression_task.output_artifact_paths.update(output_artifacts)
-    logisticregression_task.add_pod_label(
+    __kale_output_artifacts.update({'naivebayes': '/naivebayes.html'})
+    __kale_naivebayes_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_naivebayes_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = logisticregression_task.dependent_names + volume_step_names
-    logisticregression_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        logisticregression_task.add_pod_annotation(
+    __kale_dep_names = (__kale_naivebayes_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_naivebayes_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_naivebayes_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    randomforest_task = randomforest_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(featureengineering_task)
-    randomforest_task.container.working_dir = "/kale"
-    randomforest_task.container.set_security_context(
+    __kale_logisticregression_task = __kale_logisticregression_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_featureengineering_task)
+    __kale_logisticregression_task.container.working_dir = "/kale"
+    __kale_logisticregression_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'randomforest': '/randomforest.html'})
-    randomforest_task.output_artifact_paths.update(output_artifacts)
-    randomforest_task.add_pod_label(
+    __kale_output_artifacts.update(
+        {'logisticregression': '/logisticregression.html'})
+    __kale_logisticregression_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_logisticregression_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = randomforest_task.dependent_names + volume_step_names
-    randomforest_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        randomforest_task.add_pod_annotation(
+    __kale_dep_names = (__kale_logisticregression_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_logisticregression_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_logisticregression_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    results_task = results_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(randomforest_task, logisticregression_task, naivebayes_task, svm_task, decisiontree_task)
-    results_task.container.working_dir = "/kale"
-    results_task.container.set_security_context(
+    __kale_randomforest_task = __kale_randomforest_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_featureengineering_task)
+    __kale_randomforest_task.container.working_dir = "/kale"
+    __kale_randomforest_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'results': '/results.html'})
-    results_task.output_artifact_paths.update(output_artifacts)
-    results_task.add_pod_label(
+    __kale_output_artifacts.update({'randomforest': '/randomforest.html'})
+    __kale_randomforest_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_randomforest_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = results_task.dependent_names + volume_step_names
-    results_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        results_task.add_pod_annotation(
+    __kale_dep_names = (__kale_randomforest_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_randomforest_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_randomforest_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
+
+    __kale_results_task = __kale_results_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_randomforest_task, __kale_logisticregression_task, __kale_naivebayes_task, __kale_svm_task, __kale_decisiontree_task)
+    __kale_results_task.container.working_dir = "/kale"
+    __kale_results_task.container.set_security_context(
+        k8s_client.V1SecurityContext(run_as_user=0))
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
+        {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+    __kale_output_artifacts.update({'results': '/results.html'})
+    __kale_results_task.output_artifact_paths.update(__kale_output_artifacts)
+    __kale_results_task.add_pod_label(
+        "pipelines.kubeflow.org/metadata_written", "true")
+    __kale_dep_names = (__kale_results_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_results_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_results_task.add_pod_annotation(
+            "kubeflow-kale.org/volume-name-parameters",
+            json.dumps(__kale_volume_name_parameters))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
-import kfp.dsl as dsl
 import json
-import kfp.components as comp
+
+import kfp.dsl as __kfp_dsl
+import kfp.components as __kfp_components
+
 from collections import OrderedDict
 from kubernetes import client as k8s_client
 
@@ -101,80 +103,88 @@ def sum_matrix():
     _kale_mlmdutils.call("mark_execution_complete")
 
 
-create_matrix_op = comp.func_to_container_op(create_matrix)
+__kale_create_matrix_op = __kfp_components.func_to_container_op(create_matrix)
 
 
-sum_matrix_op = comp.func_to_container_op(sum_matrix)
+__kale_sum_matrix_op = __kfp_components.func_to_container_op(sum_matrix)
 
 
-@dsl.pipeline(
+@__kfp_dsl.pipeline(
     name='hp-test-rnd',
     description=''
 )
 def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
-    pvolumes_dict = OrderedDict()
-    volume_step_names = []
-    volume_name_parameters = []
+    __kale_pvolumes_dict = OrderedDict()
+    __kale_volume_step_names = []
+    __kale_volume_name_parameters = []
 
-    marshal_vop = dsl.VolumeOp(
+    __kale_marshal_vop = __kfp_dsl.VolumeOp(
         name="kale-marshal-volume",
         resource_name="kale-marshal-pvc",
-        modes=dsl.VOLUME_MODE_RWM,
+        modes=__kfp_dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
-    volume_step_names.append(marshal_vop.name)
-    volume_name_parameters.append(marshal_vop.outputs["name"].full_name)
-    pvolumes_dict['/marshal'] = marshal_vop.volume
+    __kale_volume_step_names.append(__kale_marshal_vop.name)
+    __kale_volume_name_parameters.append(
+        __kale_marshal_vop.outputs["name"].full_name)
+    __kale_pvolumes_dict['/marshal'] = __kale_marshal_vop.volume
 
-    volume_step_names.sort()
-    volume_name_parameters.sort()
+    __kale_volume_step_names.sort()
+    __kale_volume_name_parameters.sort()
 
-    create_matrix_task = create_matrix_op(d1, d2)\
-        .add_pvolumes(pvolumes_dict)\
+    __kale_create_matrix_task = __kale_create_matrix_op(d1, d2)\
+        .add_pvolumes(__kale_pvolumes_dict)\
         .after()
-    step_limits = {'nvidia.com/gpu': '2'}
-    for k, v in step_limits.items():
-        create_matrix_task.container.add_resource_limit(k, v)
-    create_matrix_task.container.working_dir = "/kale"
-    create_matrix_task.container.set_security_context(
+    __kale_step_limits = {'nvidia.com/gpu': '2'}
+    for __kale_k, __kale_v in __kale_step_limits.items():
+        __kale_create_matrix_task.container.add_resource_limit(
+            __kale_k, __kale_v)
+    __kale_create_matrix_task.container.working_dir = "/kale"
+    __kale_create_matrix_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
+        {'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'create_matrix': '/create_matrix.html'})
-    create_matrix_task.output_artifact_paths.update(output_artifacts)
-    create_matrix_task.add_pod_label(
+    __kale_output_artifacts.update({'create_matrix': '/create_matrix.html'})
+    __kale_create_matrix_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_create_matrix_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = create_matrix_task.dependent_names + volume_step_names
-    create_matrix_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        create_matrix_task.add_pod_annotation(
+    __kale_dep_names = (__kale_create_matrix_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_create_matrix_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_create_matrix_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
-    sum_matrix_task = sum_matrix_op()\
-        .add_pvolumes(pvolumes_dict)\
-        .after(create_matrix_task)
-    sum_matrix_task.container.working_dir = "/kale"
-    sum_matrix_task.container.set_security_context(
+    __kale_sum_matrix_task = __kale_sum_matrix_op()\
+        .add_pvolumes(__kale_pvolumes_dict)\
+        .after(__kale_create_matrix_task)
+    __kale_sum_matrix_task.container.working_dir = "/kale"
+    __kale_sum_matrix_task.container.set_security_context(
         k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
-    output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
-    output_artifacts.update(
+    __kale_output_artifacts = {}
+    __kale_output_artifacts.update(
+        {'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+    __kale_output_artifacts.update(
         {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'sum_matrix': '/sum_matrix.html'})
-    sum_matrix_task.output_artifact_paths.update(output_artifacts)
-    sum_matrix_task.add_pod_label(
+    __kale_output_artifacts.update({'sum_matrix': '/sum_matrix.html'})
+    __kale_sum_matrix_task.output_artifact_paths.update(
+        __kale_output_artifacts)
+    __kale_sum_matrix_task.add_pod_label(
         "pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = sum_matrix_task.dependent_names + volume_step_names
-    sum_matrix_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        sum_matrix_task.add_pod_annotation(
+    __kale_dep_names = (__kale_sum_matrix_task.dependent_names +
+                        __kale_volume_step_names)
+    __kale_sum_matrix_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(__kale_dep_names))
+    if __kale_volume_name_parameters:
+        __kale_sum_matrix_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(__kale_volume_name_parameters))
 
 
 if __name__ == "__main__":

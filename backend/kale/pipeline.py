@@ -191,7 +191,7 @@ class Pipeline(nx.DiGraph):
     @property
     def pipeline_dependencies_tasks(self):
         """Generate a dictionary of Pipeline dependencies."""
-        return {step_name: ["%s_task" % pred
+        return {step_name: ["__kale_%s_task" % pred
                             for pred in self.predecessors(step_name)]
                 for step_name in self.steps_names}
 
