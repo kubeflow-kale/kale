@@ -1,5 +1,8 @@
 import json
-import kfp.components as comp
+
+import kfp.dsl as _kfp_dsl
+import kfp.components as _kfp_components
+
 from collections import OrderedDict
 from kubernetes import client as k8s_client
 
@@ -11,15 +14,14 @@ from kubernetes import client as k8s_client
 {# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
 {%- for name in step_names -%}
 {% if docker_image != '' %}
-{{ name }}_op = comp.func_to_container_op({{ name }}, base_image='{{ docker_image }}')
+_kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }}, base_image='{{ docker_image }}')
 {% else %}
-{{ name }}_op = comp.func_to_container_op({{ name }})
+_kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }})
 {% endif %}
 {% endfor -%}
 
 {# DECLARE PIPELINE #}
-import kfp.dsl as dsl
-@dsl.pipeline(
+@_kfp_dsl.pipeline(
    name='{{ pipeline_name }}',
    description='{{ pipeline_description }}'
 )
@@ -28,20 +30,20 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
     {%- if loop.index < parameters_values|length -%},
     {%- endif -%}
     {%- endfor -%}):
-    pvolumes_dict = OrderedDict()
-    volume_step_names = []
-    volume_name_parameters = []
+    _kale_pvolumes_dict = OrderedDict()
+    _kale_volume_step_names = []
+    _kale_volume_name_parameters = []
 
     {% for vol in volumes -%}
     {% set name= vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
     {% set pvc_size = vol['size']|default ('') + vol['size_type']|default ('') %}
     {% set annotations = vol['annotations']|default({}) %}
-    annotations = {{ annotations }}
+    _kale_annotations = {{ annotations }}
 
     {% if vol['type'] == 'pv' %}
 
-    pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
+    _kale_pvc{{ loop.index }}  = k8s_client.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata=k8s_client.V1ObjectMeta(
@@ -51,117 +53,118 @@ def auto_generated_pipeline({%- for arg in parameters_names -%}
             volume_name="{{ name }}",
             access_modes=['ReadWriteOnce'],
             resources=k8s_client.V1ResourceRequirements(
-                requests={"storage": {{ pvc_size }}}
+                requests={"storage": "{{ pvc_size }}"}
             )
         )
     )
 
-    vop{{ loop.index }} = dsl.VolumeOp(
+    _kale_vop{{ loop.index }} = _kfp_dsl.VolumeOp(
         name="pvc-data{{ loop.index }}",
-        annotations=annotations,
-        k8s_resource=pvc{{ loop.index }}
+        annotations=_kale_annotations,
+        k8s_resource=_kale_pvc{{ loop.index }}
     )
-    volume = vop{{ loop.index }}.volume
-    volume_step_names.append(vop{{ loop.index }}.name)
-    volume_name_parameters.append(vop{{ loop.index }}.outputs["name"].full_name)
+    _kale_volume = _kale_vop{{ loop.index }}.volume
+    _kale_volume_step_names.append(_kale_vop{{ loop.index }}.name)
+    _kale_volume_name_parameters.append(_kale_vop{{ loop.index }}.outputs["name"].full_name)
 
     {% elif vol['type'] == 'pvc' %}
 
-    volume = dsl.PipelineVolume(pvc=vol_{{ mountpoint.replace('/', '_').strip('_') }})
+    _kale_volume = _kfp_dsl.PipelineVolume(pvc=vol_{{ mountpoint.replace('/', '_').strip('_') }})
 
     {% elif vol['type'] == 'new_pvc' %}
     {% if annotations.get('rok/origin') %}
-    annotations['rok/origin'] = rok_{{ name.replace('-', '_') }}_url
+    _kale_annotations['rok/origin'] = rok_{{ name.replace('-', '_') }}_url
     {% endif %}
 
-    vop{{ loop.index }} = dsl.VolumeOp(
+    _kale_vop{{ loop.index }} = _kfp_dsl.VolumeOp(
         name='create-volume-{{ loop.index }}',
         resource_name='{{ name }}',
         {%- if annotations %}
-        annotations=annotations,
+        annotations=_kale_annotations,
         {% endif -%}
         size='{{ pvc_size }}'
     )
-    volume = vop{{ loop.index }}.volume
-    volume_step_names.append(vop{{ loop.index }}.name)
-    volume_name_parameters.append(vop{{ loop.index }}.outputs["name"].full_name)
+    _kale_volume = _kale_vop{{ loop.index }}.volume
+    _kale_volume_step_names.append(_kale_vop{{ loop.index }}.name)
+    _kale_volume_name_parameters.append(_kale_vop{{ loop.index }}.outputs["name"].full_name)
 
     {% endif %}
 
-    pvolumes_dict['{{ mountpoint }}'] = volume
+    _kale_pvolumes_dict['{{ mountpoint }}'] = _kale_volume
 
     {% endfor %}
 
     {% if marshal_volume %}
-    marshal_vop = dsl.VolumeOp(
+    _kale_marshal_vop = _kfp_dsl.VolumeOp(
         name="kale-marshal-volume",
         resource_name="kale-marshal-pvc",
-        modes=dsl.VOLUME_MODE_RWM,
+        modes=_kfp_dsl.VOLUME_MODE_RWM,
         size="1Gi"
     )
-    volume_step_names.append(marshal_vop.name)
-    volume_name_parameters.append(marshal_vop.outputs["name"].full_name)
-    pvolumes_dict['{{ marshal_path }}'] = marshal_vop.volume
+    _kale_volume_step_names.append(_kale_marshal_vop.name)
+    _kale_volume_name_parameters.append(_kale_marshal_vop.outputs["name"].full_name)
+    _kale_pvolumes_dict['{{ marshal_path }}'] = _kale_marshal_vop.volume
     {% endif %}
 
-    volume_step_names.sort()
-    volume_name_parameters.sort()
+    _kale_volume_step_names.sort()
+    _kale_volume_name_parameters.sort()
 
     {% for name in step_names %}
-    {{ name }}_task = {{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
-                            .add_pvolumes(pvolumes_dict)\
-                            .after({{ step_prevs[ name ]|join(', ') }})
+    _kale_{{ name }}_task = _kale_{{ name }}_op({{ all_step_parameters[name]|join(', ') }})\
+                            .add_pvolumes(_kale_pvolumes_dict)\
+                            .after({{ step_prevs[ name ]| map('add_prefix', '_kale_') | map('add_suffix', '_task') |join(', ') }})
     {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
-    step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
-    for k, v in step_annotations.items():
-        {{ name }}_task.add_pod_annotation(k, v)
+    _kale_step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
+    for _kale_k, _kale_v in _kale_step_annotations.items():
+        {{ name }}_task.add_pod_annotation(_kale_k, _kale_v)
     {%- endif %}
     {%- if nb_graph.nodes(data=True)[name].get("annotations") %}
-    step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
-    for k, v in step_annotations.items():
-      {{ name }}_task.add_pod_annotation(k, v)
+    _kale_step_annotations = {{ nb_graph.nodes(data=True)[name].get("annotations", {}) }}
+    for _kale_k, _kale_v in _kale_step_annotations.items():
+      _kale_{{ name }}_task.add_pod_annotation(_kale_k, _kale_v)
     {%- endif %}
     {%- if nb_graph.nodes(data=True)[name].get("labels") %}
-    step_labels = {{ nb_graph.nodes(data=True)[name].get("labels", {}) }}
-    for k, v in step_labels.items():
-      {{ name }}_task.add_pod_label(k, v)
+    _kale_step_labels = {{ nb_graph.nodes(data=True)[name].get("labels", {}) }}
+    for _kale_k, _kale_v in _kale_step_labels.items():
+      _kale_{{ name }}_task.add_pod_label(_kale_k, _kale_v)
     {%- endif %}
     {%- if nb_graph.nodes(data=True)[name].get("limits") %}
-    step_limits = {{ nb_graph.nodes(data=True)[name].get("limits", {}) }}
-    for k, v in step_limits.items():
-      {{ name }}_task.container.add_resource_limit(k, v)
+    _kale_step_limits = {{ nb_graph.nodes(data=True)[name].get("limits", {}) }}
+    for _kale_k, _kale_v in _kale_step_limits.items():
+      _kale_{{ name }}_task.container.add_resource_limit(_kale_k, _kale_v)
     {%- endif %}
-    {{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
-    {{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
-    output_artifacts = {}
+    _kale_{{ name }}_task.container.working_dir = "{{ abs_working_dir }}"
+    _kale_{{ name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
+    _kale_output_artifacts = {}
     {%- if autosnapshot %}
-    output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
     {%- endif %}
     {%- if nb_graph.nodes(data=True)[name].get("metrics") %}
-    output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+    _kale_output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
     {%- endif %}
     {%- if name != "final_auto_snapshot" and name != "pipeline_metrics" %}
-    output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
-    output_artifacts.update({'{{ name }}': '/{{ name }}.html'})
+    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+    _kale_output_artifacts.update({'{{ name }}': '/{{ name }}.html'})
     {%- endif %}
-    {{ name }}_task.output_artifact_paths.update(output_artifacts)
-    {{ name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
-    dep_names = {{ name }}_task.dependent_names + volume_step_names
-    {{ name }}_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(dep_names))
-    if volume_name_parameters:
-        {{ name }}_task.add_pod_annotation(
+    _kale_{{ name }}_task.output_artifact_paths.update(_kale_output_artifacts)
+    _kale_{{ name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
+    _kale_dep_names = (_kale_{{ name }}_task.dependent_names +
+                        _kale_volume_step_names)
+    _kale_{{ name }}_task.add_pod_annotation(
+        "kubeflow-kale.org/dependent-templates", json.dumps(_kale_dep_names))
+    if _kale_volume_name_parameters:
+        _kale_{{ name }}_task.add_pod_annotation(
             "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(volume_name_parameters))
+            json.dumps(_kale_volume_name_parameters))
     {% endfor %}
 
     {# Snaphosts #}
     {% for vol in volumes -%}
     {% if vol['snapshot'] %}
-    snapshot{{ loop.index }} = dsl.VolumeSnapshotOp(
+    _kale_snapshot{{ loop.index }} = _kfp_dsl.VolumeSnapshotOp(
         name='snapshot-volume-{{ loop.index }}',
         resource_name='{{ vol['snapshot_name'] }}',
-        volume=vop{{ loop.index }}.volume.after({{ leaf_steps| map('add_suffix', '_task') | join(', ') }})
+        volume=_kale_vop{{ loop.index }}.volume.after({{ leaf_steps| map('add_prefix', '_kale_') | map('add_suffix', '_task') | join(', ') }})
     )
     {% endif %}
     {% endfor %}
