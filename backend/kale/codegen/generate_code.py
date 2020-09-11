@@ -30,6 +30,7 @@ def _initialize_templating_env(templates_path=None):
     template_env = Environment(loader=loader)
     # add custom filters
     template_env.filters['add_suffix'] = lambda s, suffix: s + suffix
+    template_env.filters['add_prefix'] = lambda s, prefix: prefix + s
     return template_env
 
 
@@ -136,8 +137,7 @@ def pipeline_dependencies_tasks(g):
     """
     deps = dict()
     for step_name in nx.topological_sort(g):
-        deps[step_name] = ["{}_task".format(pred)
-                           for pred in g.predecessors(step_name)]
+        deps[step_name] = list(g.predecessors(step_name))  # copy list
     return deps
 
 
