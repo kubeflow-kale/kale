@@ -289,6 +289,7 @@ export default class NotebookUtilities {
     notebook: NotebookPanel,
   ): Promise<IRunCellResponse> {
     let cell = { cell: notebook.content.widgets[0], index: 0 };
+    const reservedCellsToBeIgnored = ['skip', 'pipeline-metrics'];
     for (let i = 0; i < notebook.model.cells.length; i++) {
       if (!isCodeCellModel(notebook.model.cells.get(i))) {
         continue;
@@ -296,7 +297,10 @@ export default class NotebookUtilities {
       const blockName = CellUtilities.getStepName(notebook, i);
       // If a cell of that type is found, run that
       // and all consequent cells getting merged to that one
-      if (blockName !== 'skip' && RESERVED_CELL_NAMES.includes(blockName)) {
+      if (
+        !reservedCellsToBeIgnored.includes(blockName) &&
+        RESERVED_CELL_NAMES.includes(blockName)
+      ) {
         while (i < notebook.model.cells.length) {
           if (!isCodeCellModel(notebook.model.cells.get(i))) {
             i++;
@@ -304,6 +308,8 @@ export default class NotebookUtilities {
           }
           const cellName = CellUtilities.getStepName(notebook, i);
           if (cellName !== blockName && cellName !== '') {
+            // Decrement by 1 to parse that cell during the next for loop
+            i--;
             break;
           }
           cell = { cell: notebook.content.widgets[i], index: i };
