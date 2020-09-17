@@ -18,12 +18,14 @@ import os
 import re
 import sys
 import json
+import errno
 import random
 import string
 import urllib
+import shutil
 import logging
 
-from typing import Dict
+from typing import Dict, Any
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +43,45 @@ def random_string(size=5, chars=string.ascii_lowercase + string.digits):
 def abs_working_dir(path):
     """Get absolute path to parent dir."""
     return os.path.dirname(os.path.abspath(path))
+
+
+def rm_r(path, ignore_missing=True, silent=False):
+    """Remove a file or directory.
+
+    Similar to rm -r. If the path does not exist and ignore_missing is False,
+    OSError is raised, otherwise it is ignored.
+    If silent is True, nothing is raised.
+    """
+    def onerror(function, path, excinfo):
+        # Function to handle ENOENT in shutil.rmtree()
+        e = excinfo[1]
+        if (ignore_missing and isinstance(e, OSError)
+                and e.errno == errno.ENOENT):
+            return
+        raise e
+
+    log.info("Removing path `%s'", path)
+
+    try:
+        if os.path.isfile(path) or os.path.islink(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path, onerror=onerror)
+        elif os.path.exists(path) and not silent:
+            raise RuntimeError("Failed to remove path `%s': Path exists but is"
+                               " not a file nor a directory" % path)
+        else:
+            # The path does not exists, raise the appropriate exception and let
+            # the exception handler handle it (i.e., check ignore_missing etc.)
+            raise OSError(errno.ENOENT, "No such file or directory", path)
+    except OSError as e:
+        if silent:
+            log.debug("Path `%s' does not exist, skipping removing it", path)
+            return
+        if (not ignore_missing) or (e.errno != errno.ENOENT):
+            log.error("Failed to remove path `%s' (errno: %s): %s",
+                      path, e.errno, e)
+            raise
 
 
 def remove_ansi_color_sequences(text):
@@ -121,3 +162,16 @@ def ensure_or_create_dir(filepath: str):
         os.makedirs(dirname)
     elif not os.path.isdir(dirname):
         raise RuntimeError("'%s' is not a directory" % dirname)
+
+
+def clean_dir(path: str):
+    """If path exists, remove and then create empty dir."""
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+
+def shorten_long_string(obj: Any, chars: int = 75):
+    """Shorten the string representation of the input object."""
+    str_input = str(obj)
+    return str_input[:chars] + " ..... " + str_input[len(str_input) - chars:]

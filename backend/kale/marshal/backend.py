@@ -59,9 +59,10 @@ class MarshalBackend(object):
     marshal backends.
     """
     name: str = "Default backend"
-    display_name: str = "generic"
+    display_name: str = "generic"  # This is supposed to tbe the library name
     file_type: str = "dillpkl"
     obj_type_regex: str = None
+    predictor_type: str = None  # Used for creating serving predictors
 
     def __init__(self,
                  name: str = None,
@@ -194,6 +195,16 @@ class Dispatcher(object):
     def get_backend(self, obj: Any):
         """Get the backend registered for the input object type."""
         return self._dispatch_obj_type(obj)
+
+    def get_backends(self) -> Dict[str, MarshalBackend]:
+        """Get all registered backends."""
+        # FIXME: How can we make this dict readonly? We don't want external
+        # code to mess with it.
+        return dict(self.backends)
+
+    def get_backend_by_name(self, name: str):
+        """Get a registered backend by its display name."""
+        return self.backends[name]
 
     def save(self, obj: Any, obj_name: str):
         """Save an object to file.
