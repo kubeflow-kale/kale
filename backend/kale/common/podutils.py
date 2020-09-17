@@ -194,6 +194,28 @@ def _list_volumes(client, namespace, pod_name, container_name):
     return rok_volumes
 
 
+def get_volume_containing_path(path):
+    """Get the closest volume mount point to the input absolute path.
+
+    Returns a tuple in the following format: (mount_path, volume, size)
+    """
+    if not os.path.isabs(path):
+        raise ValueError("Path '%s' is not an absolute path" % path)
+    if not os.path.exists(path):
+        raise ValueError("Path '%s' does not exist" % path)
+
+    mounted_vols = list_volumes()
+    mount_point = 0
+    # get the volumes that contain the input path
+    vols = list(filter(lambda x: path.startswith(x[mount_point]),
+                       mounted_vols))
+    if len(vols) > 0:
+        # get vol with longest mount point (i.e. closest to input path)
+        return sorted(vols, key=lambda k: len(k[mount_point]), reverse=True)[0]
+    else:
+        raise RuntimeError("Input path is not under any volume mount point")
+
+
 def list_volumes():
     """List the currently mounted volumes."""
     client = _get_k8s_v1_client()
