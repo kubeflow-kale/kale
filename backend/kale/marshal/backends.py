@@ -74,9 +74,10 @@ class PandasBackend(MarshalBackend):
 class XGBoostModelBackend(MarshalBackend):
     """Marshal XGBoost Model object."""
     name = "XGBoost Model backend"
-    display_name = "xgboost-model"
+    display_name = "xgboost"
     file_type = "bst"
     obj_type_regex = r"xgboost\.core\.Booster"
+    predictor_type = "xgboost"
 
     def save(self, obj, path):
         """Save an XGBoost Model object."""
@@ -159,6 +160,7 @@ class TensorflowKerasBackend(MarshalBackend):
     display_name = "tensorflow"
     file_type = "tfkeras"
     obj_type_regex = r"tensorflow\.python\.keras.*"
+    predictor_type = "tensorflow"
 
     def save(self, obj, path):
         """Save a Tensorflow Keras object."""

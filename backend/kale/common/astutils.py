@@ -15,7 +15,9 @@
 import re
 import ast
 import astor
+import inspect
 
+from typing import Callable
 from collections import deque
 from functools import lru_cache
 
@@ -311,3 +313,25 @@ def parse_metrics_print_statements(code):
             raise ValueError(err_msg)
 
     return {re.sub("_", "-", v): v for v in variables}
+
+
+def get_function_source(func: Callable, strip_signature=True) -> str:
+    """Get the source code of a Callable object."""
+    tree = ast.parse(inspect.getsource(func))
+    if strip_signature:
+        fn_body = tree.body[0].body
+        return "".join(map(astor.to_source, fn_body))
+
+    fn = tree.body[0]  # ast.FunctionDef
+    source = astor.to_source(fn)
+    # Remove decorator if exists. If the decorator was defines over
+    # multiple lines in the original source code, astor generates it
+    # in a single line
+    if source[0] == "@":
+        # Since the decorator code could span multiple lines (too many
+        # arguments), find the line where the real function def starts
+        # by finding the first occurrence of a line that starts with 'def'
+        idx = next((i for i, j in enumerate(source.splitlines())
+                    if j.startswith("def")))
+        source = "\n".join(source.splitlines()[idx:])
+    return source
