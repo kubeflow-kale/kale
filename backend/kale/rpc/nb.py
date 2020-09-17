@@ -76,6 +76,12 @@ def list_volumes(request):
     return volumes_out
 
 
+def get_volume_containing_path(request, path):
+    """Get the closest volume mount point to the input absolute path."""
+    vol = podutils.get_volume_containing_path(path)
+    return {"name": vol[1].name, "mount_point": vol[0]}
+
+
 def get_base_image(request):
     """Get the current pod's docker base image."""
     return podutils.get_docker_base_image()
