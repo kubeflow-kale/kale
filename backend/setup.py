@@ -50,7 +50,7 @@ setup(
         # XXX: remove this once https://github.com/google/ml-metadata/pull/60
         # is merged.
         'grpcio >= 1.8.6',
-        'ml_metadata == 0.23.0',
+        'ml_metadata == 0.24.0',
     ],
     extras_require={
         'dev': [
