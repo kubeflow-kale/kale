@@ -234,9 +234,10 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
     # FIXME: How do we retrieve the base URL of the ROK UI?
     version = task_info["task"]["result"]["event"]["version"]
-    url_path = ("/rok/buckets/%s/files/%s/versions/%s"
+    url_path = ("/rok/buckets/%s/files/%s/versions/%s?ns=%s"
                 % (encode_url_component(bucket), encode_url_component(obj),
-                   encode_url_component(version)))
+                   encode_url_component(version),
+                   encode_url_component(get_namespace())))
     log.info("Successfully registered Rok version '%s'", version)
 
     log.info("Successfully created snapshot for step '%s'", step)
