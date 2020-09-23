@@ -76,11 +76,54 @@ def get_pod_name():
 
 
 def get_container_name():
-    """Get the current container name."""
-    container_name = os.getenv("NB_PREFIX")
-    if container_name is None:
-        raise RuntimeError("Env variable NB_PREFIX not found.")
-    return container_name.split('/')[-1]
+    """Get the current container name.
+
+    When Kale is running inside a pod spawned by Kubeflow's JWA, we can rely
+    on the NB_PREFIX env variable. If this is not the case, we need to
+    apply some heuristics to try determining the container name.
+    """
+    log.info("Getting the current container name...")
+    nb_prefix = os.getenv("NB_PREFIX")
+    if nb_prefix:
+        container_name = nb_prefix.split('/')[-1]
+        if container_name:
+            log.info("Using NB_PREFIX env var '%s'. Container name: '%s'" %
+                     (nb_prefix, container_name))
+            return container_name
+        log.info("Could not parse NB_PREFIX: '%s'. Falling back to using some"
+                 " heuristics." % nb_prefix)
+    else:
+        log.info("Env variable NB_PREFIX not found. Falling back to finding"
+                 " the container name with some heuristics.")
+
+    # get the pod object and inspect the containers in the spec
+    pod = get_pod(get_pod_name(), get_namespace())
+    container_names = [c.name for c in pod.spec.containers]
+    if len(container_names) == 1:
+        log.info("Found one container in the Pod: '%s'" % container_names[0])
+        return container_names[0]
+    log.info("Found multiple containers in the Pod: %s" % container_names)
+
+    # fixme: Kubernetes 1.19 should support sidecar containers as first class
+    #  citizens. Maybe at that point there will be a simple way to detect
+    #  sidecars in the pod spec.
+
+    if "main" in container_names:
+        log.info("Choosing 'main'")
+        return "main"
+    # remove some container names that are supposed to be sidecars
+    potentially_sidecar_names = ["proxy", "sidecar", "wait"]
+    candidates = [c for c in container_names
+                  if all([x not in c for x in potentially_sidecar_names])]
+    if len(candidates) > 1:
+        raise RuntimeError("Too many container candidates.Cannot infer the"
+                           " name of the current container from: %s "
+                           % candidates)
+    if len(candidates) > 0:
+        raise RuntimeError("No container names left. Could not infer the name"
+                           " of the running container.")
+    log.info("Choosing '%s'" % candidates[0])
+    return candidates[0]
 
 
 def _get_k8s_v1_client():
