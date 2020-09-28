@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import os
 import kfp
 from kfp_server_api.rest import ApiException
 
 from kale.common import kfputils
+from kale.common import podutils
 
 _client = None
 
@@ -29,8 +31,22 @@ def _get_client(host=None):
     return _client
 
 
+def get_user_namespace():
+    """Get the namespace that the jupyterlab pod is running in."""
+    client = _get_client()
+    if client.get_user_namespace() == '':
+        if not os.path.exists('.config/kfp/'):
+            os.makedirs('.config/kfp/')
+        namespace = podutils.get_namespace()
+        client.set_user_namespace(namespace)
+    else:
+        namespace = client.get_user_namespace()
+    return namespace
+
+
 def list_experiments(request):
     """List Kubeflow Pipelines experiments."""
+    get_user_namespace()
     c = _get_client()
     experiments = [{"name": e.name,
                     "id": e.id}
