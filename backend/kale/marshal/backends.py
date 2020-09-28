@@ -141,7 +141,7 @@ def resource_tf_load(uri, **kwargs):
     try:
         from tensorflow.keras.models import load_model
         log.info(f"Loading tf.Keras model: {uri}")
-        obj_tfkeras = load_model(uri)
+        obj_tfkeras = load_model(uri, compile=False)
         return obj_tfkeras
     except ImportError:
         return fallback_load(uri, **kwargs)
