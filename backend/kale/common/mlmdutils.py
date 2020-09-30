@@ -32,7 +32,7 @@ from ml_metadata.metadata_store import metadata_store
 # https://github.com/google/ml-metadata/issues/25
 # https://github.com/google/ml-metadata/pull/35
 
-from kale.common import utils, podutils
+from kale.common import utils, podutils, workflowutils
 
 
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
@@ -481,15 +481,11 @@ class MLMetadata(object):
                     in self.store.get_artifacts_by_id(output_artifact_ids)
                     if a.type_id == rok_snapshot_type_id]
 
-        # Search in workflow.Status.Nodes for step's parents
-        nodes = self.workflow["status"]["nodes"]
-
-        # Find all nodes that are direct ancestors
-        parents = []
-        for name, node in nodes.items():
-            if (self.pod_name in node.get("children", [])
-                    and name != self.workflow_name):
-                parents.append(name)
+        log.info("Searching for RokSnapshot artifacts to link as inputs...")
+        # Find all pods that are direct ancestors
+        log.info("Searching for Pod-type direct ancestors of step...")
+        parents = workflowutils.find_pod_parents(self.pod_name, self.workflow)
+        log.info("Found parent pods: %s", parents)
 
         rok_artifacts = _get_output_rok_artifacts(parents)
 
