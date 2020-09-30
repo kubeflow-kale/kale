@@ -28,13 +28,11 @@ from kfp import Client
 from kfp.compiler import Compiler
 from kfp_server_api.rest import ApiException
 
-from kale.common import utils, podutils
+from kale.common import utils, podutils, workflowutils
 
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
-ARGO_COMPLETED_LABEL_KEY = "workflows.argoproj.io/completed"
-ARGO_PHASE_LABEL_KEY = "workflows.argoproj.io/phase"
 
 _logger = None
 _k8s_co_client = None
@@ -186,7 +184,7 @@ def update_uimetadata(artifact_name,
 
     pod_name = podutils.get_pod_name()
     namespace = podutils.get_namespace()
-    workflow_name = podutils.get_workflow_name(pod_name, namespace)
+    workflow_name = workflowutils.get_workflow_name(pod_name, namespace)
     html_artifact_entry = [{
         'type': 'web-app',
         'storage': 'minio',

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Suite of random helpers regarding pod manipulation."""
+
 import os
 import re
 import json
@@ -22,7 +24,7 @@ import kubernetes.client as k8s
 import kubernetes.config as k8s_config
 
 from kale.common.utils import encode_url_component
-from kale.common import kfputils
+from kale.common import kfputils, workflowutils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
@@ -265,27 +267,12 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     return task_info
 
 
-def get_workflow_name(pod_name, namespace):
-    """Get the workflow name associated to a pod (pipeline step)."""
-    v1_client = _get_k8s_v1_client()
-    pod = v1_client.read_namespaced_pod(pod_name, namespace)
-
-    # Obtain the workflow name
-    labels = pod.metadata.labels
-    workflow_name = labels.get("workflows.argoproj.io/workflow", None)
-    if workflow_name is None:
-        msg = ("Could not retrieve workflow name from pod"
-               "{}/{}".format(namespace, pod_name))
-        raise RuntimeError(msg)
-    return workflow_name
-
-
 def get_run_uuid():
     """Get the Workflow's UUID form inside a pipeline step."""
     # Retrieve the pod
     pod_name = get_pod_name()
     namespace = get_namespace()
-    workflow_name = get_workflow_name(pod_name, namespace)
+    workflow_name = workflowutils.get_workflow_name(pod_name, namespace)
 
     # Retrieve the Argo workflow
     api_group = "argoproj.io"
@@ -322,16 +309,6 @@ def get_pod(name, namespace):
     """
     k8s_client = _get_k8s_v1_client()
     return k8s_client.read_namespaced_pod(name, namespace)
-
-
-def get_workflow(name, namespace):
-    """Get a workflow."""
-    api_group = "argoproj.io"
-    api_version = "v1alpha1"
-    co_name = "workflows"
-    co_client = _get_k8s_custom_objects_client()
-    return co_client.get_namespaced_custom_object(api_group, api_version,
-                                                  namespace, co_name, name)
 
 
 def compute_component_id(pod):
