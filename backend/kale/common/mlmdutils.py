@@ -39,8 +39,6 @@ DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
                                               ".svc")
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_PORT = 8080
 
-ARGO_WORKFLOW_LABEL_KEY = "workflows.argoproj.io/workflow"
-
 RUN_CONTEXT_TYPE_NAME = "KfpRun"
 KFP_EXECUTION_TYPE_NAME_PREFIX = "components."
 
@@ -102,12 +100,12 @@ class MLMetadata(object):
         log.info("Successfully retrieved pod")
         log.info("Getting workflow name from pod...")
         self.workflow_name = self.pod.metadata.labels.get(
-            ARGO_WORKFLOW_LABEL_KEY)
+            workflowutils.ARGO_WORKFLOW_LABEL_KEY)
         log.info("Successfully retrieved workflow name: %s",
                  self.workflow_name)
         log.info("Getting workflow...")
-        self.workflow = podutils.get_workflow(self.workflow_name,
-                                              self.pod_namespace)
+        self.workflow = workflowutils.get_workflow(self.workflow_name,
+                                                   self.pod_namespace)
         log.info("Successfully retrieved workflow")
 
         workflow_labels = self.workflow["metadata"].get("labels", {})
