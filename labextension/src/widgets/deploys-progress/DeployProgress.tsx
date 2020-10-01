@@ -53,11 +53,13 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     if (!task.result || !task.result.event) {
       return '#';
     }
-    return `${window.location.origin}/_/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
+    const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
+    return props.namespace ? `${link}?ns=${props.namespace}` : link;
   };
 
   const getTaskLink = (task: any) => {
-    return `${window.location.origin}/_/rok/buckets/${task.bucket}/tasks/${task.id}`;
+    const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/tasks/${task.id}`;
+    return props.namespace ? `${link}?ns=${props.namespace}` : link;
   };
 
   const getUploadLink = (pipeline: any) => {
@@ -66,16 +68,22 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     if (!pipeline.pipeline || !pipeline.pipeline.id) {
       return '#';
     }
-    return `${window.location.origin}/_/pipeline/#/pipelines/details/${pipeline.pipeline.id}`;
+    const link = `${window.location.origin}/_/pipeline/#/pipelines/details/${pipeline.pipeline.id}`;
+    return props.namespace
+      ? link.replace('#', `?ns=${props.namespace}#`)
+      : link;
   };
 
-  const getRunLink = (pipeline: any) => {
+  const getRunLink = (run: any) => {
     // link: /_/pipeline/#/runs/details/<id>
     // id = runPipeline.id
-    if (!pipeline.id) {
+    if (!run.id) {
       return '#';
     }
-    return `${window.location.origin}/_/pipeline/#/runs/details/${pipeline.id}`;
+    const link = `${window.location.origin}/_/pipeline/#/runs/details/${run.id}`;
+    return props.namespace
+      ? link.replace('#', `?ns=${props.namespace}#`)
+      : link;
   };
 
   const getRunText = (pipeline: any) => {
@@ -155,7 +163,10 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     if (!experimentId) {
       return '#';
     }
-    return `${window.location.origin}/_/pipeline/#/experiments/details/${experimentId}`;
+    const link = `${window.location.origin}/_/pipeline/#/experiments/details/${experimentId}`;
+    return props.namespace
+      ? link.replace('#', `?ns=${props.namespace}#`)
+      : link;
   };
 
   const getSnapshotTpl = () => {
