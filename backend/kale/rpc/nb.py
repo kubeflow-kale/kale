@@ -212,3 +212,11 @@ def find_poddefault_labels_on_server(request):
     request.log.info("PodDefault labels applied on server: %s",
                      ", ".join(["%s: %s" % (k, v) for k, v in labels.items()]))
     return labels
+
+
+def get_namespace(request):
+    """Retrieve the namespace of the notebook."""
+    request.log.info("Retrieving notebook's namespace...")
+    namespace = podutils.get_namespace()
+    request.log.info("Notebook's namespace is '%s'", namespace)
+    return namespace
