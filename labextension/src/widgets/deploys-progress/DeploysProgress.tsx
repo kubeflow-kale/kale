@@ -43,6 +43,7 @@ export type DeployProgressState = {
   katibKFPExperiment?: { id: string; name: string };
   deleted?: boolean;
   docManager?: IDocumentManager;
+  namespace?: string;
 };
 
 interface DeploysProgress {
@@ -82,6 +83,7 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
             katibKFPExperiment={dpState.katibKFPExperiment}
             onRemove={_onPanelRemove(+index)}
             docManager={dpState.docManager}
+            namespace={dpState.namespace}
           />
         );
       });

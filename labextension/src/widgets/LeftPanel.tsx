@@ -75,6 +75,7 @@ interface IState {
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
   katibDialog: boolean;
+  namespace: string;
 }
 
 // Katib types: https://github.com/kubeflow/katib/blob/master/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
@@ -202,6 +203,7 @@ export const DefaultState: IState = {
   deploys: {},
   isEnabled: false,
   katibDialog: false,
+  namespace: '',
 };
 
 let deployIndex = 0;
@@ -403,6 +405,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       console.log(notebookMetadata);
 
       if (this.props.backend) {
+        // Retrieve the notebook's namespace
+        this.setState({ namespace: await commands.getNamespace() });
         // Detect whether this is an exploration, i.e., recovery from snapshot
         const nbFilePath = this.getActiveNotebookPath();
         await commands.resumeStateIfExploreNotebook(nbFilePath);
@@ -591,7 +595,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     const commands = new Commands(this.getActiveNotebook(), this.props.kernel);
     const _deployIndex = ++deployIndex;
     const _updateDeployProgress = (x: DeployProgressState) => {
-      this.updateDeployProgress(_deployIndex, x);
+      this.updateDeployProgress(_deployIndex, {
+        ...x,
+        namespace: this.state.namespace,
+      });
     };
 
     const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata

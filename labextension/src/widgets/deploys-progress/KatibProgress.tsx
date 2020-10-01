@@ -77,7 +77,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
     if (!experiment.name || !experiment.namespace) {
       return '#';
     }
-    return `${window.location.origin}/_/katib/#/katib/hp_monitor/${experiment.namespace}/${experiment.name}`;
+    return `${window.location.origin}/_/katib/?ns=${experiment.namespace}#/katib/hp_monitor/${experiment.namespace}/${experiment.name}`;
   };
 
   const getKatibBestResultInfo = (experiment: IKatibExperiment) => {

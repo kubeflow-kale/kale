@@ -591,4 +591,17 @@ export default class Commands {
       return labels;
     }
   };
+
+  getNamespace = async (): Promise<string> => {
+    try {
+      return await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.get_namespace',
+      );
+    } catch (error) {
+      console.error("Failed to retrieve notebook's namespace");
+      return '';
+    }
+  };
 }
