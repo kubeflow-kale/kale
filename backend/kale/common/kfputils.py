@@ -316,7 +316,7 @@ def _annotate_trial(trial_name, annotation_key, annotation_value):
                                               trial_name, patch)
 
 
-def _wait_kfp_run(run_id: str, namespace: str = "kubeflow"):
+def _wait_kfp_run(run_id: str):
     """Wait for a KFP run to complete.
 
     Args:
@@ -328,13 +328,12 @@ def _wait_kfp_run(run_id: str, namespace: str = "kubeflow"):
     """
     logger = _get_logger()
 
-    logger.info("Watching for Run with ID: '%s' in namespace '%s'", run_id,
-                namespace)
+    logger.info("Watching for Run with ID: '%s'", run_id)
 
     while True:
         time.sleep(30)
 
-        run = get_run(run_id, namespace=namespace)
+        run = get_run(run_id)
         status = run.run.status
         logger.info("Run status: %s", status)
 
@@ -406,7 +405,7 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
     except Exception:
         logger.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
                          " '%s'", run_name, run_id)
-    status = _wait_kfp_run(run_id, namespace)
+    status = _wait_kfp_run(run_id)
 
     # If run has not succeeded, return no metrics
     if status != "Succeeded":
