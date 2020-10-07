@@ -49,7 +49,8 @@ def get_client():
     return _client
 
 
-def snapshot_pvc(pvc_name, bucket=DEFAULT_BUCKET):
+def snapshot_pvc(pvc_name, bucket=DEFAULT_BUCKET, wait=False,
+                 interactive=False):
     """Perform a snapshot over a PVC."""
     rok = get_client()
     namespace = podutils.get_namespace()
@@ -62,12 +63,22 @@ def snapshot_pvc(pvc_name, bucket=DEFAULT_BUCKET):
               "namespace": namespace,
               "commit_title": commit_title,
               "commit_message": commit_message}
+
     # Create the bucket in case it does not exist
     podutils.create_rok_bucket(bucket, client=rok)
-    return rok.version_register(bucket, pvc_name, "dataset", params)
+
+    task_info = rok.version_register(bucket, pvc_name, "dataset", params,
+                                     wait=wait and not interactive)
+    if wait:
+        if interactive:
+            task_id = task_info["task"]["id"]
+            return monitor_snapshot_task(task_id, bucket=bucket)
+        else:
+            log.info("Successfully took Rok snapshot")
+    return task_info
 
 
-def snapshot_pod(bucket=DEFAULT_BUCKET):
+def snapshot_pod(bucket=DEFAULT_BUCKET, wait=False, interactive=False):
     """Take a Rok snapshot of the current Pod."""
     rok = get_client()
     pod_name = podutils.get_pod_name()
@@ -85,7 +96,16 @@ def snapshot_pod(bucket=DEFAULT_BUCKET):
 
     # Create the bucket in case it does not exist
     podutils.create_rok_bucket(bucket, client=rok)
-    return rok.version_register(bucket, pod_name, "pod", params)
+
+    task_info = rok.version_register(bucket, pod_name, "pod", params,
+                                     wait=wait and not interactive)
+    if wait:
+        if interactive:
+            task_id = task_info["task"]["id"]
+            return monitor_snapshot_task(task_id)
+        else:
+            log.info("Successfully took Rok snapshot")
+    return task_info
 
 
 def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
@@ -108,27 +128,10 @@ def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
     return rok.version_register(bucket, obj, "jupyter", params)
 
 
-def interactive_snapshot_and_get_volumes():
+def interactive_snapshot_and_get_volumes(bucket=DEFAULT_BUCKET):
     """Take a Rok snapshot of the Pod with interactive progress."""
     log.info("Taking a snapshot of the Pod's volumes...")
-    task_id = snapshot_pod()["task"]["id"]
-    log.info("Starting Rok snapshot with task id: %s", task_id)
-
-    task = None
-    status = None
-    with IncrementalBar('Rok Task: ', max=100) as bar:
-        while status not in ["success", "error", "canceled"]:
-            task = get_task(task_id=task_id)
-            status = task["status"]
-            bar.next(task["progress"] - bar.index)
-            time.sleep(2)
-
-    if status == "success":
-        log.info("Successfully created Rok snapshot")
-    elif status in ["error", "canceled"]:
-        raise RuntimeError("Rok task has failed (status: %s" % status)
-    else:
-        raise RuntimeError("Unknown Rok task status: %s" % status)
+    task = snapshot_pod(bucket=bucket, wait=True, interactive=True)
 
     return replace_cloned_volumes(
         bucket=task["bucket"],
@@ -137,6 +140,27 @@ def interactive_snapshot_and_get_volumes():
         # fixme: we should not call an rpc here, consider moving `list_volumes`
         #  to a common utils lib.
         volumes=nb.list_volumes(request=None))
+
+
+def monitor_snapshot_task(task_id, bucket=DEFAULT_BUCKET):
+    """Monitor a Rok task and show its progress with a progressbar."""
+    log.info("Monitoring Rok snapshot with task id: %s", task_id)
+    task = None
+    status = None
+    with IncrementalBar('Rok Task: ', max=100) as bar:
+        while status not in ["success", "error", "canceled"]:
+            task = get_task(task_id=task_id, bucket=bucket)
+            status = task["status"]
+            bar.next(task["progress"] - bar.index)
+            time.sleep(2)
+
+    if status == "success":
+        log.info("Successfully created Rok snapshot")
+    elif status in ["error", "canceled"]:
+        raise RuntimeError("Rok task has failed (status: %s)" % status)
+    else:
+        raise RuntimeError("Unknown Rok task status: %s" % status)
+    return task
 
 
 def get_task(task_id, bucket=DEFAULT_BUCKET):
