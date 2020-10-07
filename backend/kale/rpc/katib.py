@@ -26,7 +26,7 @@ KATIB_DEFAULTS = {"parallelTrialCount": 3, "maxTrialCount": 12,
 KATIB_EXPERIMENT_STATUS = ["Failed", "Succeeded", "Restarting", "Running",
                            "Created"]
 
-KATIB_TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:7a304af-feaafdd"
+KATIB_TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:69aaa59-b884ad5"
 
 RAW_TEMPLATE = """\
 apiVersion: batch/v1
