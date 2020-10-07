@@ -141,7 +141,12 @@ def resource_tf_load(uri, **kwargs):
     try:
         from tensorflow.keras.models import load_model
         log.info(f"Loading tf.Keras model: {uri}")
-        obj_tfkeras = load_model(uri, compile=False)
+        try:
+            obj_tfkeras = load_model(uri)
+        except OSError:
+            # XXX: try to load a model that was saved within a versioned
+            #  folder (for tensorflow serve)
+            obj_tfkeras = load_model(uri + "/1")
         return obj_tfkeras
     except ImportError:
         return fallback_load(uri, **kwargs)
@@ -151,7 +156,9 @@ def resource_tf_load(uri, **kwargs):
 def resource_tf_save(obj, path, **kwargs):
     """Save a tf.Keras model."""
     try:
-        log.info("Saving Keras model: %s", _get_obj_name(path))
-        obj.save(path + ".tfkeras")
+        log.info("Saving TF Keras model: %s", _get_obj_name(path))
+        # XXX: Adding `/1` since tensorflow serve expects the model's models
+        #  to be saved under a versioned folder
+        obj.save(path + ".tfkeras/1")
     except ImportError:
         fallback_save(obj, path, **kwargs)
