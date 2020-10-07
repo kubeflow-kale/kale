@@ -17,9 +17,9 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
     _kale_mlmdutils.init_metadata()
 {% endif %}
 {% if autosnapshot and step.name != 'final_auto_snapshot'  %}
-    from kale.common import podutils as _kale_podutils
+    from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
-    _kale_podutils.snapshot_pipeline_step(
+    _kale_rokutils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
         "{{ step.name }}",
         "{{ notebook_path }}",
@@ -74,10 +74,10 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 
 {%- if autosnapshot %}
 {%- if step.name == 'final_auto_snapshot' %}
-    from kale.common import podutils as _kale_podutils
+    from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
 {%- endif %}
-    _rok_snapshot_task = _kale_podutils.snapshot_pipeline_step(
+    _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "{{ pipeline_name }}",
         "{{ step.name }}",
         "{{ notebook_path }}",

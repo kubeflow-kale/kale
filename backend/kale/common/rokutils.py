@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import json
 import time
 import math
 import logging
@@ -21,8 +22,8 @@ import kubernetes
 from progress.bar import IncrementalBar
 
 from kale.rpc import nb
-from kale.common import podutils
-
+from kale.common import utils
+from kale.common import podutils, kfputils
 
 _client = None
 
@@ -65,7 +66,7 @@ def snapshot_pvc(pvc_name, bucket=DEFAULT_BUCKET, wait=False,
               "commit_message": commit_message}
 
     # Create the bucket in case it does not exist
-    podutils.create_rok_bucket(bucket, client=rok)
+    create_rok_bucket(bucket)
 
     task_info = rok.version_register(bucket, pvc_name, "dataset", params,
                                      wait=wait and not interactive)
@@ -95,7 +96,7 @@ def snapshot_pod(bucket=DEFAULT_BUCKET, wait=False, interactive=False):
               "commit_message": commit_message}
 
     # Create the bucket in case it does not exist
-    podutils.create_rok_bucket(bucket, client=rok)
+    create_rok_bucket(bucket)
 
     task_info = rok.version_register(bucket, pod_name, "pod", params,
                                      wait=wait and not interactive)
@@ -124,7 +125,7 @@ def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
 
     obj = obj or pod_name
     # Create the bucket in case it does not exist
-    podutils.create_rok_bucket(bucket, client=rok)
+    create_rok_bucket(bucket)
     return rok.version_register(bucket, obj, "jupyter", params)
 
 
@@ -250,3 +251,90 @@ def hydrate_pvc_from_snapshot(obj, version, new_pvc_name,
     ns_pvc = k8s_client.create_namespaced_persistent_volume_claim(ns, pvc)
     log.info("Successfully submitted PVC.")
     return {"name": ns_pvc.metadata.name}
+
+
+def create_rok_bucket(bucket):
+    """Create a new Rok bucket."""
+    log.info("Creating Rok bucket '%s'...", bucket)
+    from rok_gw_client.client import GatewayClientError
+    rok = get_client()
+
+    # FIXME: Currently the Rok API only supports update-or-create for buckets,
+    # so we do a HEAD first to avoid updating an existing bucket. This
+    # obviously has a small race, which should be removed by extending the Rok
+    # API with an exclusive creation API call.
+    try:
+        bucket_info = rok.bucket_info(bucket)
+        log.info("Rok bucket '%s' already exists", bucket)
+        return False, bucket_info
+    except GatewayClientError as e:
+        if e.response.status_code != 404:
+            raise
+
+        created, bucket_info = rok.bucket_create(bucket)
+        log.info("Successfully created Rok bucket '%s'", bucket)
+        return created, bucket_info
+
+
+def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
+    """Take a snapshot of a pipeline step with Rok."""
+    # Mark the start of the snapshotting procedure
+    log.info("%s Starting Rok snapshot procedure... (%s) %s", "-" * 10,
+             "before" if before else "after", "-" * 10)
+
+    log.info("Retrieving KFP run ID...")
+    run_uuid = podutils.get_run_uuid()
+    log.info("Retrieved KFP run ID: %s", run_uuid)
+    bucket = kfputils.get_experiment_from_run_id(run_uuid).name
+    obj = "{}-{}".format(pipeline, run_uuid)
+    commit_title = "Step: {} ({})".format(step, "start" if before else "end")
+    commit_message = "Autosnapshot {} step '{}' of pipeline run '{}'".format(
+        "before" if before else "after", step, run_uuid)
+    environment = json.dumps({"KALE_PIPELINE_STEP": step,
+                              "KALE_NOTEBOOK_PATH": nb_path})
+    metadata = json.dumps({"environment": environment, "kfp_runid": run_uuid})
+    params = {"pod": podutils.get_pod_name(),
+              "metadata": metadata,
+              "default_container": "main",
+              "commit_title": commit_title,
+              "commit_message": commit_message}
+    rok = get_client()
+    # Create the bucket in case it does not exist
+    create_rok_bucket(bucket)
+    log.info("Registering Rok version for '%s/%s'...", bucket, obj)
+    task_info = rok.version_register(bucket, obj, "pod", params, wait=True)
+    # FIXME: How do we retrieve the base URL of the ROK UI?
+    version = task_info["task"]["result"]["event"]["version"]
+    url_path = ("/rok/buckets/%s/files/%s/versions/%s?ns=%s"
+                % (utils.encode_url_component(bucket),
+                   utils.encode_url_component(obj),
+                   utils.encode_url_component(version),
+                   utils.encode_url_component(podutils.get_namespace())))
+    log.info("Successfully registered Rok version '%s'", version)
+
+    log.info("Successfully created snapshot for step '%s'", step)
+    if before:
+        log.info("You can explore the state of the notebook at the beginning"
+                 " of this step by spawning a new notebook from the following"
+                 " Rok snapshot:")
+    log.info("%s", url_path)
+
+    md_source = ("# Rok autosnapshot\n"
+                 "Rok has successfully created a snapshot for step `%s`.\n\n"
+                 "To **explore the execution state** at the beginning of "
+                 "this step follow the instructions below:\n\n"
+                 "1\\. View the [snapshot in the Rok UI](%s).\n\n"
+                 "2\\. Copy the Rok URL.\n\n"
+                 "3\\. Create a new Notebook Server by using this Rok URL to "
+                 "autofill the form." % (step, url_path))
+    if before:
+        metadata = {"outputs": [{"storage": "inline",
+                                 "source": md_source,
+                                 "type": "markdown"}]}
+        with open("/mlpipeline-ui-metadata.json", "w") as f:
+            json.dump(metadata, f)
+    # Mark the end of the snapshotting procedure
+    log.info("%s Successfully ran Rok snapshot procedure (%s) %s", "-" * 10,
+             "before" if before else "after", "-" * 10)
+
+    return task_info
