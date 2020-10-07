@@ -20,7 +20,7 @@ import kubernetes
 
 from progress.bar import IncrementalBar
 
-from kale.rpc import nb, log
+from kale.rpc import nb
 from kale.common import podutils
 
 
@@ -34,7 +34,7 @@ This snapshot was created by Kale in order to clone the volumes of the notebook
 and use them to spawn a Kubeflow pipeline.\
 """
 
-logger = log.create_adapter(logging.getLogger(__name__))
+log = logging.getLogger(__name__)
 
 
 def get_client():
@@ -53,6 +53,8 @@ def snapshot_pvc(pvc_name, bucket=DEFAULT_BUCKET):
     """Perform a snapshot over a PVC."""
     rok = get_client()
     namespace = podutils.get_namespace()
+    log.info("Taking a snapshot of PVC %s in namespace %s ..."
+             % (pvc_name, namespace))
     commit_title = "Snapshot PVC '{}'".format(pvc_name)
     commit_message = "This is a snapshot of PVC '{}' triggered by Kale".format(
         pvc_name)
@@ -70,6 +72,8 @@ def snapshot_pod(bucket=DEFAULT_BUCKET):
     rok = get_client()
     pod_name = podutils.get_pod_name()
     namespace = podutils.get_namespace()
+    log.info("Taking a snapshot of pod %s in namespace %s ..."
+             % (pod_name, namespace))
     commit_title = "Snapshot of pod {}".format(pod_name)
     commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(pod_name,
                                                              namespace)
@@ -89,6 +93,8 @@ def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
     rok = get_client()
     pod_name = podutils.get_pod_name()
     namespace = podutils.get_namespace()
+    log.info("Taking a snapshot of notebook %s in namespace %s ..."
+             % (pod_name, namespace))
     commit_title = "Snapshot of notebook {}".format(pod_name)
     commit_message = NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE.format(pod_name,
                                                              namespace)
@@ -104,9 +110,9 @@ def snapshot_notebook(bucket=DEFAULT_BUCKET, obj=None):
 
 def interactive_snapshot_and_get_volumes():
     """Take a Rok snapshot of the Pod with interactive progress."""
-    logger.info("Taking a snapshot of the Pod's volumes...")
+    log.info("Taking a snapshot of the Pod's volumes...")
     task_id = snapshot_pod()["task"]["id"]
-    logger.info("Starting Rok snapshot with task id: %s", task_id)
+    log.info("Starting Rok snapshot with task id: %s", task_id)
 
     task = None
     status = None
@@ -118,7 +124,7 @@ def interactive_snapshot_and_get_volumes():
             time.sleep(2)
 
     if status == "success":
-        logger.info("Successfully created Rok snapshot")
+        log.info("Successfully created Rok snapshot")
     elif status in ["error", "canceled"]:
         raise RuntimeError("Rok task has failed (status: %s" % status)
     else:
@@ -183,6 +189,8 @@ def _get_cloned_volume(volume, obj_name, members):
 def hydrate_pvc_from_snapshot(obj, version, new_pvc_name,
                               bucket=DEFAULT_BUCKET):
     """Create a new PVC out of a Rok snapshot."""
+    log.info("Creating new PVC '%s' from Rok version %s ..." %
+             (new_pvc_name, version))
     rok = get_client()
     version_info = rok.version_info(bucket, obj, version)
     # size of the snapshot
@@ -194,6 +202,7 @@ def hydrate_pvc_from_snapshot(obj, version, new_pvc_name,
         unit += 1
     size_repr = "%s%s" % (size, units[unit])
     rok_url = version_info['rok_url']
+    log.info("Using Rok url: %s" % rok_url)
 
     # todo: kubernetes python client v11 have a
     #  kubernetes.utils.create_from_dict that would make it much more nicer
@@ -215,4 +224,5 @@ def hydrate_pvc_from_snapshot(obj, version, new_pvc_name,
     k8s_client = podutils._get_k8s_v1_client()
     ns = podutils.get_namespace()
     ns_pvc = k8s_client.create_namespaced_persistent_volume_claim(ns, pvc)
+    log.info("Successfully submitted PVC.")
     return {"name": ns_pvc.metadata.name}
