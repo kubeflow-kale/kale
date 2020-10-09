@@ -46,6 +46,7 @@ setup(
         'jupyter-core >= 4.6.0',
         'nbconvert >= 5.6.1, < 6.0.0',
         'ipykernel >= 5.1.4',
+        'notebook >= 6.0.0',
         'packaging > 20',
         'ml_metadata == 0.24.0',
         'progress >= 1.5',
