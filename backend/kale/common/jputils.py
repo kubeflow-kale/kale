@@ -13,14 +13,19 @@
 #  limitations under the License.
 
 import os
+import re
 import sys
 import time
+import json
 import signal
 import logging
 import nbformat
+import requests
 import threading
+import ipykernel
 
 from queue import Empty
+from notebook import notebookapp
 from jupyter_client.kernelspec import get_kernel_spec
 from kale.common.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
@@ -309,3 +314,40 @@ def run_code(source: tuple, kernel_name='python3'):
     log.newline(lines=3)
     log.info("%s Successfully ran user code %s", "-" * 10, "-" * 10)
     return result
+
+
+def get_notebook_path():
+    """Returns the asb path of the Notebook or None if it cannot be determined.
+
+    NOTE: works only when the security is token-based or there is no password
+    """
+    log.info("Retrieving absolute path of the active notebook")
+    connection_file = os.path.basename(ipykernel.get_connection_file())
+    try:
+        kernel_id = re.search(r"kernel-(.+?)\.json", connection_file).group(1)
+    except AttributeError:
+        log.error("Could not load kernel id.")
+        return None
+
+    for srv in notebookapp.list_running_servers():
+        sess_url = "%sapi/sessions" % srv["url"]
+        # No token and no password
+        if srv["token"] == "" and not srv['password']:
+            req = requests.get(sess_url)
+        else:
+            token_query_param = "?token=%s" % srv["token"]
+            req = requests.get(sess_url + token_query_param)
+        if req.status_code != 200:
+            log.error("Session request failed with status code %s"
+                      % req.status_code)
+            return None
+        try:
+            sessions = json.loads(req.text)
+        except json.JSONDecodeError as e:
+            log.error("Could not parse session response: %s" % e)
+            return None
+        for sess in sessions:
+            if sess["kernel"]["id"] == kernel_id:
+                return os.path.join(srv["notebook_dir"],
+                                    sess["notebook"]["path"])
+    return None
