@@ -29,6 +29,7 @@ setup(
               'kale.marshal',
               'kale.processors',
               'kale.rpc',
+              'kale.kfserving',
               ],
     install_requires=[
         'kfp',
@@ -49,6 +50,7 @@ setup(
         'packaging > 20',
         'ml_metadata == 0.24.0',
         'progress >= 1.5',
+        'kfserving >= 0.4.0',
     ],
     extras_require={
         'dev': [

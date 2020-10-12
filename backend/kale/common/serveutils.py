@@ -140,7 +140,6 @@ class KFServer(object):
                                                       namespace, CO_PLURAL,
                                                       self.name)
         log.info("Successfully deleted InferenceService.")
-        del self
 
     def predict(self, data: str, tensor=False):
         """Hit the InferenceService endpoint.
