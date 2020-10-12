@@ -17,16 +17,9 @@ from kfp_server_api.rest import ApiException
 
 from kale.common import kfputils
 
-_client = None
-
 
 def _get_client(host=None):
-    global _client
-
-    if _client is None:
-        _client = kfp.Client()
-
-    return _client
+    return kfp.Client()
 
 
 def list_experiments(request):
