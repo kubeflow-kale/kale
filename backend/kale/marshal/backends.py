@@ -125,7 +125,7 @@ def resource_keras_load(uri, **kwargs):
         return fallback_load(uri, **kwargs)
 
 
-@resource_save.register(r'keras.*')
+@resource_save.register(r'keras\..*')
 def resource_keras_save(obj, path, **kwargs):
     """Save a Keras model."""
     try:
