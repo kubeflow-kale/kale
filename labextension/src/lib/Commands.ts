@@ -539,6 +539,8 @@ export default class Commands {
     }
 
     NotebookUtils.clearCellOutputs(this._notebook);
+    let title = 'Notebook Exploration';
+    let message: string[] = [];
     let runCellResponse = await NotebookUtils.runGlobalCells(this._notebook);
     if (runCellResponse.status === RUN_CELL_STATUS.OK) {
       // unmarshalData runs in the same kernel as the .ipynb, so it requires the
@@ -548,22 +550,23 @@ export default class Commands {
         this._notebook,
         exploration.step_name,
       );
-      const title = 'Notebook Exploration';
-      const message = [`Resuming notebook at step: "${exploration.step_name}"`];
+      message = exploration.final_snapshot
+        ? [`Resuming notebook after step: "${exploration.step_name}"`]
+        : [`Resuming notebook at step: "${exploration.step_name}"`];
       if (cell) {
         NotebookUtils.selectAndScrollToCell(this._notebook, cell);
       } else {
         message.push(`ERROR: Could not retrieve step's position.`);
       }
-      await NotebookUtils.showMessage(title, message);
     } else {
-      await NotebookUtils.showMessage('Notebook Exploration', [
+      message = [
         `Executing "${runCellResponse.cellType}" cell failed.\n` +
           `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
         `Error name: ${runCellResponse.ename}`,
         `Error value: ${runCellResponse.evalue}`,
-      ]);
+      ];
     }
+    await NotebookUtils.showMessage(title, message);
     await _legacy_executeRpcAndShowRPCError(
       this._notebook,
       this._kernel,

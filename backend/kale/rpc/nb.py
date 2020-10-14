@@ -27,6 +27,7 @@ from kale.common import podutils, kfputils, kfutils
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
+KALE_SNAPSHOT_FINAL_ENV = "KALE_SNAPSHOT_FINAL"
 
 logger = create_adapter(logging.getLogger(__name__))
 
@@ -189,9 +190,19 @@ def explore_notebook(request, source_notebook_path):
     step_name = os.getenv(KALE_PIPELINE_STEP_ENV, None)
     kale_marshal_dir = _get_kale_marshal_dir(source_notebook_path)
 
+    final_snapshot = str(os.getenv(KALE_SNAPSHOT_FINAL_ENV, "false")).lower()
+    if final_snapshot == "true":
+        final_snapshot = True
+    elif final_snapshot == "false":
+        final_snapshot = False
+    else:
+        raise ValueError("Env %s: Expected 'true' or 'false', but got: %s"
+                         % (KALE_SNAPSHOT_FINAL_ENV, final_snapshot))
+
     if step_name and os.path.exists(kale_marshal_dir):
         return {"is_exploration": True,
-                "step_name": step_name}
+                "step_name": step_name,
+                "final_snapshot": final_snapshot}
     return {"is_exploration": False,
             "step_name": ""}
 
