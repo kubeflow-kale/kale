@@ -291,8 +291,10 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
     commit_message = "Autosnapshot {} step '{}' of pipeline run '{}'".format(
         "before" if before else "after", step, run_uuid)
     environment = json.dumps({"KALE_PIPELINE_STEP": step,
-                              "KALE_NOTEBOOK_PATH": nb_path})
-    metadata = json.dumps({"environment": environment, "kfp_runid": run_uuid})
+                              "KALE_NOTEBOOK_PATH": nb_path,
+                              "KALE_SNAPSHOT_FINAL": not before})
+    metadata = json.dumps({"environment": environment, "kfp_runid": run_uuid,
+                           "state": "initial" if before else "final"})
     params = {"pod": podutils.get_pod_name(),
               "metadata": metadata,
               "default_container": "main",
