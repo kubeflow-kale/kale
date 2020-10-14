@@ -17,9 +17,15 @@ import __main__
 import os
 import re
 import sys
+import json
 import random
 import string
 import urllib
+import logging
+
+from typing import Dict
+
+log = logging.getLogger(__name__)
 
 
 def get_main_source_path():
@@ -93,3 +99,12 @@ def graceful_exit(exit_code):
         raise KaleGracefulExit
     else:
         sys.exit(exit_code)
+
+
+def read_json_from_file(path: str) -> Dict:
+    """Read a file that contains a JSON object and return it as dictionary."""
+    try:
+        return json.loads(open(path, 'r').read())
+    except json.JSONDecodeError:
+        log.exception("Failed to parse json file %s", path)
+        raise

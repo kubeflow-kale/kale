@@ -319,20 +319,34 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
                  " Rok snapshot:")
     log.info("%s", url_path)
 
-    md_source = ("# Rok autosnapshot\n"
-                 "Rok has successfully created a snapshot for step `%s`.\n\n"
-                 "To **explore the execution state** at the beginning of "
-                 "this step follow the instructions below:\n\n"
-                 "1\\. View the [snapshot in the Rok UI](%s).\n\n"
-                 "2\\. Copy the Rok URL.\n\n"
-                 "3\\. Create a new Notebook Server by using this Rok URL to "
-                 "autofill the form." % (step, url_path))
+    reproduce_steps = ("To **explore the execution state** at the **%s** of"
+                       " this step follow the instructions below:\n\n"
+                       "1\\. View the [snapshot in the Rok UI](%s).\n\n"
+                       "2\\. Copy the Rok URL.\n\n"
+                       "3\\. Create a new Notebook Server by using this Rok"
+                       " URL to autofill the form.")
+
     if before:
-        metadata = {"outputs": [{"storage": "inline",
-                                 "source": md_source,
-                                 "type": "markdown"}]}
-        with open("/mlpipeline-ui-metadata.json", "w") as f:
-            json.dump(metadata, f)
+        md_source = (("# Rok autosnapshot\n"
+                      "Rok has successfully created a snapshot for step `%s`."
+                      "\n\n" + reproduce_steps)
+                     % (step, "beginning", url_path))
+    else:
+        md_source = (("# Rok final autosnapshot\n"
+                      "Rok has successfully created a snapshot **after** the"
+                      " execution of step `%s`.\n\n" + reproduce_steps)
+                     % (step, "end", url_path))
+
+    try:
+        metadataui = kfputils.get_current_uimetadata(default_if_not_exist=True)
+    except json.JSONDecodeError:
+        log.error("This step will not create a Rok markdown artifact.")
+    else:
+        metadataui["outputs"].append({"storage": "inline",
+                                      "source": md_source,
+                                      "type": "markdown"})
+        with open(kfputils.KFP_UI_METADATA_FILE_PATH, "w") as f:
+            json.dump(metadataui, f)
     # Mark the end of the snapshotting procedure
     log.info("%s Successfully ran Rok snapshot procedure (%s) %s", "-" * 10,
              "before" if before else "after", "-" * 10)
