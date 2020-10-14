@@ -319,20 +319,35 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
                  " Rok snapshot:")
     log.info("%s", url_path)
 
-    md_source = ("# Rok autosnapshot\n"
-                 "Rok has successfully created a snapshot for step `%s`.\n\n"
-                 "To **explore the execution state** at the beginning of "
-                 "this step follow the instructions below:\n\n"
-                 "1\\. View the [snapshot in the Rok UI](%s).\n\n"
-                 "2\\. Copy the Rok URL.\n\n"
-                 "3\\. Create a new Notebook Server by using this Rok URL to "
-                 "autofill the form." % (step, url_path))
     if before:
-        metadata = {"outputs": [{"storage": "inline",
-                                 "source": md_source,
-                                 "type": "markdown"}]}
-        with open("/mlpipeline-ui-metadata.json", "w") as f:
-            json.dump(metadata, f)
+        md_source = ("# Rok autosnapshot\n"
+                     "Rok has successfully created a snapshot for step `%s`."
+                     "\n\n"
+                     "To **explore the execution state** at the **beginning**"
+                     " of this step follow the instructions below:\n\n"
+                     "1\\. View the [snapshot in the Rok UI](%s).\n\n"
+                     "2\\. Copy the Rok URL.\n\n"
+                     "3\\. Create a new Notebook Server by using this Rok URL"
+                     " to autofill the form."
+                     % (step, url_path))
+    else:
+        md_source = ("# Rok final autosnapshot\n"
+                     "Rok has successfully created a snapshot **after** the"
+                     " execution of step `%s`.\n\n"
+                     "To reproduce the state at the **end** of this step"
+                     " follow the instructions below:\n\n"
+                     "1\\. View the [snapshot in the Rok UI](%s).\n\n"
+                     "2\\. Copy the Rok URL.\n\n"
+                     "3\\. Create a new Notebook Server by using this Rok URL"
+                     " to autofill the form."
+                     % (step, url_path))
+
+    metadata = kfputils.get_current_uimetadata()
+    metadata["outputs"].append({"storage": "inline",
+                                "source": md_source,
+                                "type": "markdown"})
+    with open("/mlpipeline-ui-metadata.json", "w") as f:
+        json.dump(metadata, f)
     # Mark the end of the snapshotting procedure
     log.info("%s Successfully ran Rok snapshot procedure (%s) %s", "-" * 10,
              "before" if before else "after", "-" * 10)

@@ -33,6 +33,7 @@ from kale.common import utils, podutils, workflowutils
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
+KFP_UI_METADATA_FILE_PATH = "/mlpipeline-ui-metadata.json"
 KALE_KATIB_KFP_ANNOTATION = "kubeflow-kale.org/kfp-run-uuid"
 
 _logger = None
@@ -162,26 +163,35 @@ def generate_run_name(pipeline_name: str):
     return "{}_run-{}".format(pipeline_name, utils.random_string(5))
 
 
+def get_current_uimetadata(uimetadata_path=KFP_UI_METADATA_FILE_PATH):
+    """Parse the current UI metadata file and return its contents as dict."""
+    try:
+        outputs = utils.read_json_from_file(uimetadata_path)
+    except json.JSONDecodeError:
+        return None
+
+    if not outputs:
+        # Default empty ui-metadata dict
+        outputs = {"outputs": []}
+    elif not outputs.get("outputs", None):
+        outputs["outputs"] = []
+
+    return outputs
+
+
 def update_uimetadata(artifact_name,
-                      uimetadata_path='/mlpipeline-ui-metadata.json'):
+                      uimetadata_path=KFP_UI_METADATA_FILE_PATH):
     """Update ui-metadata dictionary with a new web-app entry.
 
     Args:
         artifact_name: Name of the artifact
         uimetadata_path: path to mlpipeline-ui-metadata.json
     """
-    # Default empty ui-metadata dict
-    outputs = {"outputs": []}
-    if os.path.exists(uimetadata_path):
-        try:
-            outputs = json.loads(
-                open(uimetadata_path, 'r').read())
-            if not outputs.get('outputs', None):
-                outputs['outputs'] = []
-        except json.JSONDecodeError as e:
-            print("Failed to parse json file {}: {}\n"
-                  "This step will not be able to visualize artifacts in the"
-                  " KFP UI".format(uimetadata_path, e))
+    outputs = get_current_uimetadata(uimetadata_path)
+    if outputs is None:
+        log.error("This step will not be able to visualize artifacts in the"
+                  " KFP UI")
+        return
 
     pod_name = podutils.get_pod_name()
     namespace = podutils.get_namespace()
