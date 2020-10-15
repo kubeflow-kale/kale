@@ -401,7 +401,11 @@ class MLMetadata(object):
         task_info = rok_client.version_info(bucket, obj, version)
         members = int(task_info["group_member_count"])
         url = task_info["rok_url"]
-        uri = "/rok/buckets/%s/files/%s/versions/%s" % (bucket, obj, version)
+        uri = ("/rok/buckets/%s/files/%s/versions/%s?ns=%s"
+               % (utils.encode_url_component(bucket),
+                  utils.encode_url_component(obj),
+                  utils.encode_url_component(version),
+                  utils.encode_url_component(self.pod_namespace)))
         hash_value = task_info["hash"]
 
         property_types = ROK_SNAPSHOT_ARTIFACT_PROPERTIES
