@@ -161,19 +161,23 @@ def _list_volumes(client, namespace, pod_name, container_name):
         #  result in an incomplete notebook snapshot.
         pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
                                                              namespace)
-        if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS and pvc.spec.storage_class_name != ROOK_CEPHFS_CSI_STORAGE_CLASS:
-            msg = ("Found PVC with storage class '%s'. Only storage classes '%s' and '%s'"
-                   " are supported."
-                   % (pvc.spec.storage_class_name, ROK_CSI_STORAGE_CLASS, ROOK_CEPHFS_CSI_STORAGE_CLASS))
+        if (pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS
+           and pvc.spec.storage_class_name != ROOK_CEPHFS_CSI_STORAGE_CLASS):
+            msg = ("Found PVC with storage class '%s'. "
+                   "Only storage classes '%s' and '%s' are supported."
+                   % (pvc.spec.storage_class_name,
+                      ROK_CSI_STORAGE_CLASS, ROOK_CEPHFS_CSI_STORAGE_CLASS))
             raise RuntimeError(msg)
 
         ann = pvc.metadata.annotations
         provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
                               None)
-        if provisioner != ROK_CSI_STORAGE_PROVISIONER and provisioner != ROOK_CEPHFS_CSI_STORAGE_PROVISIONER:
-            msg = ("Found PVC storage provisioner '%s'. Only storage"
-                   " provisioners '%s' and '%s' are supported."
-                   % (provisioner, ROK_CSI_STORAGE_PROVISIONER, ROOK_CEPHFS_CSI_STORAGE_PROVISIONER))
+        if (provisioner != ROK_CSI_STORAGE_PROVISIONER
+           and provisioner != ROOK_CEPHFS_CSI_STORAGE_PROVISIONER):
+            msg = ("Found PVC storage provisioner '%s'. "
+                   "Only storage provisioners '%s' and '%s' are supported."
+                   % (provisioner, ROK_CSI_STORAGE_PROVISIONER,
+                      ROOK_CEPHFS_CSI_STORAGE_PROVISIONER))
             raise RuntimeError(msg)
 
         mount_path = _get_mount_path(container, volume)

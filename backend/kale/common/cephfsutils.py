@@ -13,9 +13,9 @@
 #  limitations under the License.
 #
 #  To allow a notebook to create Rook CephFS snapshot a ClusterRole
-#  and RoleBinding for the default-editor service account in the 
+#  and RoleBinding for the default-editor service account in the
 #  given namespace must be applied. Below are examples for use with the
-#  namespace "admin". 
+#  namespace "admin".
 #
 #  !!!WARNING!!!
 #  Might not be secure, only use for testing
@@ -55,17 +55,10 @@
 #    name: snapshot-access
 #    apiGroup: rbac.authorization.k8s.io
 
-import os
-import copy
-import json
-import time
-import math
 import logging
 import kubernetes
 
 from kale.common import podutils
-from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
-from kale.rpc.log import create_adapter
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -76,15 +69,22 @@ and use them to spawn a Kubeflow pipeline.\
 log = logging.getLogger(__name__)
 
 
-def snapshot_pvc(snapshot_name, pvc_name):
+def snapshot_pvc(snapshot_name, pvc_name, image="", path="", **kwargs):
     """Perform a snapshot over a PVC."""
     snapshot_resource = {
-    "apiVersion": "snapshot.storage.k8s.io/v1beta1",
-    "kind": "VolumeSnapshot",
-    "metadata": {"name": snapshot_name},
-    "spec": {
-        "volumeSnapshotClassName": "csi-cephfsplugin-snapclass",
-        "source": {"persistentVolumeClaimName": pvc_name}
+        "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+        "kind": "VolumeSnapshot",
+        "metadata": {
+            "name": snapshot_name,
+            "annotations": {
+                "container_image": image,
+                "volume_path": path
+            },
+            "labels": kwargs
+        },
+        "spec": {
+            "volumeSnapshotClassName": "csi-cephfsplugin-snapclass",
+            "source": {"persistentVolumeClaimName": pvc_name}
         }
     }
     co_client = podutils._get_k8s_custom_objects_client()
@@ -92,14 +92,54 @@ def snapshot_pvc(snapshot_name, pvc_name):
     log.info("Taking a snapshot of PVC %s in namespace %s ..."
              % (pvc_name, namespace))
     task_info = co_client.create_namespaced_custom_object(
-    group="snapshot.storage.k8s.io",
-    version="v1beta1",
-    namespace=namespace,
-    plural="volumesnapshots",
-    body=snapshot_resource,
-    )
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        body=snapshot_resource)
 
     return task_info
+
+
+def snapshot_pod():
+    """Take snapshots of the current Pod's PVCs."""
+    volumes = [(path, volume.name, size)
+               for path, volume, size in podutils.list_volumes()]
+    namespace = podutils.get_namespace()
+    pod_name = podutils.get_pod_name()
+    log.info("Taking a snapshot of pod %s in namespace %s ..."
+             % (pod_name, namespace))
+    snapshot_names = []
+    for i in volumes:
+        snapshot_pvc(
+            "snapshot." + i[1],
+            i[1],
+            pod=pod_name,
+            default_container=podutils.get_container_name())
+        snapshot_names.append("snapshot." + i[1])
+    return snapshot_names
+
+
+def snapshot_notebook():
+    """Take snapshots of the current Notebook's PVCs and store its metadata."""
+    volumes = [(path, volume.name, size)
+               for path, volume, size in podutils.list_volumes()]
+    namespace = podutils.get_namespace()
+    pod_name = podutils.get_pod_name()
+    log.info("Taking a snapshot of notebook %s in namespace %s ..."
+             % (pod_name, namespace))
+    snapshot_names = []
+    for i in volumes:
+        snapshot_pvc(
+            "snapshot." + i[1],
+            i[1],
+            image=podutils.get_docker_base_image(),
+            path=i[0],
+            pod=pod_name,
+            default_container=podutils.get_container_name(),
+            is_workspace_dir=str(podutils.is_workspace_dir(i[0])))
+        snapshot_names.append("snapshot." + i[1])
+    return snapshot_names
 
 
 def check_snapshot_status(snapshot_name):
@@ -110,9 +150,9 @@ def check_snapshot_status(snapshot_name):
     task = get_pvc_snapshot(snapshot_name=snapshot_name)
     status = task['status']['readyToUse']
 
-    if status == True:
+    if status is True:
         log.info("Successfully created volume snapshot")
-    elif status == False:
+    elif status is False:
         raise RuntimeError("Snapshot not ready (status: %s)" % status)
     else:
         raise RuntimeError("Unknown snapshot task status: %s" % status)
@@ -123,15 +163,28 @@ def get_pvc_snapshot(snapshot_name):
     """Get info about a pvc snapshot."""
     co_client = podutils._get_k8s_custom_objects_client()
     namespace = podutils.get_namespace()
-    
+
     pvc_snapshot = co_client.get_namespaced_custom_object(
-    group="snapshot.storage.k8s.io",
-    version="v1beta1",
-    namespace=namespace,
-    plural="volumesnapshots",
-    name=snapshot_name,
-    )
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        name=snapshot_name)
     return pvc_snapshot
+
+
+def list_pvc_snapshots(label_selector=""):
+    """List pvc snapshots."""
+    co_client = podutils._get_k8s_custom_objects_client()
+    namespace = podutils.get_namespace()
+
+    pvc_snapshots = co_client.list_namespaced_custom_object(
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        label_selector=label_selector)
+    return pvc_snapshots
 
 
 def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
@@ -150,6 +203,7 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata=kubernetes.client.V1ObjectMeta(
+            annotations={"snapshot_content/origin": content_name},
             name=new_pvc_name
         ),
         spec=kubernetes.client.V1PersistentVolumeClaimSpec(
@@ -167,34 +221,33 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
     k8s_client = podutils._get_k8s_v1_client()
     ns = podutils.get_namespace()
     status = check_snapshot_status(source_snapshot_name)
-    if status == True:
+    if status is True:
         ns_pvc = k8s_client.create_namespaced_persistent_volume_claim(ns, pvc)
-    elif status == False:
+    elif status is False:
         raise RuntimeError("Snapshot not ready (status: %s)" % status)
     else:
         raise RuntimeError("Unknown Rok task status: %s" % status)
     return {"name": ns_pvc.metadata.name}
 
 
-def delete_pvc(name):
+def delete_pvc(pvc_name):
     client = podutils._get_k8s_v1_client()
     namespace = podutils.get_namespace()
     client.delete_namespaced_persistent_volume_claim(
-    namespace=namespace,
-    name=name,)
+        namespace=namespace,
+        name=pvc_name)
     return
 
 
-def delete_pvc_snapshot(name):
+def delete_pvc_snapshot(snapshot_name):
     """Delete a pvc snapshot."""
     co_client = podutils._get_k8s_custom_objects_client()
     namespace = podutils.get_namespace()
-    
+
     co_client.delete_namespaced_custom_object(
-    group="snapshot.storage.k8s.io",
-    version="v1beta1",
-    namespace=namespace,
-    plural="volumesnapshots",
-    name=name,
-    )
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        name=snapshot_name)
     return
