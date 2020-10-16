@@ -324,18 +324,11 @@ def _create_kfp_run(pipeline_id: str, run_name: str, version_id: str = None,
     return run.id
 
 
-def _annotate_trial(trial_name, annotation_key, annotation_value):
+def _annotate_trial(trial_name, annotations):
     """Add annotation to a trial in the pod's namespace."""
-    group = "kubeflow.org"
-    version = "v1alpha3"
-    plural = "trials"
-    patch = {"apiVersion": "%s/%s" % (group, version),
-             "metadata": {"name": trial_name,
-                          "annotations": {annotation_key: annotation_value}}}
-    k8s_client = podutils._get_k8s_custom_objects_client()
-    k8s_client.patch_namespaced_custom_object(group, version,
-                                              podutils.get_namespace(), plural,
-                                              trial_name, patch)
+    podutils.annotate_k8s_object("kubeflow.org", "v1alpha3", "trials",
+                                 trial_name, podutils.get_namespace(),
+                                 annotations)
 
 
 def _wait_kfp_run(run_id: str):
@@ -423,7 +416,7 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
                 run_name, run_id)
     try:
         # Katib Trial name == KFP Run name by design (see rpc.katib)
-        _annotate_trial(run_name, KALE_KATIB_KFP_ANNOTATION, run_id)
+        _annotate_trial(run_name, {KALE_KATIB_KFP_ANNOTATION: run_id})
     except Exception:
         logger.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
                          " '%s'", run_name, run_id)
