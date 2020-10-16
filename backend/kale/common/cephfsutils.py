@@ -112,7 +112,7 @@ def snapshot_pod():
     snapshot_names = []
     for i in volumes:
         snapshot_pvc(
-            "snapshot." + i[1],
+            "pod-snapshot-" + i[1],
             i[1],
             pod=pod_name,
             default_container=podutils.get_container_name())
@@ -131,7 +131,7 @@ def snapshot_notebook():
     snapshot_names = []
     for i in volumes:
         snapshot_pvc(
-            "snapshot." + i[1],
+            "nb-snapshot-" + i[1],
             i[1],
             image=podutils.get_docker_base_image(),
             path=i[0],
@@ -203,7 +203,7 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata=kubernetes.client.V1ObjectMeta(
-            annotations={"snapshot_content/origin": content_name},
+            annotations={"snapshot_origin": content_name},
             name=new_pvc_name
         ),
         spec=kubernetes.client.V1PersistentVolumeClaimSpec(
@@ -230,7 +230,110 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
     return {"name": ns_pvc.metadata.name}
 
 
+def get_nb_name_from_snapshot(snapshot_name):
+    """Get the name of the notebook that the snapshot was taken from."""
+    snapshot = get_pvc_snapshot(snapshot_name=snapshot_name)
+    orig_notebook = snapshot["metadata"]["labels"]["default_container"]
+    return orig_notebook
+
+
+def get_nb_image_from_snapshot(snapshot_name):
+    """Get the image of the notebook that the snapshot was taken from."""
+    snapshot = get_pvc_snapshot(snapshot_name=snapshot_name)
+    image = snapshot["metadata"]["annotations"]["container_image"]
+    return image
+
+
+def get_nb_pvcs_from_snapshot(snapshot_name):
+    """Get all the PVCs that were mounted to the NB when the snapshot was taken.
+
+    Returns JSON list.
+    """
+    selector = "default_container=" + get_nb_name_from_snapshot(snapshot_name)
+    all_volumes = list_pvc_snapshots(label_selector=selector)["items"]
+    volumes = []
+    for i in all_volumes:
+        snapshot_name = i["metadata"]["name"]
+        source_pvc_name = i["spec"]["source"]["persistentVolumeClaimName"]
+        path = i["metadata"]["annotations"]["volume_path"]
+        row = {
+            "mountPath": path,
+            "snapshot_name": snapshot_name,
+            "source_pvc": source_pvc_name}
+        volumes.append(row)
+    return volumes
+
+
+def restore_pvcs_from_snapshot(snapshot_name):
+    """Restore the NB PVCs from their snapshots."""
+    source_snapshots = get_nb_pvcs_from_snapshot(snapshot_name)
+    replaced_volume_mounts = []
+    for i in source_snapshots:
+        new_pvc_name = "restored-" + i["source_pvc"]
+        pvc_name = hydrate_pvc_from_snapshot(new_pvc_name, i["snapshot_name"])
+        path = i["mountPath"]
+        row = {"mountPath": path, "name": pvc_name["name"]}
+        replaced_volume_mounts.append(row)
+    return replaced_volume_mounts
+
+
+def replace_cloned_volumes(volume_mounts):
+    """Replace the volumes with the volumes restored from the snapshot."""
+    replaced_volumes = []
+    for i in volume_mounts:
+        name = i["name"]
+        row = {"name": name, "persistentVolumeClaim": {"claimName": name}}
+        replaced_volumes.append(row)
+    return replaced_volumes
+
+
+def restore_notebook(snapshot_name):
+    """Restore a notebook from a PVC snapshot."""
+    name = "restored-" + get_nb_name_from_snapshot(snapshot_name)
+    namespace = podutils.get_namespace()
+    image = get_nb_image_from_snapshot(snapshot_name)
+    volume_mounts = restore_pvcs_from_snapshot(snapshot_name)
+    volumes = replace_cloned_volumes(volume_mounts)
+    notebook_resource = {
+        "apiVersion": "kubeflow.org/v1alpha1",
+        "kind": "Notebook",
+        "metadata": {
+            "labels": {
+                "app": name
+            },
+            "name": name,
+            "namespace": namespace},
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "env": [],
+                            "image": image,
+                            "name": name,
+                            "resources": {
+                                "requests": {
+                                    "cpu": "0.5",
+                                    "memory": "1.0Gi"}},
+                                "volumeMounts": volume_mounts}],
+                            "serviceAccountName": "default-editor",
+                            "ttlSecondsAfterFinished": 300,
+                            "volumes": volumes}}}}
+    co_client = podutils._get_k8s_custom_objects_client()
+    log.info("Restoring notebook %s from PVC snapshot %s in namespace %s ..."
+             % (name, snapshot_name, namespace))
+    task_info = co_client.create_namespaced_custom_object(
+        group="kubeflow.org",
+        version="v1alpha1",
+        namespace=namespace,
+        plural="notebooks",
+        body=notebook_resource)
+
+    return task_info
+
+
 def delete_pvc(pvc_name):
+    """Delete a pvc."""
     client = podutils._get_k8s_v1_client()
     namespace = podutils.get_namespace()
     client.delete_namespaced_persistent_volume_claim(
