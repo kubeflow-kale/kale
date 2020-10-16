@@ -21,6 +21,10 @@ ARGO_WORKFLOW_LABEL_KEY = "workflows.argoproj.io/workflow"
 ARGO_COMPLETED_LABEL_KEY = "workflows.argoproj.io/completed"
 ARGO_PHASE_LABEL_KEY = "workflows.argoproj.io/phase"
 
+ARGO_API_GROUP = "argoproj.io"
+ARGO_API_VERSION = "v1alpha1"
+ARGO_WORKFLOWS_PLURAL = "workflows"
+
 
 def find_pod_parents(node_name, workflow):
     """Find all direct pod-type parents of a node.
@@ -62,9 +66,15 @@ def get_workflow_name(pod_name, namespace):
 
 def get_workflow(name, namespace):
     """Get a workflow."""
-    api_group = "argoproj.io"
-    api_version = "v1alpha1"
-    co_name = "workflows"
     co_client = podutils._get_k8s_custom_objects_client()
-    return co_client.get_namespaced_custom_object(api_group, api_version,
-                                                  namespace, co_name, name)
+    return co_client.get_namespaced_custom_object(ARGO_API_GROUP,
+                                                  ARGO_API_VERSION,
+                                                  namespace,
+                                                  ARGO_WORKFLOWS_PLURAL, name)
+
+
+def annotate_workflow(name, namespace, annotations):
+    """Anotate a workflow."""
+    podutils.annotate_k8s_object(ARGO_API_GROUP, ARGO_API_VERSION,
+                                 ARGO_WORKFLOWS_PLURAL, name, namespace,
+                                 annotations)
