@@ -307,3 +307,12 @@ def compute_component_id(pod):
     component_id = component_name + "@sha256=" + component_spec_digest
     log.info("Computed component ID: %s", component_id)
     return component_id
+
+
+def annotate_k8s_object(group, version, plural, name, namespace, annotations):
+    """Annotate a custom Kubernetes object."""
+    patch = {"apiVersion": "%s/%s" % (group, version),
+             "metadata": {"name": name, "annotations": annotations}}
+    k8s_client = _get_k8s_custom_objects_client()
+    k8s_client.patch_namespaced_custom_object(group, version, namespace,
+                                              plural, name, patch)
