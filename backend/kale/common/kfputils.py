@@ -417,6 +417,29 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
         logger.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
                          " '%s'", run_name, run_id)
 
+    logger.info("Getting Workflow name for run '%s'...", run_id)
+    workflow_name = _get_workflow_from_run(get_run(run_id))["metadata"]["name"]
+    logger.info("Workflow name: %s", workflow_name)
+    logger.info("Getting the Katib trial...")
+    trial = katibutils.get_trial(run_name, pod_namespace)
+    logger.info("Trial name: %s, UID: %s", trial["metadata"]["name"],
+                trial["metadata"]["uid"])
+    logger.info("Getting owner Katib experiment of trial...")
+    exp_name, exp_id = katibutils.get_owner_experiment_from_trial(trial)
+    logger.info("Experiment name: %s, UID: %s", exp_name, exp_id)
+    wf_annotations = {
+        katibutils.EXPERIMENT_NAME_ANNOTATION_KEY: exp_name,
+        katibutils.EXPERIMENT_ID_ANNOTATION_KEY: exp_id,
+        katibutils.TRIAL_NAME_ANNOTATION_KEY: trial["metadata"]["name"],
+        katibutils.TRIAL_ID_ANNOTATION_KEY: trial["metadata"]["uid"],
+    }
+    try:
+        workflowutils.annotate_workflow(workflow_name, pod_namespace,
+                                        wf_annotations)
+    except Exception:
+        logger.exception("Failed to annotate Workflow '%s' with the Katib"
+                         " details", workflow_name)
+
     status = _wait_kfp_run(run_id)
 
     # If run has not succeeded, return no metrics
@@ -432,3 +455,7 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
         logger.info("%s=%s", name, value)
 
     return run_metrics
+
+
+def _get_workflow_from_run(run):
+    return json.loads(run.pipeline_runtime.workflow_manifest)
