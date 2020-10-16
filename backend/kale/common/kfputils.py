@@ -28,7 +28,7 @@ from kfp import Client
 from kfp.compiler import Compiler
 from kfp_server_api.rest import ApiException
 
-from kale.common import utils, podutils, workflowutils
+from kale.common import utils, podutils, workflowutils, katibutils
 
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
@@ -324,13 +324,6 @@ def _create_kfp_run(pipeline_id: str, run_name: str, version_id: str = None,
     return run.id
 
 
-def _annotate_trial(trial_name, annotations):
-    """Add annotation to a trial in the pod's namespace."""
-    podutils.annotate_k8s_object("kubeflow.org", "v1alpha3", "trials",
-                                 trial_name, podutils.get_namespace(),
-                                 annotations)
-
-
 def _wait_kfp_run(run_id: str):
     """Wait for a KFP run to complete.
 
@@ -409,6 +402,8 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
     """
     logger = _get_logger()
 
+    pod_namespace = podutils.get_namespace()
+
     run_id = _create_kfp_run(pipeline_id, run_name, version_id,
                              experiment_name, namespace, **kwargs)
 
@@ -416,10 +411,12 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
                 run_name, run_id)
     try:
         # Katib Trial name == KFP Run name by design (see rpc.katib)
-        _annotate_trial(run_name, {KALE_KATIB_KFP_ANNOTATION: run_id})
+        katibutils.annotate_trial(run_name, pod_namespace,
+                                  {KALE_KATIB_KFP_ANNOTATION: run_id})
     except Exception:
         logger.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
                          " '%s'", run_name, run_id)
+
     status = _wait_kfp_run(run_id)
 
     # If run has not succeeded, return no metrics
