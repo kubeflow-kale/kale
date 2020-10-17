@@ -188,7 +188,7 @@ def list_pvc_snapshots(label_selector=""):
 
 
 def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
-    """Create a new PVC out of a Rok snapshot."""
+    """Create a new PVC out of a volume snapshot."""
     log.info("Creating new PVC '%s' from snapshot %s ..." %
              (new_pvc_name, source_snapshot_name))
     snapshot_info = get_pvc_snapshot(source_snapshot_name)
