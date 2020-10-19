@@ -142,11 +142,11 @@ def resource_tf_load(uri, **kwargs):
         from tensorflow.keras.models import load_model
         log.info(f"Loading tf.Keras model: {uri}")
         try:
-            obj_tfkeras = load_model(uri)
+            obj_tfkeras = load_model(uri, compile=False)
         except OSError:
             # XXX: try to load a model that was saved within a versioned
             #  folder (for tensorflow serve)
-            obj_tfkeras = load_model(uri + "/1")
+            obj_tfkeras = load_model(uri + "/1", compile=False)
         return obj_tfkeras
     except ImportError:
         return fallback_load(uri, **kwargs)
