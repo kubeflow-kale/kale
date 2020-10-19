@@ -175,12 +175,9 @@ def unmarshal_data(source_notebook_path):
     if not os.path.exists(kale_marshal_dir):
         return {}
 
-    load_file_names = [f for f in os.listdir(kale_marshal_dir)
-                       if os.path.isfile(os.path.join(kale_marshal_dir, f))]
-
     return {os.path.splitext(f)[0]:
             marshal.load(os.path.join(kale_marshal_dir, f))
-            for f in load_file_names}
+            for f in os.listdir(kale_marshal_dir)}
 
 
 def explore_notebook(request, source_notebook_path):
