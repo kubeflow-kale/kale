@@ -336,6 +336,31 @@ def list_snapshotclass_storage_provisioners(label_selector=""):
     return snapshotclass_provisioners
 
 
+def check_snapshot_availability():
+    """Check if snapshotclasses are available for notebook."""
+    client = _get_k8s_v1_client()
+    namespace = get_namespace()
+    pod_name = get_pod_name()
+    pod = client.read_namespaced_pod(pod_name, namespace)
+    snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
+
+    for volume in pod.spec.volumes:
+        pvc = volume.persistent_volume_claim
+        if not pvc:
+            continue
+        pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
+                                                             namespace)
+        ann = pvc.metadata.annotations
+        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
+                              None)
+        if provisioner not in snapshotclass_provisioners:
+            msg = ("Found PVC storage provisioner '%s'. "
+                   "Only storage provisioners able to take snapshots "
+                   "are supported."
+                   % (provisioner))
+            raise RuntimeError(msg)
+
+
 def get_snapshotclass_provisioners_names():
     """Get the names of snapshotclass storage provisioners."""
     client = _get_k8s_storage_client()

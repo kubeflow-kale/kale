@@ -84,6 +84,7 @@ async function activate(
   //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
   const backend = await getBackend(kernel);
   let rokError: IRPCError = null;
+  let snapshotError: IRPCError = null;
   if (backend) {
     try {
       await executeRpc(kernel, 'log.setup_logging');
@@ -106,6 +107,26 @@ async function activate(
       ) {
         rokError = error.error;
         console.warn('Rok is not available', rokError);
+      } else {
+        globalUnhandledRejection({ reason: error });
+        throw error;
+      }
+    }
+
+    try {
+      await executeRpc(kernel, 'snapshot.check_snapshot_availability');
+    } catch (error) {
+      const unexpectedErrorCodes = [
+        RPC_CALL_STATUS.EncodingError,
+        RPC_CALL_STATUS.ImportError,
+        RPC_CALL_STATUS.UnhandledError,
+      ];
+      if (
+        error instanceof RPCError &&
+        !unexpectedErrorCodes.includes(error.error.code)
+      ) {
+        snapshotError = error.error;
+        console.warn('Snapshots are not available', snapshotError);
       } else {
         globalUnhandledRejection({ reason: error });
         throw error;
