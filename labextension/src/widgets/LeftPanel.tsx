@@ -60,6 +60,7 @@ interface IProps {
   backend: boolean;
   kernel: Kernel.IKernelConnection;
   rokError: IRPCError;
+  snapshotError: IRPCError;
 }
 
 interface IState {
@@ -817,6 +818,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         autosnapshot={this.state.metadata.autosnapshot}
         updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
         rokError={this.props.rokError}
+        snapshotError={this.props.snapshotError}
         updateVolumes={this.updateVolumes}
         storageClassName={this.state.metadata.storage_class_name}
         updateStorageClassName={this.updateStorageClassName}

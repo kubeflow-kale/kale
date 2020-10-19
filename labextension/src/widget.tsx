@@ -196,6 +196,7 @@ async function activate(
         backend={backend}
         kernel={kernel}
         rokError={rokError}
+        snapshotError={snapshotError}
       />,
     );
     widget.id = 'kubeflow-kale/kubeflowDeployment';
