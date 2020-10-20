@@ -82,4 +82,5 @@ def test_create_katib_experiment():
     target = open(os.path.join(THIS_DIR,
                                "../assets/yamls",
                                "katib-experiment.yaml")).read()
+    target = target.replace("{{KATIB_TRIAL_IMAGE}}", katib.KATIB_TRIAL_IMAGE)
     assert handle.write.mock_calls[0][1][0] == target
