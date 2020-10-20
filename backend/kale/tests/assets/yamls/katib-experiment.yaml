@@ -41,7 +41,7 @@ spec:
         \      annotations:\n        sidecar.istio.io/inject: \"false\"\n      labels:\n\
         \        access-ml-pipeline: \"true\"\n    spec:\n      restartPolicy: Never\n\
         \      serviceAccountName: pipeline-runner\n      containers:\n        - name:\
-        \ {{.Trial}}\n          image: gcr.io/arrikto/katib-kfp-trial:69aaa59-b884ad5\n\
+        \ {{.Trial}}\n          image: {{KATIB_TRIAL_IMAGE}}\n\
         \          command:\n            - python3 -u -c \"from kale.common.kfputils\
         \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
         \                    pipeline_id='12345',                    run_name='{{.Trial}}',\
