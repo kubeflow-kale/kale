@@ -25,6 +25,7 @@ import StatusRunning from '../../icons/statusRunning';
 import { IKatibExperiment } from '../LeftPanel';
 import { LightTooltip } from '../../components/LightTooltip';
 import DeployUtils from './DeployUtils';
+import { headURL } from '../../lib/Utils';
 
 enum KatibExperimentStatus {
   CREATED = 'Created',
@@ -70,14 +71,6 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
     const isExhausted =
       experiment.message === KatibExperimentStatusMessage.SUGGESTION_EXHAUSTED;
     return isSucceedOrFailed && (isMaxTrialsOrEndReached || isExhausted);
-  };
-
-  const getLink = (experiment: IKatibExperiment) => {
-    // link: /_/katib/#/katib/hp_monitor/<namespace>/<name>
-    if (!experiment.name || !experiment.namespace) {
-      return '#';
-    }
-    return `${window.location.origin}/_/katib/?ns=${experiment.namespace}#/katib/hp_monitor/${experiment.namespace}/${experiment.name}`;
   };
 
   const getKatibBestResultInfo = (experiment: IKatibExperiment) => {
@@ -182,17 +175,17 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
 
     return tooltipSet ? (
       <React.Fragment>
-        <a href={getLink(experiment)} target="_blank" rel="noopener noreferrer">
+        <KatibExperimentLink experiment={experiment}>
           {getText(experiment)}
-        </a>
+        </KatibExperimentLink>
         {IconComponent}
       </React.Fragment>
     ) : (
       <React.Fragment>
-        <a href={getLink(experiment)} target="_blank" rel="noopener noreferrer">
+        <KatibExperimentLink experiment={experiment}>
           {getText(experiment)}
           {IconComponent}
-        </a>
+        </KatibExperimentLink>
       </React.Fragment>
     );
   };
@@ -249,5 +242,42 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
       </div>
       <div className="deploy-progress-row">{katibRunsTpl}</div>
     </div>
+  );
+};
+
+const KatibExperimentLink: React.FC<{
+  experiment: IKatibExperiment;
+  children?: any;
+}> = ({ experiment, children }) => {
+  const [link, setLink] = React.useState('#');
+
+  React.useEffect(() => {
+    updateLink(experiment);
+  });
+
+  const updateLink = (experiment: IKatibExperiment) => {
+    if (!experiment || !experiment.name || !experiment.namespace) {
+      return;
+    }
+    // Initialize link to KWA. If it is not available, point to legacy Katib UI
+    const kwaLink = `/katib/experiment/${experiment.name}?ns=${experiment.namespace}`;
+    const legacyLink = `/katib/?ns=${experiment.namespace}#/katib/hp_monitor/${experiment.namespace}/${experiment.name}`;
+    headURL(kwaLink)
+      .then(res => {
+        if (res && res.status >= 200 && res.status < 400) {
+          setLink(kwaLink);
+        } else {
+          setLink(legacyLink);
+        }
+      })
+      .catch(() => {
+        setLink(legacyLink);
+      });
+  };
+
+  return (
+    <a href={link} target="_blank" rel="noopener noreferrer">
+      {children || experiment?.name}
+    </a>
   );
 };
