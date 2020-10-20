@@ -31,7 +31,7 @@
     "clean": "rimraf lib",
     "prepublishOnly": "npm run build",
     "watch": "tsc -w --listEmittedFiles",
-    "format": "pretty-quick --pattern '**/*.{ts,js,tsx,jsx,scss,css,html,md,json}'",
+    "format": "pretty-quick --pattern 'labextension/**/*.{ts,js,tsx,jsx,scss,css,html,md,json}'",
     "format:check": "jlpm format --check",
     "format:staged": "jlpm format --staged",
     "format:check:staged": "jlpm format:check --staged"
