@@ -32,7 +32,7 @@ from ml_metadata.metadata_store import metadata_store
 # https://github.com/google/ml-metadata/issues/25
 # https://github.com/google/ml-metadata/pull/35
 
-from kale.common import utils, podutils, workflowutils
+from kale.common import utils, podutils, workflowutils, k8sutils
 
 
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
@@ -478,7 +478,7 @@ class MLMetadata(object):
 
             output_artifact_ids = []
             annotation = METADATA_OUTPUT_ARTIFACT_IDS_ANNOTATION_KEY
-            k8s_client = podutils._get_k8s_v1_client()
+            k8s_client = k8sutils.get_v1_client()
             for name in pod_names:
                 pod = k8s_client.read_namespaced_pod(name, self.pod_namespace)
                 ids = json.loads(pod.metadata.annotations.get(annotation,

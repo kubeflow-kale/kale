@@ -20,8 +20,6 @@ import logging
 import tempfile
 import importlib.util
 
-import kubernetes
-
 from shutil import copyfile
 
 from kfp import Client
@@ -37,24 +35,8 @@ KFP_UI_METADATA_FILE_PATH = "/mlpipeline-ui-metadata.json"
 KALE_KATIB_KFP_ANNOTATION = "kubeflow-kale.org/kfp-run-uuid"
 
 _logger = None
-_k8s_co_client = None
-_k8s_watch = None
 
 log = logging.getLogger(__name__)
-
-
-def _get_k8s_co_client():
-    global _k8s_co_client
-    if not _k8s_co_client:
-        _k8s_co_client = kubernetes.client.CustomObjectsApi()
-    return _k8s_co_client
-
-
-def _get_k8s_watch():
-    global _k8s_watch
-    if not _k8s_watch:
-        _k8s_watch = kubernetes.watch.Watch()
-    return _k8s_watch
 
 
 def _get_kfp_client(host=None, namespace: str = "kubeflow"):

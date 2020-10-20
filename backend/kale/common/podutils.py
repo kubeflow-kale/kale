@@ -20,10 +20,8 @@ import json
 import hashlib
 import logging
 import tabulate
-import kubernetes.client as k8s
-import kubernetes.config as k8s_config
 
-from kale.common import workflowutils
+from kale.common import workflowutils, k8sutils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
@@ -125,17 +123,6 @@ def get_container_name():
     return candidates[0]
 
 
-def _get_k8s_v1_client():
-    k8s_config.load_incluster_config()
-    api_client = k8s.ApiClient()
-    return k8s.CoreV1Api(api_client)
-
-
-def _get_k8s_custom_objects_client():
-    k8s_config.load_incluster_config()
-    return k8s.CustomObjectsApi()
-
-
 def _get_pod_container(pod, container_name):
     container = list(
         filter(lambda c: c.name == container_name, pod.spec.containers))
@@ -217,7 +204,7 @@ def get_volume_containing_path(path):
 
 def list_volumes():
     """List the currently mounted volumes."""
-    client = _get_k8s_v1_client()
+    client = k8sutils.get_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
     container_name = get_container_name()
@@ -225,8 +212,14 @@ def list_volumes():
 
 
 def get_docker_base_image():
-    """Get the current container's docker image."""
-    client = _get_k8s_v1_client()
+    """Get the current container's docker image.
+
+    Raises:
+        ConfigException when initializing the client
+        FileNotFoundError when attempting to find the namespace
+        ApiException when getting the container name or reading the pod
+    """
+    client = k8sutils.get_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
     container_name = get_container_name()
@@ -255,7 +248,7 @@ def get_run_uuid():
     api_group = "argoproj.io"
     api_version = "v1alpha1"
     co_name = "workflows"
-    co_client = _get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     workflow = co_client.get_namespaced_custom_object(api_group, api_version,
                                                       namespace, co_name,
                                                       workflow_name)
@@ -275,7 +268,7 @@ def is_workspace_dir(directory):
 
 def patch_pod(name, namespace, patch):
     """Patch a pod."""
-    k8s_client = _get_k8s_v1_client()
+    k8s_client = k8sutils.get_v1_client()
     k8s_client.patch_namespaced_pod(name=name, namespace=namespace, body=patch)
 
 
@@ -284,7 +277,7 @@ def get_pod(name, namespace):
 
     This function seems redundant but it can save a few repeated lines of code.
     """
-    k8s_client = _get_k8s_v1_client()
+    k8s_client = k8sutils.get_v1_client()
     return k8s_client.read_namespaced_pod(name, namespace)
 
 
@@ -307,12 +300,3 @@ def compute_component_id(pod):
     component_id = component_name + "@sha256=" + component_spec_digest
     log.info("Computed component ID: %s", component_id)
     return component_id
-
-
-def annotate_k8s_object(group, version, plural, name, namespace, annotations):
-    """Annotate a custom Kubernetes object."""
-    patch = {"apiVersion": "%s/%s" % (group, version),
-             "metadata": {"name": name, "annotations": annotations}}
-    k8s_client = _get_k8s_custom_objects_client()
-    k8s_client.patch_namespaced_custom_object(group, version, namespace,
-                                              plural, name, patch)
