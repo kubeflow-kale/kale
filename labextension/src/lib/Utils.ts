@@ -35,3 +35,27 @@ export const updateIdxInArray = (
     .concat([element])
     .concat(arr.slice(index + 1, arr.length));
 };
+
+function fetchTimeout(
+  url: string,
+  ms: number,
+  { ...options } = {},
+): Promise<Response | void> {
+  const controller = new AbortController();
+  const promise = fetch(url, { signal: controller.signal, ...options });
+  const timeout = setTimeout(() => controller.abort(), ms);
+  return promise.then(
+    r => r,
+    () => clearTimeout(timeout),
+  );
+}
+
+export function headURL(
+  href: string,
+  origin: string = window.location.origin,
+  timeout: number = 1500,
+): Promise<Response | void> {
+  return fetchTimeout(new URL(href, origin).toString(), timeout, {
+    method: 'HEAD',
+  });
+}
