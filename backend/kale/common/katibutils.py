@@ -14,7 +14,7 @@
 
 """Suite of helpers for Katib."""
 
-from kale.common import podutils
+from kale.common import k8sutils
 
 
 KATIB_API_GROUP = "kubeflow.org"
@@ -29,14 +29,14 @@ TRIAL_ID_ANNOTATION_KEY = "kubeflow.org/katib-trial-id"
 
 def annotate_trial(name, namespace, annotations):
     """Add annotations to a Trial."""
-    podutils.annotate_k8s_object(KATIB_API_GROUP, KATIB_API_VERSION,
-                                 KATIB_TRIALS_PLURAL, name, namespace,
-                                 annotations)
+    k8sutils.annotate_object(KATIB_API_GROUP, KATIB_API_VERSION,
+                             KATIB_TRIALS_PLURAL, name, namespace,
+                             annotations)
 
 
 def get_trial(name, namespace):
     """Get a Trial."""
-    k8s_client = podutils._get_k8s_custom_objects_client()
+    k8s_client = k8sutils.get_co_client()
     return k8s_client.get_namespaced_custom_object(KATIB_API_GROUP,
                                                    KATIB_API_VERSION,
                                                    namespace,

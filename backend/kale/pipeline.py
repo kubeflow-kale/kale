@@ -18,6 +18,7 @@ import networkx as nx
 
 from typing import Iterable
 from kubernetes.config import ConfigException
+from kubernetes.client.rest import ApiException
 
 from kale import Step
 from kale.config import Config, Field, validators
@@ -108,9 +109,8 @@ class PipelineConfig(Config):
     def _set_docker_image(self):
         if not self.docker_image:
             try:
-                # will fail in case in cluster config is not found
                 self.docker_image = podutils.get_docker_base_image()
-            except ConfigException:
+            except (ConfigException, FileNotFoundError, ApiException):
                 # no K8s config found; use kfp default image
                 self.docker_image = ""
 

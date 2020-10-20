@@ -15,7 +15,7 @@
 from typing import Dict, List
 from kubernetes.client.models import V1Pod
 
-from kale.common import podutils
+from kale.common import podutils, k8sutils
 
 
 def list_poddefaults(namespace: str = None):
@@ -32,7 +32,7 @@ def list_poddefaults(namespace: str = None):
     api_group = "kubeflow.org"
     api_version = "v1alpha1"
     co_name = "poddefaults"
-    co_client = podutils._get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     return co_client.list_namespaced_custom_object(api_group, api_version,
                                                    namespace, co_name)["items"]
 

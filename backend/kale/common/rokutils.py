@@ -23,7 +23,7 @@ from progress.bar import IncrementalBar
 
 from kale.rpc import nb
 from kale.common import utils
-from kale.common import podutils, kfputils
+from kale.common import podutils, kfputils, k8sutils
 
 _client = None
 
@@ -246,7 +246,7 @@ def hydrate_pvc_from_snapshot(obj, version, new_pvc_name,
             )
         )
     )
-    k8s_client = podutils._get_k8s_v1_client()
+    k8s_client = k8sutils.get_v1_client()
     ns = podutils.get_namespace()
     ns_pvc = k8s_client.create_namespaced_persistent_volume_claim(ns, pvc)
     log.info("Successfully submitted PVC.")

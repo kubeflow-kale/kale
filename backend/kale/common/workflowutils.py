@@ -14,7 +14,7 @@
 
 """Suite of helpers regarding workflow manipulation."""
 
-from kale.common import podutils
+from kale.common import k8sutils
 
 
 ARGO_WORKFLOW_LABEL_KEY = "workflows.argoproj.io/workflow"
@@ -51,7 +51,7 @@ def find_pod_parents(node_name, workflow):
 
 def get_workflow_name(pod_name, namespace):
     """Get the workflow name associated to a pod (pipeline step)."""
-    v1_client = podutils._get_k8s_v1_client()
+    v1_client = k8sutils.get_v1_client()
     pod = v1_client.read_namespaced_pod(pod_name, namespace)
 
     # Obtain the workflow name
@@ -66,7 +66,7 @@ def get_workflow_name(pod_name, namespace):
 
 def get_workflow(name, namespace):
     """Get a workflow."""
-    co_client = podutils._get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     return co_client.get_namespaced_custom_object(ARGO_API_GROUP,
                                                   ARGO_API_VERSION,
                                                   namespace,
@@ -75,6 +75,6 @@ def get_workflow(name, namespace):
 
 def annotate_workflow(name, namespace, annotations):
     """Anotate a workflow."""
-    podutils.annotate_k8s_object(ARGO_API_GROUP, ARGO_API_VERSION,
-                                 ARGO_WORKFLOWS_PLURAL, name, namespace,
-                                 annotations)
+    k8sutils.annotate_object(ARGO_API_GROUP, ARGO_API_VERSION,
+                             ARGO_WORKFLOWS_PLURAL, name, namespace,
+                             annotations)

@@ -13,10 +13,9 @@
 #  limitations under the License.
 
 import os
-import kubernetes
 from kubernetes.client.rest import ApiException
 
-from kale.common import podutils
+from kale.common import podutils, k8sutils
 from kale.rpc.errors import RPCNotFoundError, RPCUnhandledError
 
 KATIB_PARAMETER_NAMES = ("objective", "algorithm", "parallelTrialCount",
@@ -62,19 +61,6 @@ spec:
 """
 
 
-def _get_k8s_co_client(trans_id):
-    try:
-        kubernetes.config.load_incluster_config()
-    except Exception:  # Not in a notebook server
-        try:
-            kubernetes.config.load_kube_config()
-        except Exception:
-            raise RPCUnhandledError(details="Could not load Kubernetes config",
-                                    trans_id=trans_id)
-
-    return kubernetes.client.CustomObjectsApi()
-
-
 def _define_katib_experiment(name, katib_spec, trial_parameters):
     """Define Katib experiment."""
     katib_experiment = {"apiVersion": "kubeflow.org/v1alpha3",
@@ -95,7 +81,7 @@ def _define_katib_experiment(name, katib_spec, trial_parameters):
 
 def _launch_katib_experiment(request, katib_experiment, namespace):
     """Launch Katib experiment."""
-    k8s_co_client = _get_k8s_co_client(request.trans_id)
+    k8s_co_client = k8sutils.get_co_client()
 
     co_group = "kubeflow.org"
     co_version = "v1alpha3"
@@ -211,7 +197,7 @@ def get_experiment(request, experiment, namespace):
 
     Returns (dict): a dict describing the status of the running experiment
     """
-    k8s_co_client = _get_k8s_co_client(request.trans_id)
+    k8s_co_client = k8sutils.get_co_client()
 
     co_group = "kubeflow.org"
     co_version = "v1alpha3"
