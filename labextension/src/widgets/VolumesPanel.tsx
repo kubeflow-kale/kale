@@ -522,13 +522,16 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
     <div className="input-container">
       <LightTooltip
         title={
-          props.rokError
-            ? rokErrorTooltip(props.rokError)
+          props.rokError && props.snapshotError
+            ? rokErrorTooltip(props.rokError) &&
+              snapshotErrorTooltip(props.snapshotError)
             : "Enable this option to mount clones of this notebook's volumes " +
               'on your pipeline steps'
         }
         placement="top-start"
-        interactive={props.rokError ? true : false}
+        interactive={
+          props.rokError ? true : false && props.snapshotError ? true : false
+        }
         TransitionComponent={Zoom}
       >
         <div className="toolbar">
@@ -554,13 +557,16 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
     <div className="input-container">
       <LightTooltip
         title={
-          props.rokError
-            ? rokErrorTooltip(props.rokError)
+          props.rokError && props.snapshotError
+            ? rokErrorTooltip(props.rokError) &&
+              snapshotErrorTooltip(props.snapshotError)
             : 'Enable this option to take Rok snapshots of your steps during ' +
               'pipeline execution'
         }
         placement="top-start"
-        interactive={props.rokError ? true : false}
+        interactive={
+          props.rokError ? true : false && props.snapshotError ? true : false
+        }
         TransitionComponent={Zoom}
       >
         <div className="toolbar">
