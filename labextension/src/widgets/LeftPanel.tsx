@@ -443,6 +443,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             notebookVolumes,
             selectVolumeTypes,
           });
+        } else if (!this.props.snapshotError) {
+          // Get information about volumes currently mounted on the notebook server
+          const {
+            notebookVolumes,
+            selectVolumeTypes,
+          } = await commands.getMountedVolumes(this.state.notebookVolumes);
+          this.setState({
+            notebookVolumes,
+            selectVolumeTypes,
+          });
         } else {
           this.setState((prevState, props) => ({
             selectVolumeTypes: prevState.selectVolumeTypes.map(t => {
@@ -533,8 +543,25 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               }
               return volume;
             });
+        let snapstateVolumes = this.props.snapshotError
+          ? metadataVolumes
+          : metadataVolumes.map((volume: IVolumeMetadata) => {
+              if (
+                volume.type === 'new_pvc' &&
+                volume.annotations.length > 0 &&
+                volume.annotations[0].key === 'rok/origin'
+              ) {
+                return { ...volume, type: 'snap' };
+              }
+              return volume;
+            });
         if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
           metadataVolumes = stateVolumes = this.state.notebookVolumes;
+        } else if (
+          snapstateVolumes.length === 0 &&
+          metadataVolumes.length === 0
+        ) {
+          metadataVolumes = snapstateVolumes = this.state.notebookVolumes;
         } else {
           metadataVolumes = metadataVolumes.concat(this.state.notebookVolumes);
           stateVolumes = stateVolumes.concat(this.state.notebookVolumes);
@@ -558,11 +585,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           },
           autosnapshot:
             notebookMetadata['autosnapshot'] === undefined
-              ? !this.props.rokError && this.state.notebookVolumes.length > 0
+              ? !this.props.rokError &&
+                !this.props.snapshotError &&
+                this.state.notebookVolumes.length > 0
               : notebookMetadata['autosnapshot'],
           snapshot_volumes:
             notebookMetadata['snapshot_volumes'] === undefined
-              ? !this.props.rokError && this.state.notebookVolumes.length > 0
+              ? !this.props.rokError &&
+                !this.props.snapshotError &&
+                this.state.notebookVolumes.length > 0
               : notebookMetadata['snapshot_volumes'],
           // fixme: for now we are using the 'steps_defaults' field just for poddefaults
           //        so we replace any existing value every time
@@ -578,9 +609,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             ...DefaultState.metadata,
             volumes: prevState.notebookVolumes,
             snapshot_volumes:
-              !this.props.rokError && prevState.notebookVolumes.length > 0,
+              !this.props.rokError &&
+              !this.props.snapshotError &&
+              prevState.notebookVolumes.length > 0,
             autosnapshot:
-              !this.props.rokError && prevState.notebookVolumes.length > 0,
+              !this.props.rokError &&
+              !this.props.snapshotError &&
+              prevState.notebookVolumes.length > 0,
           },
           volumes: prevState.notebookVolumes,
         }));

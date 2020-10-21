@@ -138,7 +138,7 @@ def snapshot_notebook():
             pod=pod_name,
             default_container=podutils.get_container_name(),
             is_workspace_dir=str(podutils.is_workspace_dir(i[0])))
-        snapshot_names.append("snapshot." + i[1])
+        snapshot_names.append("nb-snapshot-" + i[1])
     return snapshot_names
 
 
