@@ -123,9 +123,9 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
   const addVolume = () => {
     // If we add a volume to an empty list, turn autosnapshot on
     const autosnapshot =
-      !props.rokError && props.volumes.length === 0
+      !props.rokError && !props.snapshotError && props.volumes.length === 0
         ? true
-        : !props.rokError && props.autosnapshot;
+        : !props.rokError && !props.snapshotError && props.autosnapshot;
     props.updateVolumes(
       [...props.volumes, DEFAULT_EMPTY_VOLUME],
       [...props.metadataVolumes, DEFAULT_EMPTY_VOLUME],
@@ -536,7 +536,8 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
           <Switch
             checked={props.useNotebookVolumes}
             disabled={
-              !!props.rokError || props.notebookMountPoints.length === 0
+              (!!props.rokError && !!props.snapshotError) ||
+              props.notebookMountPoints.length === 0
             }
             onChange={_ => props.updateVolumesSwitch()}
             color="primary"
@@ -568,7 +569,10 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
           </div>
           <Switch
             checked={props.autosnapshot}
-            disabled={!!props.rokError || props.volumes.length === 0}
+            disabled={
+              (!!props.rokError && !!props.snapshotError) ||
+              props.volumes.length === 0
+            }
             onChange={_ => props.updateAutosnapshotSwitch()}
             color="primary"
             name="enableKale"
