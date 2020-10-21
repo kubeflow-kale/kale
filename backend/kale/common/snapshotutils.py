@@ -58,7 +58,7 @@
 import logging
 import kubernetes
 
-from kale.common import podutils
+from kale.common import podutils, k8sutils
 
 NOTEBOOK_SNAPSHOT_COMMIT_MESSAGE = """\
 This is a snapshot of notebook {} in namespace {}.
@@ -87,7 +87,7 @@ def snapshot_pvc(snapshot_name, pvc_name, image="", path="", **kwargs):
             "source": {"persistentVolumeClaimName": pvc_name}
         }
     }
-    co_client = podutils._get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     namespace = podutils.get_namespace()
     log.info("Taking a snapshot of PVC %s in namespace %s ..."
              % (pvc_name, namespace))
@@ -161,7 +161,7 @@ def check_snapshot_status(snapshot_name):
 
 def get_pvc_snapshot(snapshot_name):
     """Get info about a pvc snapshot."""
-    co_client = podutils._get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     namespace = podutils.get_namespace()
 
     pvc_snapshot = co_client.get_namespaced_custom_object(
@@ -175,7 +175,7 @@ def get_pvc_snapshot(snapshot_name):
 
 def list_pvc_snapshots(label_selector=""):
     """List pvc snapshots."""
-    co_client = podutils._get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     namespace = podutils.get_namespace()
 
     pvc_snapshots = co_client.list_namespaced_custom_object(
@@ -218,7 +218,7 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
             )
         )
     )
-    k8s_client = podutils._get_k8s_v1_client()
+    k8s_client = k8sutils.get_v1_client()
     ns = podutils.get_namespace()
     status = check_snapshot_status(source_snapshot_name)
     if status is True:
@@ -319,7 +319,7 @@ def restore_notebook(snapshot_name):
                             "serviceAccountName": "default-editor",
                             "ttlSecondsAfterFinished": 300,
                             "volumes": volumes}}}}
-    co_client = podutils._get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
     log.info("Restoring notebook %s from PVC snapshot %s in namespace %s ..."
              % (name, snapshot_name, namespace))
     task_info = co_client.create_namespaced_custom_object(
@@ -334,7 +334,7 @@ def restore_notebook(snapshot_name):
 
 def delete_pvc(pvc_name):
     """Delete a pvc."""
-    client = podutils._get_k8s_v1_client()
+    client = k8sutils.get_v1_client()
     namespace = podutils.get_namespace()
     client.delete_namespaced_persistent_volume_claim(
         namespace=namespace,

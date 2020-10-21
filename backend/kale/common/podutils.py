@@ -309,15 +309,9 @@ def compute_component_id(pod):
     return component_id
 
 
-def _get_k8s_storage_client():
-    k8s_config.load_incluster_config()
-    api_client = k8s.ApiClient()
-    return k8s.StorageV1beta1Api(api_client)
-
-
 def get_snapshotclasses(label_selector=""):
     """List snapshotclasses."""
-    co_client = _get_k8s_custom_objects_client()
+    co_client = k8sutils.get_co_client()
 
     snapshotclasses = co_client.list_cluster_custom_object(
         group="snapshot.storage.k8s.io",
@@ -338,7 +332,7 @@ def list_snapshotclass_storage_provisioners(label_selector=""):
 
 def check_snapshot_availability():
     """Check if snapshotclasses are available for notebook."""
-    client = _get_k8s_v1_client()
+    client = k8sutils.get_v1_client()
     namespace = get_namespace()
     pod_name = get_pod_name()
     pod = client.read_namespaced_pod(pod_name, namespace)
@@ -363,7 +357,7 @@ def check_snapshot_availability():
 
 def get_snapshotclass_provisioners_names():
     """Get the names of snapshotclass storage provisioners."""
-    client = _get_k8s_storage_client()
+    client = k8sutils.get_storage_client()
     classes = client.list_storage_class().items
     snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
     storage_class_names = []
