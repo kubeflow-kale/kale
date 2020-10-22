@@ -132,13 +132,13 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_{{ step.name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     _kale_output_artifacts = {}
     {%- if autosnapshot %}
-    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     {%- endif %}
     {%- if step.metrics %}
-    _kale_output_artifacts.update({'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+    _kale_output_artifacts.update({'mlpipeline-metrics': '/tmp/mlpipeline-metrics.json'})
     {%- endif %}
     {%- if step.name != "final_auto_snapshot" and step.name != "pipeline_metrics" %}
-    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     _kale_output_artifacts.update({'{{ step.name }}': '/{{ step.name }}.html'})
     {%- endif %}
     _kale_{{ step.name }}_task.output_artifact_paths.update(_kale_output_artifacts)

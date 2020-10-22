@@ -31,7 +31,8 @@ from kale.common import utils, podutils, workflowutils, katibutils
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
-KFP_UI_METADATA_FILE_PATH = "/mlpipeline-ui-metadata.json"
+KFP_UI_METADATA_FILE_PATH = "/tmp/mlpipeline-ui-metadata.json"
+KFP_UI_METRICS_FILE_PATH = "/tmp/mlpipeline-metrics.json"
 KALE_KATIB_KFP_ANNOTATION = "kubeflow-kale.org/kfp-run-uuid"
 
 _logger = None
@@ -197,12 +198,19 @@ def update_uimetadata(artifact_name,
             workflow_name, pod_name, artifact_name + '.tgz')
     }]
     outputs['outputs'] += html_artifact_entry
+
+    try:
+        utils.ensure_or_create_dir(uimetadata_path)
+    except RuntimeError:
+        log.exception("Writing to '%s' failed. This step will not be able to"
+                      " visualize artifacts in the KFP UI.", uimetadata_path)
+        return
     with open(uimetadata_path, "w") as f:
         json.dump(outputs, f)
 
 
 def generate_mlpipeline_metrics(metrics):
-    """Generate a /mlpipeline-metrics.json file.
+    """Generate a KFP_UI_METRICS_FILE_PATH file.
 
     Args:
         metrics (dict): a dictionary where the key is the metric name and the
@@ -224,7 +232,13 @@ def generate_mlpipeline_metrics(metrics):
             'format': "RAW",
         })
 
-    with open('/mlpipeline-metrics.json', 'w') as f:
+    try:
+        utils.ensure_or_create_dir(KFP_UI_METRICS_FILE_PATH)
+    except RuntimeError:
+        log.exception("Writing to '%s' failed. This step will not be able to"
+                      " show metrics in the KFP UI.", KFP_UI_METRICS_FILE_PATH)
+        return
+    with open(KFP_UI_METRICS_FILE_PATH, 'w') as f:
         json.dump({'metrics': metadata}, f)
 
 
