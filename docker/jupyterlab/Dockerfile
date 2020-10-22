@@ -33,7 +33,7 @@ RUN echo "set background=dark" >> /etc/vim/vimrc.local
 
 # Install latest KFP SDK & Kale & JupyterLab Extension
 RUN pip3 install --upgrade pip && \
-    pip3 install --upgrade "jupyterlab<2.0.0" && \
+    pip3 install --upgrade "jupyterlab>=2.0.0,<3.0.0" && \
     pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade && \
     pip3 install -U kubeflow-kale && \
     jupyter labextension install kubeflow-kale-labextension
