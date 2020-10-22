@@ -59,6 +59,30 @@ easily extensible, you can take a look [here](backend/kale/marshal/backends.py)
 at existing backends and open a new issue to request for the new backend to be
 implemented.
 
+### Compiler errors
+
+When compiling your notebook you may encounter the following error:
+```
+Internal compiler error: Compiler has produced Argo-incompatible workflow.
+Please create a new issue at https://github.com/kubeflow/pipelines/issues attaching the pipeline code and the pipeline package.
+```
+followed by some explanation. For example:
+```
+Error: time="2020-10-12T17:57:45-07:00" level=fatal msg="/dev/stdin failed to parse: error unmarshaling JSON: while decoding JSON: json: unknown field \"volumes\""
+```
+
+This is an error raised by the KFP compiler. Kale compile process contains
+converting to KFP DSL and then compiling it, so it triggers the KFP compiler.
+
+The KFP compiler runs `argo lint` on the generated workflow, if it finds the
+`argo` executable in your environment's `PATH`.
+
+To overcome this issue, you could either remove `argo` from your `PATH` or
+replace it with a version that is supported by KFP. At the time of writing this
+section, the recommended version is 2.4.3. Follow [this
+link](https://github.com/argoproj/argo/releases/tag/v2.4.3) to get the proper
+binary.
+
 ## Limitations
 
 All the magic provided by Kale is possible thanks to the dynamic nature of
