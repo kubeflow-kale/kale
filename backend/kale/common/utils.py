@@ -108,3 +108,16 @@ def read_json_from_file(path: str) -> Dict:
     except json.JSONDecodeError:
         log.exception("Failed to parse json file %s", path)
         raise
+
+
+def ensure_or_create_dir(filepath: str):
+    """Ensure the dir of a file exists and isdir, or create it.
+
+    Raises:
+        RuntimeError: if dirname of filepath exists and is not a directory
+    """
+    dirname = os.path.dirname(filepath)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    elif not os.path.isdir(dirname):
+        raise RuntimeError("'%s' is not a directory" % dirname)

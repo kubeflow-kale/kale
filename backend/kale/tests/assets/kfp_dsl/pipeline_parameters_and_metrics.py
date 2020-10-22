@@ -143,9 +143,9 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         k8s_client.V1SecurityContext(run_as_user=0))
     _kale_output_artifacts = {}
     _kale_output_artifacts.update(
-        {'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+        {'mlpipeline-metrics': '/tmp/mlpipeline-metrics.json'})
     _kale_output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+        {'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     _kale_output_artifacts.update({'create_matrix': '/create_matrix.html'})
     _kale_create_matrix_task.output_artifact_paths.update(
         _kale_output_artifacts)
@@ -168,9 +168,9 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
         k8s_client.V1SecurityContext(run_as_user=0))
     _kale_output_artifacts = {}
     _kale_output_artifacts.update(
-        {'mlpipeline-metrics': '/mlpipeline-metrics.json'})
+        {'mlpipeline-metrics': '/tmp/mlpipeline-metrics.json'})
     _kale_output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/mlpipeline-ui-metadata.json'})
+        {'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     _kale_output_artifacts.update({'sum_matrix': '/sum_matrix.html'})
     _kale_sum_matrix_task.output_artifact_paths.update(_kale_output_artifacts)
     _kale_sum_matrix_task.add_pod_label(
