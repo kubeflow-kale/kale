@@ -150,12 +150,12 @@ def check_snapshot_status(snapshot_name):
     task = get_pvc_snapshot(snapshot_name=snapshot_name)
     status = task['status']['readyToUse']
 
-    if status is True:
-        log.info("Successfully created volume snapshot")
-    elif status is False:
-        raise RuntimeError("Snapshot not ready (status: %s)" % status)
-    else:
-        raise RuntimeError("Unknown snapshot task status: %s" % status)
+    # if status is True:
+    #    log.info("Successfully created volume snapshot")
+    # elif status is False:
+    #    raise log.info("Snapshot not ready (status: %s)" % status)
+    # else:
+    #    raise log.info("Unknown snapshot task status: %s" % status)
     return status
 
 

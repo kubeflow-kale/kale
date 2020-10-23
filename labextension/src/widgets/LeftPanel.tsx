@@ -683,18 +683,35 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata.volumes.filter((v: IVolumeMetadata) => v.type === 'clone')
         .length > 0
     ) {
-      const task = await commands.runSnapshotProcedure(_updateDeployProgress);
-      console.log(task);
-      if (!task) {
-        this.setState({ runDeployment: false });
-        return;
+      if (!this.props.rokError) {
+        const task = await commands.runSnapshotProcedure(_updateDeployProgress);
+        console.log(task);
+        if (!task) {
+          this.setState({ runDeployment: false });
+          return;
+        }
+        metadata.volumes = await commands.replaceClonedVolumes(
+          task.bucket,
+          task.result.event.object,
+          task.result.event.version,
+          metadata.volumes,
+        );
+      } else if (!this.props.snapshotError) {
+        const task = await commands.runGenericSnapshotProcedure(
+          _updateDeployProgress,
+        );
+        console.log(task);
+        if (!task) {
+          this.setState({ runDeployment: false });
+          return;
+        }
+        metadata.volumes = await commands.replaceClonedVolumes(
+          task.bucket,
+          task.result.event.object,
+          task.result.event.version,
+          metadata.volumes,
+        );
       }
-      metadata.volumes = await commands.replaceClonedVolumes(
-        task.bucket,
-        task.result.event.object,
-        task.result.event.version,
-        metadata.volumes,
-      );
     }
 
     // CREATE PIPELINE
