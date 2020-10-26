@@ -14,8 +14,7 @@
 
 import pytest
 
-from kale import Pipeline, NotebookConfig
-from kale.common.astutils import PipelineParam
+from kale import Pipeline, NotebookConfig, PipelineParam
 
 
 @pytest.mark.parametrize("volumes,target", [

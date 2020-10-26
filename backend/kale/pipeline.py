@@ -16,16 +16,21 @@ import os
 import logging
 import networkx as nx
 
-from typing import Iterable
+from typing import Iterable, NamedTuple
 from kubernetes.config import ConfigException
 from kubernetes.client.rest import ApiException
 
 from kale import Step
 from kale.config import Config, Field, validators
-from kale.common.astutils import PipelineParam
 from kale.common import graphutils, utils, podutils
 
 log = logging.getLogger(__name__)
+
+
+class PipelineParam(NamedTuple):
+    """A pipeline parameter."""
+    param_type: str
+    param_value: any
 
 
 class VolumeConfig(Config):

@@ -21,9 +21,9 @@ from typing import Any, Dict
 import nbformat as nb
 
 from kale.config import Field
-from kale import Pipeline, Step, PipelineConfig
-from kale.static_analysis import dependencies
 from kale.common import astutils
+from kale.static_analysis import dependencies
+from kale import Pipeline, Step, PipelineConfig, PipelineParam
 
 # fixme: Change the name of this key to `kale_metadata`
 KALE_NB_METADATA_KEY = 'kubeflow_notebook'
@@ -234,7 +234,7 @@ class NotebookProcessor:
         """Get pipeline parameters from source code."""
         pipeline_parameters = astutils.parse_assignments_expressions(source)
         for name, (v_type, v_value) in pipeline_parameters.items():
-            pipeline_parameters[name] = astutils.PipelineParam(v_type, v_value)
+            pipeline_parameters[name] = PipelineParam(v_type, v_value)
         self.pipeline.pipeline_parameters = pipeline_parameters
 
     def parse_notebook(self):
