@@ -29,7 +29,6 @@ setup(
               'kale.marshal',
               'kale.processors',
               'kale.rpc',
-              'kale.static_analysis',
               ],
     install_requires=[
         'kfp',
