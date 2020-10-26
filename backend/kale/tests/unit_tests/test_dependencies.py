@@ -16,7 +16,6 @@ import pytest
 
 import kale.common.flakeutils
 from kale import Pipeline, Step
-from kale.static_analysis import dependencies
 
 
 @pytest.mark.parametrize("code,target", [
@@ -32,7 +31,7 @@ def test_pyflakes_report(code, target):
     assert sorted(res) == sorted(target)
 
 
-def test_detect_fns_free_variables():
+def test_detect_fns_free_variables(notebook_processor):
     """Test the function returns the correct free variables."""
     source_code = '''
 x = 5
@@ -41,10 +40,10 @@ def foo():
     '''
 
     target = {"foo": ({"x", "math"}, {})}
-    assert target == dependencies.detect_fns_free_variables(source_code)
+    assert target == notebook_processor._detect_fns_free_variables(source_code)
 
 
-def test_detect_fns_free_variables_with_imports():
+def test_detect_fns_free_variables_with_imports(notebook_processor):
     """Test the function returns the correct free variables."""
     imports_and_functions = """
 import math
@@ -57,7 +56,7 @@ def foo():
     '''
 
     target = {"foo": ({"x"}, {})}
-    assert target == dependencies.detect_fns_free_variables(
+    assert target == notebook_processor._detect_fns_free_variables(
         source_code,
         imports_and_functions
     )
@@ -67,7 +66,8 @@ def _prepend_to_source(source, prefix):
     return [prefix + "\n" + "\n".join(source)]
 
 
-def test_dependencies_detection_free_variable(dummy_nb_config):
+def test_dependencies_detection_free_variable(notebook_processor,
+                                              dummy_nb_config):
     """Test dependencies detection with free variables."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -90,7 +90,8 @@ foo()
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == ["x"]
     assert sorted(pipeline.get_step("step2").ins) == ["x"]
@@ -99,7 +100,8 @@ foo()
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_inner_function(dummy_nb_config):
+def test_dependencies_detection_inner_function(notebook_processor,
+                                               dummy_nb_config):
     """Test dependencies detection with inner functions."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -121,7 +123,8 @@ print(x)
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == ['x']
     assert sorted(pipeline.get_step("step2").ins) == []
@@ -130,7 +133,10 @@ print(x)
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_inner_function_free_variable(dummy_nb_config):
+def test_dependencies_detection_inner_function_free_variable(
+    notebook_processor,
+    dummy_nb_config
+):
     """Test dependencies detection with free variables and inner function."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -148,7 +154,8 @@ def foo():
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == ['x']
     assert sorted(pipeline.get_step("step2").ins) == ['x']
@@ -157,7 +164,8 @@ def foo():
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_with_parameter(dummy_nb_config):
+def test_dependencies_detection_with_parameter(notebook_processor,
+                                               dummy_nb_config):
     """Test dependencies detection with function with parameter."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -175,7 +183,8 @@ def foo(x):
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == []
     assert sorted(pipeline.get_step("step2").ins) == []
@@ -184,7 +193,8 @@ def foo(x):
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_with_globals(dummy_nb_config):
+def test_dependencies_detection_with_globals(notebook_processor,
+                                             dummy_nb_config):
     """Test dependencies detection with inner function and globals."""
     imports_and_functions = "import math"
 
@@ -211,7 +221,8 @@ def foo(x):
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline, imports_and_functions)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection(imports_and_functions)
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == []
     assert sorted(pipeline.get_step("step2").ins) == []
@@ -220,7 +231,8 @@ def foo(x):
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_with_pipeline_parameters(dummy_nb_config):
+def test_dependencies_detection_with_pipeline_parameters(notebook_processor,
+                                                         dummy_nb_config):
     """Test dependencies are detected with pipeline parameters and globals."""
     imports_and_functions = "import math"
 
@@ -248,7 +260,8 @@ def foo(x):
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline, imports_and_functions)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection(imports_and_functions)
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == []
     assert sorted(pipeline.get_step("step2").ins) == []
@@ -259,7 +272,8 @@ def foo(x):
     assert pipeline.get_step("step3").parameters == {"y": (5, 'int')}
 
 
-def test_dependencies_detection_with_try_except(dummy_nb_config):
+def test_dependencies_detection_with_try_except(notebook_processor,
+                                                dummy_nb_config):
     """Test dependencies are detected with functions inside try."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -287,7 +301,8 @@ bar()
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == ['x', 'y']
     assert sorted(pipeline.get_step("step2").ins) == ['x', 'y']
@@ -296,7 +311,7 @@ bar()
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_recursive(dummy_nb_config):
+def test_dependencies_detection_recursive(notebook_processor, dummy_nb_config):
     """Test dependencies are detected even with a chain of functions calls."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -315,7 +330,8 @@ def bar():
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == ['x']
     assert sorted(pipeline.get_step("step2").ins) == ['x']
@@ -324,7 +340,8 @@ def bar():
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_dependencies_detection_recursive_different_steps(dummy_nb_config):
+def test_dependencies_detection_recursive_different_steps(notebook_processor,
+                                                          dummy_nb_config):
     """Test dependencies are detected even with a chain of functions calls."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -345,7 +362,8 @@ def bar():
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step1").ins) == []
     assert sorted(pipeline.get_step("step1").outs) == ['foo', 'x']
     assert sorted(pipeline.get_step("step2").ins) == ['foo', 'x']
@@ -354,7 +372,8 @@ def bar():
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_deps_detection_recursive_different_steps_long(dummy_nb_config):
+def test_deps_detection_recursive_different_steps_long(notebook_processor,
+                                                       dummy_nb_config):
     """Test dependencies are detected even with a long chain of fns calls."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -381,7 +400,8 @@ def bar():
     pipeline.add_edge("step1", "step2")
     pipeline.add_edge("step2", "step3")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step0").ins) == []
     assert sorted(pipeline.get_step("step0").outs) == ['init', 'x']
     assert sorted(pipeline.get_step("step1").ins) == ['init', 'x']
@@ -394,7 +414,8 @@ def bar():
     assert sorted(pipeline.get_step("step3").outs) == []
 
 
-def test_deps_detection_recursive_different_steps_branch(dummy_nb_config):
+def test_deps_detection_recursive_different_steps_branch(notebook_processor,
+                                                         dummy_nb_config):
     """Test dependencies when fns are passed from multiple branches."""
     pipeline = Pipeline(dummy_nb_config)
 
@@ -428,7 +449,8 @@ def result():
     pipeline.add_edge("step_r", "step_m")
     pipeline.add_edge("step_m", "step_f")
 
-    dependencies.dependencies_detection(pipeline)
+    notebook_processor.pipeline = pipeline
+    notebook_processor.dependencies_detection()
     assert sorted(pipeline.get_step("step0").ins) == []
     assert sorted(pipeline.get_step("step0").outs) == ['x', 'y']
     assert sorted(pipeline.get_step("step_l").ins) == ['x']
