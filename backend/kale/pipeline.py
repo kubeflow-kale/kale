@@ -22,7 +22,7 @@ from kubernetes.client.rest import ApiException
 
 from kale import Step
 from kale.config import Config, Field, validators
-from kale.static_analysis.ast import PipelineParam
+from kale.common.astutils import PipelineParam
 from kale.common import graphutils, utils, podutils
 
 log = logging.getLogger(__name__)

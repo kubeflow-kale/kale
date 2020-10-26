@@ -18,12 +18,11 @@ import logging
 
 from tabulate import tabulate
 
-from kale.static_analysis import ast
 from kale.marshal import resource_load
 from kale.rpc.log import create_adapter
 from kale import Compiler, NotebookProcessor
 from kale.rpc.errors import RPCInternalError
-from kale.common import podutils, kfputils, kfutils
+from kale.common import podutils, kfputils, kfutils, astutils
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
@@ -128,7 +127,7 @@ def get_pipeline_parameters(request, source_notebook_path):
                              " of the notebook with the `pipeline-parameters`"
                              " tag.")
         # get a dict from the 'pipeline parameters' cell source code
-        params_dict = ast.parse_assignments_expressions(params_source)
+        params_dict = astutils.parse_assignments_expressions(params_source)
     except ValueError as e:
         log.exception("Value Error during parsing of pipeline parameters")
         raise RPCInternalError(details=str(e), trans_id=request.trans_id)
@@ -153,7 +152,7 @@ def get_pipeline_metrics(request, source_notebook_path):
                              " of the notebook with the `pipeline-metrics`"
                              " tag.")
         # get a dict from the 'pipeline parameters' cell source code
-        metrics = ast.parse_metrics_print_statements(metrics_source)
+        metrics = astutils.parse_metrics_print_statements(metrics_source)
     except ValueError as e:
         log.exception("Failed to parse pipeline metrics")
         raise RPCInternalError(details=str(e), trans_id=request.trans_id)
