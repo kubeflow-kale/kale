@@ -61,9 +61,9 @@ setup(
         ]
     },
     entry_points={'console_scripts':
-                  ['kale=kale.command_line:main',
-                   'kale_server=kale.command_line:server',
-                   'kale-volumes=kale.command_line:kale_volumes']},
+                  ['kale=kale.cli:main',
+                   'kale_server=kale.cli:server',
+                   'kale-volumes=kale.cli:kale_volumes']},
     python_requires='>=3.6.0',
     include_package_data=True,
     zip_safe=False
