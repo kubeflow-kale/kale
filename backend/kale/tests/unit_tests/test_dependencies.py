@@ -14,6 +14,7 @@
 
 import pytest
 
+import kale.common.flakeutils
 from kale import Pipeline, Step
 from kale.static_analysis import dependencies
 
@@ -27,7 +28,7 @@ from kale.static_analysis import dependencies
 ])
 def test_pyflakes_report(code, target):
     """Tests pyflakes_report function."""
-    res = dependencies.pyflakes_report(code)
+    res = kale.common.flakeutils.pyflakes_report(code)
     assert sorted(res) == sorted(target)
 
 
