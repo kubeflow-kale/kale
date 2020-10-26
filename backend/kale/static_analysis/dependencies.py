@@ -18,8 +18,7 @@ from pyflakes import api as pyflakes_api
 from pyflakes import reporter as pyflakes_reporter
 
 from kale import Pipeline
-from kale.common import utils, graphutils
-from kale.static_analysis import ast as kale_ast
+from kale.common import utils, graphutils, astutils as kale_ast
 
 
 class StreamList:

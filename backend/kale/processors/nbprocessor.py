@@ -22,7 +22,8 @@ import nbformat as nb
 
 from kale.config import Field
 from kale import Pipeline, Step, PipelineConfig
-from kale.static_analysis import dependencies, ast
+from kale.static_analysis import dependencies
+from kale.common import astutils
 
 # fixme: Change the name of this key to `kale_metadata`
 KALE_NB_METADATA_KEY = 'kubeflow_notebook'
@@ -197,7 +198,7 @@ class NotebookProcessor:
         self.pipeline.set_volume_pipeline_parameters()
 
         # get a list of variables that need to be logged as pipeline metrics
-        pipeline_metrics = ast.parse_metrics_print_statements(
+        pipeline_metrics = astutils.parse_metrics_print_statements(
             pipeline_metrics_source)
 
         # run static analysis over the source code
@@ -231,9 +232,9 @@ class NotebookProcessor:
 
     def parse_pipeline_parameters(self, source: str):
         """Get pipeline parameters from source code."""
-        pipeline_parameters = ast.parse_assignments_expressions(source)
+        pipeline_parameters = astutils.parse_assignments_expressions(source)
         for name, (v_type, v_value) in pipeline_parameters.items():
-            pipeline_parameters[name] = ast.PipelineParam(v_type, v_value)
+            pipeline_parameters[name] = astutils.PipelineParam(v_type, v_value)
         self.pipeline.pipeline_parameters = pipeline_parameters
 
     def parse_notebook(self):
