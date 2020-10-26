@@ -229,48 +229,48 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   // update metadata state values: use destructure operator to update nested dict
   updateExperiment = (experiment: IExperiment) =>
-    this.setState({
+    this.setState((prevState, props) => ({
       metadata: {
-        ...this.state.metadata,
+        ...prevState.metadata,
         experiment: experiment,
         experiment_name: experiment.name,
       },
-    });
+    }));
   updatePipelineName = (name: string) =>
-    this.setState({
-      metadata: { ...this.state.metadata, pipeline_name: name },
-    });
+    this.setState((prevState, props) => ({
+      metadata: { ...prevState.metadata, pipeline_name: name },
+    }));
   updatePipelineDescription = (desc: string) =>
-    this.setState({
-      metadata: { ...this.state.metadata, pipeline_description: desc },
-    });
+    this.setState((prevState, props) => ({
+      metadata: { ...prevState.metadata, pipeline_description: desc },
+    }));
   updateDockerImage = (name: string) =>
-    this.setState({
+    this.setState((prevState, props) => ({
       metadata: {
-        ...this.state.metadata,
+        ...prevState.metadata,
         docker_image: name,
       },
-    });
+    }));
   updateVolumesSwitch = () => {
-    this.setState({
-      volumes: this.state.notebookVolumes,
+    this.setState((prevState, props) => ({
+      volumes: prevState.notebookVolumes,
       metadata: {
-        ...this.state.metadata,
-        volumes: this.state.notebookVolumes,
-        snapshot_volumes: !this.state.metadata.snapshot_volumes,
+        ...prevState.metadata,
+        volumes: prevState.notebookVolumes,
+        snapshot_volumes: !prevState.metadata.snapshot_volumes,
       },
-    });
+    }));
   };
   updateAutosnapshotSwitch = (autosnapshot?: boolean) =>
-    this.setState({
+    this.setState((prevState, props) => ({
       metadata: {
-        ...this.state.metadata,
+        ...prevState.metadata,
         autosnapshot:
           autosnapshot === undefined
-            ? !this.state.metadata.autosnapshot
+            ? !prevState.metadata.autosnapshot
             : autosnapshot,
       },
-    });
+    }));
 
   getNotebookMountPoints = (): { label: string; value: string }[] => {
     const mountPoints: { label: string; value: string }[] = [];
@@ -288,32 +288,34 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   changeDeployDebugMessage = () =>
-    this.setState({ deployDebugMessage: !this.state.deployDebugMessage });
+    this.setState((prevState, props) => ({
+      deployDebugMessage: !prevState.deployDebugMessage,
+    }));
 
   updateKatibRun = () =>
-    this.setState({
+    this.setState((prevState, props) => ({
       metadata: {
-        ...this.state.metadata,
+        ...prevState.metadata,
         katib_run: !this.state.metadata.katib_run,
       },
-    });
+    }));
 
   updateKatibMetadata = (metadata: IKatibMetadata) =>
-    this.setState({
+    this.setState((prevState, props) => ({
       metadata: {
-        ...this.state.metadata,
+        ...prevState.metadata,
         katib_metadata: metadata,
       },
-    });
+    }));
 
   updateVolumes = (
     volumes: IVolumeMetadata[],
     metadataVolumes: IVolumeMetadata[],
   ) => {
-    this.setState({
+    this.setState((prevState, props) => ({
       volumes,
-      metadata: { ...this.state.metadata, volumes: metadataVolumes },
-    });
+      metadata: { ...prevState.metadata, volumes: metadataVolumes },
+    }));
   };
 
   toggleKatibDialog = async () => {
@@ -334,7 +336,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   // restore state to default values
   resetState = () =>
-    this.setState({ ...DefaultState, isEnabled: this.state.isEnabled });
+    this.setState((prevState, props) => ({
+      ...DefaultState,
+      isEnabled: prevState.isEnabled,
+    }));
 
   componentDidMount = () => {
     // Notebook tracker will signal when a notebook is changed
@@ -422,13 +427,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             selectVolumeTypes,
           });
         } else {
-          this.setState({
-            selectVolumeTypes: this.state.selectVolumeTypes.map(t => {
+          this.setState((prevState, props) => ({
+            selectVolumeTypes: prevState.selectVolumeTypes.map(t => {
               return t.value === 'clone' || t.value === 'snap'
                 ? { ...t, tooltip: rokErrorTooltip(this.props.rokError) }
                 : t;
             }),
-          });
+          }));
         }
         // Detect the base image of the current Notebook Server
         const baseImage = await commands.getBaseImage();
@@ -460,15 +465,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           this.state.metadata.experiment,
           this.state.metadata.experiment_name,
         );
-        this.setState({
+        this.setState((prevState, props) => ({
           experiments,
           gettingExperiments: false,
           metadata: {
-            ...this.state.metadata,
+            ...prevState.metadata,
             experiment,
             experiment_name,
           },
-        });
+        }));
       }
 
       // if the key exists in the notebook's metadata
@@ -551,17 +556,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           metadata: metadata,
         });
       } else {
-        this.setState({
+        this.setState((prevState, props) => ({
           metadata: {
             ...DefaultState.metadata,
-            volumes: this.state.notebookVolumes,
+            volumes: prevState.notebookVolumes,
             snapshot_volumes:
-              !this.props.rokError && this.state.notebookVolumes.length > 0,
+              !this.props.rokError && prevState.notebookVolumes.length > 0,
             autosnapshot:
-              !this.props.rokError && this.state.notebookVolumes.length > 0,
+              !this.props.rokError && prevState.notebookVolumes.length > 0,
           },
-          volumes: this.state.notebookVolumes,
-        });
+          volumes: prevState.notebookVolumes,
+        }));
       }
     } else {
       this.resetState();
