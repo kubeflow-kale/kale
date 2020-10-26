@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from .step import Step
-from .pipeline import Pipeline, PipelineConfig
+from .pipeline import Pipeline, PipelineConfig, PipelineParam
 from .compiler import Compiler
 from .processors import NotebookProcessor, NotebookConfig
 
