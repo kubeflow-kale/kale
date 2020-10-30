@@ -32,7 +32,7 @@ from ml_metadata.metadata_store import metadata_store
 # https://github.com/google/ml-metadata/issues/25
 # https://github.com/google/ml-metadata/pull/35
 
-from kale.common import utils, podutils, workflowutils, k8sutils
+from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
 
 
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
@@ -80,12 +80,9 @@ log = logging.getLogger(__name__)
 mlmd_instance = None
 
 
-def _format_kfp_run_id(run_id: str):
-    return "kfp:run:%s" % run_id
-
-
 class MLMetadata(object):
     """Contains all context for a Kale step's ML-Metadata representation."""
+
     def __init__(self):
         log.info("%s Initializing MLMD context... %s", "-" * 10, "-" * 10)
         log.info("Connecting to MLMD...")
@@ -280,7 +277,7 @@ class MLMetadata(object):
 
     def _get_or_create_run_context(self):
         run_id = metadata_store_pb2.Value(
-            string_value=_format_kfp_run_id(self.run_uuid))
+            string_value=kfputils.format_kfp_run_id_uri(self.run_uuid))
         workflow_name = metadata_store_pb2.Value(
             string_value=self.workflow_name)
         pipeline_name = metadata_store_pb2.Value(
@@ -299,7 +296,7 @@ class MLMetadata(object):
 
     def _create_execution_in_run_context(self):
         run_id = metadata_store_pb2.Value(
-            string_value=_format_kfp_run_id(self.run_uuid))
+            string_value=kfputils.format_kfp_run_id_uri(self.run_uuid))
         pipeline_name = metadata_store_pb2.Value(
             string_value=self.pipeline_name)
         component_id = metadata_store_pb2.Value(string_value=self.component_id)
@@ -449,7 +446,7 @@ class MLMetadata(object):
         # https://github.com/kubeflow/pipelines/pull/2852
         # https://github.com/kubeflow/pipelines/pull/3485#issuecomment-612722767
         custom_properties["run_id"] = metadata_store_pb2.Value(
-            string_value=_format_kfp_run_id(self.run_uuid))
+            string_value=kfputils.format_kfp_run_id_uri(self.run_uuid))
 
         return self._create_artifact_with_type(uri,
                                                ROK_SNAPSHOT_ARTIFACT_TYPE_NAME,
