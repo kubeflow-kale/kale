@@ -441,3 +441,8 @@ def create_and_wait_kfp_run(pipeline_id: str, run_name: str,
 
 def _get_workflow_from_run(run):
     return json.loads(run.pipeline_runtime.workflow_manifest)
+
+
+def format_kfp_run_id_uri(run_id: str):
+    """Return a KFP run ID as a URI."""
+    return "kfp:run:%s" % run_id
