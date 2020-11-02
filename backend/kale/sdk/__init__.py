@@ -1,4 +1,4 @@
-# Copyright 2019-2020 The Kale Authors
+# Copyright 2020 The Kale Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,5 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .pyprocessor import PythonProcessor
-from .nbprocessor import NotebookProcessor, NotebookConfig
+
+from .api import pipeline, step
+from kale.common import logutils
+
+
+logutils.get_or_create_logger(module=__name__, name="sdk")
+del logutils

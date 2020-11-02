@@ -30,6 +30,7 @@ setup(
               'kale.processors',
               'kale.rpc',
               'kale.kfserving',
+              'kale.sdk',
               ],
     install_requires=[
         'kfp',

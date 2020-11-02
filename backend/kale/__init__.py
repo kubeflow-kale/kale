@@ -21,10 +21,10 @@ class PipelineParam(NamedTuple):
     param_value: Any
 
 
-from .step import Step
+from .step import Step, StepConfig
 from .pipeline import Pipeline, PipelineConfig, VolumeConfig
 from .compiler import Compiler
-from .processors import NotebookProcessor, NotebookConfig
+from .processors import NotebookProcessor, NotebookConfig, PythonProcessor
 
 from kale.common import logutils
 logutils.get_or_create_logger(module=__name__, name="kale")

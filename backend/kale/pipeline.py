@@ -13,14 +13,15 @@
 # limitations under the License.
 
 import os
+import copy
 import logging
 import networkx as nx
 
-from typing import Iterable
+from typing import Iterable, Dict
 from kubernetes.config import ConfigException
 from kubernetes.client.rest import ApiException
 
-from kale import Step
+from kale import Step, PipelineParam
 from kale.config import Config, Field, validators
 from kale.common import graphutils, utils, podutils
 
@@ -200,8 +201,14 @@ class Pipeline(nx.DiGraph):
     def __init__(self, config: PipelineConfig, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
-        self.pipeline_parameters = dict()
+        self.pipeline_parameters: Dict[str, PipelineParam] = dict()
+        self.processor = None
         self._pps_names = None
+
+    def run(self):
+        """Runs the steps locally in topological sort."""
+        for step in self.steps:
+            step.run(self.pipeline_parameters)
 
     def add_step(self, step: Step):
         """Add a new Step to the pipeline."""
@@ -287,6 +294,20 @@ class Pipeline(nx.DiGraph):
         Returns (list): A list of leaf Steps.
         """
         return [x for x in self.steps if self.out_degree(x.name) == 0]
+
+    def override_pipeline_parameters_from_kwargs(self, **kwargs):
+        """Overwrite the current pipeline parameters with provided inputs."""
+        _pipeline_parameters = copy.deepcopy(self.pipeline_parameters)
+        for k, v in kwargs.items():
+            if k not in self.pipeline_parameters:
+                raise RuntimeError("Running pipeline '%s' with"
+                                   " an input argument that is not in its"
+                                   " parameters: %s"
+                                   % (self.config.pipeline_name, k))
+            # replace default value with the provided one
+            _type = _pipeline_parameters[k].param_type
+            _pipeline_parameters[k] = PipelineParam(_type, v)
+        self.pipeline_parameters = _pipeline_parameters
 
     def show(self):
         """Print the pipeline nodes and dependencies in a table."""
