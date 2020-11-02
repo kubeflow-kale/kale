@@ -34,6 +34,10 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_volume_step_names = []
     _kale_volume_name_parameters = []
 
+    {% if timeout %}
+    _kfp_dsl.get_pipeline_conf().set_timeout({{ timeout }})
+    {% endif %}
+
     {% for vol in volumes -%}
     {% set name = vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
