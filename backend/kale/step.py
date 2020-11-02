@@ -32,6 +32,10 @@ class StepConfig(Config):
                         validators=[validators.K8sAnnotationsValidator])
     limits = Field(type=dict, default=dict(),
                    validators=[validators.K8sLimitsValidator])
+    retry_count = Field(type=int, default=0)
+    retry_interval = Field(type=str)
+    retry_factor = Field(type=int)
+    retry_max_interval = Field(type=str)
 
 
 class Step:
@@ -44,7 +48,11 @@ class Step:
                  outs: Set[Any] = None,
                  annotations: Dict[str, str] = None,
                  limits: Dict[str, str] = None,
-                 labels: Dict[str, str] = None):
+                 labels: Dict[str, str] = None,
+                 retry_count: int = None,
+                 retry_interval: str = None,
+                 retry_factor: int = None,
+                 retry_max_interval: str = None):
         self.source = source
         self.ins = ins or set()
         self.outs = outs or set()
@@ -52,7 +60,11 @@ class Step:
         self.config = StepConfig(name=name,
                                  annotations=annotations,
                                  limits=limits,
-                                 labels=labels)
+                                 labels=labels,
+                                 retry_count=retry_count,
+                                 retry_interval=retry_interval,
+                                 retry_factor=retry_factor,
+                                 retry_max_interval=retry_max_interval)
 
         # whether the step produces KFP metrics or not
         self.metrics = False
