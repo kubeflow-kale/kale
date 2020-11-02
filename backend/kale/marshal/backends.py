@@ -1,208 +1,179 @@
-#  Copyright 2019-2020 The Kale Authors
+# Copyright 2019-2020 The Kale Authors
 #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import dill
 import logging
 
-from .resource_load import resource_load
-from .resource_save import resource_save
-from .resource_load import resource_all as fallback_load
-from .resource_save import resource_all as fallback_save
+from kale.marshal.backend import get_dispatcher, MarshalBackend
 
 
 log = logging.getLogger(__name__)
 
 
-def _get_obj_name(s):
-    return s.split('/')[-1]
+register_backend = get_dispatcher().register
 
 
-@resource_load.register(r'.*\.pyfn')
-def resource_function_load(uri, **kwargs):
-    """Load a Python function."""
-    log.info("Loading function: %s", _get_obj_name(uri))
-    return dill.load(open(uri, "rb"))
+@register_backend
+class FunctionBackend(MarshalBackend):
+    """Marshal Python functions."""
+    name = "Function backend"
+    display_name = "function"
+    file_type = "pyfn"
+    obj_type_regex = r"function"
 
 
-@resource_save.register(r'function')
-def resource_function_save(obj, path, **kwargs):
-    """Save a Python function."""
-    log.info("Saving function: %s", _get_obj_name(path))
-    with open(path + ".pyfn", "wb") as f:
-        dill.dump(obj, f)
+@register_backend
+class NumpyBackend(MarshalBackend):
+    """Marshal Numpy objects functions."""
+    name = "Numpy backend"
+    display_name = "numpy"
+    file_type = "npy"
+    obj_type_regex = r"numpy\..*"
 
-
-@resource_load.register(r'.*\.npy')  # match anything ending in .npy
-def resource_numpy_load(uri, **kwargs):
-    """Load a numpy resource."""
-    try:
+    def save(self, obj, path):
+        """Save a Numpy object."""
         import numpy as np
-        log.info("Loading numpy obj: %s", _get_obj_name(uri))
-        return np.load(uri)
-    except ImportError:
-        return fallback_load(uri, **kwargs)
+        np.save(path, obj)
 
-
-@resource_save.register(r'numpy\..*')
-def resource_numpy_save(obj, path, **kwargs):
-    """Save a numpy resource."""
-    try:
+    def load(self, file_path):
+        """Restore a Numpy object."""
         import numpy as np
-        log.info("Saving numpy obj: %s", _get_obj_name(path))
-        np.save(path + ".npy", obj)
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
+        return np.load(file_path)
 
 
-@resource_load.register(r'.*\.pdpkl')
-def resource_pandas_load(uri, **kwargs):
-    """Load a pandas resource."""
-    try:
-        import pandas as pd
-        log.info("Loading pandas obj: %s", _get_obj_name(uri))
-        return pd.read_pickle(uri)
-    except ImportError:
-        return fallback_load(uri, **kwargs)
+@register_backend
+class PandasBackend(MarshalBackend):
+    """Marshal Pandas objects."""
+    name = "Pandas backend"
+    display_name = "pandas"
+    file_type = "pdpkl"
+    obj_type_regex = r"pandas\..*(DataFrame|Series)"
 
-
-@resource_save.register(r'pandas\..*(DataFrame|Series)')
-def resource_pandas_save(obj, path, **kwargs):
-    """Save a pandas DataFrame or Series."""
-    try:
+    def save(self, obj, path):
+        """Save a Pandas object."""
         import pandas as pd  # noqa: F401
-        log.info("Saving pandas obj: %s", _get_obj_name(path))
-        obj.to_pickle(path + '.pdpkl')
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
+        obj.to_pickle(path)
+
+    def load(self, file_path):
+        """Restore a Pandas object."""
+        import pandas as pd
+        return pd.read_pickle(file_path)
 
 
-@resource_load.register(r'.*\.dmatrix')
-def resource_dmatrix_load(uri, **kwargs):
-    """Load an XGBoost DMatrix resource."""
-    try:
+@register_backend
+class XGBoostModelBackend(MarshalBackend):
+    """Marshal XGBoost Model object."""
+    name = "XGBoost Model backend"
+    display_name = "xgboost-model"
+    file_type = "bst"
+    obj_type_regex = r"xgboost\.core\.Booster"
+
+    def save(self, obj, path):
+        """Save an XGBoost Model object."""
+        obj.save_model(path)
+
+    def load(self, file_path):
+        """Restore an XGBoost Model object."""
         import xgboost as xgb
-        log.info("Loading XGBoost DMatrix obj: %s", _get_obj_name(uri))
-        return xgb.DMatrix(uri)
-    except ImportError:
-        return fallback_load(uri, **kwargs)
-
-
-@resource_save.register(r'xgboost.core.DMatrix')
-def resource_dmatrix_save(obj, path, **kwargs):
-    """Save an XGBoost DMatrix object."""
-    try:
-        log.info("Saving XGBoost DMatrix obj: %s", _get_obj_name(path))
-        obj.save_binary(path + '.dmatrix')
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
-
-
-@resource_load.register(r'.*\.bst')
-def resource_xgb_load(uri, **kwargs):
-    """Load an XGBoost Model resource."""
-    try:
-        import xgboost as xgb
-        log.info("Loading XGBoost Model obj: %s", _get_obj_name(uri))
         obj_xgb = xgb.Booster()
-        obj_xgb.load_model(uri)
+        obj_xgb.load_model(file_path)
         return obj_xgb
-    except ImportError:
-        return fallback_load(uri, **kwargs)
 
 
-@resource_save.register(r'xgboost.core.Booster')
-def resource_xgb_save(obj, path, **kwargs):
-    """Save an XGBoost Model object."""
-    try:
-        log.info("Saving XGBoost model obj: %s", _get_obj_name(path))
-        obj.save_model(path + '.bst')
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
+@register_backend
+class XGBoostDMatrixBackend(MarshalBackend):
+    """Marshal XGBoost DMatrix object."""
+    name = "XGBoost DMatrix backend"
+    display_name = "xgboost-dmatrix"
+    file_type = "dmatrix"
+    obj_type_regex = r"xgboost\.core\.DMatrix"
+
+    def save(self, obj, path):
+        """Save an XGBoost DMatrix object."""
+        obj.save_binary(path)
+
+    def load(self, file_path):
+        """Restore an XGBoost DMatrix object."""
+        import xgboost as xgb
+        return xgb.DMatrix(file_path)
 
 
-@resource_load.register(r'.*\.pt')
-def resource_torch_load(uri, **kwargs):
-    """Load a torch resource."""
-    try:
+@register_backend
+class PyTorchBackend(MarshalBackend):
+    """Marshal PyTorch objects."""
+    name = "PyTorch backend"
+    display_name = "pytorch"
+    file_type = "pt"
+    obj_type_regex = r"torch.*"
+
+    def save(self, obj, path):
+        """Save a PyTorch object."""
+        import dill
         import torch
-        log.info("Loading PyTorch model: %s", _get_obj_name(uri))
-        obj_torch = torch.load(uri, pickle_module=dill)
+        torch.save(obj, path, pickle_module=dill)
+
+    def load(self, file_path):
+        """Restore a PyTorch object."""
+        import dill
+        import torch
+        obj_torch = torch.load(file_path, pickle_module=dill)
         if "nn.Module" in str(type(obj_torch)):
             # if the object is a Module we need to run eval
             obj_torch.eval()
         return obj_torch
-    except ImportError:
-        return fallback_load(uri, **kwargs)
 
 
-@resource_save.register(r'torch.*')
-def resource_torch_save(obj, path, **kwargs):
-    """Save a torch resource."""
-    try:
-        import torch
-        log.info("Saving PyTorch model: %s", _get_obj_name(path))
-        torch.save(obj, path + ".pt", pickle_module=dill)
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
+@register_backend
+class KerashBackend(MarshalBackend):
+    """Marshal Keras objects."""
+    name = "Keras backend"
+    display_name = "keras"
+    file_type = "keras"
+    obj_type_regex = r"keras\..*"
 
+    def save(self, obj, path):
+        """Save a Keras object."""
+        import keras  # noqa: F401
+        obj.save(path)
 
-@resource_load.register(r'.*\.keras')
-def resource_keras_load(uri, **kwargs):
-    """Load a Keras model."""
-    try:
+    def load(self, file_path):
+        """Restore a Keras object."""
         from keras.models import load_model
-        log.info("Loading Keras model: %s", _get_obj_name(uri))
-        obj_keras = load_model(uri)
-        return obj_keras
-    except ImportError:
-        return fallback_load(uri, **kwargs)
+        return load_model(file_path)
 
 
-@resource_save.register(r'keras\..*')
-def resource_keras_save(obj, path, **kwargs):
-    """Save a Keras model."""
-    try:
-        log.info("Saving Keras model: %s", _get_obj_name(path))
-        obj.save(path + ".keras")
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
+@register_backend
+class TensorflowKerasBackend(MarshalBackend):
+    """Marshal Tensorflow Keras objects."""
+    name = "Tensorflow backend"
+    display_name = "tensorflow"
+    file_type = "tfkeras"
+    obj_type_regex = r"tensorflow\.python\.keras.*"
 
+    def save(self, obj, path):
+        """Save a Tensorflow Keras object."""
+        import tensorflow.keras  # noqa: F401
+        # XXX: Adding `/1` since tensorflow serve expects the model's models
+        #  to be saved under a versioned folder
+        obj.save(path + "/1")
 
-@resource_load.register(r'.*\.tfkeras')
-def resource_tf_load(uri, **kwargs):
-    """Load a Keras model."""
-    try:
+    def load(self, file_path):
+        """Restore a Tensorflow Keras object."""
         from tensorflow.keras.models import load_model
-        log.info(f"Loading tf.Keras model: {uri}")
         try:
-            obj_tfkeras = load_model(uri, compile=False)
+            obj = load_model(file_path, compile=False)
         except OSError:
             # XXX: try to load a model that was saved within a versioned
             #  folder (for tensorflow serve)
-            obj_tfkeras = load_model(uri + "/1", compile=False)
-        return obj_tfkeras
-    except ImportError:
-        return fallback_load(uri, **kwargs)
-
-
-@resource_save.register(r'tensorflow.python.keras.*')
-def resource_tf_save(obj, path, **kwargs):
-    """Save a tf.Keras model."""
-    try:
-        log.info("Saving TF Keras model: %s", _get_obj_name(path))
-        # XXX: Adding `/1` since tensorflow serve expects the model's models
-        #  to be saved under a versioned folder
-        obj.save(path + ".tfkeras/1")
-    except ImportError:
-        fallback_save(obj, path, **kwargs)
+            obj = load_model(file_path + "/1", compile=False)
+        return obj
