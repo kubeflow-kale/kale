@@ -203,3 +203,12 @@ class IsLowerValidator(Validator):
 
     def _validate(self, value: str):
         return value == value.lower()
+
+
+class PositiveIntegerValidator(Validator):
+    """Validates a Field to be a positive integer."""
+    def _validate(self, value):
+        if not isinstance(value, int):
+            raise ValueError("'%s' is not of type 'int'" % value)
+        if value <= 0:
+            raise ValueError("'%s' is not a positive integer" % value)

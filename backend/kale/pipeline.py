@@ -119,6 +119,7 @@ class PipelineConfig(Config):
     volume_access_mode = Field(
         type=str, validators=[validators.IsLowerValidator,
                               validators.VolumeAccessModeValidator])
+    timeout = Field(type=int, validators=[validators.PositiveIntegerValidator])
 
     @property
     def source_path(self):
