@@ -46,10 +46,11 @@ DUMMY_NB_CONFIG = {
     ('final_auto_snapshot', [], {}, {},
      {'autosnapshot': True}, 'func07.out.py')
 ])
-def test_generate_function(config_mock, step_name, source, ins, outs, metadata,
-                           target):
+def test_generate_function(_nb_config_mock, notebook_processor, step_name,
+                           source, ins, outs, metadata, target):
     """Test that python code is generated correctly."""
     pipeline = Pipeline(NotebookConfig(**{**DUMMY_NB_CONFIG, **metadata}))
+    pipeline.processor = notebook_processor
     step = Step(name=step_name, source=source, ins=ins, outs=outs)
     compiler = Compiler(pipeline)
     res = compiler.generate_lightweight_component(step)

@@ -26,8 +26,11 @@ from kale.common import kfputils
 
 log = logging.getLogger(__name__)
 
-FN_TEMPLATE = "function_template.jinja2"
+PY_FN_TEMPLATE = "py_function_template.jinja2"
+NB_FN_TEMPLATE = "nb_function_template.jinja2"
 PIPELINE_TEMPLATE = "pipeline_template.jinja2"
+PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE,
+                   "py": PY_FN_TEMPLATE}
 
 
 class Compiler:
@@ -97,13 +100,15 @@ class Compiler:
             return "\n".join([line.encode("unicode_escape").decode("utf-8")
                               for line in s.splitlines()])
 
-        # Since the code will be wrapped in triple quotes inside the template,
-        # we need to escape triple quotes as they will not be escaped by
-        # encode("unicode_escape").
-        step.source = [re.sub(r"'''", "\\'\\'\\'", _encode_source(s))
-                       for s in step_source_raw]
+        if self.pipeline.processor.id == "nb":
+            # Since the code will be wrapped in triple quotes inside the
+            # template, we need to escape triple quotes as they will not be
+            # escaped by encode("unicode_escape").
+            step.source = [re.sub(r"'''", "\\'\\'\\'", _encode_source(s))
+                           for s in step_source_raw]
 
-        template = self._get_templating_env().get_template(FN_TEMPLATE)
+        _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
+        template = self._get_templating_env().get_template(_template_filename)
         fn_code = template.render(step=step, **self.pipeline.config.to_dict())
         # fix code style using pep8 guidelines
         return autopep8.fix_code(fn_code)

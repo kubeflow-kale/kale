@@ -14,8 +14,11 @@
 
 import logging
 
-from typing import Any, List
+from typing import Any, Dict, List, Callable, Union
 
+from kale import PipelineParam
+from kale.common import astutils
+from kale.marshal import Marshaller
 from kale.config import Config, Field, validators
 
 log = logging.getLogger(__name__)
@@ -36,13 +39,14 @@ class StepConfig(Config):
     retry_interval = Field(type=str)
     retry_factor = Field(type=int)
     retry_max_interval = Field(type=str)
+    timeout = Field(type=int, validators=[validators.PositiveIntegerValidator])
 
 
 class Step:
     """Class used to store information about a Step of the pipeline."""
 
     def __init__(self,
-                 source: List[str],
+                 source: Union[List[str], Callable],
                  ins: List[Any] = None,
                  outs: List[Any] = None,
                  **kwargs):
@@ -59,6 +63,21 @@ class Step:
         self._pps_names = None
         # used to keep track of the "free variables" used by the step
         self.fns_free_variables = dict()
+
+    def __call__(self, *args, **kwargs):
+        """Handler for when the @step decorated function is called."""
+        return execution_handler(self, *args, **kwargs)
+
+    def run(self, pipeline_parameters_values: Dict[str, PipelineParam]):
+        """Run the step locally."""
+        log.info("%s Running step '%s'... %s", "-" * 10, self.name, "-" * 10)
+        # select just the pipeline parameters consumed by this step
+        _params = {k: pipeline_parameters_values[k] for k in self.parameters}
+        marshaller = Marshaller(func=self.source, ins=self.ins, outs=self.outs,
+                                parameters=_params, marshal_dir='.marshal/')
+        marshaller()
+        log.info("%s Successfully run step '%s'... %s", "-" * 10, self.name,
+                 "-" * 10)
 
     @property
     def name(self):
@@ -89,3 +108,29 @@ class Step:
     def pps_values(self):
         """Get the values of the step's parameters, sorted by name."""
         return [self.parameters[n].param_value for n in self.pps_names]
+
+    @property
+    def rendered_source(self):
+        """Source to be rendered in the template."""
+        # FIXME: I don't like this approach. Currently step.source is either
+        #  a list of strings (if processed from the notebook) or a callable
+        #  object (function) (if processed from the sdk). This means that when
+        #  rendering the sdk template, we need to get the function's source.
+        #  It would be great to, in some way, unify how we treat the "source"
+        #  both for the notebook of the SDK all the way from the step object
+        #  to the template.
+        return astutils.get_function_source(self.source, strip_signature=False)
+
+
+def __default_execution_handler(step: Step, *args, **kwargs):
+    log.info("No Pipeline registration handler is set.")
+    if not callable(step.source):
+        raise RuntimeError("Kale is trying to execute a Step that does not"
+                           " define a function. Probably this Step was"
+                           " created converting a Notebook. Kale does not yet"
+                           " support executing Notebooks locally.")
+    log.info("Executing plain function: '%s'" % step.source.__name__)
+    return step.source(*args, **kwargs)
+
+
+execution_handler: Callable = __default_execution_handler
