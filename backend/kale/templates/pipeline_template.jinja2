@@ -139,6 +139,14 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     for _kale_k, _kale_v in _kale_step_limits.items():
         _kale_{{ step.name }}_task.container.add_resource_limit(_kale_k, _kale_v)
     {%- endif %}
+    {%- if step.config.retry_count %}
+    _kale_{{ step.name }}_task.set_retry_strategy(
+        num_retries={{ step.config.retry_count }},
+        retry_policy="Always",
+        backoff_duration={{ step.config.retry_interval|quote_if_not_none }},
+        backoff_factor={{ step.config.retry_factor }},
+        backoff_max_duration={{ step.config.retry_max_interval|quote_if_not_none }})
+    {%- endif %}
     _kale_{{ step.name }}_task.container.working_dir = "{{ abs_working_dir }}"
     _kale_{{ step.name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     _kale_output_artifacts = {}
