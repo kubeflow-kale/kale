@@ -12,16 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .resource_save import resource_save
-from .resource_load import resource_load
-from .utils import save, load
-
+# Import all backends so that they register themselves to the Dispatcher
 from .backends import *
+from .backend import get_dispatcher, set_data_dir, get_data_dir
 
+save = get_dispatcher().save
+load = get_dispatcher().load
+
+# External code shouldn't care about the Dispatcher instance
+del get_dispatcher
 
 from kale.common import logutils
-logutils.get_or_create_logger(module=__name__, name="marshalling",
-                              # XXX: Should we have this as default in
-                              # `get_or_create_logger`??
-                              log_path="kale.log")
+logutils.get_or_create_logger(module=__name__, name="marshalling")
 del logutils
