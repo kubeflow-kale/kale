@@ -175,3 +175,15 @@ def shorten_long_string(obj: Any, chars: int = 75):
     """Shorten the string representation of the input object."""
     str_input = str(obj)
     return str_input[:chars] + " ..... " + str_input[len(str_input) - chars:]
+
+
+def dedent(text: str):
+    """Remove longest common prefix consisting of whitespaces.
+
+    Args:
+        text: Multiline string
+    """
+    matches = re.findall(r"(?m)^\s+", text)
+    if len(matches) < len(text.splitlines()):
+        return text
+    return re.sub(r"(?m)^.{%d}" % min(map(len, matches)), "", text)
