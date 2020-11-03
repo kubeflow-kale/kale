@@ -21,6 +21,7 @@ import hashlib
 import logging
 import tabulate
 
+from functools import lru_cache
 from kale.common import workflowutils, k8sutils
 
 ROK_CSI_STORAGE_CLASS = "rok"
@@ -72,6 +73,7 @@ def get_pod_name():
     return pod_name
 
 
+@lru_cache(maxsize=None)
 def get_container_name():
     """Get the current container name.
 
