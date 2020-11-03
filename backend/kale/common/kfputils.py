@@ -100,8 +100,10 @@ def upload_pipeline(pipeline_package_path, pipeline_name, overwrite=False,
     """
     client = _get_kfp_client(host)
     try:
+        log.info("Uploading pipeline '%s' to KFP...", pipeline_name)
         client.upload_pipeline(pipeline_package_path,
                                pipeline_name=pipeline_name)
+        log.info("Successfully uploaded pipeline '%s' to KFP", pipeline_name)
     except ApiException as e:
         # The exception is a general 500 error.
         # The only way to check that it refers to the pipeline already existing
@@ -133,11 +135,15 @@ def run_pipeline(run_name, experiment_name, pipeline_package_path, host=None):
         Pipeline run metadata
     """
     client = _get_kfp_client(host)
+    log.info("Creating KFP experiment '%s'...", experiment_name)
     experiment = client.create_experiment(experiment_name)
     # Submit a pipeline run
-    run = client.run_pipeline(experiment.id, run_name, pipeline_package_path,
-                              {})
-    # return the run metadata
+    log.info("Submitting new pipeline run '%s'...", run_name)
+    run = client.run_pipeline(
+        experiment.id, run_name, pipeline_package_path, {})
+    run_url = "%s/#/runs/details/%s" % (client._get_url_prefix(), run.id)
+    log.info("Successfully submitted pipeline run.")
+    log.info("Run URL: <host>%s", run_url)
     return run
 
 
