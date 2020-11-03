@@ -39,3 +39,28 @@ some other code
 some other code
     '''
     assert utils.comment_magic_commands(code) == target.strip()
+
+
+def test_dedent_no_op():
+    """Test that text is not dedented when not needed."""
+    text = (
+        "Line1\n"
+        "  Line2\n"
+    )
+
+    assert text == utils.dedent(text)
+
+
+def test_dedent():
+    """Text that text is properly dedented."""
+    text = (
+        "  Line1\n"
+        "    Line2\n"
+    )
+
+    target = (
+        "Line1\n"
+        "  Line2\n"
+    )
+
+    assert utils.dedent(text) == target
