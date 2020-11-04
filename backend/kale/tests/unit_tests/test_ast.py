@@ -188,3 +188,78 @@ def foo():
     print(x)
         '''
     assert kale_ast.get_function_calls(code) == {'print'}
+
+
+def test_get_function_source():
+    """Test that the function source is properly retrieved."""
+
+    def foo():
+        a = 1  # noqa: F841
+        b = 2  # noqa: F841
+
+    target = "a = 1\nb = 2\n"
+    assert kale_ast.get_function_source(foo) == target
+
+
+def test_get_function_source_with_signature():
+    """Test that the function source is properly retrieved with signature."""
+
+    def foo():
+        a = 1  # noqa: F841
+        b = 2  # noqa: F841
+
+    target = "def foo():\n    a = 1\n    b = 2\n"
+    assert kale_ast.get_function_source(foo, strip_signature=False) == target
+
+
+def test_get_function_source_with_signature_and_decorator():
+    """Test that the function source is properly retrieved with signature."""
+    def foodec(**kwargs):
+        def _(fn):
+            return fn
+        return _
+
+    @foodec(
+        a=1,
+        b=2,
+        c=3,
+        d=4)
+    def foo():
+        a = 1  # noqa: F841
+        b = 2  # noqa: F841
+
+    target = "def foo():\n    a = 1\n    b = 2\n"
+    assert kale_ast.get_function_source(foo, strip_signature=False) == target
+
+
+def test_link_fns_to_inputs_vars():
+    """Test the fn produces a correct map between fn calls and input args."""
+    source = (
+        "res = foo(a, b, c)\n"
+        "res2 = bar(d, c)\n"
+        "foo2(f)\n"
+    )
+
+    target = {
+        "foo": ["a", "b", "c"],
+        "bar": ["d", "c"],
+        "foo2": ["f"]
+    }
+
+    assert kale_ast.link_fns_to_inputs_vars(source) == target
+
+
+def test_link_fns_to_return_vars():
+    """Test the fn produces a correct map between fn calls and return vars."""
+    source = (
+        "res = foo(a, b, c)\n"
+        "res2 = bar(d, c)\n"
+        "foo2(f)\n"
+    )
+
+    target = {
+        "foo": ["res"],
+        "bar": ["res2"]
+    }
+
+    assert kale_ast.link_fns_to_return_vars(source) == target

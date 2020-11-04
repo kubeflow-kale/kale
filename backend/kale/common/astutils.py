@@ -15,11 +15,12 @@
 import re
 import ast
 import astor
+import types
 import inspect
 
-from typing import Callable
 from collections import deque
 from functools import lru_cache
+from typing import Callable, Dict, List
 
 from kale.common import utils
 
@@ -315,23 +316,123 @@ def parse_metrics_print_statements(code):
     return {re.sub("_", "-", v): v for v in variables}
 
 
-def get_function_source(func: Callable, strip_signature=True) -> str:
-    """Get the source code of a Callable object."""
-    tree = ast.parse(inspect.getsource(func))
-    if strip_signature:
-        fn_body = tree.body[0].body
-        return "".join(map(astor.to_source, fn_body))
+def get_function_source(fn: Callable, strip_signature=True) -> str:
+    """Get the source code of a function object.
 
+    Note: In case the function is decorated, the result does not include the
+          decorator statement.
+
+    Args:
+        fn: Function object
+        strip_signature: Remove the function's `def` statement and return
+            just the body (default True)
+    """
+    if not isinstance(fn, types.FunctionType):
+        raise TypeError("Input function is not of type FunctionType."
+                        " Found type: %s" % type(fn))
+    tree = ast.parse(utils.dedent(inspect.getsource(fn)))
     fn = tree.body[0]  # ast.FunctionDef
+    if strip_signature:
+        return "".join(map(astor.to_source, fn.body))
     source = astor.to_source(fn)
-    # Remove decorator if exists. If the decorator was defines over
-    # multiple lines in the original source code, astor generates it
-    # in a single line
+    # Remove decorator if it exists
     if source[0] == "@":
         # Since the decorator code could span multiple lines (too many
-        # arguments), find the line where the real function def starts
-        # by finding the first occurrence of a line that starts with 'def'
-        idx = next((i for i, j in enumerate(source.splitlines())
-                    if j.startswith("def")))
-        source = "\n".join(source.splitlines()[idx:])
+        # arguments), find the line where the real function def starts.
+        idx = next((_idx for _idx, line in enumerate(source.splitlines())
+                    if line.startswith("def")))
+        source = "\n".join(source.splitlines()[idx:]) + "\n"
     return source
+
+
+def link_fns_to_inputs_vars(code: str) -> Dict[str, List[str]]:
+    """Register the input args passed to every function in the snippet.
+
+    Map function calls to their input argument names.
+    The input code snippet is supposed to be a series of function calls, either
+    with as simple calls or with assignment. E.g.:
+
+    ```
+    res = foo(a, b, c)
+    res2 = bar(d, c)
+    foo2(f)
+    ```
+
+    Will produce:
+
+    ```
+    "foo" -> ["a", "b", "c"]
+    "bar" -> ["d", "c"]
+    "foo2" -> ["f"]
+    ```
+
+    Note: We are not interested in the function's _signature_, but the
+          actual names of the input arguments.
+    Note: We need to return a dict to **list** (not sets) to maintain the
+          origin arguments order.
+    """
+    tree = ast.parse(code)
+
+    fn_to_args = {}
+    for node in tree.body:
+        func_node = None
+        if isinstance(node, ast.Assign):
+            if not isinstance(node.value, ast.Call):
+                raise RuntimeError(
+                    "ast.Assign value is not a ast.Call node")
+            func_node = node.value
+        if isinstance(node, ast.Expr):
+            if not isinstance(node.value, ast.Call):
+                raise RuntimeError("ast.Expr value is not a ast.Call node")
+            func_node = node.value
+        if isinstance(node, ast.Call):
+            func_node = node
+        if not func_node:
+            raise RuntimeError("Node %s cannot be parsed." % node)
+
+        fn_name = func_node.func.id
+        fn_to_args[fn_name] = [name_node.id for name_node in func_node.args
+                               if isinstance(name_node, ast.Name)]
+    return fn_to_args
+
+
+# FIXME: this does not take into account when a function is called
+#  multiple times.
+def link_fns_to_return_vars(code: str) -> Dict[str, List[str]]:
+    """Map function calls to the name of vars assigned with return values.
+
+    E.g.:
+
+    ```
+    res = foo(a, b, c)
+    res2 = bar(d, c)
+    foo2(f)
+    ```
+
+    Will produce:
+
+    ```
+    "foo" -> ["res"]
+    "bar" -> ["res2"]
+    ```
+    """
+    tree = ast.parse(code)
+
+    fn_to_rets = {}
+    for node in tree.body:
+        if (not isinstance(node, ast.Assign)
+           or not isinstance(node.value, ast.Call)):
+            continue
+        function_name = node.value.func.id
+        ret_vars = []
+        for target in node.targets:
+            if isinstance(target, ast.Tuple):
+                for elt in target.elts:
+                    ret_vars.append(elt.id)
+            elif isinstance(target, ast.Name):
+                ret_vars.append(target.id)
+            else:
+                raise RuntimeError("Ast node '%s' not supported"
+                                   % type(target))
+        fn_to_rets[function_name] = ret_vars
+    return fn_to_rets
