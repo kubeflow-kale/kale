@@ -12,8 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import NamedTuple, Any
+
+
+class PipelineParam(NamedTuple):
+    """A pipeline parameter."""
+    param_type: str
+    param_value: Any
+
+
 from .step import Step
-from .pipeline import Pipeline, PipelineConfig, PipelineParam, VolumeConfig
+from .pipeline import Pipeline, PipelineConfig, VolumeConfig
 from .compiler import Compiler
 from .processors import NotebookProcessor, NotebookConfig
 

@@ -16,7 +16,7 @@ import os
 import logging
 import networkx as nx
 
-from typing import Iterable, NamedTuple
+from typing import Iterable
 from kubernetes.config import ConfigException
 from kubernetes.client.rest import ApiException
 
@@ -30,13 +30,6 @@ log = logging.getLogger(__name__)
 VOLUME_ACCESS_MODE_MAP = {"rom": ["ReadOnlyMany"], "rwo": ["ReadWriteOnce"],
                           "rwm": ["ReadWriteMany"]}
 DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
-
-
-class PipelineParam(NamedTuple):
-    """A pipeline parameter."""
-
-    param_type: str
-    param_value: any
 
 
 class VolumeConfig(Config):
