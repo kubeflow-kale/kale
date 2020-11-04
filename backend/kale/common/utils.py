@@ -47,7 +47,10 @@ def random_string(size=5, chars=string.ascii_lowercase + string.digits):
 
 def abs_working_dir(path):
     """Get absolute path to parent dir."""
-    return os.path.dirname(os.path.abspath(path))
+    abs_path = os.path.abspath(path)
+    if os.path.isfile(path):
+        abs_path = os.path.dirname(abs_path)
+    return abs_path
 
 
 def rm_r(path, ignore_missing=True, silent=False):
