@@ -35,6 +35,11 @@ def get_main_source_path():
     return os.path.abspath(__main__.__file__)
 
 
+def main_source_lives_in_cwd():
+    """Check if the main executable is located at the root of CWD."""
+    return os.path.dirname(get_main_source_path()) == os.getcwd()
+
+
 def random_string(size=5, chars=string.ascii_lowercase + string.digits):
     """Generate random string."""
     return "".join(random.choice(chars) for _ in range(size))
