@@ -14,7 +14,7 @@
 
 import logging
 
-from typing import Any, Dict, List, Set
+from typing import Any, List, Set
 
 from kale.config import Config, Field, validators
 
@@ -42,29 +42,15 @@ class Step:
     """Class used to store information about a Step of the pipeline."""
 
     def __init__(self,
-                 name: str,
                  source: List[str],
                  ins: Set[Any] = None,
                  outs: Set[Any] = None,
-                 annotations: Dict[str, str] = None,
-                 limits: Dict[str, str] = None,
-                 labels: Dict[str, str] = None,
-                 retry_count: int = None,
-                 retry_interval: str = None,
-                 retry_factor: int = None,
-                 retry_max_interval: str = None):
+                 **kwargs):
         self.source = source
         self.ins = ins or set()
         self.outs = outs or set()
 
-        self.config = StepConfig(name=name,
-                                 annotations=annotations,
-                                 limits=limits,
-                                 labels=labels,
-                                 retry_count=retry_count,
-                                 retry_interval=retry_interval,
-                                 retry_factor=retry_factor,
-                                 retry_max_interval=retry_max_interval)
+        self.config = StepConfig(**kwargs)
 
         # whether the step produces KFP metrics or not
         self.metrics = False
