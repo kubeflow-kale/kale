@@ -212,7 +212,7 @@ class Config(ABC):
         """Get the value of a field."""
         return self.__getattribute__(name)
 
-    def to_dict(self) -> Dict[str, any]:
+    def to_dict(self) -> Dict[str, Any]:
         """Return the config class as a dictionary."""
         config_dict = dict()
         for field_name, field_obj in self._fields.items():
@@ -258,7 +258,7 @@ class Config(ABC):
         """
         pass
 
-    def update(self, configs: Dict[str, any], patch=False):
+    def update(self, configs: Dict[str, Any], patch=False):
         """Update the existing configurations.
 
         Args:
@@ -284,6 +284,6 @@ class Config(ABC):
                 raise RuntimeError("Cannot update or patch a non-dict"
                                    " attribute")
 
-    def patch(self, configs: Dict[str, any]):
+    def patch(self, configs: Dict[str, Any]):
         """Equivalent to self.update(configs, patch=True)."""
         self.update(configs, patch=True)
