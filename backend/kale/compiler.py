@@ -44,6 +44,7 @@ class Compiler:
         self.pipeline = pipeline
         self.templating_env = None
         self.dsl_source = ""
+        self.dsl_script_path = None
 
     @staticmethod
     def _get_args():
@@ -51,6 +52,11 @@ class Compiler:
             description="Run Kale Pipeline")
         parser.add_argument("-K", "--kfp", action="store_true")
         return parser.parse_args()
+
+    def compile_and_run(self):
+        """First compile the Pipeline to DSL and then run it."""
+        self.compile()
+        self.run()
 
     def compile(self):
         """Convert Pipeline to KFP DSL.
@@ -60,6 +66,14 @@ class Compiler:
         log.info("Compiling Pipeline into KFP DSL code")
         self.dsl_source = self.generate_dsl()
         return self._save_compiled_code()
+
+    def run(self):
+        """Run the generated KFP script."""
+        if not self.dsl_script_path:
+            raise RuntimeError("The Compiler has yet to generate a new KFP"
+                               " DSL script. Please run the `compile` function"
+                               " first.")
+        self._run_compiled_code(self.dsl_script_path)
 
     def generate_dsl(self):
         """Generate a Python KFP DSL executable starting from the pipeline.
@@ -135,6 +149,7 @@ class Compiler:
         with open(output_path, "w") as f:
             f.write(self.dsl_source)
         log.info("Successfully saved generated code: %s", output_path)
+        self.dsl_script_path = output_path
         return output_path
 
     def _run_compiled_code(self, script_path: str):
