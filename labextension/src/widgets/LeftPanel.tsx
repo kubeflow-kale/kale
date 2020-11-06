@@ -303,7 +303,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     this.setState((prevState, props) => ({
       metadata: {
         ...prevState.metadata,
-        katib_run: !this.state.metadata.katib_run,
+        katib_run: !prevState.metadata.katib_run,
       },
     }));
 
