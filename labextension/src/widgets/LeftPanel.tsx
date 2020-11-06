@@ -159,6 +159,7 @@ export interface IKaleNotebookMetadata {
   katib_run: boolean;
   katib_metadata?: IKatibMetadata;
   steps_defaults?: string[];
+  storage_class_name?: string;
 }
 
 export interface IKatibExperiment {
@@ -258,6 +259,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         ...prevState.metadata,
         volumes: prevState.notebookVolumes,
         snapshot_volumes: !prevState.metadata.snapshot_volumes,
+        storage_class_name: undefined,
       },
     }));
   };
@@ -290,6 +292,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   changeDeployDebugMessage = () =>
     this.setState((prevState, props) => ({
       deployDebugMessage: !prevState.deployDebugMessage,
+    }));
+
+  updateStorageClassName = (storage_class_name: string) =>
+    this.setState((prevState, props) => ({
+      metadata: { ...prevState.metadata, storage_class_name },
     }));
 
   updateKatibRun = () =>
@@ -802,6 +809,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
         rokError={this.props.rokError}
         updateVolumes={this.updateVolumes}
+        storageClassName={this.state.metadata.storage_class_name}
+        updateStorageClassName={this.updateStorageClassName}
       />
     );
 
