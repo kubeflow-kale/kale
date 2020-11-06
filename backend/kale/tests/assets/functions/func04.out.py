@@ -4,9 +4,9 @@ def test():
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
-    from kale.marshal import utils as _kale_marshal_utils
-    _kale_marshal_utils.set_kale_data_directory("/marshal")
-    v1 = _kale_marshal_utils.load("v1")
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    v1 = _kale_marshal.load("v1")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
