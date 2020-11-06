@@ -14,45 +14,13 @@
 
 import os
 import re
-import sys
 import logging
-import traceback
 
 from typing import Dict, Any, Type
 
 from kale.common import utils
 
 log = logging.getLogger(__name__)
-
-DEBUG = True
-
-KALE_MARSHALLING_ERROR_SUFFIX = """
-The error was: %s
-
-Please help us improve Kale by opening a new issue at
-https://github.com/kubeflow-kale/kale/issues.
-"""
-
-KALE_SAVE_ERROR_MSG = """
-During data passing, Kale could not marshal the following object:
-
-  - path: '%s'
-  - type: '%s'
-""" + KALE_MARSHALLING_ERROR_SUFFIX
-
-KALE_LOAD_ERROR_MSG = """
-During data passing, Kale could not load the following file:
-
-  - name: '%s'
-""" + KALE_MARSHALLING_ERROR_SUFFIX
-
-KALE_UNKNOWN_MARSHALLING_ERROR = """
-During data passing, Kale experienced an error.
-""" + KALE_MARSHALLING_ERROR_SUFFIX
-
-
-# exc_info() -> (type, value, traceback)
-EXC_INFO_TRACEBACK = 2
 
 __DATA_DIR = os.path.curdir
 
@@ -70,24 +38,6 @@ def get_data_dir():
     """Get the data directory where marshalling happens."""
     global __DATA_DIR
     return __DATA_DIR
-
-
-class KaleMarshalException(Exception):
-    """Errors that may happen while Kale marshals objects between steps."""
-    def __init__(self, original_exc=None, original_traceback=None, msg=None,
-                 obj=None, obj_name=None, operation=None):
-        if msg is None:
-            # Set some default useful error message
-            msg = "Kale experienced an error while marshalling %s" % obj
-        if DEBUG:
-            msg = "%s\n\n%s" \
-                  % (msg, "\n".join(traceback.format_tb(original_traceback)))
-        super(KaleMarshalException, self).__init__(msg)
-        self.obj = obj
-        self.obj_name = obj_name
-        self.operation = operation
-        self.original_exc = original_exc
-        self.with_traceback(original_traceback)
 
 
 class MarshalBackend(object):
@@ -218,6 +168,10 @@ class Dispatcher(object):
     ```
     """
 
+    END_USER_EXC_MSG = ("\n\nThe error was:\n%s\n\nPlease help us improve Kale"
+                        " by opening a new issue at:"
+                        "\nhttps://github.com/kubeflow-kale/kale/issues.")
+
     def __init__(self):
         self.backends: Dict[str, MarshalBackend] = dict()
 
@@ -233,7 +187,7 @@ class Dispatcher(object):
             self.backends[cls.__name__] = cls()
         return cls
 
-    def _save(self, obj: Any, obj_name: str):
+    def save(self, obj: Any, obj_name: str):
         """Save an object to file.
 
         Args:
@@ -242,56 +196,34 @@ class Dispatcher(object):
         """
         try:
             self._dispatch_obj_type(obj).wrapped_save(obj, obj_name)
-        # Most of the pickling errors will raise these Exceptions
-        except (TypeError, AttributeError) as e:
-            raise KaleMarshalException(
-                original_exc=e,
-                original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
-                msg=KALE_SAVE_ERROR_MSG % (obj_name, type(obj), e),
-                obj=obj,
-                obj_name=os.path.basename(obj_name),
-                operation="save")
         except Exception as e:
-            raise KaleMarshalException(
-                original_exc=e,
-                original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
-                msg=KALE_UNKNOWN_MARSHALLING_ERROR % e,
-                obj=obj,
-                obj_name=os.path.basename(obj_name),
-                operation="save")
-
-    def save(self, obj: Any, obj_name: str):
-        """Save an object to file.
-
-        Args:
-            obj: The Python object to be saved
-            obj_name: The variable name of 'obj'
-        """
-        try:
-            self._save(obj, obj_name)
-        except KaleMarshalException as e:
-            log.error(e)
+            error_msg = ("During data passing, Kale could not marshal the"
+                         " following object:\n\n  - path: '%s'\n  - type: '%s'"
+                         % (obj_name, type(obj)))
+            log.error(error_msg + self.END_USER_EXC_MSG % e)
             log.debug("Original Traceback", exc_info=e.__traceback__)
             utils.graceful_exit(1)
 
-    def _load(self, basename: str):
+    def load(self, basename: str):
+        """Restore a file to memory.
+
+        Args:
+            basename: The name of the serialized object to be loaded
+
+        Returns: restored object
+        """
         try:
             entry_name = self._unique_ls(basename)
             return self._dispatch_file_type(entry_name).wrapped_load(basename)
-        except ValueError as e:
-            raise KaleMarshalException(
-                original_exc=e,
-                original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
-                msg=KALE_LOAD_ERROR_MSG % (basename, e),
-                obj_name=basename, operation="load")
         except Exception as e:
-            raise KaleMarshalException(
-                original_exc=e,
-                original_traceback=sys.exc_info()[EXC_INFO_TRACEBACK],
-                msg=KALE_UNKNOWN_MARSHALLING_ERROR % e,
-                obj_name=basename, operation="load")
+            error_msg = ("During data passing, Kale could not load the"
+                         " following file:\n\n\n  - name: '%s'" % basename)
+            log.error(error_msg + self.END_USER_EXC_MSG % e)
+            log.debug("Original Traceback", exc_info=e.__traceback__)
+            utils.graceful_exit(1)
 
-    def _unique_ls(self, basename: str):
+    @staticmethod
+    def _unique_ls(basename: str):
         # get the unique file/folder inside _DATA_DIR: there could be
         # multiple files with the same name and different extension.
         entries = [ls for ls in os.listdir(get_data_dir())
@@ -305,21 +237,6 @@ class Dispatcher(object):
             raise ValueError("Found multiple files/folders with name %s: %s"
                              % (basename, entries))
         return entries[0]
-
-    def load(self, file_name: str):
-        """Restore a file to memory.
-
-        Args:
-            file_name: The name of the serialized object to be loaded
-
-        Returns: restored object
-        """
-        try:
-            return self._load(file_name)
-        except KaleMarshalException as e:
-            log.error(e)
-            log.debug("Original Traceback", exc_info=e.__traceback__)
-            utils.graceful_exit(1)
 
     def _dispatch_obj_type(self, obj: Any) -> MarshalBackend:
         """Dispatch to a backend based on the object's type matching regex.
