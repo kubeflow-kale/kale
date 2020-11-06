@@ -12,9 +12,9 @@ def test():
 
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
-    from kale.marshal import utils as _kale_marshal_utils
-    _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.save(v1, "v1")
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.save(v1, "v1")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 

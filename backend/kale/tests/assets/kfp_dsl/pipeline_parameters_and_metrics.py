@@ -35,9 +35,9 @@ def create_matrix(d1: int, d2: int):
 
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
-    from kale.marshal import utils as _kale_marshal_utils
-    _kale_marshal_utils.set_kale_data_directory("/marshal")
-    _kale_marshal_utils.save(rnd_matrix, "rnd_matrix")
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.save(rnd_matrix, "rnd_matrix")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
@@ -64,9 +64,9 @@ def sum_matrix():
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
-    from kale.marshal import utils as _kale_marshal_utils
-    _kale_marshal_utils.set_kale_data_directory("/marshal")
-    rnd_matrix = _kale_marshal_utils.load("rnd_matrix")
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    rnd_matrix = _kale_marshal.load("rnd_matrix")
     # -----------------------DATA LOADING END----------------------------------
     '''
 

@@ -18,7 +18,7 @@ import logging
 
 from tabulate import tabulate
 
-from kale.marshal import resource_load
+from kale import marshal
 from kale.rpc.log import create_adapter
 from kale import Compiler, NotebookProcessor
 from kale.rpc.errors import RPCInternalError
@@ -179,7 +179,7 @@ def unmarshal_data(source_notebook_path):
                        if os.path.isfile(os.path.join(kale_marshal_dir, f))]
 
     return {os.path.splitext(f)[0]:
-            resource_load(os.path.join(kale_marshal_dir, f))
+            marshal.load(os.path.join(kale_marshal_dir, f))
             for f in load_file_names}
 
 
