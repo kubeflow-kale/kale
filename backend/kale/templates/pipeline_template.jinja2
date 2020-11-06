@@ -35,10 +35,11 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_volume_name_parameters = []
 
     {% for vol in volumes -%}
-    {% set name= vol['name'] %}
+    {% set name = vol['name'] %}
     {% set mountpoint = vol['mount_point'] %}
     {% set pvc_size = vol['size']|string|default ('') + vol['size_type']|default ('') %}
     {% set annotations = vol['annotations']|default({}) %}
+    {% set storage_class_name = vol['storage_class_name'] %}
     _kale_annotations = {{ annotations }}
 
     {% if vol['type'] == 'pv' %}
@@ -52,6 +53,9 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
         spec=k8s_client.V1PersistentVolumeClaimSpec(
             volume_name="{{ name }}",
             access_modes=['ReadWriteOnce'],
+            {%- if storage_class_name %}
+            storage_class_name="{{ storage_class_name }}",
+            {%- endif %}
             resources=k8s_client.V1ResourceRequirements(
                 requests={"storage": "{{ pvc_size }}"}
             )
@@ -82,6 +86,9 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
         {%- if annotations %}
         annotations=_kale_annotations,
         {% endif -%}
+        {%- if storage_class_name %}
+        storage_class="{{ storage_class_name }}",
+        {%- endif %}
         size='{{ pvc_size }}'
     )
     _kale_volume = _kale_vop{{ loop.index }}.volume
@@ -99,6 +106,9 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
         name="kale-marshal-volume",
         resource_name="kale-marshal-pvc",
         modes=_kfp_dsl.VOLUME_MODE_RWM,
+        {%- if pipeline.config.storage_class_name %}
+        storage_class="{{ pipeline.config.storage_class_name }}",
+        {%- endif %}
         size="1Gi"
     )
     _kale_volume_step_names.append(_kale_marshal_vop.name)

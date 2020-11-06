@@ -29,6 +29,7 @@ log = logging.getLogger(__name__)
 
 class PipelineParam(NamedTuple):
     """A pipeline parameter."""
+
     param_type: str
     param_value: any
 
@@ -46,6 +47,8 @@ class VolumeConfig(Config):
     type = Field(type=str, required=True,
                  validators=[validators.VolumeTypeValidator])
     annotations = Field(type=list, default=list())
+    storage_class_name = Field(type=str,
+                               validators=[validators.K8sNameValidator])
 
     def _postprocess(self):
         # Convert annotations to a {k: v} dictionary
@@ -94,6 +97,8 @@ class PipelineConfig(Config):
     autosnapshot = Field(type=bool, default=True)
     steps_defaults = Field(type=dict, default=dict())
     kfp_host = Field(type=str)
+    storage_class_name = Field(type=str,
+                               validators=[validators.K8sNameValidator])
 
     @property
     def source_path(self):
@@ -103,6 +108,7 @@ class PipelineConfig(Config):
     def _postprocess(self):
         self._randomize_pipeline_name()
         self._set_docker_image()
+        self._set_volume_storage_class()
         self._sort_volumes()
         self._set_abs_working_dir()
         self._set_marshal_path()
@@ -118,6 +124,13 @@ class PipelineConfig(Config):
             except (ConfigException, FileNotFoundError, ApiException):
                 # no K8s config found; use kfp default image
                 self.docker_image = ""
+
+    def _set_volume_storage_class(self):
+        if not self.storage_class_name:
+            return
+        for v in self.volumes:
+            if not v.storage_class_name:
+                v.storage_class_name = self.storage_class_name
 
     def _sort_volumes(self):
         # The Jupyter Web App assumes the first volume of the notebook is the
