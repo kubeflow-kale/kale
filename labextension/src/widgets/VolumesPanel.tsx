@@ -95,6 +95,8 @@ interface VolumesPanelProps {
   updateVolumes: Function;
   updateVolumesSwitch: Function;
   updateAutosnapshotSwitch: Function;
+  storageClassName: string;
+  updateStorageClassName: Function;
 }
 
 export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props => {
@@ -571,10 +573,25 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
     </div>
   );
 
+  // FIXME: There is no separating bottom horizontal bar when there are no
+  //  volumes
+  const volumesClassNameAndMode = (
+    <div className="input-container">
+      <Input
+        label="Storage class name"
+        updateValue={props.updateStorageClassName}
+        value={props.storageClassName}
+        placeholder={'default'}
+        variant="standard"
+      />
+    </div>
+  );
+
   return (
     <React.Fragment>
       {useNotebookVolumesSwitch}
       {autoSnapshotSwitch}
+      {!props.useNotebookVolumes && volumesClassNameAndMode}
       {props.notebookMountPoints.length > 0 && props.useNotebookVolumes
         ? null
         : vols}
