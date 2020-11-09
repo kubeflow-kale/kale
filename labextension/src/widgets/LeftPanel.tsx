@@ -160,6 +160,7 @@ export interface IKaleNotebookMetadata {
   katib_metadata?: IKatibMetadata;
   steps_defaults?: string[];
   storage_class_name?: string;
+  volume_access_mode?: string;
 }
 
 export interface IKatibExperiment {
@@ -192,6 +193,7 @@ export const DefaultState: IState = {
     autosnapshot: false,
     katib_run: false,
     steps_defaults: [],
+    volume_access_mode: 'rwm',
   },
   runDeployment: false,
   deploymentType: 'compile',
@@ -260,6 +262,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         volumes: prevState.notebookVolumes,
         snapshot_volumes: !prevState.metadata.snapshot_volumes,
         storage_class_name: undefined,
+        volume_access_mode: undefined,
       },
     }));
   };
@@ -298,6 +301,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     this.setState((prevState, props) => ({
       metadata: { ...prevState.metadata, storage_class_name },
     }));
+
+  updateVolumeAccessMode = (volume_access_mode: string) => {
+    this.setState((prevState, props) => ({
+      metadata: { ...prevState.metadata, volume_access_mode },
+    }));
+  };
 
   updateKatibRun = () =>
     this.setState((prevState, props) => ({
@@ -811,6 +820,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         updateVolumes={this.updateVolumes}
         storageClassName={this.state.metadata.storage_class_name}
         updateStorageClassName={this.updateStorageClassName}
+        volumeAccessMode={this.state.metadata.volume_access_mode}
+        updateVolumeAccessMode={this.updateVolumeAccessMode}
       />
     );
 

@@ -25,6 +25,7 @@ import { Select, ISelectOption } from '../components/Select';
 import { LightTooltip } from '../components/LightTooltip';
 import { AnnotationInput, IAnnotation } from '../components/AnnotationInput';
 import { removeIdxFromArray, updateIdxInArray } from '../lib/Utils';
+import { VolumeAccessModeSelect } from '../components/VolumeAccessModeSelect';
 
 const DEFAULT_EMPTY_VOLUME: IVolumeMetadata = {
   type: 'new_pvc',
@@ -97,6 +98,8 @@ interface VolumesPanelProps {
   updateAutosnapshotSwitch: Function;
   storageClassName: string;
   updateStorageClassName: Function;
+  volumeAccessMode: string;
+  updateVolumeAccessMode: Function;
 }
 
 export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props => {
@@ -576,13 +579,18 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
   // FIXME: There is no separating bottom horizontal bar when there are no
   //  volumes
   const volumesClassNameAndMode = (
-    <div className="input-container">
+    <div className="input-container volume-container">
       <Input
         label="Storage class name"
         updateValue={props.updateStorageClassName}
         value={props.storageClassName}
         placeholder={'default'}
         variant="standard"
+      />
+
+      <VolumeAccessModeSelect
+        value={props.volumeAccessMode}
+        updateValue={props.updateVolumeAccessMode}
       />
     </div>
   );
