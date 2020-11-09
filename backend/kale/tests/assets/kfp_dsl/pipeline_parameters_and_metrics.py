@@ -121,7 +121,7 @@ def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
     _kale_marshal_vop = _kfp_dsl.VolumeOp(
         name="kale-marshal-volume",
         resource_name="kale-marshal-pvc",
-        modes=_kfp_dsl.VOLUME_MODE_RWM,
+        modes=['ReadWriteMany'],
         size="1Gi"
     )
     _kale_volume_step_names.append(_kale_marshal_vop.name)
