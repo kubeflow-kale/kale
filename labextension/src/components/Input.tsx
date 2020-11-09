@@ -137,6 +137,7 @@ export const Input: React.FunctionComponent<InputProps> = props => {
       error={error}
       value={value}
       margin="dense"
+      placeholder={placeholder}
       spellCheck={false}
       helperText={error ? getRegexMessage() : helperText}
       InputProps={{
