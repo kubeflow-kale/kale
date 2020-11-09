@@ -27,6 +27,11 @@ from kale.common import graphutils, utils, podutils
 log = logging.getLogger(__name__)
 
 
+VOLUME_ACCESS_MODE_MAP = {"rom": ["ReadOnlyMany"], "rwo": ["ReadWriteOnce"],
+                          "rwm": ["ReadWriteMany"]}
+DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
+
+
 class PipelineParam(NamedTuple):
     """A pipeline parameter."""
 
@@ -49,8 +54,11 @@ class VolumeConfig(Config):
     annotations = Field(type=list, default=list())
     storage_class_name = Field(type=str,
                                validators=[validators.K8sNameValidator])
+    volume_access_mode = Field(
+        type=str, validators=[validators.IsLowerValidator,
+                              validators.VolumeAccessModeValidator])
 
-    def _postprocess(self):
+    def _parse_annotations(self):
         # Convert annotations to a {k: v} dictionary
         try:
             # TODO: Make JupyterLab annotate with {k: v} instead of
@@ -64,6 +72,15 @@ class VolumeConfig(Config):
                                  " list of {'key': k, 'value': v} dicts")
             else:
                 raise e
+
+    def _parse_access_mode(self):
+        if self.volume_access_mode:
+            self.volume_access_mode = (
+                VOLUME_ACCESS_MODE_MAP[self.volume_access_mode])
+
+    def _postprocess(self):
+        self._parse_annotations()
+        self._parse_access_mode()
 
 
 class KatibConfig(Config):
@@ -99,6 +116,9 @@ class PipelineConfig(Config):
     kfp_host = Field(type=str)
     storage_class_name = Field(type=str,
                                validators=[validators.K8sNameValidator])
+    volume_access_mode = Field(
+        type=str, validators=[validators.IsLowerValidator,
+                              validators.VolumeAccessModeValidator])
 
     @property
     def source_path(self):
@@ -109,6 +129,7 @@ class PipelineConfig(Config):
         self._randomize_pipeline_name()
         self._set_docker_image()
         self._set_volume_storage_class()
+        self._set_volume_access_mode()
         self._sort_volumes()
         self._set_abs_working_dir()
         self._set_marshal_path()
@@ -131,6 +152,16 @@ class PipelineConfig(Config):
         for v in self.volumes:
             if not v.storage_class_name:
                 v.storage_class_name = self.storage_class_name
+
+    def _set_volume_access_mode(self):
+        if not self.volume_access_mode:
+            self.volume_access_mode = DEFAULT_VOLUME_ACCESS_MODE
+        else:
+            self.volume_access_mode = VOLUME_ACCESS_MODE_MAP[
+                self.volume_access_mode]
+        for v in self.volumes:
+            if not v.volume_access_mode:
+                v.volume_access_mode = self.volume_access_mode
 
     def _sort_volumes(self):
         # The Jupyter Web App assumes the first volume of the notebook is the

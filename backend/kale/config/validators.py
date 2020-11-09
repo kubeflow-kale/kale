@@ -190,3 +190,16 @@ class VolumeTypeValidator(EnumValidator):
     """Validates the type of a Volume."""
 
     enum = ('pv', 'pvc', 'new_pvc', 'clone')
+
+
+class VolumeAccessModeValidator(EnumValidator):
+    """Validates the access mode of a Volume."""
+
+    enum = ("", "rom", "rwo", "rwm")
+
+
+class IsLowerValidator(Validator):
+    """Validates if a string is all lowercase."""
+
+    def _validate(self, value: str):
+        return value == value.lower()
