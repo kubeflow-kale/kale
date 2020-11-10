@@ -64,6 +64,10 @@ class MarshalBackend(object):
     obj_type_regex: str = None
     predictor_type: str = None  # Used for creating serving predictors
 
+    # Set to False if you want your backend not to use the default backend
+    # in case of a missing library.
+    fallback_on_missing_lib = True
+
     def __init__(self,
                  name: str = None,
                  display_name: str = None,
@@ -90,6 +94,8 @@ class MarshalBackend(object):
         try:
             self.save(obj, abs_path)
         except ImportError as e:
+            if not self.fallback_on_missing_lib:
+                raise e
             log.warning("Failed to import %s (%s). Falling back to default "
                         "backend.", self.display_name, e)
             self._default_save(obj, name)  # always try the default save
@@ -118,6 +124,8 @@ class MarshalBackend(object):
         try:
             return self.load(abs_path)
         except ImportError as e:
+            if not self.fallback_on_missing_lib:
+                raise e
             log.warning("Failed to import %s (%s). Falling back to default "
                         "backend.", self.display_name, e)
             return self._default_load(abs_path)  # always try the default load

@@ -41,6 +41,11 @@ class SKLearnBackend(MarshalBackend):
     obj_type_regex = r"sklearn\..*"
     predictor_type = "sklearn"
 
+    # `joblib` is a separate library from sklearn that must be installed
+    # independently. Don't fallback to dill since this will break when
+    # serving models.
+    fallback_on_missing_lib = False
+
     def save(self, obj, path):
         """Save a SKLearn object."""
         import joblib
