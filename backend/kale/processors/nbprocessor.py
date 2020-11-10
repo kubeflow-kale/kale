@@ -510,6 +510,11 @@ class NotebookProcessor:
                     " single steps.")
         return self._get_reserved_tag_source(PIPELINE_METRICS_TAG)
 
+    def get_imports_and_functions(self):
+        """Get the global code that runs at the beginning of every step."""
+        return "\n".join([self._get_reserved_tag_source(IMPORT_TAG),
+                          self._get_reserved_tag_source(FUNCTIONS_TAG)])
+
     def _get_reserved_tag_source(self, search_tag):
         """Get just the specific tag's source code.
 
