@@ -33,6 +33,26 @@ class FunctionBackend(MarshalBackend):
 
 
 @register_backend
+class SKLearnBackend(MarshalBackend):
+    """Marshal SKLearn objects."""
+    name = "SKLearn backend"
+    display_name = "scikit-learn"
+    file_type = "joblib"
+    obj_type_regex = r"sklearn\..*"
+    predictor_type = "sklearn"
+
+    def save(self, obj, path):
+        """Save a SKLearn object."""
+        import joblib
+        joblib.dump(obj, path)
+
+    def load(self, file_path):
+        """Restore a SKLearn object."""
+        import joblib
+        return joblib.load(file_path)
+
+
+@register_backend
 class NumpyBackend(MarshalBackend):
     """Marshal Numpy objects functions."""
     name = "Numpy backend"
