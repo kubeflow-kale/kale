@@ -79,6 +79,9 @@ class MarshalBackend(object):
         This function provides common logging and exception handling for every
         class that extends the base `MarshalBackend`. `Dispatcher` calls
         directly this function instead of `save`.
+
+        Returns the path (<data_dir>/<basename>.<backend_extension>) to the
+        saved file.
         """
         abs_path = os.path.join(get_data_dir(), name + "." + self.file_type)
         log.info("Saving %s object using %s: %s",
@@ -89,6 +92,7 @@ class MarshalBackend(object):
             log.warning("Failed to import %s (%s). Falling back to default "
                         "backend.", self.display_name, e)
             self._default_save(obj, name)  # always try the default save
+        return abs_path
 
     def save(self, obj: Any, path: str):
         """Save `obj` to file."""
@@ -187,6 +191,10 @@ class Dispatcher(object):
             self.backends[cls.__name__] = cls()
         return cls
 
+    def get_backend(self, obj: Any):
+        """Get the backend registered for the input object type."""
+        return self._dispatch_obj_type(obj)
+
     def save(self, obj: Any, obj_name: str):
         """Save an object to file.
 
@@ -195,7 +203,7 @@ class Dispatcher(object):
             obj_name: Name of the object to be saved
         """
         try:
-            self._dispatch_obj_type(obj).wrapped_save(obj, obj_name)
+            return self._dispatch_obj_type(obj).wrapped_save(obj, obj_name)
         except Exception as e:
             error_msg = ("During data passing, Kale could not marshal the"
                          " following object:\n\n  - path: '%s'\n  - type: '%s'"
