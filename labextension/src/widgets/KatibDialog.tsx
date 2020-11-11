@@ -36,8 +36,10 @@ const algorithmOptions = [
   { value: 'random', label: 'Random Search' },
   { value: 'grid', label: 'Grid Search' },
   { value: 'bayesianoptimization', label: 'Bayesian Optimization' },
-  { value: 'hyperband', label: 'Hyperband' },
-  { value: 'tpe', label: 'Hyperopt TPE' },
+  // Temporarely disable the following algorithms
+  // due to bad configuration.
+  // { value: 'hyperband', label: 'Hyperband' },
+  // { value: 'tpe', label: 'Hyperopt TPE' },
 ];
 
 // https://github.com/scikit-optimize/scikit-optimize/blob/master/skopt/optimizer/optimizer.py#L55
