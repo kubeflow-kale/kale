@@ -175,8 +175,9 @@ def unmarshal_data(source_notebook_path):
     if not os.path.exists(kale_marshal_dir):
         return {}
 
+    marshal.set_data_dir(kale_marshal_dir)
     return {os.path.splitext(f)[0]:
-            marshal.load(os.path.join(kale_marshal_dir, f))
+            marshal.load(os.path.splitext(f)[0])
             for f in os.listdir(kale_marshal_dir)}
 
 
