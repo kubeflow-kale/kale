@@ -878,20 +878,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               </div>
             </div>
 
-            <div className={this.state.isEnabled ? '' : 'hidden'}>
-              <div className="kale-component" key="kale-component-volumes">
-                <div className="kale-header-switch">
-                  <p
-                    className="kale-header"
-                    style={{ color: theme.kale.headers.main }}
-                  >
-                    Volumes
-                  </p>
-                </div>
-                {volsPanel}
-              </div>
-            </div>
-
             <div
               className={
                 'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
@@ -903,6 +889,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 dockerImageDefaultValue={DefaultState.metadata.docker_image}
                 dockerChange={this.updateDockerImage}
                 debug={this.state.deployDebugMessage}
+                volsPanel={volsPanel}
                 changeDebug={this.changeDeployDebugMessage}
               />
             </div>

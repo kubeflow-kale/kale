@@ -18,6 +18,7 @@ import * as React from 'react';
 import { Input } from './Input';
 import { Switch } from '@material-ui/core';
 import { useTheme } from '@material-ui/core/styles';
+import { theme } from '../Theme';
 
 interface AdvancedSettingsProps {
   title: string;
@@ -26,6 +27,7 @@ interface AdvancedSettingsProps {
   dockerImageDefaultValue: string;
   dockerChange: Function;
   changeDebug: Function;
+  volsPanel: any;
 }
 
 export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = props => {
@@ -64,6 +66,18 @@ export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = 
             name="enableKale"
             inputProps={{ 'aria-label': 'primary checkbox' }}
           />
+        </div>
+
+        <div className="kale-component" key="kale-component-volumes">
+          <div className="kale-header-switch">
+            <p
+              className="kale-header"
+              style={{ color: theme.kale.headers.main }}
+            >
+              Volumes
+            </p>
+          </div>
+          {props.volsPanel}
         </div>
       </div>
     </div>
