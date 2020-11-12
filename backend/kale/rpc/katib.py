@@ -124,6 +124,14 @@ def _sanitize_katib_spec(request, katib_spec):
                                 KATIB_DEFAULTS, "Katib")
 
 
+def _construct_experiment_return_base(experiment, namespace):
+    return {"name": experiment["metadata"]["name"],
+            "namespace": namespace,
+            "status": None,
+            "trials": 0,
+            "maxTrialCount": experiment["spec"]["maxTrialCount"]}
+
+
 def create_katib_experiment(request, pipeline_id, pipeline_metadata,
                             output_path):
     """Create and launch a new Katib experiment.
@@ -177,11 +185,7 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata,
         yaml_file.write(yaml_text)
     _launch_katib_experiment(request, katib_experiment, namespace)
 
-    return {"name": katib_experiment["metadata"]["name"],
-            "namespace": namespace,
-            "status": None,
-            "trials": 0,
-            "maxTrialCount": katib_experiment["spec"]["maxTrialCount"]}
+    return _construct_experiment_return_base(katib_experiment, namespace)
 
 
 def get_experiment(request, experiment, namespace):
@@ -212,18 +216,21 @@ def get_experiment(request, experiment, namespace):
         raise RPCUnhandledError(message="Failed to get Katib experiment",
                                 details=str(e), trans_id=request.trans_id)
 
+    ret = _construct_experiment_return_base(exp, namespace)
+    if exp.get("status") is None:
+        return ret
+
     status, reason, message = _get_experiment_status(exp["status"])
-    return {"name": experiment,
-            "namespace": namespace,
-            "status": status,
-            "reason": reason,
-            "message": message,
-            "trials": exp["status"].get("trials", 0),
-            "trialsFailed": exp["status"].get("trialsFailed", 0),
-            "trialsRunning": exp["status"].get("trialsRunning", 0),
-            "trialsSucceeded": exp["status"].get("trialsSucceeded", 0),
-            "maxTrialCount": exp["spec"]["maxTrialCount"],
-            "currentOptimalTrial": exp["status"].get("currentOptimalTrial")}
+    ret.update({"status": status,
+                "reason": reason,
+                "message": message,
+                "trials": exp["status"].get("trials", 0),
+                "trialsFailed": exp["status"].get("trialsFailed", 0),
+                "trialsRunning": exp["status"].get("trialsRunning", 0),
+                "trialsSucceeded": exp["status"].get("trialsSucceeded", 0),
+                "currentOptimalTrial": exp["status"].get(
+                    "currentOptimalTrial")})
+    return ret
 
 
 def _get_experiment_status(experiment_status):
