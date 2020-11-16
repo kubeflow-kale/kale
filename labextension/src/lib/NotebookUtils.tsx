@@ -113,7 +113,7 @@ export default class NotebookUtilities {
   public static async showMessage(
     title: string,
     msg: string[],
-    buttonLabel: string = 'Dismiss',
+    buttonLabel: string = 'Close',
     buttonClassName: string = '',
   ): Promise<void> {
     const buttons: ReadonlyArray<Dialog.IButton> = [
