@@ -60,6 +60,11 @@ class Field:
 
     def validate(self):
         """Run the validators over the field's value."""
+        # If the Field's value is `None` don't run the validation process.
+        # Validators are *not* supposed to check if the value is set or not,
+        # we should control that by setting the `required` flag to True.
+        if self._value is None:
+            return
         for v in self.validators:
             validator = v() if inspect.isclass(v) else v
             # XXX: The validator is supposed to raise an Exception if
