@@ -19,7 +19,8 @@ import logging
 import argparse
 
 from kale.common import rokutils, utils
-from kale import Compiler, Step, PythonProcessor, PipelineConfig, StepConfig
+from kale import (Compiler, Step, PythonProcessor, PipelineConfig, StepConfig,
+                  Artifact)
 
 
 log = logging.getLogger(__name__)
@@ -106,3 +107,40 @@ def _parse_cli_args():
                         help=("Compile the pipeline to KFP DSL."
                               " Requires --kfp."))
     return parser.parse_args()
+
+
+def artifact(name: str, path: str):
+    """Decorate a step to create a KFP HTML artifact.
+
+    Apply this decorator to a step to create a Kubeflow Pipelines artifact
+    (https://www.kubeflow.org/docs/pipelines/sdk/output-viewer/).
+    In case the path does not point to a valid file, the step will fail with
+    an error.
+
+    To generate more than one artifact per step, apply the same decorator
+    multiple time, as shown in the example below.
+
+    ```python
+    @artifact(name="artifact1", path="./figure.html")
+    @artifact(name="artifact2", path="./plot.html")
+    @step(name="artifact-generator")
+    def foo():
+        # ...
+        # save something to plot.html and figure.html
+        # ...
+    ```
+
+    **Note**: Currently the only supported format is HTML.
+
+    Args:
+        name: Artifact name
+        path: Absolute path to an HTML file
+    """
+
+    def _(step: Step):
+        if not isinstance(step, Step):
+            raise ValueError("You should decorate functions that are decorated"
+                             " with the @step decorator!")
+        step.artifacts.append(Artifact(name, path))
+        return step
+    return _

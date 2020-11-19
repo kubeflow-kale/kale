@@ -23,6 +23,7 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 
 {%- if step.config.timeout %}from kale.common.runutils import ttl{% endif %}
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {
 {%- if step.pps_names|length %}
@@ -38,6 +39,17 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 {{ step.rendered_source|indent(4, True) }}
 
     {{ step.source.__name__ }}()
+
+    _kale_artifacts = {
+{%- if step.artifacts|length %}
+    {%- for artifact in step.artifacts -%}
+        "{{ artifact.name }}": "{{ artifact.path }}"
+    {%- if loop.index < step.pps_names|length -%},
+    {%- endif -%}
+    {%- endfor -%}
+{%- endif %}}
+
+    _kale_link_artifacts(_kale_artifacts)
 
 {%- if autosnapshot %}
 {%- if step.name == 'final_auto_snapshot' %}
