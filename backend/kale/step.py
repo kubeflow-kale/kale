@@ -16,9 +16,9 @@ import logging
 
 from typing import Any, Dict, List, Callable, Union
 
-from kale import PipelineParam
-from kale.common import astutils
 from kale.marshal import Marshaller
+from kale import PipelineParam, Artifact
+from kale.common import astutils, runutils
 from kale.config import Config, Field, validators
 
 log = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ class Step:
         self.source = source
         self.ins = ins or []
         self.outs = outs or []
+        self.artifacts: List[Artifact] = list()
 
         self.config = StepConfig(**kwargs)
 
@@ -76,8 +77,10 @@ class Step:
         marshaller = Marshaller(func=self.source, ins=self.ins, outs=self.outs,
                                 parameters=_params, marshal_dir='.marshal/')
         marshaller()
-        log.info("%s Successfully run step '%s'... %s", "-" * 10, self.name,
+        log.info("%s Successfully ran step '%s'... %s", "-" * 10, self.name,
                  "-" * 10)
+        runutils.link_artifacts({a.name: a.path for a in self.artifacts},
+                                link=False)
 
     @property
     def name(self):

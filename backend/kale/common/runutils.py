@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import signal
 import logging
 
-from typing import Callable
-from kale.common import utils
+from typing import Callable, Dict
+
+from kale.common import utils, kfputils
 
 
 log = logging.getLogger(__name__)
@@ -68,3 +70,32 @@ def ttl(timeout: int = None):
             return res
         return _ttl
     return _decorator_ttl
+
+
+def link_artifacts(artifacts: Dict, link=True):
+    """Link a series of artifacts to mlpipeline-ui-metadata.json.
+
+    We use the `link` argument to avoid writing to
+    `/tmp/mlpipeline-ui-metadata.json` when executing locally, otherwise
+    we would get a permission error.
+    """
+    if artifacts:
+        log.info("Registering step's artifacts: %s" %
+                 ", ".join("'%s'" % name for name in artifacts.keys()))
+    else:
+        log.info("This step has no artifacts")
+
+    for name, path in artifacts.items():
+        if not os.path.exists(path):
+            raise RuntimeError("Filepath '%s' for artifact '%s' does not"
+                               " exist." % (path, name))
+        if not os.path.isabs(path):
+            raise ValueError("Path '%s' for artifact '%s' is a relative path."
+                             " Please provide an absolute path."
+                             % (path, name))
+        if os.path.isdir(path):
+            raise RuntimeError("Cannot create an artifact from path '%s':"
+                               " it is a folder." % path)
+        if link:
+            # FIXME: Currently this supports just HTML artifacts
+            kfputils.update_uimetadata(name)

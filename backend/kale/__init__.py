@@ -21,6 +21,12 @@ class PipelineParam(NamedTuple):
     param_value: Any
 
 
+class Artifact(NamedTuple):
+    """A Step artifact."""
+    name: str
+    path: str
+
+
 from .step import Step, StepConfig
 from .pipeline import Pipeline, PipelineConfig, VolumeConfig
 from .compiler import Compiler

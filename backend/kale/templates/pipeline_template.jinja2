@@ -164,6 +164,12 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     _kale_output_artifacts.update({'{{ step.name }}': '/{{ step.name }}.html'})
     {%- endif %}
+    {%- if pipeline.processor.id == "py" and step.artifacts and step.name != "final_auto_snapshot" and step.name != "pipeline_metrics" %}
+    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
+    {%- for artifact in step.artifacts %}
+    _kale_output_artifacts.update({'{{ artifact["name"] }}': '{{ artifact["path"] }}'})
+    {%- endfor %}
+    {%- endif %}
     _kale_{{ step.name }}_task.output_artifact_paths.update(_kale_output_artifacts)
     _kale_{{ step.name }}_task.add_pod_label("pipelines.kubeflow.org/metadata_written", "true")
     _kale_dep_names = (_kale_{{ step.name }}_task.dependent_names +
