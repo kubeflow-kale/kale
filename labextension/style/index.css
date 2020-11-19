@@ -78,6 +78,10 @@
 | Deploy Button
 |----------------------------------------------------------------------------*/
 
+.kale-panel {
+  min-width: 300px !important;
+}
+
 .kubeflow-widget {
   flex-direction: column;
   min-width: var(--jp-sidebar-min-width);
