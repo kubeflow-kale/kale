@@ -21,10 +21,10 @@ import tempfile
 import importlib.util
 
 from shutil import copyfile
+from typing import Tuple, Any
 
 from kfp import Client
 from kfp.compiler import Compiler
-from kfp_server_api.rest import ApiException
 
 from kale.common import utils, podutils, workflowutils, katibutils
 
@@ -55,7 +55,7 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
         The matching pipeline id. None if not found
     """
     client = _get_kfp_client(host)
-    token = ''
+    token = ""
     pipeline_id = None
     while pipeline_id is None and token is not None:
         pipelines = client.list_pipelines(page_token=token)
@@ -67,7 +67,35 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     return pipeline_id
 
 
-def compile_pipeline(pipeline_source, pipeline_name):
+def get_pipeline_version_id(version_name: str, pipeline_id: str,
+                            host: str = None) -> str:
+    """List through the versions and filter by version name.
+
+    Args:
+        version_name: name of the version
+        pipeline_id: ID of the pipeline
+        host: custom host when executing outside of the cluster
+
+    Returns:
+        The matching pipeline id. None if not found
+    """
+    client = _get_kfp_client(host)
+    page_token = ""
+    version_id = None
+    while version_id is None and page_token is not None:
+        versions = client.pipelines.list_pipeline_versions(
+            resource_key_type="PIPELINE",
+            resource_key_id=pipeline_id,
+            page_token=page_token)
+        page_token = versions.next_page_token
+        f = next(filter(
+            lambda x: x.name == version_name, versions.versions), None)
+        if f is not None:
+            version_id = f.id
+    return version_id
+
+
+def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
     """Read in the generated python script and compile it to a KFP package."""
     # create a tmp folder
     tmp_dir = tempfile.mkdtemp()
@@ -86,48 +114,55 @@ def compile_pipeline(pipeline_source, pipeline_name):
     return pipeline_package
 
 
-def upload_pipeline(pipeline_package_path, pipeline_name, overwrite=False,
-                    host=None):
+def upload_pipeline(pipeline_package_path: str, pipeline_name: str,
+                    host: str = None) -> Tuple[str, str]:
     """Upload pipeline package to KFP.
+
+    If a pipeline with the provided name already exits, upload a new version.
 
     Args:
         pipeline_package_path: Path to .tar.gz kfp pipeline
         pipeline_name: Name of the uploaded pipeline
-        overwrite: Set to True to overwrite in case a pipeline with the same
-        name already exists
         host: custom host when executing outside of the cluster
+    Returns: (pipeline_id, version_id)
     """
     client = _get_kfp_client(host)
-    try:
-        log.info("Uploading pipeline '%s' to KFP...", pipeline_name)
-        client.upload_pipeline(pipeline_package_path,
-                               pipeline_name=pipeline_name)
-        log.info("Successfully uploaded pipeline '%s' to KFP", pipeline_name)
-    except ApiException as e:
-        # The exception is a general 500 error.
-        # The only way to check that it refers to the pipeline already existing
-        # is by matching the error message
-        exc_msg = 'The name {} already exist'.format(pipeline_name)
-        if overwrite and exc_msg in str(e):
-            # Get the id of the existing pipeline
-            pipeline_id = get_pipeline_id(pipeline_name, host=host)
-            # Delete the existing pipeline and upload the new one
-            client._pipelines_api.delete_pipeline(id=pipeline_id)
-            client.upload_pipeline(pipeline_package_path,
-                                   pipeline_name=pipeline_name)
-        else:
-            # Unexpected exception
-            raise
+    log.info("Uploading pipeline '%s'...", pipeline_name)
+    pipeline_id = get_pipeline_id(pipeline_name, host=host)
+    version_name = utils.random_string()
+    if not pipeline_id:
+        # The first version of the pipeline is set to the pipeline name value.
+        # To work around this, upload the first pipeline, then another one
+        # with a proper version name. Finally delete the original pipeline.
+        upp = client.pipeline_uploads.upload_pipeline(
+            uploadfile=pipeline_package_path,
+            name=pipeline_name)
+        pipeline_id = upp.id
+        upv = client.pipeline_uploads.upload_pipeline_version(
+            uploadfile=pipeline_package_path,
+            name=version_name,
+            pipelineid=pipeline_id)
+        # delete the first version which has the same name as the pipeline
+        client.pipelines.delete_pipeline_version(upp.default_version.id)
+    else:
+        upv = client.pipeline_uploads.upload_pipeline_version(
+            uploadfile=pipeline_package_path,
+            name=version_name,
+            pipelineid=pipeline_id)
+    log.info("Successfully uploaded version '%s' for pipeline '%s'.",
+             version_name, pipeline_name)
+    return pipeline_id, upv.id
 
 
-def run_pipeline(run_name, experiment_name, pipeline_package_path, host=None):
+def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
+                 version_id: str = None, host: str = None) -> Any:
     """Run pipeline (without uploading) in kfp.
 
     Args:
-        run_name: The name of the kfp run
+        run_name: The name of the kfp run (autogenerated if not provided)
         experiment_name: The name of the kfp experiment
-        pipeline_package_path: Path to the .tar.gz package containing the
-        pipeline spec
+        pipeline_id: The ID of the uploaded pipeline to be run
+        version_id: the ID of the pipeline to be run
         host: custom host when executing outside of the cluster
 
     Returns:
@@ -136,19 +171,26 @@ def run_pipeline(run_name, experiment_name, pipeline_package_path, host=None):
     client = _get_kfp_client(host)
     log.info("Creating KFP experiment '%s'...", experiment_name)
     experiment = client.create_experiment(experiment_name)
-    # Submit a pipeline run
-    log.info("Submitting new pipeline run '%s'...", run_name)
-    run = client.run_pipeline(
-        experiment.id, run_name, pipeline_package_path, {})
-    run_url = "%s/#/runs/details/%s" % (client._get_url_prefix(), run.id)
+    pipeline = client.pipelines.get_pipeline(pipeline_id)
+    pipeline_name = pipeline.name
+    _version_id = version_id if version_id else pipeline.default_version.id
+    version_name = client.pipelines.get_pipeline_version(_version_id).name
+    if not run_name:
+        run_name = ("%s-%s-%s"
+                    % (pipeline_name, version_name, utils.random_string()))
+    display_version = ("(%sversion: '%s')"
+                       % ("" if version_id else "default ",
+                          version_name))
+    log.info("Submitting new pipeline run '%s' for pipeline '%s' %s ...",
+             run_name, pipeline_name, display_version)
+    run = client.run_pipeline(experiment.id, run_name,
+                              pipeline_id=pipeline_id,
+                              version_id=_version_id)
+    run_url = ("%s/?ns=%s#/runs/details/%s"
+               % (client._get_url_prefix(), podutils.get_namespace(), run.id))
     log.info("Successfully submitted pipeline run.")
     log.info("Run URL: <host>%s", run_url)
     return run
-
-
-def generate_run_name(pipeline_name: str):
-    """Generate a new run name based on pipeline name."""
-    return "{}_run-{}".format(pipeline_name, utils.random_string(5))
 
 
 def get_current_uimetadata(uimetadata_path=KFP_UI_METADATA_FILE_PATH,

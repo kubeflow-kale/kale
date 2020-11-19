@@ -158,12 +158,12 @@ class Compiler:
         return output_path
 
     def _run_compiled_code(self, script_path: str):
-        _name = self.pipeline.config.pipeline_name
-        pipeline_yaml_path = kfputils.compile_pipeline(script_path, _name)
-        kfputils.upload_pipeline(pipeline_yaml_path, _name)
-        run_name = kfputils.generate_run_name(_name)
+        pipeline_name = self.pipeline.config.pipeline_name
+        pipeline_yaml_path = kfputils.compile_pipeline(script_path,
+                                                       pipeline_name)
+        pipeline_id, version_id = kfputils.upload_pipeline(pipeline_yaml_path,
+                                                           pipeline_name)
         kfputils.run_pipeline(
-            run_name=run_name,
             experiment_name=self.pipeline.config.experiment_name,
-            pipeline_package_path=pipeline_yaml_path
-        )
+            pipeline_id=pipeline_id,
+            version_id=version_id)

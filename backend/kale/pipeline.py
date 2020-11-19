@@ -121,7 +121,7 @@ class PipelineConfig(Config):
         return utils.get_main_source_path()
 
     def _postprocess(self):
-        self._randomize_pipeline_name()
+        # self._randomize_pipeline_name()
         self._set_docker_image()
         self._set_volume_storage_class()
         self._set_volume_access_mode()

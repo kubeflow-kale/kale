@@ -98,21 +98,20 @@ def main():
     pipeline_package_path = kfputils.compile_pipeline(dsl_script_path,
                                                       pipeline_name)
 
-    if args.upload_pipeline:
-        kfputils.upload_pipeline(
+    if args.upload_pipeline or args.run_pipeline:
+        pipeline_id, version_id = kfputils.upload_pipeline(
             pipeline_package_path=pipeline_package_path,
             pipeline_name=pipeline_name,
             host=pipeline.config.kfp_host
         )
 
-    if args.run_pipeline:
-        run_name = kfputils.generate_run_name(pipeline_name)
-        kfputils.run_pipeline(
-            run_name=run_name,
-            experiment_name=pipeline.config.experiment_name,
-            pipeline_package_path=pipeline_package_path,
-            host=pipeline.config.kfp_host
-        )
+        if args.run_pipeline:
+            kfputils.run_pipeline(
+                experiment_name=pipeline.config.experiment_name,
+                pipeline_id=pipeline_id,
+                version_id=version_id,
+                host=pipeline.config.kfp_host
+            )
 
 
 KALE_VOLUMES_DESCRIPTION = """
