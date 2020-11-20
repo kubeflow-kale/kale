@@ -52,6 +52,7 @@ spec:
                 import create_and_wait_kfp_run;\
                 create_and_wait_kfp_run(\
                     pipeline_id='{pipeline_id}',\
+                    version_id='{version_id}',\
                     run_name='{{.Trial}}',\
                     experiment_name='{experiment_name}',\
                     {{- with .HyperParameters }} {{- range .}}
@@ -132,8 +133,8 @@ def _construct_experiment_return_base(experiment, namespace):
             "maxTrialCount": experiment["spec"]["maxTrialCount"]}
 
 
-def create_katib_experiment(request, pipeline_id, pipeline_metadata,
-                            output_path):
+def create_katib_experiment(request, pipeline_id, version_id,
+                            pipeline_metadata, output_path):
     """Create and launch a new Katib experiment.
 
     The Katib metadata must include all the information required to create an
@@ -144,6 +145,7 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata,
     Args:
         request: RPC request object
         pipeline_id: The id of the KFP pipeline that will be run by the Trials
+        version_id: The id of the KFP pipeline version run by the Trials
         pipeline_metadata: The Kale notebook metadata
         output_path: The directory to store the YAML definition
 
@@ -170,6 +172,7 @@ def create_katib_experiment(request, pipeline_id, pipeline_metadata,
     trial_parameters = {
         "image": KATIB_TRIAL_IMAGE,
         "pipeline_id": pipeline_id,
+        "version_id": version_id,
         "experiment_name": pipeline_metadata.get(
             "experiment_name")}
 

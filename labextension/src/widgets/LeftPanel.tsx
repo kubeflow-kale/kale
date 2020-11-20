@@ -699,6 +699,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             nbFilePath,
             metadata,
             uploadPipeline.pipeline.pipelineid,
+            uploadPipeline.pipeline.versionid,
             _updateDeployProgress,
           );
           commands.pollKatib(katibExperiment, _updateDeployProgress);

@@ -68,6 +68,7 @@ interface IRunPipelineArgs {
 
 interface IKatibRunArgs {
   pipeline_id: string;
+  version_id: string;
   pipeline_metadata: any;
   output_path: string;
 }
@@ -424,6 +425,7 @@ export default class Commands {
     notebookPath: string,
     metadata: IKaleNotebookMetadata,
     pipelineId: string,
+    versionId: string,
     onUpdate: Function,
   ): Promise<IKatibExperiment> => {
     onUpdate({ showKatibKFPExperiment: true });
@@ -459,6 +461,7 @@ export default class Commands {
     onUpdate({ showKatibProgress: true });
     const runKatibArgs: IKatibRunArgs = {
       pipeline_id: pipelineId,
+      version_id: versionId,
       pipeline_metadata: {
         ...metadata,
         experiment_name: kfpExperiment.name,
