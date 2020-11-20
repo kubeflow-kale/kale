@@ -140,27 +140,33 @@ class PyTorchBackend(MarshalBackend):
     name = "PyTorch backend"
     display_name = "pytorch"
     file_type = "pt"
-    obj_type_regex = r"torch.*"
+    obj_type_regex = r"torch\.nn\.modules\.module\.Module"
 
     def save(self, obj, path):
         """Save a PyTorch object."""
-        import dill
         import torch
-        torch.save(obj, path, pickle_module=dill)
+        model_script = torch.jit.script(obj)
+        model_script.save(path)
 
     def load(self, file_path):
         """Restore a PyTorch object."""
-        import dill
         import torch
-        obj_torch = torch.load(file_path, pickle_module=dill)
-        if "nn.Module" in str(type(obj_torch)):
-            # if the object is a Module we need to run eval
-            obj_torch.eval()
+        obj_torch = torch.jit.load(file_path)
+        # `jit.load` returns a `ScirptModule` object.
+        # To turn it into a PyTorch `Module` again
+        # we pass it inside a `Sequential` container.
+        # The `Sequential` container is a wrapper
+        # that feeds the data to the modules it contains in order.
+        # Here, we create a `Sequential` container
+        # with only one item, so it works like a wrapper
+        # function around our model.
+        obj_torch = torch.nn.Sequential(obj_torch)
+        obj_torch.eval()
         return obj_torch
 
 
 @register_backend
-class KerashBackend(MarshalBackend):
+class KerasBackend(MarshalBackend):
     """Marshal Keras objects."""
     name = "Keras backend"
     display_name = "keras"
