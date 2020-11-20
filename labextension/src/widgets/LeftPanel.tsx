@@ -698,7 +698,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           const katibExperiment = await commands.runKatib(
             nbFilePath,
             metadata,
-            uploadPipeline.pipeline.id,
+            uploadPipeline.pipeline.pipelineid,
             _updateDeployProgress,
           );
           commands.pollKatib(katibExperiment, _updateDeployProgress);
@@ -708,7 +708,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         }
       } else {
         const runPipeline = await commands.runPipeline(
-          uploadPipeline.pipeline.id,
+          uploadPipeline.pipeline.pipelineid,
           compileNotebook.pipeline_metadata,
           _updateDeployProgress,
         );

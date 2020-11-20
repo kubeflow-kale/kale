@@ -52,12 +52,11 @@ interface ICompileNotebookArgs {
 interface IUploadPipelineArgs {
   pipeline_package_path: string;
   pipeline_metadata: Object;
-  overwrite: boolean;
 }
 
 interface IUploadPipelineResp {
   already_exists: boolean;
-  pipeline: { id: string; name: string };
+  pipeline: { pipelineid: string; versionid: string; name: string };
 }
 
 interface IRunPipelineArgs {
@@ -402,7 +401,6 @@ export default class Commands {
     const uploadPipelineArgs: IUploadPipelineArgs = {
       pipeline_package_path: compiledPackagePath,
       pipeline_metadata: compiledPipelineMetadata,
-      overwrite: false,
     };
     let uploadPipeline: IUploadPipelineResp = await _legacy_executeRpcAndShowRPCError(
       this._notebook,
@@ -414,27 +412,6 @@ export default class Commands {
     if (!uploadPipeline) {
       onUpdate({ showUploadProgress: false, pipeline: false });
       return uploadPipeline;
-    }
-    if (uploadPipeline && uploadPipeline.already_exists) {
-      // show dialog to ask user if they want to overwrite the existing pipeline
-      result = await NotebookUtils.showYesNoDialog('Pipeline Upload Failed', [
-        'Pipeline with name ' +
-          compiledPipelineMetadata.pipeline_name +
-          ' already exists. ',
-        'Would you like to overwrite it?',
-      ]);
-      // OVERWRITE EXISTING PIPELINE
-      if (result) {
-        uploadPipelineArgs.overwrite = true;
-        uploadPipeline = await _legacy_executeRpcAndShowRPCError(
-          this._notebook,
-          this._kernel,
-          'kfp.upload_pipeline',
-          uploadPipelineArgs,
-        );
-      } else {
-        onUpdate({ pipeline: false });
-      }
     }
     if (uploadPipeline && result) {
       onUpdate({ pipeline: uploadPipeline });

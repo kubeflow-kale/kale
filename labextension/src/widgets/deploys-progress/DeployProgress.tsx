@@ -65,10 +65,10 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   const getUploadLink = (pipeline: any) => {
     // link: /_/pipeline/#/pipelines/details/<id>
     // id = uploadPipeline.pipeline.id
-    if (!pipeline.pipeline || !pipeline.pipeline.id) {
+    if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
       return '#';
     }
-    const link = `${window.location.origin}/_/pipeline/#/pipelines/details/${pipeline.pipeline.id}`;
+    const link = `${window.location.origin}/_/pipeline/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
       : link;

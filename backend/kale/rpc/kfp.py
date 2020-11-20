@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import kfp
-from kfp_server_api.rest import ApiException
 
 from kale.common import kfputils
 
@@ -80,34 +79,13 @@ def _get_pipeline_id(pipeline_name):
     return pipeline_id
 
 
-def upload_pipeline(request, pipeline_package_path, pipeline_metadata,
-                    overwrite=False):
+def upload_pipeline(request, pipeline_package_path, pipeline_metadata):
     """Upload a KFP package as a new pipeline."""
-    client = _get_client()
     pipeline_name = pipeline_metadata["pipeline_name"]
-    try:
-        pipeline = client.upload_pipeline(pipeline_package_path, pipeline_name)
-        return {"already_exists": False,
-                "pipeline": {"id": pipeline.id, "name": pipeline.name}}
-    except ApiException as e:
-        # The exception is a general 500 error.
-        # The only way to check that it refers to the pipeline already existing
-        # is by matching the error message
-        if "The name {} already exist".format(pipeline_name) in str(e):
-            if overwrite:
-                # Get the id of the existing pipeline
-                pipeline_id = _get_pipeline_id(pipeline_name)
-                # Delete the existing pipeline and upload the new one
-                client._pipelines_api.delete_pipeline(id=pipeline_id)
-                pipeline = client.upload_pipeline(pipeline_package_path,
-                                                  pipeline_name)
-                return {"already_exists": True,
-                        "pipeline": {"id": pipeline.id, "name": pipeline.name}}
-            else:
-                return {"already_exists": True, "pipeline": None}
-        else:
-            # Unexpected exception
-            raise
+    pid, vid = kfputils.upload_pipeline(pipeline_package_path,
+                                        pipeline_name)
+    return {"pipeline": {"pipelineid": pid, "versionid": vid,
+                         "name": pipeline_name}}
 
 
 def run_pipeline(request, pipeline_metadata, pipeline_package_path=None,
