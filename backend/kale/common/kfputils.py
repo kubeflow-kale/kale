@@ -44,7 +44,7 @@ def _get_kfp_client(host=None, namespace: str = "kubeflow"):
     return Client(host=host, namespace=namespace)
 
 
-def get_pipeline_id(pipeline_name, host=None):
+def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     """List through the existing pipelines and filter by pipeline name.
 
     Args:
@@ -57,12 +57,11 @@ def get_pipeline_id(pipeline_name, host=None):
     client = _get_kfp_client(host)
     token = ''
     pipeline_id = None
-    while pipeline_id is None or token is not None:
+    while pipeline_id is None and token is not None:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
-        f = next(
-            filter(lambda x: x.name == pipeline_name, pipelines.pipelines),
-            None)
+        f = next(filter(
+            lambda x: x.name == pipeline_name, pipelines.pipelines), None)
         if f is not None:
             pipeline_id = f.id
     return pipeline_id
