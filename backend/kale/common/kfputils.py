@@ -317,24 +317,6 @@ def get_run(run_id: str, host: str = None, namespace: str = "kubeflow"):
     return client.get_run(run_id)
 
 
-# TODO: Use a global setup logging function
-def _get_logger():
-    """Setup logging."""
-    global _logger
-    if not _logger:
-        fmt = "%(asctime)s %(module)s:%(lineno)d [%(levelname)s] %(message)s"
-        datefmt = "%Y-%m-%dT%H:%M:%SZ"
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.DEBUG)
-        stream_handler.setFormatter(logging.Formatter(fmt, datefmt))
-
-        _logger = logging.getLogger(__name__)
-        _logger.propagate = 0
-        _logger.setLevel(logging.DEBUG)
-        _logger.addHandler(stream_handler)
-    return _logger
-
-
 def _wait_kfp_run(run_id: str):
     """Wait for a KFP run to complete.
 
@@ -344,20 +326,14 @@ def _wait_kfp_run(run_id: str):
     Returns:
         status: Status of KFP run upon completion
     """
-    logger = _get_logger()
-
-    logger.info("Watching for Run with ID: '%s'", run_id)
-
+    log.info("Watching for Run with ID: '%s'", run_id)
     while True:
         time.sleep(30)
-
         run = get_run(run_id)
         status = run.run.status
-        logger.info("Run status: %s", status)
-
+        log.info("Run status: %s", status)
         if status not in KFP_RUN_FINAL_STATES:
             continue
-
         return status
 
 
@@ -373,8 +349,6 @@ def _get_kfp_run_metrics(run_id: str, namespace: str = "kubeflow"):
     Returns:
         metrics: Dict of metrics along with their values
     """
-    logger = _get_logger()
-
     run_metrics = None
     max_tries = 3
     tries = 0
@@ -382,12 +356,12 @@ def _get_kfp_run_metrics(run_id: str, namespace: str = "kubeflow"):
         if tries >= max_tries:
             return {}
         time.sleep(5)
-        logger.info("Try %d: Checking for run metrics...", tries)
+        log.info("Try %d: Checking for run metrics...", tries)
         run = get_run(run_id=run_id)
         run_metrics = run.run.metrics
         tries += 1
 
-    logger.info("Found run metrics!")
+    log.info("Found run metrics!")
     return {metric.name: metric.number_value for metric in run_metrics}
 
 
@@ -412,10 +386,7 @@ def create_and_wait_kfp_run(pipeline_id: str,
     Returns:
         metrics: Dict of metrics along with their values
     """
-    logger = _get_logger()
-
     pod_namespace = podutils.get_namespace()
-
     run = run_pipeline(experiment_name=experiment_name,
                        pipeline_id=pipeline_id,
                        version_id=version_id,
@@ -423,26 +394,26 @@ def create_and_wait_kfp_run(pipeline_id: str,
                        **kwargs)
     run_id = run.id
 
-    logger.info("Annotating Trial '%s' with the KFP Run UUID '%s'...",
-                run_name, run_id)
+    log.info("Annotating Trial '%s' with the KFP Run UUID '%s'...",
+             run_name, run_id)
     try:
         # Katib Trial name == KFP Run name by design (see rpc.katib)
         katibutils.annotate_trial(run_name, pod_namespace,
                                   {KALE_KATIB_KFP_ANNOTATION: run_id})
     except Exception:
-        logger.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
-                         " '%s'", run_name, run_id)
+        log.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
+                      " '%s'", run_name, run_id)
 
-    logger.info("Getting Workflow name for run '%s'...", run_id)
+    log.info("Getting Workflow name for run '%s'...", run_id)
     workflow_name = _get_workflow_from_run(get_run(run_id))["metadata"]["name"]
-    logger.info("Workflow name: %s", workflow_name)
-    logger.info("Getting the Katib trial...")
+    log.info("Workflow name: %s", workflow_name)
+    log.info("Getting the Katib trial...")
     trial = katibutils.get_trial(run_name, pod_namespace)
-    logger.info("Trial name: %s, UID: %s", trial["metadata"]["name"],
-                trial["metadata"]["uid"])
-    logger.info("Getting owner Katib experiment of trial...")
+    log.info("Trial name: %s, UID: %s", trial["metadata"]["name"],
+             trial["metadata"]["uid"])
+    log.info("Getting owner Katib experiment of trial...")
     exp_name, exp_id = katibutils.get_owner_experiment_from_trial(trial)
-    logger.info("Experiment name: %s, UID: %s", exp_name, exp_id)
+    log.info("Experiment name: %s, UID: %s", exp_name, exp_id)
     wf_annotations = {
         katibutils.EXPERIMENT_NAME_ANNOTATION_KEY: exp_name,
         katibutils.EXPERIMENT_ID_ANNOTATION_KEY: exp_id,
@@ -453,22 +424,22 @@ def create_and_wait_kfp_run(pipeline_id: str,
         workflowutils.annotate_workflow(workflow_name, pod_namespace,
                                         wf_annotations)
     except Exception:
-        logger.exception("Failed to annotate Workflow '%s' with the Katib"
-                         " details", workflow_name)
+        log.exception("Failed to annotate Workflow '%s' with the Katib"
+                      " details", workflow_name)
 
     status = _wait_kfp_run(run_id)
 
     # If run has not succeeded, return no metrics
     if status != "Succeeded":
-        logger.warning("KFP run did not run successfully. No metrics to"
-                       " return.")
+        log.warning("KFP run did not run successfully. No metrics to"
+                    " return.")
         # exit gracefully with error
         sys.exit(-1)
 
     # Retrieve metrics
     run_metrics = _get_kfp_run_metrics(run_id, namespace)
     for name, value in run_metrics.items():
-        logger.info("%s=%s", name, value)
+        log.info("%s=%s", name, value)
 
     return run_metrics
 
