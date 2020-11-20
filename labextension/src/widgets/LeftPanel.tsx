@@ -709,6 +709,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       } else {
         const runPipeline = await commands.runPipeline(
           uploadPipeline.pipeline.pipelineid,
+          uploadPipeline.pipeline.versionid,
           compileNotebook.pipeline_metadata,
           _updateDeployProgress,
         );

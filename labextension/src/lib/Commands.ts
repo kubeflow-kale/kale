@@ -63,6 +63,7 @@ interface IRunPipelineArgs {
   pipeline_metadata: Object;
   pipeline_package_path?: string;
   pipeline_id?: string;
+  version_id?: string;
 }
 
 interface IKatibRunArgs {
@@ -481,6 +482,7 @@ export default class Commands {
 
   runPipeline = async (
     pipelineId: string,
+    versionId: string,
     compiledPipelineMetadata: IKaleNotebookMetadata,
     onUpdate: Function,
   ) => {
@@ -488,6 +490,7 @@ export default class Commands {
     const runPipelineArgs: IRunPipelineArgs = {
       pipeline_metadata: compiledPipelineMetadata,
       pipeline_id: pipelineId,
+      version_id: versionId,
     };
     const runPipeline = await _legacy_executeRpcAndShowRPCError(
       this._notebook,
