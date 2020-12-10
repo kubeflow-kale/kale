@@ -51,6 +51,7 @@ setup(
         'ml_metadata == 0.24.0',
         'progress >= 1.5',
         'kfserving >= 0.4.0',
+        'kubernetes >= 11.0.0',
     ],
     extras_require={
         'dev': [
