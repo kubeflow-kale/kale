@@ -309,7 +309,7 @@ class NotebookProcessor(BaseProcessor):
                 # add node to DAG, adding tags and source code of notebook cell
                 if step_name not in self.pipeline.nodes:
                     step = Step(name=step_name, source=[c.source],
-                                ins=set(), outs=set(),
+                                ins=[], outs=[],
                                 limits=tags.get("limits", {}),
                                 labels=tags.get("labels", {}),
                                 annotations=tags.get("annotations", {}))
@@ -709,9 +709,11 @@ class NotebookProcessor(BaseProcessor):
                 fn_calls.difference_update(to_remove)
                 # Add to ancestor the new outs annotations. First merge the
                 # current outs present in the anc with the new ones
-                anc_step.outs.update(outs)
+                cur_outs = set(anc_step.outs)
+                cur_outs.update(outs)
+                anc_step.outs = list(cur_outs)
 
-            step.ins = sorted(ins)
+            step.ins = list(ins)
             step.parameters = parameters
             step.fns_free_variables = fns_free_variables
 
