@@ -14,7 +14,7 @@
 
 import logging
 
-from typing import Any, List, Set
+from typing import Any, List
 
 from kale.config import Config, Field, validators
 
@@ -43,12 +43,12 @@ class Step:
 
     def __init__(self,
                  source: List[str],
-                 ins: Set[Any] = None,
-                 outs: Set[Any] = None,
+                 ins: List[Any] = None,
+                 outs: List[Any] = None,
                  **kwargs):
         self.source = source
-        self.ins = ins or set()
-        self.outs = outs or set()
+        self.ins = ins or []
+        self.outs = outs or []
 
         self.config = StepConfig(**kwargs)
 
