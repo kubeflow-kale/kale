@@ -279,21 +279,13 @@ def print_volumes():
 
 def get_run_uuid():
     """Get the Workflow's UUID form inside a pipeline step."""
-    # Retrieve the pod
-    pod_name = get_pod_name()
     namespace = get_namespace()
-    workflow_name = workflowutils.get_workflow_name(pod_name, namespace)
-
-    # Retrieve the Argo workflow
-    api_group = "argoproj.io"
-    api_version = "v1alpha1"
-    co_name = "workflows"
-    co_client = k8sutils.get_co_client()
-    workflow = co_client.get_namespaced_custom_object(api_group, api_version,
-                                                      namespace, co_name,
-                                                      workflow_name)
-    run_uuid = workflow["metadata"].get("labels", {}).get(KFP_RUN_ID_LABEL_KEY,
-                                                          None)
+    workflow = workflowutils.get_workflow(
+        workflowutils.get_workflow_name(get_pod_name(), namespace),
+        namespace)
+    run_uuid = (workflow["metadata"]
+                .get("labels", {})
+                .get(KFP_RUN_ID_LABEL_KEY, None))
 
     # KFP api-server adds run UUID as label to workflows for KFP>=0.1.26.
     # Return run UUID if available. Else return workflow UUID to maintain
