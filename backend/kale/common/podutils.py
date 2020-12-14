@@ -135,6 +135,24 @@ def _get_pod_container(pod, container_name):
     return container[0]
 
 
+def _get_container_image_sha(pod, container_name):
+    if not pod.status.container_statuses:
+        raise RuntimeError("Could not retrieve the `container_statuses` field"
+                           " from Pod '%s'" % pod.metadata.name)
+    status = list(filter(lambda s: s.name == container_name,
+                         pod.status.container_statuses))[0]
+    if not status.image_id:
+        raise RuntimeError("Container status for container '%s' in pod '%s' is"
+                           " not set" % (container_name, pod.metadata.name))
+    _prefix = "docker-pullable://"
+    if not status.image_id.startswith(_prefix):
+        raise RuntimeError("Could not parse imageID of container '%s' in pod"
+                           " '%s': '%s'"
+                           % (container_name, pod.metadata.name,
+                              status.image_id))
+    return status.image_id[len(_prefix):]
+
+
 def _get_mount_path(container, volume):
     for volume_mount in container.volume_mounts:
         if volume_mount.name == volume.name:
@@ -216,19 +234,39 @@ def list_volumes():
 def get_docker_base_image():
     """Get the current container's docker image.
 
+    Just reading the Pod spec's container image is not enough to have a
+    reproducible reference to the current image, because an image tag can be
+    re-assigned to newer builds, in the future (e.g. when using the `latest`
+    tag). The only way to have reproducible reference is by using the
+    image manifest's `sha`.
+
+    Kubernetes exposes this in the Pod's `status`, under `containerStatuses`
+    [1], in the field `imageID`. In the case this field is empty (this could
+    happen when the image was built locally), then fallback to reading the
+    Pod's container `image` field.
+
+    [1] https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#containerstatus-v1-core  # noqa: 501
+
     Raises:
         ConfigException when initializing the client
         FileNotFoundError when attempting to find the namespace
         ApiException when getting the container name or reading the pod
     """
+    log.info("Getting the base image of container...")
     client = k8sutils.get_v1_client()
-    namespace = get_namespace()
-    pod_name = get_pod_name()
+    pod = client.read_namespaced_pod(get_pod_name(), get_namespace())
     container_name = get_container_name()
 
-    pod = client.read_namespaced_pod(pod_name, namespace)
-    container = _get_pod_container(pod, container_name)
-    return container.image
+    image = None
+    try:
+        image = _get_container_image_sha(pod, container_name)
+    except RuntimeError as e:
+        log.warning("Could not retrieve the container image sha: %s", str(e))
+        log.warning("Using its tag instead. The pipeline won't be reproducible"
+                    " if a new image is pushed with the same tag.")
+        image = _get_pod_container(pod, container_name).image
+    log.info("Retrieved image: %s", image)
+    return image
 
 
 def print_volumes():

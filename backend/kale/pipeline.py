@@ -137,8 +137,13 @@ class PipelineConfig(Config):
         if not self.docker_image:
             try:
                 self.docker_image = podutils.get_docker_base_image()
-            except (ConfigException, FileNotFoundError, ApiException):
-                # no K8s config found; use kfp default image
+            except (ConfigException, RuntimeError, FileNotFoundError,
+                    ApiException):
+                # * ConfigException: no K8s config found
+                # * RuntimeError, FileNotFoundError: this is not running in a
+                #   pod
+                # * ApiException: K8s call to read pod raised exception;
+                # Use kfp default image
                 self.docker_image = ""
 
     def _set_volume_storage_class(self):
