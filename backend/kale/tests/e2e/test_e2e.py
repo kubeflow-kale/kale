@@ -37,7 +37,7 @@ def test_notebook_to_dsl(random_string, notebook_path, dsl_path):
     random_string.return_value = "rnd"
 
     overrides = {"abs_working_dir": "/kale"}
-    pipeline = NotebookProcessor(notebook_path, overrides).to_pipeline()
+    pipeline = NotebookProcessor(notebook_path, overrides).run()
     dsl_script_path = Compiler(pipeline).compile()
 
     expected_result = open(dsl_path).read()

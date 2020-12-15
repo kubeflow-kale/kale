@@ -267,26 +267,6 @@ class Pipeline(nx.DiGraph):
         return [self.pipeline_parameters[n].param_value
                 for n in self.pps_names]
 
-    def set_volume_pipeline_parameters(self):
-        """Create pipeline parameters for volumes to be mounted on steps."""
-        volume_parameters = dict()
-        for v in self.config.volumes:  # type: VolumeConfig
-            if v.type == 'pv':
-                # FIXME: How should we handle existing PVs?
-                continue
-            if v.type == 'pvc':
-                mount_point = v.mount_point.replace('/', '_').strip('_')
-                par_name = "vol_{}".format(mount_point)
-                volume_parameters[par_name] = PipelineParam("str", v.name)
-            elif v.type == 'new_pvc':
-                rok_url = v.annotations.get("rok/origin")
-                if rok_url is not None:
-                    par_name = "rok_{}_url".format(v.name.replace('-', '_'))
-                    volume_parameters[par_name] = PipelineParam("str", rok_url)
-            else:
-                raise ValueError("Unknown volume type: {}".format(v.type))
-        self.pipeline_parameters.update(volume_parameters)
-
     def _topological_sort(self) -> Iterable[Step]:
         return self._steps_iterable(nx.topological_sort(self))
 

@@ -93,7 +93,7 @@ def compile_notebook(request, source_notebook_path,
     """Compile the notebook to KFP DSL."""
     processor = NotebookProcessor(source_notebook_path,
                                   notebook_metadata_overrides)
-    pipeline = processor.to_pipeline()
+    pipeline = processor.run()
     script_path = Compiler(pipeline).compile()
     # FIXME: Why were we tapping into the Kale logger?
     # instance = Kale(source_notebook_path, notebook_metadata_overrides, debug)

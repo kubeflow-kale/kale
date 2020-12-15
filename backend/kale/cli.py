@@ -92,7 +92,7 @@ def main():
 
     # FIXME: We are removing the `debug` arg. This shouldn't be an issue
     processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
-    pipeline = processor.to_pipeline()
+    pipeline = processor.run()
     dsl_script_path = Compiler(pipeline).compile()
     pipeline_name = pipeline.config.pipeline_name
     pipeline_package_path = kfputils.compile_pipeline(dsl_script_path,
