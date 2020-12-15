@@ -21,8 +21,10 @@ from typing import Any, Dict
 import nbformat as nb
 
 from kale.config import Field
-from kale import Pipeline, Step, PipelineConfig, PipelineParam
+from kale import Step, PipelineConfig, PipelineParam
 from kale.common import astutils, flakeutils, graphutils, utils
+
+from .baseprocessor import BaseProcessor
 
 # fixme: Change the name of this key to `kale_metadata`
 KALE_NB_METADATA_KEY = 'kubeflow_notebook'
@@ -155,13 +157,17 @@ class NotebookConfig(PipelineConfig):
         return result
 
 
-class NotebookProcessor:
+class NotebookProcessor(BaseProcessor):
     """Convert a Notebook to a Pipeline object."""
+
+    id = "nb"
+    config_cls = NotebookConfig
+    no_op_step = Step(name="no_op", source=[])
 
     def __init__(self,
                  nb_path: str,
                  nb_metadata_overrides: Dict[str, Any] = None,
-                 skip_validation: bool = False):
+                 **kwargs):
         """Instantiate a new NotebookProcessor.
 
         Args:
@@ -177,18 +183,10 @@ class NotebookProcessor:
         self.notebook = self._read_notebook()
 
         nb_metadata = self.notebook.metadata.get(KALE_NB_METADATA_KEY, dict())
-
-        # fixme: needed?
         nb_metadata.update({"notebook_path": nb_path})
         if nb_metadata_overrides:
             nb_metadata.update(nb_metadata_overrides)
-        # validate and populate defaults
-        # FIXME: Maybe improve this by implementing a "skip_validation" flag
-        #  in the config class
-        self.config = None
-        if not skip_validation:
-            self.config = NotebookConfig(**nb_metadata)
-        self.pipeline = Pipeline(self.config)
+        super().__init__(**{**kwargs, **nb_metadata})
 
     def _read_notebook(self):
         if not os.path.exists(self.nb_path):
@@ -203,7 +201,6 @@ class NotebookProcessor:
          imports_and_functions) = self.parse_notebook()
 
         self.parse_pipeline_parameters(pipeline_parameters_source)
-        self.pipeline.set_volume_pipeline_parameters()
 
         # get a list of variables that need to be logged as pipeline metrics
         pipeline_metrics = astutils.parse_metrics_print_statements(
@@ -213,27 +210,9 @@ class NotebookProcessor:
         self.dependencies_detection(imports_and_functions)
         self.assign_metrics(pipeline_metrics)
 
-        # if there are multiple DAG leaves, add an empty step at the end of the
-        # pipeline for final snapshot
-        leaf_steps = self.pipeline.get_leaf_steps()
-        if self.config.autosnapshot and len(leaf_steps) > 1:
-            _name = "final_auto_snapshot"
-            self.pipeline.add_step(Step(name=_name, source=[]))
-            # add a link from all the last steps of the pipeline to
-            # the final auto snapshot one.
-            for step in leaf_steps:
-                self.pipeline.add_edge(step.name, _name)
-
-        # FIXME: Move this to a base class Processor, to be executed by default
-        #  after `to_pipeline`, so that it is agnostic to the type of
-        #  processor.
-        for step in self.pipeline.steps:
-            step.config.update(self.pipeline.config.steps_defaults)
-
         # TODO: Additional action required:
         #  Run a static analysis over every step to check that pipeline
         #  parameters are not assigned with new values.
-        return self.pipeline
 
     def parse_pipeline_parameters(self, source: str):
         """Get pipeline parameters from source code."""

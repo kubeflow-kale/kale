@@ -59,11 +59,13 @@ from kale import Pipeline, NotebookConfig, PipelineParam
         'annotations': [{"key": "rok/origin", "value": "url"}]
     }], {'rok_test_volume_url': PipelineParam('str', 'url')}),
 ])
-def test_set_volume_pipeline_parameters(dummy_nb_config, volumes, target):
+def test_set_volume_pipeline_parameters(notebook_processor, dummy_nb_config,
+                                        volumes, target):
     """Tests that volumes are correctly converted from list into dict."""
-    pipeline = Pipeline(NotebookConfig(**dummy_nb_config, volumes=volumes))
-    pipeline.set_volume_pipeline_parameters()
-    assert target == pipeline.pipeline_parameters
+    notebook_processor.pipeline = Pipeline(
+        NotebookConfig(**dummy_nb_config, volumes=volumes))
+    notebook_processor._set_volume_pipeline_parameters()
+    assert target == notebook_processor.pipeline.pipeline_parameters
 
 
 @pytest.mark.parametrize("volumes", [
@@ -75,13 +77,15 @@ def test_set_volume_pipeline_parameters(dummy_nb_config, volumes, target):
         'type': 'unknown'
     }])
 ])
-def test_get_volumes_parameters_exc(dummy_nb_config, volumes):
+def test_get_volumes_parameters_exc(notebook_processor, dummy_nb_config,
+                                    volumes):
     """Tests that volumes are correctly converted from list into dict."""
     with pytest.raises(ValueError,
                        match="VolumeTypeValidator:"
                              " Value unknown is not allowed"):
-        pipeline = Pipeline(NotebookConfig(**dummy_nb_config, volumes=volumes))
-        pipeline.set_volume_pipeline_parameters()
+        notebook_processor.pipeline = Pipeline(
+            NotebookConfig(**dummy_nb_config, volumes=volumes))
+        notebook_processor._set_volume_pipeline_parameters()
 
 
 @pytest.mark.parametrize("args,target", [
