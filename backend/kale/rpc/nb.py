@@ -214,17 +214,10 @@ def remove_marshal_dir(request, source_notebook_path):
 
 def find_poddefault_labels_on_server(request):
     """Find server's labels that correspond to poddefaults applied."""
-    request.log.info("Retrieving PodDefaults applied to server...")
-    applied_poddefaults = kfutils.find_applied_poddefaults(
-        podutils.get_pod(podutils.get_pod_name(),
-                         podutils.get_namespace()),
-        kfutils.list_poddefaults())
-    pd_names = [pd["metadata"]["name"] for pd in applied_poddefaults]
-    request.log.info("Retrieved applied PodDefaults: %s", pd_names)
-
-    labels = kfutils.get_poddefault_labels(applied_poddefaults)
-    request.log.info("PodDefault labels applied on server: %s",
-                     ", ".join(["%s: %s" % (k, v) for k, v in labels.items()]))
+    old_logger = kfutils.log
+    kfutils.log = request.log
+    labels = kfutils.find_poddefault_labels()
+    kfutils.log = old_logger
     return labels
 
 
