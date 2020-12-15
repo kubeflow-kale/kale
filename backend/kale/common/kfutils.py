@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from typing import Dict, List
 from kubernetes.client.models import V1Pod
 
 from kale.common import podutils, k8sutils
+
+log = logging.getLogger(__name__)
 
 
 def list_poddefaults(namespace: str = None):
@@ -38,7 +42,7 @@ def list_poddefaults(namespace: str = None):
 
 
 def find_applied_poddefaults(pod: V1Pod, poddefaults: List[Dict]):
-    """Find out which poddefaults from the list are applied to a pod."""
+    """Find out which PodDefaults from the list are applied to a pod."""
     applied_poddefaults = list()
     for pd in poddefaults:
         labels_required = pd["spec"]["selector"].get("matchLabels", {})
@@ -54,8 +58,24 @@ def get_poddefault_labels(poddefaults: List[Dict]):
     for pd in poddefaults:
         for k, v in pd["spec"]["selector"].get("matchLabels", {}).items():
             if k in labels and labels[k] != v:
-                raise ValueError("Conflicting label: %s. Found 2 poddefaults"
+                raise ValueError("Conflicting label: %s. Found 2 PodDefaults"
                                  " using the same label but different values:"
                                  " %s, %s" % (k, labels[k], v))
             labels[k] = v
+    return labels
+
+
+def find_poddefault_labels():
+    """Find server's labels that correspond to PodDefaults applied."""
+    log.info("Retrieving PodDefaults applied to server...")
+    applied_poddefaults = find_applied_poddefaults(
+        podutils.get_pod(podutils.get_pod_name(),
+                         podutils.get_namespace()),
+        list_poddefaults())
+    pd_names = [pd["metadata"]["name"] for pd in applied_poddefaults]
+    log.info("Retrieved applied PodDefaults: %s", pd_names)
+
+    labels = get_poddefault_labels(applied_poddefaults)
+    log.info("PodDefault labels applied on server: %s",
+             ", ".join(["%s: %s" % (k, v) for k, v in labels.items()]))
     return labels
