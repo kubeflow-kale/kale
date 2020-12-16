@@ -96,8 +96,8 @@ class MarshalBackend(object):
         except ImportError as e:
             if not self.fallback_on_missing_lib:
                 raise e
-            log.warning("Failed to import %s (%s). Falling back to default "
-                        "backend.", self.display_name, e)
+            log.warning("Failed to import %s (%s). Falling back to default"
+                        " backend.", self.display_name, e)
             self._default_save(obj, name)  # always try the default save
         return abs_path
 
@@ -126,8 +126,8 @@ class MarshalBackend(object):
         except ImportError as e:
             if not self.fallback_on_missing_lib:
                 raise e
-            log.warning("Failed to import %s (%s). Falling back to default "
-                        "backend.", self.display_name, e)
+            log.warning("Failed to import %s (%s). Falling back to default"
+                        " backend.", self.display_name, e)
             return self._default_load(abs_path)  # always try the default load
 
     def load(self, file_path: str) -> Any:
@@ -287,8 +287,8 @@ class Dispatcher(object):
                                " object type %s (base type %s): %s"
                                % (_type, _type_base, _backends))
         if not _backends:
-            log.warning("No backends found for type %s (%s). Falling back to"
-                        " default backend." % (_type, _type_base))
+            log.debug("No backends found for type %s (%s). Falling back to"
+                      " default backend." % (_type, _type_base))
             return MarshalBackend()
         else:
             return _backends[0]
@@ -311,8 +311,8 @@ class Dispatcher(object):
                                " file %s : %s" % (os.path.basename(filename),
                                                   _backends))
         if not _backends:
-            log.warning("No backends found for '%s'. Falling back to default"
-                        " backend." % filename)
+            log.debug("No backends found for '%s'. Falling back to default"
+                      " backend." % filename)
             return MarshalBackend()
         else:
             return _backends[0]
