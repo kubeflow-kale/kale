@@ -15,7 +15,7 @@
 import os
 from kubernetes.client.rest import ApiException
 
-from kale.common import podutils, k8sutils
+from kale.common import podutils, k8sutils, katibutils
 from kale.rpc.errors import RPCNotFoundError, RPCUnhandledError
 
 KATIB_PARAMETER_NAMES = ("objective", "algorithm", "parallelTrialCount",
@@ -82,23 +82,15 @@ def _define_katib_experiment(name, katib_spec, trial_parameters):
 
 def _launch_katib_experiment(request, katib_experiment, namespace):
     """Launch Katib experiment."""
-    k8s_co_client = k8sutils.get_co_client()
-
-    co_group = "kubeflow.org"
-    co_version = "v1alpha3"
-    co_plural = "experiments"
-
-    request.log.debug("Launching Katib Experiment '%s'...",
-                      katib_experiment["metadata"]["name"])
+    old_logger = katibutils.log
+    katibutils.log = request.log
     try:
-        k8s_co_client.create_namespaced_custom_object(co_group, co_version,
-                                                      namespace, co_plural,
-                                                      katib_experiment)
+        katibutils.create_experiment(katib_experiment, namespace)
     except ApiException as e:
         request.log.exception("Failed to launch Katib experiment")
         raise RPCUnhandledError(message="Failed to launch Katib experiment",
                                 details=str(e), trans_id=request.trans_id)
-    request.log.info("Successfully launched Katib Experiment")
+    katibutils.log = old_logger
 
 
 def _sanitize_parameters(request, parameters, parameter_names, defaults,
@@ -169,15 +161,19 @@ def create_katib_experiment(request, pipeline_id, version_id,
     # required first-layer-fields are set
     katib_spec = _sanitize_katib_spec(request, katib_spec)
 
-    trial_parameters = {
-        "image": KATIB_TRIAL_IMAGE,
-        "pipeline_id": pipeline_id,
-        "version_id": version_id,
-        "experiment_name": pipeline_metadata.get(
-            "experiment_name")}
+    # trial_parameters = {
+    #     "image": KATIB_TRIAL_IMAGE,
+    #     "pipeline_id": pipeline_id,
+    #     "version_id": version_id,
+    #     "experiment_name": pipeline_metadata.get(
+    #         "experiment_name")}
 
-    katib_experiment = _define_katib_experiment(katib_name, katib_spec,
-                                                trial_parameters)
+    # katib_experiment = _define_katib_experiment(katib_name, katib_spec,
+    #                                             trial_parameters)
+    katib_experiment = katibutils.construct_experiment_cr(
+        name=katib_name, experiment_spec=katib_spec,
+        pipeline_id=pipeline_id, version_id=version_id,
+        experiment_name=pipeline_metadata.get("experiment_name"))
     definition_path = os.path.abspath(
         os.path.join(output_path, "%s.katib.yaml" % katib_name))
     request.log.info("Saving Katib experiment definition at %s",
@@ -207,7 +203,7 @@ def get_experiment(request, experiment, namespace):
     k8s_co_client = k8sutils.get_co_client()
 
     co_group = "kubeflow.org"
-    co_version = "v1alpha3"
+    co_version = "v1beta1"
     co_plural = "experiments"
 
     try:

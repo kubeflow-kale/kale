@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 KATIB_API_GROUP = "kubeflow.org"
-KATIB_API_VERSION = "v1alpha3"
+KATIB_API_VERSION_V1ALPHA3 = "v1alpha3"
 KATIB_API_VERSION_V1BETA1 = "v1beta1"
 KATIB_TRIALS_PLURAL = "trials"
 KATIB_EXPERIMENTS_PLURAL = "experiments"
@@ -66,7 +66,7 @@ JOB_CR = {"apiVersion": "batch/v1",
 
 def annotate_trial(name, namespace, annotations):
     """Add annotations to a Trial."""
-    k8sutils.annotate_object(KATIB_API_GROUP, KATIB_API_VERSION,
+    k8sutils.annotate_object(KATIB_API_GROUP, KATIB_API_VERSION_V1BETA1,
                              KATIB_TRIALS_PLURAL, name, namespace,
                              annotations)
 
@@ -75,14 +75,15 @@ def get_trial(name, namespace):
     """Get a Trial."""
     k8s_client = k8sutils.get_co_client()
     return k8s_client.get_namespaced_custom_object(KATIB_API_GROUP,
-                                                   KATIB_API_VERSION,
+                                                   KATIB_API_VERSION_V1BETA1,
                                                    namespace,
                                                    KATIB_TRIALS_PLURAL, name)
 
 
 def _get_owner_experiment(owner_references):
     owner = None
-    expected_api_version = "%s/%s" % (KATIB_API_GROUP, KATIB_API_VERSION)
+    expected_api_version = "%s/%s" % (KATIB_API_GROUP,
+                                      KATIB_API_VERSION_V1BETA1)
     for ref in owner_references:
         api_version = ref.get("apiVersion")
         kind = ref.get("kind")
@@ -144,7 +145,7 @@ def create_experiment(experiment, namespace):
              namespace, experiment["metadata"]["name"])
     k8s_co_client = k8sutils.get_co_client()
     exp = k8s_co_client.create_namespaced_custom_object(
-        KATIB_API_GROUP, KATIB_API_VERSION, namespace,
+        KATIB_API_GROUP, KATIB_API_VERSION_V1BETA1, namespace,
         KATIB_EXPERIMENTS_PLURAL, experiment)
     log.info("Successfully created Katib Experiment!")
     return exp
