@@ -15,14 +15,19 @@
 """Suite of helpers for Katib."""
 
 import copy
+import logging
 
 from kale.common import k8sutils
+
+
+log = logging.getLogger(__name__)
 
 
 KATIB_API_GROUP = "kubeflow.org"
 KATIB_API_VERSION = "v1alpha3"
 KATIB_API_VERSION_V1BETA1 = "v1beta1"
 KATIB_TRIALS_PLURAL = "trials"
+KATIB_EXPERIMENTS_PLURAL = "experiments"
 
 EXPERIMENT_NAME_ANNOTATION_KEY = "kubeflow.org/katib-experiment-name"
 EXPERIMENT_ID_ANNOTATION_KEY = "kubeflow.org/katib-experiment-id"
@@ -131,3 +136,15 @@ def construct_experiment_cr(name, experiment_spec, pipeline_id, version_id,
                   "spec": spec}
 
     return experiment
+
+
+def create_experiment(experiment, namespace):
+    """Create a Katib Experiment."""
+    log.info("Creating Katib Experiment '%s/%s'...",
+             namespace, experiment["metadata"]["name"])
+    k8s_co_client = k8sutils.get_co_client()
+    exp = k8s_co_client.create_namespaced_custom_object(
+        KATIB_API_GROUP, KATIB_API_VERSION, namespace,
+        KATIB_EXPERIMENTS_PLURAL, experiment)
+    log.info("Successfully created Katib Experiment!")
+    return exp
