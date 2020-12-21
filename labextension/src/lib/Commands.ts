@@ -197,6 +197,19 @@ export default class Commands {
     );
   };
 
+  replaceGenericClonedVolumes = async (
+    volumes: IVolumeMetadata[],
+  ) => {
+    return await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'snapshot.replace_cloned_volumes',
+      {
+        volumes,
+      },
+    );
+  };
+
   getMountedVolumes = async (currentNotebookVolumes: IVolumeMetadata[]) => {
     let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
       this._notebook,

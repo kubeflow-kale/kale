@@ -91,6 +91,9 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
         storage_class="{{ storage_class_name }}",
         {%- endif %}
         size='{{ pvc_size }}'
+        {%- if data_source_name %}
+        data_source="{{ data_source_name }}",
+        {%- endif %}
     )
     _kale_volume = _kale_vop{{ loop.index }}.volume
     _kale_volume_step_names.append(_kale_vop{{ loop.index }}.name)

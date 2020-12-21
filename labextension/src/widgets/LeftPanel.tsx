@@ -705,10 +705,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           this.setState({ runDeployment: false });
           return;
         }
-        metadata.volumes = await commands.replaceClonedVolumes(
-          task.bucket,
-          task.result.event.object,
-          task.result.event.version,
+        metadata.volumes = await commands.replaceGenericClonedVolumes(
           metadata.volumes,
         );
       }

@@ -57,6 +57,7 @@
 
 import logging
 import kubernetes
+import time
 
 from kale.common import podutils, k8sutils
 
@@ -145,18 +146,28 @@ def snapshot_notebook():
 def check_snapshot_status(snapshot_name):
     """Check if volume snapshot is ready to use."""
     log.info("Checking snapshot with snapshot name: %s", snapshot_name)
+    count = 0
+    max_count = 60
     task = None
     status = None
-    task = get_pvc_snapshot(snapshot_name=snapshot_name)
-    status = task['status']['readyToUse']
-
-    # if status is True:
-    #    log.info("Successfully created volume snapshot")
-    # elif status is False:
-    #    raise log.info("Snapshot not ready (status: %s)" % status)
-    # else:
-    #    raise log.info("Unknown snapshot task status: %s" % status)
-    return status
+    while status is not True and count <= max_count:
+        count += 1
+        try:
+            task = get_pvc_snapshot(snapshot_name=snapshot_name)
+            status = task['status']['readyToUse']
+            log.info(task)
+            log.info(status)
+            time.sleep(2)
+        except KeyError:
+            log.info("Snapshot resource %s does not seem to be ready", snapshot_name)
+            time.sleep(2)
+    if status is True:
+        log.info("Successfully created volume snapshot")
+    elif status is False:
+        raise log.info("Snapshot not ready (status: %s)" % status)
+    else:
+        raise log.info("Unknown snapshot task status: %s" % status)
+    return task
 
 
 def get_pvc_snapshot(snapshot_name):
@@ -220,7 +231,7 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name):
     )
     k8s_client = k8sutils.get_v1_client()
     ns = podutils.get_namespace()
-    status = check_snapshot_status(source_snapshot_name)
+    status = check_snapshot_status(source_snapshot_name)['status']['readyToUse']
     if status is True:
         ns_pvc = k8s_client.create_namespaced_persistent_volume_claim(ns, pvc)
     elif status is False:
