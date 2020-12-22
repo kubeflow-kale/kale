@@ -25,7 +25,15 @@ def _load_config():
     try:
         kubernetes.config.load_incluster_config()
     except kubernetes.config.ConfigException:  # Not in a notebook server
-        kubernetes.config.load_kube_config()
+        try:
+            kubernetes.config.load_kube_config()
+        # FIXME: `kubernetes` raises a TypeError when a `config` file is not
+        #  found. This is fixed starting from version `11.0.0`, which raises
+        #  the correct `ConfigException`. We cannot yet upgrade the package
+        #  because `kfserving` relies on `kubernetes==10.0.1`
+        except TypeError:
+            raise kubernetes.config.ConfigException("Invalid kube-config file."
+                                                    " No configuration found.")
 
 
 def get_v1_client():

@@ -50,8 +50,8 @@ setup(
         'packaging > 20',
         'ml_metadata == 0.24.0',
         'progress >= 1.5',
-        'kfserving >= 0.4.0',
-        'kubernetes >= 11.0.0',
+        'kfserving >= 0.4.0, < 0.5.0',
+        'kubernetes < 12.0.0',
     ],
     extras_require={
         'dev': [
