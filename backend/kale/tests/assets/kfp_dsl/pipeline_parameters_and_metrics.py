@@ -110,7 +110,7 @@ _kale_sum_matrix_op = _kfp_components.func_to_container_op(sum_matrix)
 
 
 @_kfp_dsl.pipeline(
-    name='hp-test-rnd',
+    name='hp-test',
     description=''
 )
 def auto_generated_pipeline(booltest='True', d1='5', d2='6', strtest='test'):
@@ -197,7 +197,8 @@ if __name__ == "__main__":
     experiment = client.create_experiment('hp-tuning')
 
     # Submit a pipeline run
-    from kale.common.kfputils import generate_run_name
-    run_name = generate_run_name('hp-test-rnd')
-    run_result = client.run_pipeline(
-        experiment.id, run_name, pipeline_filename, {})
+    from kale.common import kfputils
+    pipeline_id, version_id = kfputils.upload_pipeline(
+        pipeline_filename, "hp-test")
+    run_result = kfputils.run_pipeline(
+        experiment_name=experiment.name, pipeline_id=pipeline_id, version_id=version_id)

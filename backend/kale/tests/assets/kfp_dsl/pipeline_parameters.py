@@ -14,7 +14,7 @@ def step1():
     from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "step1",
         "",
         before=True)
@@ -29,7 +29,7 @@ def step1():
 
     step1()
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "step1",
         "",
         before=False)
@@ -45,7 +45,7 @@ def step3(b: str):
     from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "step3",
         "",
         before=True)
@@ -60,7 +60,7 @@ def step3(b: str):
 
     step3()
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "step3",
         "",
         before=False)
@@ -76,7 +76,7 @@ def step2(a: int, c: int):
     from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "step2",
         "",
         before=True)
@@ -92,7 +92,7 @@ def step2(a: int, c: int):
 
     step2()
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "step2",
         "",
         before=False)
@@ -117,7 +117,7 @@ def final_auto_snapshot():
     from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
-        "test-test",
+        "test",
         "final_auto_snapshot",
         "",
         before=False)
@@ -140,7 +140,7 @@ _kale_final_auto_snapshot_op = _kfp_components.func_to_container_op(
 
 
 @_kfp_dsl.pipeline(
-    name='test-test',
+    name='test',
     description=''
 )
 def auto_generated_pipeline(a='1', b='Some string', c='5'):
@@ -260,7 +260,8 @@ if __name__ == "__main__":
     experiment = client.create_experiment('test')
 
     # Submit a pipeline run
-    from kale.common.kfputils import generate_run_name
-    run_name = generate_run_name('test-test')
-    run_result = client.run_pipeline(
-        experiment.id, run_name, pipeline_filename, {})
+    from kale.common import kfputils
+    pipeline_id, version_id = kfputils.upload_pipeline(
+        pipeline_filename, "test")
+    run_result = kfputils.run_pipeline(
+        experiment_name=experiment.name, pipeline_id=pipeline_id, version_id=version_id)

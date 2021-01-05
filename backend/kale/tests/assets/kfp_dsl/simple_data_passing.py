@@ -70,7 +70,7 @@ _kale_step3_op = _kfp_components.func_to_container_op(step3)
 
 
 @_kfp_dsl.pipeline(
-    name='test-test',
+    name='test',
     description=''
 )
 def auto_generated_pipeline():
@@ -183,7 +183,8 @@ if __name__ == "__main__":
     experiment = client.create_experiment('test')
 
     # Submit a pipeline run
-    from kale.common.kfputils import generate_run_name
-    run_name = generate_run_name('test-test')
-    run_result = client.run_pipeline(
-        experiment.id, run_name, pipeline_filename, {})
+    from kale.common import kfputils
+    pipeline_id, version_id = kfputils.upload_pipeline(
+        pipeline_filename, "test")
+    run_result = kfputils.run_pipeline(
+        experiment_name=experiment.name, pipeline_id=pipeline_id, version_id=version_id)

@@ -752,7 +752,7 @@ _kale_results_op = _kfp_components.func_to_container_op(results)
 
 
 @_kfp_dsl.pipeline(
-    name='titanic-ml-rnd',
+    name='titanic-ml',
     description='Predict which passengers survived the Titanic shipwreck'
 )
 def auto_generated_pipeline():
@@ -993,7 +993,8 @@ if __name__ == "__main__":
     experiment = client.create_experiment('titanic')
 
     # Submit a pipeline run
-    from kale.common.kfputils import generate_run_name
-    run_name = generate_run_name('titanic-ml-rnd')
-    run_result = client.run_pipeline(
-        experiment.id, run_name, pipeline_filename, {})
+    from kale.common import kfputils
+    pipeline_id, version_id = kfputils.upload_pipeline(
+        pipeline_filename, "titanic-ml")
+    run_result = kfputils.run_pipeline(
+        experiment_name=experiment.name, pipeline_id=pipeline_id, version_id=version_id)
