@@ -44,7 +44,8 @@ spec:
         \ {{.Trial}}\n          image: {{KATIB_TRIAL_IMAGE}}\n\
         \          command:\n            - python3 -u -c \"from kale.common.kfputils\
         \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
-        \                    pipeline_id='12345',                    run_name='{{.Trial}}',\
-        \                    experiment_name='katib-test',                    {{-\
-        \ with .HyperParameters }} {{- range .}}\n                        {{.Name}}='{{.Value}}',\
-        \                    {{- end }} {{- end }}                )\"\n"
+        \                    pipeline_id='12345',                    version_id='12345',\
+        \                    run_name='{{.Trial}}',                    experiment_name='katib-test',\
+        \                    {{- with .HyperParameters }} {{- range .}}\n        \
+        \                {{.Name}}='{{.Value}}',                    {{- end }} {{-\
+        \ end }}                )\"\n"

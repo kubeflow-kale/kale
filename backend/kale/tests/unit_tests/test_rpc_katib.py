@@ -75,7 +75,7 @@ def test_create_katib_experiment():
     }
     m = mock.mock_open()
     with mock.patch("builtins.open", m):
-        katib.create_katib_experiment(_get_requets(), "12345",
+        katib.create_katib_experiment(_get_requets(), "12345", "12345",
                                       pipeline_metadata, output_path=".")
 
     handle = m()
