@@ -11,12 +11,12 @@ def step1():
     from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {}
+    _kale_pipeline_parameters = {}
 
-    @marshal([], ['_b', '_a'], pipeline_parameters, "/marshal")
+    @_kale_marshal([], ['_b', '_a'], _kale_pipeline_parameters, "/marshal")
     def step1():
         a = 1
         b = 2
@@ -34,12 +34,12 @@ def step2():
     from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {}
+    _kale_pipeline_parameters = {}
 
-    @marshal(['_b', '_a'], ['_c'], pipeline_parameters, "/marshal")
+    @_kale_marshal(['_b', '_a'], ['_c'], _kale_pipeline_parameters, "/marshal")
     def step2(a, b):
         c = a + b
         print(c)
@@ -57,12 +57,12 @@ def step3():
     from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {}
+    _kale_pipeline_parameters = {}
 
-    @marshal(['_a', '_c'], [], pipeline_parameters, "/marshal")
+    @_kale_marshal(['_a', '_c'], [], _kale_pipeline_parameters, "/marshal")
     def step3(a, c):
         d = c + a
         print(d)

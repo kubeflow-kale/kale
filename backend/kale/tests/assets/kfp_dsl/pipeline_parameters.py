@@ -19,12 +19,12 @@ def step1():
         "",
         before=True)
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {}
+    _kale_pipeline_parameters = {}
 
-    @marshal([], ['data'], pipeline_parameters, "/marshal")
+    @_kale_marshal([], ['data'], _kale_pipeline_parameters, "/marshal")
     def step1():
         return 10
 
@@ -55,12 +55,12 @@ def step3(b: str):
         "",
         before=True)
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {"b": b}
+    _kale_pipeline_parameters = {"b": b}
 
-    @marshal(['b', 'data'], [], pipeline_parameters, "/marshal")
+    @_kale_marshal(['b', 'data'], [], _kale_pipeline_parameters, "/marshal")
     def step3(st, st2):
         print(st)
 
@@ -91,12 +91,12 @@ def step2(a: int, c: int):
         "",
         before=True)
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {"a": a, "c": c}
+    _kale_pipeline_parameters = {"a": a, "c": c}
 
-    @marshal(['c', 'a', 'data'], ['res'], pipeline_parameters, "/marshal")
+    @_kale_marshal(['c', 'a', 'data'], ['res'], _kale_pipeline_parameters, "/marshal")
     def step2(var1, var2, data):
         print(var1 + var2)
         return 'Test'
@@ -120,12 +120,12 @@ def final_auto_snapshot():
     from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {}
+    _kale_pipeline_parameters = {}
 
-    @marshal([], [], pipeline_parameters, "/marshal")
+    @_kale_marshal([], [], _kale_pipeline_parameters, "/marshal")
     def _no_op():
         pass
 
