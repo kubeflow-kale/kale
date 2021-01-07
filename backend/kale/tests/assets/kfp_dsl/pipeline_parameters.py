@@ -20,6 +20,7 @@ def step1():
         before=True)
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {}
 
@@ -28,6 +29,10 @@ def step1():
         return 10
 
     step1()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "test",
         "step1",
@@ -51,6 +56,7 @@ def step3(b: str):
         before=True)
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {"b": b}
 
@@ -59,6 +65,10 @@ def step3(b: str):
         print(st)
 
     step3()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "test",
         "step3",
@@ -82,6 +92,7 @@ def step2(a: int, c: int):
         before=True)
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {"a": a, "c": c}
 
@@ -91,6 +102,10 @@ def step2(a: int, c: int):
         return 'Test'
 
     step2()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "test",
         "step2",
@@ -106,6 +121,7 @@ def final_auto_snapshot():
     _kale_mlmdutils.init_metadata()
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {}
 
@@ -114,6 +130,10 @@ def final_auto_snapshot():
         pass
 
     _no_op()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     from kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
