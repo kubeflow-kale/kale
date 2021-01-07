@@ -12,6 +12,7 @@ def step1():
     _kale_mlmdutils.init_metadata()
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {}
 
@@ -22,6 +23,10 @@ def step1():
         return a, b
 
     step1()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     _kale_mlmdutils.call("mark_execution_complete")
 
 
@@ -30,6 +35,7 @@ def step2():
     _kale_mlmdutils.init_metadata()
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {}
 
@@ -40,6 +46,10 @@ def step2():
         return c
 
     step2()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     _kale_mlmdutils.call("mark_execution_complete")
 
 
@@ -48,6 +58,7 @@ def step3():
     _kale_mlmdutils.init_metadata()
 
     from kale.marshal.decorator import marshal
+    from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     pipeline_parameters = {}
 
@@ -57,6 +68,10 @@ def step3():
         print(d)
 
     step3()
+
+    _kale_artifacts = {}
+
+    _kale_link_artifacts(_kale_artifacts)
     _kale_mlmdutils.call("mark_execution_complete")
 
 
