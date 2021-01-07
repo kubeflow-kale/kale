@@ -21,11 +21,11 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 {% endif %}
 
 
-{%- if step.config.timeout %}from kale.common.runutils import ttl{% endif %}
-    from kale.marshal.decorator import marshal
+    {% if step.config.timeout %}from kale.common.runutils import ttl as _kale_ttl{% endif %}
+    from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
-    pipeline_parameters = {
+    _kale_pipeline_parameters = {
 {%- if step.pps_names|length %}
     {%- for arg in step.pps_names -%}
         "{{ arg }}": {{ arg }}
@@ -34,8 +34,8 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
     {%- endfor -%}
 {%- endif %}}
 
-{%- if step.config.timeout %}@ttl({{ step.config.timeout }}){% endif %}
-    @marshal({{ step.ins }}, {{ step.outs }}, pipeline_parameters, "{{ marshal_path }}")
+    {% if step.config.timeout %}@_kale_ttl({{ step.config.timeout }}){% endif %}
+    @_kale_marshal({{ step.ins }}, {{ step.outs }}, _kale_pipeline_parameters, "{{ marshal_path }}")
 {{ step.rendered_source|indent(4, True) }}
 
     {{ step.source.__name__ }}()
