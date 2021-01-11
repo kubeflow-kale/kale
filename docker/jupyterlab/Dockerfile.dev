@@ -32,9 +32,12 @@ COPY bashrc /etc/bash.bashrc
 RUN echo "set background=dark" >> /etc/vim/vimrc.local
 
 # Install latest KFP SDK
+RUN pip3 freeze
 RUN pip3 install --upgrade pip && \
-    pip3 install --upgrade "jupyterlab>=2.0.0,<3.0.0" && \
-    pip3 install https://storage.googleapis.com/ml-pipeline/release/latest/kfp.tar.gz --upgrade
+    # XXX: Install enum34==1.1.8 because other versions lead to errors during
+    #  KFP installation
+    pip3 install --upgrade "enum34==1.1.8" && \
+    pip3 install --upgrade "jupyterlab>=2.0.0,<3.0.0"
 
 # Install Kale from KALE_BRANCH (defaults to "master")
 ARG KALE_BRANCH="master"
@@ -42,7 +45,7 @@ WORKDIR /
 RUN git clone -b ${KALE_BRANCH} https://github.com/kubeflow-kale/kale
 
 WORKDIR /kale/backend
-RUN pip3 install -U .
+RUN pip3 install --upgrade .
 
 WORKDIR /kale/labextension
 RUN jlpm install && \
