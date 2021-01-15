@@ -236,21 +236,14 @@ class MLMetadata(object):
         context.id = self.store.put_contexts([context])[0]
         return context
 
-    def _get_context_by_name(self, context_name: str):
-        matching_contexts = [context
-                             for context in self.store.get_contexts()
-                             if context.name == context_name]
-        assert len(matching_contexts) <= 1
-        return (None if len(matching_contexts) == 0
-                else matching_contexts[0])
-
     def _get_or_create_context_with_type(self, context_name: str,
                                          type_name: str,
                                          property_types: dict = None,
                                          properties: dict = None):
         log.info("Creating context '%s' of type '%s'...", context_name,
                  type_name)
-        context = self._get_context_by_name(context_name)
+        context = self.store.get_context_by_type_and_name(
+            type_name=type_name, context_name=context_name)
         if not context:
             try:
                 context = self._create_context_with_type(
@@ -261,7 +254,8 @@ class MLMetadata(object):
                 # XXX: We get here if two concurrent steps try to create this
                 # new context
                 log.info("Context already exists")
-                context = self._get_context_by_name(context_name)
+                context = self.store.get_context_by_type_and_name(
+                    type_name=type_name, context_name=context_name)
         else:
             log.info("Context already exists")
         log.info("ContextType ID: %s - Context ID: %s", context.type_id,
