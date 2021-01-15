@@ -24,13 +24,7 @@ import logging
 
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.metadata_store import metadata_store
-# FIXME: We make use of metadata_store.errors which is essentially this:
-# from tensorflow.python.framework import errors
-# https://github.com/google/ml-metadata/blob/v0.21.2/ml_metadata/metadata_store/metadata_store.py#L36  # noqa:E501
-# We need to track the following issue/PR and, if anything changes, change this
-# accordingly.
-# https://github.com/google/ml-metadata/issues/25
-# https://github.com/google/ml-metadata/pull/35
+from ml_metadata.errors import AlreadyExistsError
 
 from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
 
@@ -263,7 +257,7 @@ class MLMetadata(object):
                     context_name=context_name, type_name=type_name,
                     property_types=property_types, properties=properties)
                 log.info("Succesfully created context")
-            except metadata_store.errors.AlreadyExistsError:
+            except AlreadyExistsError:
                 # XXX: We get here if two concurrent steps try to create this
                 # new context
                 log.info("Context already exists")
