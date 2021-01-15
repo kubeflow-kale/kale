@@ -31,9 +31,13 @@ from ml_metadata.errors import AlreadyExistsError
 from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
 
 
+METADATA_GRPC_SERVICE_SERVICE_HOST_ENV = "METADATA_GRPC_SERVICE_SERVICE_HOST"
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
                                               ".svc")
+METADATA_GRPC_SERVICE_SERVICE_PORT_ENV = "METADATA_GRPC_SERVICE_SERVICE_PORT"
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_PORT = 8080
+METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH_ENV = (
+    "METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH")
 # 4MB is the default gRPC channel size. Having this setting configurable from
 # ENV can be very useful when troubleshooting gRPC issues.
 DEFAULT_METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH = 4 * 1024 ** 2  # 4MB
@@ -153,13 +157,13 @@ class MLMetadata(object):
             return False
 
         metadata_service_host = os.environ.get(
-            "METADATA_GRPC_SERVICE_SERVICE_HOST",
+            METADATA_GRPC_SERVICE_SERVICE_HOST_ENV,
             DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST)
         metadata_service_port = int(os.environ.get(
-            "METADATA_GRPC_SERVICE_SERVICE_PORT",
+            METADATA_GRPC_SERVICE_SERVICE_PORT_ENV,
             DEFAULT_METADATA_GRPC_SERVICE_SERVICE_PORT))
         metadata_service_max_msg = int(os.environ.get(
-            "METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH",
+            METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH_ENV,
             DEFAULT_METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH))
 
         metadata_service_channel_args = GrpcChannelArguments(
