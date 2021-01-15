@@ -49,7 +49,7 @@ setup(
         'ipykernel >= 5.1.4',
         'notebook >= 6.0.0',
         'packaging > 20',
-        'ml_metadata == 0.24.0',
+        'ml_metadata >= 0.26.0, < 1',
         'progress >= 1.5',
         'kfserving >= 0.4.0, < 0.5.0',
         'kubernetes < 12.0.0',
