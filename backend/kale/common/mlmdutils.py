@@ -23,6 +23,8 @@ import time
 import logging
 
 from ml_metadata.proto import metadata_store_pb2
+from ml_metadata.proto.metadata_store_pb2 import (MetadataStoreClientConfig,
+                                                  GrpcChannelArguments)
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.errors import AlreadyExistsError
 
@@ -32,6 +34,9 @@ from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
                                               ".svc")
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_PORT = 8080
+# 4MB is the default gRPC channel size. Having this setting configurable from
+# ENV can be very useful when troubleshooting gRPC issues.
+DEFAULT_METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH = 4 * 1024 ** 2  # 4MB
 
 RUN_CONTEXT_TYPE_NAME = "KfpRun"
 KFP_EXECUTION_TYPE_NAME_PREFIX = "components."
@@ -153,9 +158,16 @@ class MLMetadata(object):
         metadata_service_port = int(os.environ.get(
             "METADATA_GRPC_SERVICE_SERVICE_PORT",
             DEFAULT_METADATA_GRPC_SERVICE_SERVICE_PORT))
+        metadata_service_max_msg = int(os.environ.get(
+            "METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH",
+            DEFAULT_METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH))
 
-        mlmd_connection_config = metadata_store_pb2.MetadataStoreClientConfig(
-            host=metadata_service_host, port=metadata_service_port)
+        metadata_service_channel_args = GrpcChannelArguments(
+            max_receive_message_length=metadata_service_max_msg)
+
+        mlmd_connection_config = MetadataStoreClientConfig(
+            host=metadata_service_host, port=metadata_service_port,
+            channel_arguments=metadata_service_channel_args)
         mlmd_store = metadata_store.MetadataStore(mlmd_connection_config)
 
         # We ensure that the connection to MLMD is established by retrying a
