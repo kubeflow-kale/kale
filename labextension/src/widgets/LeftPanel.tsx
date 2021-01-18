@@ -164,6 +164,7 @@ export interface IKaleNotebookMetadata {
 }
 
 export interface IKatibExperiment {
+  apiVersion: string;
   name?: string;
   namespace?: string;
   status: string;
