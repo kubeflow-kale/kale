@@ -368,6 +368,7 @@ def create_and_wait_kfp_run(pipeline_id: str,
                             version_id: str,
                             run_name: str = None,
                             experiment_name: str = "Default",
+                            katib_api_version: str = "v1beta1",
                             **kwargs):
     """Create a KFP run, wait for it to complete and retrieve its metrics.
 
@@ -397,7 +398,8 @@ def create_and_wait_kfp_run(pipeline_id: str,
     try:
         # Katib Trial name == KFP Run name by design (see rpc.katib)
         katibutils.annotate_trial(run_name, pod_namespace,
-                                  {KALE_KATIB_KFP_ANNOTATION: run_id})
+                                  {KALE_KATIB_KFP_ANNOTATION: run_id},
+                                  api_version=katib_api_version)
     except Exception:
         log.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
                       " '%s'", run_name, run_id)
@@ -406,7 +408,8 @@ def create_and_wait_kfp_run(pipeline_id: str,
     workflow_name = _get_workflow_from_run(get_run(run_id))["metadata"]["name"]
     log.info("Workflow name: %s", workflow_name)
     log.info("Getting the Katib trial...")
-    trial = katibutils.get_trial(run_name, pod_namespace)
+    trial = katibutils.get_trial(run_name, pod_namespace,
+                                 api_version=katib_api_version)
     log.info("Trial name: %s, UID: %s", trial["metadata"]["name"],
              trial["metadata"]["uid"])
     log.info("Getting owner Katib experiment of trial...")
