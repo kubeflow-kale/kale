@@ -1,8 +1,6 @@
 apiVersion: kubeflow.org/v1alpha3
 kind: Experiment
 metadata:
-  labels:
-    controller-tools.k8s.io: '1.0'
   name: katib-test
 spec:
   algorithm:
@@ -46,6 +44,6 @@ spec:
         \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
         \                    pipeline_id='12345',                    version_id='12345',\
         \                    run_name='{{.Trial}}',                    experiment_name='katib-test',\
-        \                    {{- with .HyperParameters }} {{- range .}}\n        \
-        \                {{.Name}}='{{.Value}}',                    {{- end }} {{-\
-        \ end }}                )\"\n"
+        \                    katib_api_version='v1alpha3',                    {{-\
+        \ with .HyperParameters }} {{- range .}}\n                        {{.Name}}='{{.Value}}',\
+        \                    {{- end }} {{- end }}                )\"\n"

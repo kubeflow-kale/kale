@@ -1,0 +1,68 @@
+apiVersion: kubeflow.org/v1beta1
+kind: Experiment
+metadata:
+  name: katib-test
+spec:
+  algorithm:
+    algorithmName: grid
+  maxFailedTrialCount: 6
+  maxTrialCount: 30
+  objective:
+    goal: 100
+    objectiveMetricName: result
+    type: maximize
+  parallelTrialCount: 1
+  parameters:
+  - feasibleSpace:
+      max: '50.0'
+      min: '1.0'
+      step: '10.0'
+    name: a
+    parameterType: double
+  - feasibleSpace:
+      max: '5'
+      min: '1'
+      step: '9'
+    name: b
+    parameterType: int
+  - feasibleSpace:
+      list:
+      - '1'
+      - '9'
+      - '15'
+    name: c
+    parameterType: categorical
+  trialTemplate:
+    primaryContainerName: main
+    retain: true
+    trialParameters:
+    - name: kaleParamTrialName
+      reference: ${trialSpec.Name}
+    - name: a
+      reference: a
+    - name: b
+      reference: b
+    - name: c
+      reference: c
+    trialSpec:
+      apiVersion: batch/v1
+      kind: Job
+      spec:
+        backoffLimit: 0
+        template:
+          metadata:
+            annotations:
+              sidecar.istio.io/inject: 'false'
+            labels:
+              access-ml-pipeline: 'true'
+          spec:
+            containers:
+            - command:
+              - python3 -u -c "from kale.common.kfputils import create_and_wait_kfp_run;               create_and_wait_kfp_run(a='${trialParameters.a}',
+                b='${trialParameters.b}', c='${trialParameters.c}', pipeline_id='12345',
+                version_id='12345', run_name='${trialParameters.kaleParamTrialName}',
+                experiment_name='katib-test', katib_api_version='v1beta1')"
+              image: {{KATIB_TRIAL_IMAGE}}
+              name: main
+            restartPolicy: Never
+            serviceAccountName: pipeline-runner
