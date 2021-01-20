@@ -78,7 +78,9 @@ interface IState {
   namespace: string;
 }
 
-// Katib types: https://github.com/kubeflow/katib/blob/master/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
+// Katib types
+// v1alpha3: https://github.com/kubeflow/katib/blob/v0.9.0/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
+// v1beta1: https://github.com/kubeflow/katib/blob/v0.10.0/pkg/apis/controller/experiments/v1beta1/experiment_types.go
 export interface IKatibParameter {
   name: string;
   parameterType: 'unknown' | 'double' | 'int' | 'categorical' | 'discrete';
