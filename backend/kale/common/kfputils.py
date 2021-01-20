@@ -21,6 +21,7 @@ import importlib.util
 
 from shutil import copyfile
 from typing import Tuple, Any
+from functools import lru_cache
 
 from kfp import Client
 from kfp.compiler import Compiler
@@ -29,6 +30,9 @@ from kale.common import utils, podutils, workflowutils
 
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
+KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
+KFP_SWF_NAME_ANNOTATION_KEY = (
+    "scheduledworkflows.kubeflow.org/scheduledWorkflowName")
 KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
 KFP_UI_METADATA_FILE_PATH = "/tmp/mlpipeline-ui-metadata.json"
 KFP_UI_METRICS_FILE_PATH = "/tmp/mlpipeline-metrics.json"
@@ -370,3 +374,33 @@ def get_workflow_from_run(run):
 def format_kfp_run_id_uri(run_id: str):
     """Return a KFP run ID as a URI."""
     return "kfp:run:%s" % run_id
+
+
+@lru_cache(maxsize=None)
+def is_kfp_step() -> bool:
+    """Detect if running inside a KFP step.
+
+    The detection involves two steps:
+
+      1. Auto-detect if the current Pod is part of an Argo workflow
+      2. Read one of the annotations that the KFP API Server sets in the
+         workflow object (one-off runs and recurring ones have different
+         annotations).
+    """
+    log.info("Checking if running inside a KFP step...")
+    try:
+        namespace = podutils.get_namespace()
+        workflow = workflowutils.get_workflow(
+            workflowutils.get_workflow_name(podutils.get_pod_name(),
+                                            namespace),
+            namespace)
+        annotations = workflow["metadata"]["annotations"]
+        try:
+            _ = annotations[KFP_RUN_NAME_ANNOTATION_KEY]
+        except KeyError:
+            _ = annotations[KFP_SWF_NAME_ANNOTATION_KEY]
+    except Exception:
+        log.info("Not in a KFP step.")
+        return False
+    log.info("Running in a KFP step.")
+    return True
