@@ -41,7 +41,8 @@ K8S_SIZE_UNITS = {"E": 10 ** 18,
                   "Ti": 2 ** 40,
                   "Gi": 2 ** 30,
                   "Mi": 2 ** 20,
-                  "Ki": 2 ** 10}
+                  "Ki": 2 ** 10,
+                  "": 2 ** 0}
 
 KFP_COMPONENT_SPEC_ANNOTATION_KEY = "pipelines.kubeflow.org/component_spec"
 
@@ -55,7 +56,11 @@ def parse_k8s_size(size):
         raise ValueError("Could not parse Kubernetes size: {}".format(size))
 
     count, unit = match.groups()
-    return int(count) * K8S_SIZE_UNITS[unit]
+    # FIXME: This function returns an integer. In the labextension, when using
+    #  the `list_volumes` RPC, `getMountedVolumes` converts this integer back
+    #  to a string with units.
+    #  Consider returning size and size_type from the beginning.
+    return int(count) * K8S_SIZE_UNITS[unit or ""]
 
 
 def get_namespace():
