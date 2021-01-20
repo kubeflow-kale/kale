@@ -180,7 +180,15 @@ export interface IKatibExperiment {
   currentOptimalTrial?: {
     bestTrialName: string;
     parameterAssignments: { name: string; value: string }[];
-    observation: { metrics: { name: string; value: number }[] };
+    observation: {
+      metrics: {
+        name: string;
+        value?: number; // v1alpha3
+        latest?: string; //v1beta1
+        max?: string; //v1beta1
+        min?: string; //v1beta1
+      }[];
+    };
   };
 }
 
