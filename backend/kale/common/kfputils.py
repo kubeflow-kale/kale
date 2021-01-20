@@ -230,6 +230,7 @@ def update_uimetadata(artifact_name,
         artifact_name: Name of the artifact
         uimetadata_path: path to mlpipeline-ui-metadata.json
     """
+    log.info("Adding artifact '%s' to KFP UI metadata...", artifact_name)
     try:
         outputs = get_current_uimetadata(uimetadata_path,
                                          default_if_not_exist=True)
@@ -257,6 +258,7 @@ def update_uimetadata(artifact_name,
         return
     with open(uimetadata_path, "w") as f:
         json.dump(outputs, f)
+    log.info("Artifact successfully added")
 
 
 def generate_mlpipeline_metrics(metrics):
