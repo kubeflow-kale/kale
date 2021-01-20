@@ -284,7 +284,7 @@ def snapshot_pipeline_step(pipeline, step, nb_path, before=True):
              "before" if before else "after", "-" * 10)
 
     log.info("Retrieving KFP run ID...")
-    run_uuid = podutils.get_run_uuid()
+    run_uuid = kfputils.detect_run_uuid()
     log.info("Retrieved KFP run ID: %s", run_uuid)
     bucket = kfputils.get_experiment_from_run_id(run_uuid).name
     obj = "{}-{}".format(pipeline, run_uuid)

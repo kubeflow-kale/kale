@@ -113,7 +113,7 @@ class MLMetadata(object):
         log.info("Successfully retrieved workflow")
 
         workflow_labels = self.workflow["metadata"].get("labels", {})
-        self.run_uuid = workflow_labels.get(podutils.KFP_RUN_ID_LABEL_KEY,
+        self.run_uuid = workflow_labels.get(kfputils.KFP_RUN_ID_LABEL_KEY,
                                             self.workflow_name)
         log.info("Successfully retrieved KFP run ID: %s", self.run_uuid)
 

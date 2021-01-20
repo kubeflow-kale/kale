@@ -22,7 +22,7 @@ import logging
 import tabulate
 
 from functools import lru_cache
-from kale.common import workflowutils, k8sutils
+from kale.common import k8sutils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
@@ -43,7 +43,6 @@ K8S_SIZE_UNITS = {"E": 10 ** 18,
                   "Mi": 2 ** 20,
                   "Ki": 2 ** 10}
 
-KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_COMPONENT_SPEC_ANNOTATION_KEY = "pipelines.kubeflow.org/component_spec"
 
 log = logging.getLogger(__name__)
@@ -275,22 +274,6 @@ def print_volumes():
     rows = [(path, volume.name, size)
             for path, volume, size in list_volumes()]
     print(tabulate.tabulate(rows, headers=headers))
-
-
-def get_run_uuid():
-    """Get the Workflow's UUID form inside a pipeline step."""
-    namespace = get_namespace()
-    workflow = workflowutils.get_workflow(
-        workflowutils.get_workflow_name(get_pod_name(), namespace),
-        namespace)
-    run_uuid = (workflow["metadata"]
-                .get("labels", {})
-                .get(KFP_RUN_ID_LABEL_KEY, None))
-
-    # KFP api-server adds run UUID as label to workflows for KFP>=0.1.26.
-    # Return run UUID if available. Else return workflow UUID to maintain
-    # backwards compatibility.
-    return run_uuid or workflow["metadata"]["uid"]
 
 
 def is_workspace_dir(directory):

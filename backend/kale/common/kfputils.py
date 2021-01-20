@@ -406,3 +406,19 @@ def is_kfp_step() -> bool:
         return False
     log.info("Running in a KFP step.")
     return True
+
+
+def detect_run_uuid() -> str:
+    """Get the workflow's UUID form inside a pipeline step."""
+    namespace = podutils.get_namespace()
+    workflow = workflowutils.get_workflow(
+        workflowutils.get_workflow_name(podutils.get_pod_name(), namespace),
+        namespace)
+    run_uuid = (workflow["metadata"]
+                .get("labels", {})
+                .get(KFP_RUN_ID_LABEL_KEY, None))
+
+    # KFP api-server adds run UUID as label to workflows for KFP>=0.1.26.
+    # Return run UUID if available. Else return workflow UUID to maintain
+    # backwards compatibility.
+    return run_uuid or workflow["metadata"]["uid"]
