@@ -127,7 +127,7 @@ class MLMetadata(object):
         else:
             log.info("Could not retrieve KFP pipeline name")
 
-        self.component_id = podutils.compute_component_id(self.pod)
+        self.component_id = kfputils.compute_component_id(self.pod)
         self.execution_hash = self.pod.metadata.annotations.get(
             MLMD_EXECUTION_HASH_PROPERTY_KEY)
         if self.execution_hash:

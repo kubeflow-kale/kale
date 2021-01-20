@@ -15,6 +15,7 @@
 import os
 import json
 import time
+import hashlib
 import logging
 import tempfile
 import importlib.util
@@ -31,6 +32,7 @@ from kale.common import utils, podutils, workflowutils
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
+KFP_COMPONENT_SPEC_ANNOTATION_KEY = "pipelines.kubeflow.org/component_spec"
 KFP_SWF_NAME_ANNOTATION_KEY = (
     "scheduledworkflows.kubeflow.org/scheduledWorkflowName")
 KFP_RUN_FINAL_STATES = ["Succeeded", "Skipped", "Failed", "Error"]
@@ -422,3 +424,24 @@ def detect_run_uuid() -> str:
     # Return run UUID if available. Else return workflow UUID to maintain
     # backwards compatibility.
     return run_uuid or workflow["metadata"]["uid"]
+
+
+def compute_component_id(pod):
+    """Compute unique component ID.
+
+    Kale steps are KFP SDK Components. This is the way MetadataWriter generates
+    unique names for such components.
+    """
+    log.info("Computing component ID for pod %s/%s...", pod.metadata.namespace,
+             pod.metadata.name)
+    component_spec_text = pod.metadata.annotations.get(
+        KFP_COMPONENT_SPEC_ANNOTATION_KEY)
+    if not component_spec_text:
+        raise ValueError("KFP component spec annotation not found in pod")
+    component_spec = json.loads(component_spec_text)
+    component_spec_digest = hashlib.sha256(
+        component_spec_text.encode()).hexdigest()
+    component_name = component_spec.get("name")
+    component_id = component_name + "@sha256=" + component_spec_digest
+    log.info("Computed component ID: %s", component_id)
+    return component_id
