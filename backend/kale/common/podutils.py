@@ -172,16 +172,16 @@ def _list_volumes(client, namespace, pod_name, container_name):
 
     rok_volumes = []
     for volume in pod.spec.volumes:
-        pvc = volume.persistent_volume_claim
-        if not pvc:
+        pvc_spec = volume.persistent_volume_claim
+        if not pvc_spec:
             continue
 
         # Ensure the volume is a Rok volume, otherwise we will not be able to
         # snapshot it.
         # FIXME: Should we just ignore these volumes? Ignoring them would
         #  result in an incomplete notebook snapshot.
-        pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
-                                                             namespace)
+        pvc = client.read_namespaced_persistent_volume_claim(
+            pvc_spec.claim_name, namespace)
         if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
             msg = ("Found PVC with storage class '%s'. Only storage class '%s'"
                    " is supported."
