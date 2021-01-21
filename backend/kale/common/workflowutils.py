@@ -74,7 +74,7 @@ def get_workflow(name, namespace):
 
 
 def annotate_workflow(name, namespace, annotations):
-    """Anotate a workflow."""
+    """Annotate a workflow."""
     k8sutils.annotate_object(ARGO_API_GROUP, ARGO_API_VERSION,
                              ARGO_WORKFLOWS_PLURAL, name, namespace,
                              annotations)
