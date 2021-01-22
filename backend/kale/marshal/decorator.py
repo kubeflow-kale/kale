@@ -64,11 +64,9 @@ class Marshaller:
     def __call__(self):
         """Run the function by passing loaded vars and saving the results."""
         loads = self._load()
-        if loads:
-            log.newline(lines=2)
+        log.newline(lines=2)
         results = self._func(*loads)
-        if results is not None:
-            log.newline(lines=2)
+        log.newline(lines=2)
         self._save(results)
 
     def _load(self):
