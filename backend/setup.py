@@ -39,7 +39,6 @@ setup(
         'nbformat >=4.4, <5.0',
         'networkx >=2.3, <3.0',
         'jinja2 >=2.10, <3.0',
-        'graphviz >=0.13, <1.0',
         'pyflakes >=2.1.1',
         'dill >=0.3, <0.4',
         'IPython >= 7.6.0',
