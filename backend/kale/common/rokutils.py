@@ -21,7 +21,6 @@ import kubernetes
 
 from progress.bar import IncrementalBar
 
-from kale.rpc import nb
 from kale.common import utils
 from kale.common import podutils, kfputils, k8sutils
 
@@ -135,13 +134,20 @@ def interactive_snapshot_and_get_volumes(bucket=DEFAULT_BUCKET):
     log.info("Taking a snapshot of the Pod's volumes...")
     task = snapshot_pod(bucket=bucket, wait=True, interactive=True)
 
+    # FIXME: Duplicated code from rpc.nb.list_volumes
+    vols = [{"type": "clone",
+             "name": volume.name,
+             "mount_point": path,
+             "size": size,
+             "size_type": "",
+             "snapshot": False}
+            for path, volume, size in podutils.list_volumes()]
+
     return replace_cloned_volumes(
         bucket=task["bucket"],
         obj=task["result"]["event"]["object"],
         version=task["result"]["event"]["version"],
-        # fixme: we should not call an rpc here, consider moving `list_volumes`
-        #  to a common utils lib.
-        volumes=nb.list_volumes(request=None))
+        volumes=vols)
 
 
 def monitor_snapshot_task(task_id, bucket=DEFAULT_BUCKET):
