@@ -40,10 +40,10 @@ spec:
         \        access-ml-pipeline: \"true\"\n    spec:\n      restartPolicy: Never\n\
         \      serviceAccountName: pipeline-runner\n      containers:\n        - name:\
         \ {{.Trial}}\n          image: {{KATIB_TRIAL_IMAGE}}\n\
-        \          command:\n            - python3 -u -c \"from kale.common.kfputils\
+        \          command:\n            - python3 -u -c \"from kale.common.katibutils\
         \                import create_and_wait_kfp_run;                create_and_wait_kfp_run(\
         \                    pipeline_id='12345',                    version_id='12345',\
         \                    run_name='{{.Trial}}',                    experiment_name='katib-test',\
-        \                    katib_api_version='v1alpha3',                    {{-\
-        \ with .HyperParameters }} {{- range .}}\n                        {{.Name}}='{{.Value}}',\
-        \                    {{- end }} {{- end }}                )\"\n"
+        \                    api_version='v1alpha3',                    {{- with .HyperParameters\
+        \ }} {{- range .}}\n                        {{.Name}}='{{.Value}}',      \
+        \              {{- end }} {{- end }}                )\"\n"
