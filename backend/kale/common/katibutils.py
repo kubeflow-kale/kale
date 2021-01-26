@@ -14,12 +14,13 @@
 
 """Suite of helpers for Katib."""
 
+import sys
 import copy
 import logging
 
 from kubernetes.client.rest import ApiException
 
-from kale.common import k8sutils, podutils
+from kale.common import k8sutils, podutils, kfputils, workflowutils
 
 
 log = logging.getLogger(__name__)
@@ -36,6 +37,8 @@ EXPERIMENT_ID_ANNOTATION_KEY = "kubeflow.org/katib-experiment-id"
 TRIAL_NAME_ANNOTATION_KEY = "kubeflow.org/katib-trial-name"
 TRIAL_ID_ANNOTATION_KEY = "kubeflow.org/katib-trial-id"
 
+KALE_KATIB_KFP_ANNOTATION_KEY = "kubeflow-kale.org/kfp-run-uuid"
+
 TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:dc982fe-d9bf99ac"
 TRIAL_SA = "pipeline-runner"
 TRIAL_CONTAINER_NAME = "main"
@@ -48,7 +51,7 @@ TRIAL_PARAMETERS_BASE = [{"name": KALE_PARAM_TRIAL_NAME,
                           "reference": "${trialSpec.Name}"}]
 
 JOB_CMD = """\
-python3 -u -c "from kale.common.kfputils import create_and_wait_kfp_run;\
+python3 -u -c "from kale.common.katibutils import create_and_wait_kfp_run;\
                create_and_wait_kfp_run(%s)"\
 """
 JOB_CR = {"apiVersion": "batch/v1",
@@ -86,19 +89,105 @@ spec:
         - name: {{.Trial}}
           image: {image}
           command:
-            - python3 -u -c "from kale.common.kfputils\
+            - python3 -u -c "from kale.common.katibutils\
                 import create_and_wait_kfp_run;\
                 create_and_wait_kfp_run(\
                     pipeline_id='{pipeline_id}',\
                     version_id='{version_id}',\
                     run_name='{{.Trial}}',\
                     experiment_name='{experiment_name}',\
-                    katib_api_version='{katib_api_version}',\
+                    api_version='{api_version}',\
                     {{- with .HyperParameters }} {{- range .}}
                         {{.Name}}='{{.Value}}',\
                     {{- end }} {{- end }}\
                 )"
 """
+
+
+def create_and_wait_kfp_run(pipeline_id: str,
+                            version_id: str,
+                            run_name: str,
+                            experiment_name: str = "Default",
+                            api_version: str = KATIB_API_VERSION_V1BETA1,
+                            **kwargs):
+    """Create a KFP run, wait for it to complete and retrieve its metrics.
+
+    Create a KFP run from a KFP pipeline with custom arguments and wait for
+    it to finish. If it succeeds, return its metrics, logging them in a format
+    that can be parsed by Katib's metrics collector.
+
+    Also, annotate the parent trial with the run UUID of the KFP run and
+    annotation the KFP workflow with the Katib experiment and trial names and
+    ids.
+
+    Args:
+        pipeline_id: KFP pipeline
+        version_id: KFP pipeline's version
+        run_name: The name of the new run
+        experiment_name: KFP experiment to create run in. (default: "Default")
+        api_version: The version of the Katib CRD (`v1alpha3` or `v1beta1`
+        kwargs: All the parameters the pipeline will be fed with
+
+    Returns:
+        metrics: Dict of metrics along with their values
+    """
+    pod_namespace = podutils.get_namespace()
+    run = kfputils.run_pipeline(experiment_name=experiment_name,
+                                pipeline_id=pipeline_id,
+                                version_id=version_id,
+                                run_name=run_name,
+                                **kwargs)
+    run_id = run.id
+
+    log.info("Annotating Trial '%s' with the KFP Run UUID '%s'...",
+             run_name, run_id)
+    try:
+        # Katib Trial name == KFP Run name by design (see rpc.katib)
+        annotate_trial(run_name, pod_namespace,
+                       {KALE_KATIB_KFP_ANNOTATION_KEY: run_id}, api_version)
+    except Exception:
+        log.exception("Failed to annotate Trial '%s' with the KFP Run UUID"
+                      " '%s'", run_name, run_id)
+
+    log.info("Getting Workflow name for run '%s'...", run_id)
+    workflow_name = kfputils.get_workflow_from_run(
+        kfputils.get_run(run_id))["metadata"]["name"]
+    log.info("Workflow name: %s", workflow_name)
+    log.info("Getting the Katib trial...")
+    trial = get_trial(run_name, pod_namespace, api_version)
+    log.info("Trial name: %s, UID: %s", trial["metadata"]["name"],
+             trial["metadata"]["uid"])
+    log.info("Getting owner Katib experiment of trial...")
+    exp_name, exp_id = get_owner_experiment_from_trial(trial)
+    log.info("Experiment name: %s, UID: %s", exp_name, exp_id)
+    wf_annotations = {
+        EXPERIMENT_NAME_ANNOTATION_KEY: exp_name,
+        EXPERIMENT_ID_ANNOTATION_KEY: exp_id,
+        TRIAL_NAME_ANNOTATION_KEY: trial["metadata"]["name"],
+        TRIAL_ID_ANNOTATION_KEY: trial["metadata"]["uid"],
+    }
+    try:
+        workflowutils.annotate_workflow(workflow_name, pod_namespace,
+                                        wf_annotations)
+    except Exception:
+        log.exception("Failed to annotate Workflow '%s' with the Katib"
+                      " details", workflow_name)
+
+    status = kfputils.wait_kfp_run(run_id)
+
+    # If run has not succeeded, return no metrics
+    if status != "Succeeded":
+        log.warning("KFP run did not run successfully. No metrics to"
+                    " return.")
+        # exit gracefully with error
+        sys.exit(-1)
+
+    # Retrieve metrics
+    run_metrics = kfputils.get_kfp_run_metrics(run_id)
+    for name, value in run_metrics.items():
+        log.info("%s=%s", name, value)
+
+    return run_metrics
 
 
 def annotate_trial(name, namespace, annotations,
@@ -172,7 +261,7 @@ def _construct_experiment_cr_v1alpha3(name, experiment_spec, pipeline_id,
                         "pipeline_id": pipeline_id,
                         "version_id": version_id,
                         "experiment_name": experiment_name,
-                        "katib_api_version": KATIB_API_VERSION_V1ALPHA3}
+                        "api_version": KATIB_API_VERSION_V1ALPHA3}
 
     raw_template = RAW_TEMPLATE_V1ALPHA3.replace("{{", "<<<").replace("}}",
                                                                       ">>>")
@@ -201,7 +290,7 @@ def _construct_experiment_cr_v1beta1(name, experiment_spec, pipeline_id,
                    "version_id": version_id,
                    "run_name": "${trialParameters.%s}" % KALE_PARAM_TRIAL_NAME,
                    "experiment_name": experiment_name,
-                   "katib_api_version": KATIB_API_VERSION_V1BETA1})
+                   "api_version": KATIB_API_VERSION_V1BETA1})
     cmd = JOB_CMD % ", ".join("%s='%s'" % (k, v) for k, v in kwargs.items())
     job = copy.deepcopy(JOB_CR)
     job["spec"]["template"]["spec"]["containers"][0]["command"] = [cmd]
