@@ -16,6 +16,7 @@ import logging
 import random
 import string
 import time
+import kubernetes
 
 from kale.common import podutils, k8sutils
 
@@ -238,3 +239,52 @@ def check_snapshot_status(snapshot_name):
     else:
         raise log.info("Unknown snapshot task status: %s", status)
     return task
+
+
+def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name, labels={}):
+    """Create a new PVC out of a volume snapshot."""
+    log.info("Creating new PVC '%s' from snapshot %s ...",
+             (new_pvc_name, source_snapshot_name))
+
+    status = check_snapshot_status(
+        source_snapshot_name)['status']['readyToUse']
+    if status is True:
+        snapshot_info = get_pvc_snapshot(source_snapshot_name)
+        if labels == {}:
+            labels = snapshot_info['metadata']['labels']
+        size_repr = snapshot_info['status']['restoreSize']
+        access_mode = snapshot_info['metadata']['annotations']['access_mode']
+        cont_name = snapshot_info['status']['boundVolumeSnapshotContentName']
+        log.info("Using snapshot with content: %s", cont_name)
+
+        # todo: kubernetes python client v11 have a
+        #  kubernetes.utils.create_from_dict that would make it much more nicer
+        #  here. (KFP support kubernetes <= 10)
+        pvc = kubernetes.client.V1PersistentVolumeClaim(
+            api_version="v1",
+            kind="PersistentVolumeClaim",
+            metadata=kubernetes.client.V1ObjectMeta(
+                annotations={"snapshot_origin": cont_name},
+                labels=labels,
+                name=new_pvc_name
+            ),
+            spec=kubernetes.client.V1PersistentVolumeClaimSpec(
+                data_source=kubernetes.client.V1TypedLocalObjectReference(
+                    api_group="snapshot.storage.k8s.io",
+                    kind="VolumeSnapshot",
+                    name=source_snapshot_name
+                ),
+                access_modes=[access_mode],
+                resources=kubernetes.client.V1ResourceRequirements(
+                    requests={"storage": size_repr}
+                )
+            )
+        )
+        k8s_client = k8sutils.get_v1_client()
+        ns = podutils.get_namespace()
+        ns_pvc = k8s_client.create_namespaced_persistent_volume_claim(ns, pvc)
+    elif status is False:
+        raise RuntimeError("Snapshot not ready (status: %s)", status)
+    else:
+        raise RuntimeError("Unknown snapshot task status: %s", status)
+    return {"name": ns_pvc.metadata.name}
