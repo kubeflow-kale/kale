@@ -13,6 +13,8 @@
 #  limitations under the License.
 
 import logging
+import random
+import string
 
 from kale.common import podutils, k8sutils
 
@@ -75,3 +77,32 @@ def get_pvc_access_mode(pvc_name):
     namespace = podutils.get_namespace()
     pvc = client.read_namespaced_persistent_volume_claim(pvc_name, namespace)
     return pvc.spec.access_modes[0]
+
+
+def generate_uuid():
+    """Generate a 8 character UUID for snapshot names and versioning."""
+    alphabet = string.ascii_lowercase + string.digits
+    return ''.join(random.choices(alphabet, k=8))
+
+
+def snapshot_pod():
+    """Take snapshots of the current Pod's PVCs."""
+    volumes = [(path, volume.name, size)
+               for path, volume, size in podutils.list_volumes()]
+    namespace = podutils.get_namespace()
+    pod_name = podutils.get_pod_name()
+    log.info("Taking a snapshot of pod %s in namespace %s ...",
+             (pod_name, namespace))
+    version_uuid = generate_uuid()
+    snapshot_names = []
+    for vol in volumes:
+        snapshot_name = "pod-snapshot-" + version_uuid + "-" + vol[1]
+        snapshot_pvc(
+            snapshot_name=snapshot_name,
+            pvc_name=vol[1],
+            labels={"container_name": podutils.get_container_name(),
+                    "version_uuid": version_uuid, "pod": pod_name},
+            annotations={"access_mode": get_pvc_access_mode(vol[1])}
+        )
+        snapshot_names.append(snapshot_name)
+    return snapshot_names
