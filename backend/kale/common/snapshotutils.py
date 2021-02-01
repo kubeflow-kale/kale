@@ -106,3 +106,54 @@ def snapshot_pod():
         )
         snapshot_names.append(snapshot_name)
     return snapshot_names
+
+
+def snapshot_notebook():
+    """Take snapshots of the current Notebook's PVCs and store its metadata."""
+    volumes = [(path, volume.name, size)
+               for path, volume, size in podutils.list_volumes()]
+    namespace = podutils.get_namespace()
+    pod_name = podutils.get_pod_name()
+    resources = get_notebook_resources()
+    log.info("Taking a snapshot of notebook %s in namespace %s ...",
+             (pod_name, namespace))
+    version_uuid = generate_uuid()
+    snapshot_names = []
+    for vol in volumes:
+        annotations = {}
+        if resources:
+            for key in resources:
+                annotations[key] = resources[key]
+        annotations["access_mode"] = get_pvc_access_mode(vol[1])
+        annotations["container_image"] = podutils.get_docker_base_image()
+        annotations["volume_path"] = vol[0]
+        snapshot_name = "nb-snapshot-" + version_uuid + "-" + vol[1]
+        snapshot_pvc(
+            snapshot_name=snapshot_name,
+            pvc_name=vol[1],
+            annotations=annotations,
+            labels={"container_name": podutils.get_container_name(),
+                    "version_uuid": version_uuid,
+                    "is_workspace_dir": str(podutils.is_workspace_dir(vol[0]))}
+        )
+        snapshot_names.append(snapshot_name)
+    return snapshot_names
+
+
+def get_notebook_resources():
+    """Get the resource limits and requests of the current Notebook."""
+    nb_name = podutils.get_container_name()
+    namespace = podutils.get_namespace()
+    co_client = k8sutils.get_co_client()
+    get_resource = co_client.get_namespaced_custom_object(
+        name=nb_name,
+        group="kubeflow.org",
+        version="v1alpha1",
+        namespace=namespace,
+        plural="notebooks")["spec"]["template"]["spec"]["containers"][0]
+    resource_spec = get_resource["resources"]
+    resource_conf = {}
+    for resource_type in resource_spec.items():
+        for key in resource_type[1]:
+            resource_conf[resource_type[0] + "_" + key] = resource_type[1][key]
+    return resource_conf
