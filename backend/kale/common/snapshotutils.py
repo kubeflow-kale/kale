@@ -321,3 +321,25 @@ def get_nb_resources_from_snapshot(snapshot_name):
         if 'requests_' in key.lower():
             resources["requests"][key.split('_')[1]] = value
     return resources
+
+
+def get_nb_pvcs_from_snapshot(snapshot_name):
+    """Get all PVCs that were mounted to the NB when the snapshot was taken."""
+    "Returns JSON list."
+    selector = "container_name=" + get_nb_name_from_snapshot(snapshot_name)
+    all_volumes = (list_pvc_snapshots(label_selector=selector)["items"]
+                   and "version_uuid=" + get_nb_snapshot_version(snapshot_name)
+                   )
+    volumes = []
+    for vol in all_volumes:
+        snapshot_name = vol["metadata"]["name"]
+        source_pvc_name = vol["spec"]["source"]["persistentVolumeClaimName"]
+        labels = vol["metadata"]["labels"]
+        annotations = vol["metadata"]["annotations"]
+        row = {
+            "snapshot_name": snapshot_name,
+            "source_pvc": source_pvc_name,
+            "labels": labels,
+            "annotations": annotations}
+        volumes.append(row)
+    return volumes
