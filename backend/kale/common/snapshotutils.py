@@ -288,3 +288,36 @@ def hydrate_pvc_from_snapshot(new_pvc_name, source_snapshot_name, labels={}):
     else:
         raise RuntimeError("Unknown snapshot task status: %s", status)
     return {"name": ns_pvc.metadata.name}
+
+
+def get_nb_name_from_snapshot(snapshot_name):
+    """Get the name of the notebook that the snapshot was taken from."""
+    snapshot = get_pvc_snapshot(snapshot_name=snapshot_name)
+    return snapshot["metadata"]["labels"]["container_name"]
+
+
+def get_nb_image_from_snapshot(snapshot_name):
+    """Get the image of the notebook that the snapshot was taken from."""
+    snapshot = get_pvc_snapshot(snapshot_name=snapshot_name)
+    return snapshot["metadata"]["annotations"]["container_image"]
+
+
+def get_nb_snapshot_version(snapshot_name):
+    """Get the version of the notebook snapshot."""
+    snapshot = get_pvc_snapshot(snapshot_name=snapshot_name)
+    return snapshot["metadata"]["labels"]["version_uuid"]
+
+
+def get_nb_resources_from_snapshot(snapshot_name):
+    """Get the and process the resource spec from a snapshot."""
+    snapshot = get_pvc_snapshot(snapshot_name=snapshot_name)
+    annotations = snapshot["metadata"]["annotations"]
+    resources = {}
+    resources["limits"] = {}
+    resources["requests"] = {}
+    for key, value in annotations.items():
+        if 'limits_' in key.lower():
+            resources["limits"][key.split('_')[1]] = value
+        if 'requests_' in key.lower():
+            resources["requests"][key.split('_')[1]] = value
+    return resources
