@@ -360,3 +360,58 @@ def restore_pvcs_from_snapshot(snapshot_name):
         row = {"mountPath": path, "name": pvc_name["name"]}
         replaced_volume_mounts.append(row)
     return replaced_volume_mounts
+
+
+def replace_cloned_volumes(volume_mounts):
+    """Replace the volumes with the volumes restored from the snapshot."""
+    replaced_volumes = []
+    for vol_mount in volume_mounts:
+        name = vol_mount["name"]
+        row = {"name": name, "persistentVolumeClaim": {"claimName": name}}
+        replaced_volumes.append(row)
+    return replaced_volumes
+
+
+def restore_notebook(snapshot_name):
+    """Restore a notebook from a PVC snapshot."""
+    version = get_nb_snapshot_version(snapshot_name)
+    name = ("restored-" + get_nb_name_from_snapshot(snapshot_name)
+            + "-" + version)
+    namespace = podutils.get_namespace()
+    image = get_nb_image_from_snapshot(snapshot_name)
+    resources = get_nb_resources_from_snapshot(snapshot_name)
+    volume_mounts = restore_pvcs_from_snapshot(snapshot_name)
+    volumes = replace_cloned_volumes(volume_mounts)
+    notebook_resource = {
+        "apiVersion": "kubeflow.org/v1alpha1",
+        "kind": "Notebook",
+        "metadata": {
+            "labels": {
+                "app": name
+            },
+            "name": name,
+            "namespace": namespace},
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "env": [],
+                            "image": image,
+                            "name": name,
+                            "resources": resources,
+                            "volumeMounts": volume_mounts}],
+                    "serviceAccountName": "default-editor",
+                    "ttlSecondsAfterFinished": 300,
+                    "volumes": volumes}}}}
+    co_client = k8sutils.get_co_client()
+    log.info("Restoring notebook %s from PVC snapshot %s in namespace %s ...",
+             (name, snapshot_name, namespace))
+    task_info = co_client.create_namespaced_custom_object(
+        group="kubeflow.org",
+        version="v1alpha1",
+        namespace=namespace,
+        plural="notebooks",
+        body=notebook_resource)
+
+    return task_info
