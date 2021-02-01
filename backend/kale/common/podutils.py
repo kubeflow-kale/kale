@@ -145,6 +145,8 @@ def _get_mount_path(container, volume):
 def _list_volumes(client, namespace, pod_name, container_name):
     pod = client.read_namespaced_pod(pod_name, namespace)
     container = _get_pod_container(pod, container_name)
+    snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
+    provisioner_names = get_snapshotclass_provisioners_names()
 
     rok_volumes = []
     for volume in pod.spec.volumes:
@@ -158,18 +160,23 @@ def _list_volumes(client, namespace, pod_name, container_name):
         #  result in an incomplete notebook snapshot.
         pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
                                                              namespace)
-        if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
-            msg = ("Found PVC with storage class '%s'. Only storage class '%s'"
-                   " is supported."
-                   % (pvc.spec.storage_class_name, ROK_CSI_STORAGE_CLASS))
+        if (pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS
+           and pvc.spec.storage_class_name not in provisioner_names):
+            msg = ("Found PVC with storage class '%s'. "
+                   "Only storage classes able to take snapshots and "
+                   "'%s' are supported."
+                   % (pvc.spec.storage_class_name,
+                      ROK_CSI_STORAGE_CLASS))
             raise RuntimeError(msg)
 
         ann = pvc.metadata.annotations
         provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
                               None)
-        if provisioner != ROK_CSI_STORAGE_PROVISIONER:
-            msg = ("Found PVC storage provisioner '%s'. Only storage"
-                   " provisioner '%s' is supported."
+        if (provisioner != ROK_CSI_STORAGE_PROVISIONER
+           and provisioner not in snapshotclass_provisioners):
+            msg = ("Found PVC storage provisioner '%s'. "
+                   "Only storage provisioners able to take snapshots and "
+                   "'%s' are supported."
                    % (provisioner, ROK_CSI_STORAGE_PROVISIONER))
             raise RuntimeError(msg)
 
@@ -300,3 +307,63 @@ def compute_component_id(pod):
     component_id = component_name + "@sha256=" + component_spec_digest
     log.info("Computed component ID: %s", component_id)
     return component_id
+
+
+def get_snapshotclasses(label_selector=""):
+    """List snapshotclasses."""
+    co_client = k8sutils.get_co_client()
+
+    snapshotclasses = co_client.list_cluster_custom_object(
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        plural="volumesnapshotclasses",
+        label_selector=label_selector)
+    return snapshotclasses
+
+
+def list_snapshotclass_storage_provisioners(label_selector=""):
+    """List the storage provisioners of the snapshotclasses."""
+    snapshotclasses = get_snapshotclasses(label_selector)["items"]
+    snapshotclass_provisioners = []
+    for i in snapshotclasses:
+        snapshotclass_provisioners.append(i["driver"])
+    return snapshotclass_provisioners
+
+
+def check_snapshot_availability():
+    """Check if snapshotclasses are available for notebook."""
+    client = k8sutils.get_v1_client()
+    namespace = get_namespace()
+    pod_name = get_pod_name()
+    pod = client.read_namespaced_pod(pod_name, namespace)
+    snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
+
+    for volume in pod.spec.volumes:
+        pvc = volume.persistent_volume_claim
+        if not pvc:
+            continue
+        pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
+                                                             namespace)
+        ann = pvc.metadata.annotations
+        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
+                              None)
+        if provisioner not in snapshotclass_provisioners:
+            msg = ("Found PVC storage provisioner '%s'. "
+                   "Only storage provisioners able to take snapshots "
+                   "are supported."
+                   % (provisioner))
+            raise RuntimeError(msg)
+
+
+def get_snapshotclass_provisioners_names():
+    """Get the names of snapshotclass storage provisioners."""
+    client = k8sutils.get_storage_client()
+    classes = client.list_storage_class().items
+    snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
+    storage_class_names = []
+    for i in classes:
+        name = i.metadata.name
+        provisioner = i.provisioner
+        if provisioner in snapshotclass_provisioners:
+            storage_class_names.append(name)
+    return storage_class_names
