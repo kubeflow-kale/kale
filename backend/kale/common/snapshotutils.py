@@ -343,3 +343,20 @@ def get_nb_pvcs_from_snapshot(snapshot_name):
             "annotations": annotations}
         volumes.append(row)
     return volumes
+
+
+def restore_pvcs_from_snapshot(snapshot_name):
+    """Restore the NB PVCs from their snapshots."""
+    source_snapshots = get_nb_pvcs_from_snapshot(snapshot_name)
+    replaced_volume_mounts = []
+    for snapshot in source_snapshots:
+        version = snapshot["labels"]["version_uuid"]
+        new_pvc_name = "restored-" + snapshot["source_pvc"] + "-" + version
+        pvc_name = hydrate_pvc_from_snapshot(
+            new_pvc_name=new_pvc_name,
+            source_snapshot_name=snapshot["snapshot_name"]
+        )
+        path = snapshot["annotations"]["volume_path"]
+        row = {"mountPath": path, "name": pvc_name["name"]}
+        replaced_volume_mounts.append(row)
+    return replaced_volume_mounts
