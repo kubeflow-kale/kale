@@ -20,6 +20,7 @@ import {
   _legacy_executeRpc,
   _legacy_executeRpcAndShowRPCError,
   RPCError,
+  IRPCError,
 } from './RPCUtils';
 import { wait } from './Utils';
 import {
@@ -37,6 +38,7 @@ import {
 } from '../widgets/VolumesPanel';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import CellUtils from './CellUtils';
+import * as React from 'react';
 
 enum RUN_CELL_STATUS {
   OK = 'ok',
@@ -73,6 +75,8 @@ interface IKatibRunArgs {
 }
 
 export default class Commands {
+  rokError: IRPCError;
+  snapshotError: IRPCError;
   private readonly _notebook: NotebookPanel;
   private readonly _kernel: Kernel.IKernelConnection;
 
@@ -86,6 +90,14 @@ export default class Commands {
       this._notebook,
       this._kernel,
       'rok.snapshot_notebook',
+    );
+  };
+
+  genericsnapshotNotebook = async () => {
+    return await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'snapshot.snapshot_notebook',
     );
   };
 
@@ -104,18 +116,31 @@ export default class Commands {
     return task;
   };
 
+  genericgetSnapshotStatus = async (snapshot_name: string, ms?: number) => {
+    const isReady = await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'snapshot.check_snapshot_status',
+      {
+        snapshot_name,
+      },
+    );
+    if (ms) {
+      await wait(ms);
+    }
+    return isReady;
+  };
+
   runSnapshotProcedure = async (onUpdate: Function) => {
     const showSnapshotProgress = true;
     const snapshot = await this.snapshotNotebook();
     const taskId = snapshot.task.id;
     let task = await this.getSnapshotProgress(taskId);
     onUpdate({ task, showSnapshotProgress });
-
     while (!['success', 'error', 'canceled'].includes(task.status)) {
       task = await this.getSnapshotProgress(taskId, 1000);
       onUpdate({ task });
     }
-
     if (task.status === 'success') {
       console.log('Snapshotting successful!');
       return task;
@@ -125,6 +150,29 @@ export default class Commands {
     } else if (task.status === 'canceled') {
       console.error('Snapshotting canceled');
       console.error('Stopping the deployment...');
+    }
+
+    return null;
+  };
+
+  runGenericSnapshotProcedure = async (onUpdate: Function) => {
+    const showSnapshotProgress = true;
+    const snapshot = await this.genericsnapshotNotebook();
+    let snapshot_names = snapshot;
+    for (let i of snapshot_names) {
+      let isReady = await this.genericgetSnapshotStatus(i);
+      onUpdate({ isReady, showSnapshotProgress });
+      while ((isReady = false)) {
+        isReady = await this.genericgetSnapshotStatus(i, 1000);
+        onUpdate({ isReady });
+      }
+      if ((isReady = true)) {
+        console.log('Snapshotting successful!');
+        return isReady;
+      } else if ((isReady = false)) {
+        console.error('Snapshot not ready');
+        console.error('Stopping the deployment...');
+      }
     }
 
     return null;
@@ -144,6 +192,17 @@ export default class Commands {
         bucket,
         obj,
         version,
+        volumes,
+      },
+    );
+  };
+
+  replaceGenericClonedVolumes = async (volumes: IVolumeMetadata[]) => {
+    return await _legacy_executeRpcAndShowRPCError(
+      this._notebook,
+      this._kernel,
+      'snapshot.replace_cloned_volumes',
+      {
         volumes,
       },
     );
