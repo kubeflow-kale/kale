@@ -27,9 +27,9 @@ from kale.common import graphutils, utils, podutils
 log = logging.getLogger(__name__)
 
 
-VOLUME_ACCESS_MODE_MAP = {"rom": ["ReadOnlyMany"], "rwo": ["ReadWriteOnce"],
-                          "rwm": ["ReadWriteMany"]}
-DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
+VOLUME_ACCESS_MODE_MAP = {"rox": ["ReadOnlyMany"], "rwo": ["ReadWriteOnce"],
+                          "rwx": ["ReadWriteMany"]}
+DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwx"]
 
 
 class PipelineParam(NamedTuple):

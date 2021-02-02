@@ -193,7 +193,7 @@ export const DefaultState: IState = {
     autosnapshot: false,
     katib_run: false,
     steps_defaults: [],
-    volume_access_mode: 'rwm',
+    volume_access_mode: 'rwx',
   },
   runDeployment: false,
   deploymentType: 'compile',
