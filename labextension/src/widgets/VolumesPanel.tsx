@@ -19,7 +19,11 @@ import { Button, Switch, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { IVolumeMetadata } from './LeftPanel';
-import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
+import {
+  IRPCError,
+  rokErrorTooltip,
+  snapshotErrorTooltip,
+} from '../lib/RPCUtils';
 import { Input } from '../components/Input';
 import { Select, ISelectOption } from '../components/Select';
 import { LightTooltip } from '../components/LightTooltip';
@@ -93,6 +97,7 @@ interface VolumesPanelProps {
   useNotebookVolumes: boolean;
   autosnapshot: boolean;
   rokError: IRPCError;
+  snapshotError: IRPCError;
   updateVolumes: Function;
   updateVolumesSwitch: Function;
   updateAutosnapshotSwitch: Function;
@@ -118,9 +123,9 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
   const addVolume = () => {
     // If we add a volume to an empty list, turn autosnapshot on
     const autosnapshot =
-      !props.rokError && props.volumes.length === 0
+      !props.rokError && !props.snapshotError && props.volumes.length === 0
         ? true
-        : !props.rokError && props.autosnapshot;
+        : !props.rokError && !props.snapshotError && props.autosnapshot;
     props.updateVolumes(
       [...props.volumes, DEFAULT_EMPTY_VOLUME],
       [...props.metadataVolumes, DEFAULT_EMPTY_VOLUME],
@@ -517,13 +522,16 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
     <div className="input-container">
       <LightTooltip
         title={
-          props.rokError
-            ? rokErrorTooltip(props.rokError)
+          props.rokError && props.snapshotError
+            ? rokErrorTooltip(props.rokError) &&
+              snapshotErrorTooltip(props.snapshotError)
             : "Enable this option to mount clones of this notebook's volumes " +
               'on your pipeline steps'
         }
         placement="top-start"
-        interactive={props.rokError ? true : false}
+        interactive={
+          props.rokError ? true : false && props.snapshotError ? true : false
+        }
         TransitionComponent={Zoom}
       >
         <div className="toolbar">
@@ -531,7 +539,8 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
           <Switch
             checked={props.useNotebookVolumes}
             disabled={
-              !!props.rokError || props.notebookMountPoints.length === 0
+              (!!props.rokError && !!props.snapshotError) ||
+              props.notebookMountPoints.length === 0
             }
             onChange={_ => props.updateVolumesSwitch()}
             color="primary"
@@ -548,13 +557,16 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
     <div className="input-container">
       <LightTooltip
         title={
-          props.rokError
-            ? rokErrorTooltip(props.rokError)
+          props.rokError && props.snapshotError
+            ? rokErrorTooltip(props.rokError) &&
+              snapshotErrorTooltip(props.snapshotError)
             : 'Enable this option to take Rok snapshots of your steps during ' +
               'pipeline execution'
         }
         placement="top-start"
-        interactive={props.rokError ? true : false}
+        interactive={
+          props.rokError ? true : false && props.snapshotError ? true : false
+        }
         TransitionComponent={Zoom}
       >
         <div className="toolbar">
@@ -563,7 +575,10 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
           </div>
           <Switch
             checked={props.autosnapshot}
-            disabled={!!props.rokError || props.volumes.length === 0}
+            disabled={
+              (!!props.rokError && !!props.snapshotError) ||
+              props.volumes.length === 0
+            }
             onChange={_ => props.updateAutosnapshotSwitch()}
             color="primary"
             name="enableKale"
