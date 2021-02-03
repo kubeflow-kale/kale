@@ -145,8 +145,6 @@ def _get_mount_path(container, volume):
 def _list_volumes(client, namespace, pod_name, container_name):
     pod = client.read_namespaced_pod(pod_name, namespace)
     container = _get_pod_container(pod, container_name)
-    snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
-    provisioner_names = get_snapshotclass_provisioners_names()
 
     rok_volumes = []
     for volume in pod.spec.volumes:
@@ -161,7 +159,8 @@ def _list_volumes(client, namespace, pod_name, container_name):
         pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
                                                              namespace)
         if (pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS
-           and pvc.spec.storage_class_name not in provisioner_names):
+           and pvc.spec.storage_class_name not in
+                get_snapshotclass_provisioners_names()):
             msg = ("Found PVC with storage class '%s'. "
                    "Only storage classes able to take snapshots and "
                    "'%s' are supported."
@@ -173,7 +172,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
         provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
                               None)
         if (provisioner != ROK_CSI_STORAGE_PROVISIONER
-           and provisioner not in snapshotclass_provisioners):
+           and provisioner not in list_snapshotclass_storage_provisioners()):
             msg = ("Found PVC storage provisioner '%s'. "
                    "Only storage provisioners able to take snapshots and "
                    "'%s' are supported."
@@ -324,10 +323,7 @@ def get_snapshotclasses(label_selector=""):
 def list_snapshotclass_storage_provisioners(label_selector=""):
     """List the storage provisioners of the snapshotclasses."""
     snapshotclasses = get_snapshotclasses(label_selector)["items"]
-    snapshotclass_provisioners = []
-    for i in snapshotclasses:
-        snapshotclass_provisioners.append(i["driver"])
-    return snapshotclass_provisioners
+    return [snap_prov["dirver"] for snap_prov in snapshotclasses]
 
 
 def check_snapshot_availability():
@@ -342,11 +338,11 @@ def check_snapshot_availability():
         pvc = volume.persistent_volume_claim
         if not pvc:
             continue
-        pvc = client.read_namespaced_persistent_volume_claim(pvc.claim_name,
-                                                             namespace)
-        ann = pvc.metadata.annotations
-        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
-                              None)
+        pvc_name = client.read_namespaced_persistent_volume_claim(
+            pvc.claim_name, namespace)
+
+        ann = pvc_name.metadata.annotations
+        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner")
         if provisioner not in snapshotclass_provisioners:
             msg = ("Found PVC storage provisioner '%s'. "
                    "Only storage provisioners able to take snapshots "
@@ -360,10 +356,5 @@ def get_snapshotclass_provisioners_names():
     client = k8sutils.get_storage_client()
     classes = client.list_storage_class().items
     snapshotclass_provisioners = list_snapshotclass_storage_provisioners()
-    storage_class_names = []
-    for i in classes:
-        name = i.metadata.name
-        provisioner = i.provisioner
-        if provisioner in snapshotclass_provisioners:
-            storage_class_names.append(name)
-    return storage_class_names
+    return [stor_class.metadata.name for stor_class in classes
+            if stor_class.provisioner in snapshotclass_provisioners]
