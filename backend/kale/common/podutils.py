@@ -317,13 +317,13 @@ def get_snapshotclasses(label_selector=""):
         version="v1beta1",
         plural="volumesnapshotclasses",
         label_selector=label_selector)
-    return snapshotclasses
+    return snapshotclasses.get("items")
 
 
 def list_snapshotclass_storage_provisioners(label_selector=""):
     """List the storage provisioners of the snapshotclasses."""
-    snapshotclasses = get_snapshotclasses(label_selector)["items"]
-    return [snap_prov["dirver"] for snap_prov in snapshotclasses]
+    return [snap_prov["driver"] for
+            snap_prov in get_snapshotclasses(label_selector)]
 
 
 def check_snapshot_availability():
