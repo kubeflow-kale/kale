@@ -14,6 +14,7 @@
 
 """Suite of helpers for Katib."""
 
+import os
 import sys
 import copy
 import logging
@@ -39,6 +40,7 @@ TRIAL_ID_ANNOTATION_KEY = "kubeflow.org/katib-trial-id"
 
 KALE_KATIB_KFP_ANNOTATION_KEY = "kubeflow-kale.org/kfp-run-uuid"
 
+TRIAL_IMAGE_ENV = "KALE_KATIB_KFP_TRIAL_IMAGE"
 TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:dc982fe-d9bf99ac"
 TRIAL_SA = "pipeline-runner"
 TRIAL_CONTAINER_NAME = "main"
@@ -102,6 +104,17 @@ spec:
                     {{- end }} {{- end }}\
                 )"
 """
+
+
+def _get_trial_image():
+    return os.getenv(TRIAL_IMAGE_ENV, TRIAL_IMAGE)
+
+
+def _get_base_job_cr():
+    image = _get_trial_image()
+    job = copy.deepcopy(JOB_CR)
+    job["spec"]["template"]["spec"]["containers"][0]["image"] = image
+    return job
 
 
 def create_and_wait_kfp_run(pipeline_id: str,
@@ -257,7 +270,7 @@ def _construct_experiment_cr_v1alpha3(name, experiment_spec, pipeline_id,
                   "metadata": {"name": name},
                   "spec": experiment_spec}
 
-    trial_parameters = {"image": TRIAL_IMAGE,
+    trial_parameters = {"image": _get_trial_image(),
                         "pipeline_id": pipeline_id,
                         "version_id": version_id,
                         "experiment_name": experiment_name,
@@ -292,7 +305,7 @@ def _construct_experiment_cr_v1beta1(name, experiment_spec, pipeline_id,
                    "experiment_name": experiment_name,
                    "api_version": KATIB_API_VERSION_V1BETA1})
     cmd = JOB_CMD % ", ".join("%s='%s'" % (k, v) for k, v in kwargs.items())
-    job = copy.deepcopy(JOB_CR)
+    job = _get_base_job_cr()
     job["spec"]["template"]["spec"]["containers"][0]["command"] = [cmd]
     trial_tmpl["trialSpec"] = job
     spec["trialTemplate"] = trial_tmpl
