@@ -157,3 +157,55 @@ def get_notebook_resources():
         for key in resource_type[1]:
             resource_conf[resource_type[0] + "_" + key] = resource_type[1][key]
     return resource_conf
+
+
+def get_pvc_snapshot(snapshot_name):
+    """Get info about a pvc snapshot."""
+    co_client = k8sutils.get_co_client()
+    namespace = podutils.get_namespace()
+
+    pvc_snapshot = co_client.get_namespaced_custom_object(
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        name=snapshot_name)
+    return pvc_snapshot
+
+
+def list_pvc_snapshots(label_selector=""):
+    """List pvc snapshots."""
+    co_client = k8sutils.get_co_client()
+    namespace = podutils.get_namespace()
+
+    pvc_snapshots = co_client.list_namespaced_custom_object(
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        label_selector=label_selector)
+    return pvc_snapshots
+
+
+def delete_pvc(pvc_name):
+    """Delete a pvc."""
+    client = k8sutils.get_v1_client()
+    namespace = podutils.get_namespace()
+    client.delete_namespaced_persistent_volume_claim(
+        namespace=namespace,
+        name=pvc_name)
+    return
+
+
+def delete_pvc_snapshot(snapshot_name):
+    """Delete a pvc snapshot."""
+    co_client = podutils._get_k8s_custom_objects_client()
+    namespace = podutils.get_namespace()
+
+    co_client.delete_namespaced_custom_object(
+        group="snapshot.storage.k8s.io",
+        version="v1beta1",
+        namespace=namespace,
+        plural="volumesnapshots",
+        name=snapshot_name)
+    return
