@@ -453,7 +453,7 @@ def monitor_inference_service(name: str):
     def _is_ready(inference_service):
         if not inference_service.get("status"):
             return False
-        for condition in inference_service["status"]["conditions"]:
+        for condition in inference_service["status"].get("conditions", []):
             if (condition.get("type") == "Ready"
                     and condition.get("status") == "True"):
                 return True
