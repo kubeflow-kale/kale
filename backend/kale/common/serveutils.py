@@ -447,7 +447,17 @@ def _add_owner_references(infs_name: str, pvc_name: str):
 
 
 def monitor_inference_service(name: str):
-    """Wait for an InferenceService to become ready."""
+    """Waits for an InferenceService to become ready.
+
+    An InferenceService is considered ready when two conditions are met:
+
+      1. the ``status.conditions`` field of the CR contains a condition of
+         type ``Ready`` with a ``True`` status.
+      2. The CR defines a valid host/url for the (default) predictor.
+
+    Args:
+        name (str): Name of the KFServing InferenceService
+    """
     host = None
 
     def _is_ready(inference_service):
@@ -468,7 +478,13 @@ def monitor_inference_service(name: str):
             return
 
         if _is_ready(inf):
-            host = inf["status"]["default"]["predictor"]["host"]
+            try:
+                if inf["status"].get("default"):  # v1alpha3
+                    host = inf["status"]["default"]["predictor"]["host"]
+                elif inf["status"].get("components"):  # v1beta1
+                    host = inf["status"]["components"]["predictor"]["url"]
+            except KeyError:
+                pass
         time.sleep(3)
 
     log.info("InferenceService '%s' is ready.", name)
@@ -483,15 +499,49 @@ def get_inference_service(name: str):
 
 
 def get_inference_service_host(name: str) -> str:
-    """Get the hostname of the InferenceService."""
+    """Get the hostname of the InferenceService.
+
+    Args:
+        name (str): Name of the KFServing InferenceService
+
+    Returns:
+        str: The status.url field of the InferenceService CR. Empty string
+            if ``url`` is not defined.
+    """
     inference_service = get_inference_service(name)
-    url = inference_service["status"]["url"]
+    try:
+        url = inference_service["status"]["url"]
+    except KeyError:
+        log.error("Could not find url for InferenceService '%s'", name)
+        return ""
     if url.startswith("http://"):
         url = url[len("http://"):]
     return url.replace("example.com", "svc.cluster.local")
 
 
 def get_inference_service_default_predictor_host(name: str) -> str:
-    """Get the hostname of the default predictor."""
-    inference_service = get_inference_service(name)
-    return inference_service["status"]["default"]["predictor"]["host"]
+    """Get the hostname of the default predictor.
+
+    This function supports both v1alpha3 and v1beta1 InferenceService CRDs.
+    The predictor's url/host is defined in two different fields:
+
+    - ``v1alpha3``: ``status.default.predictor.host``
+    - ``v1beta1``: ``status.components.predictor.url``
+
+    Args:
+        name (str): Name of the KFServing InferenceService
+
+    Returns:
+        str: The host/url field of the (default) predictor. Empty string if
+            it cannot be determined.
+    """
+    inf = get_inference_service(name)
+    try:
+        if inf["status"].get("default"):  # v1alpha3
+            return inf["status"]["default"]["predictor"]["host"]
+        elif inf["status"].get("components"):  # v1beta1
+            return inf["status"]["components"]["predictor"]["url"]
+    except KeyError:
+        log.error("Could not find the predictor's url for InferenceService"
+                  " '%s'", name)
+        return ""
