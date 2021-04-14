@@ -84,6 +84,17 @@ export const rokErrorTooltip = (rokError: IRPCError) => {
   );
 };
 
+export const snapshotErrorTooltip = (snapshotError: IRPCError) => {
+  return (
+    <React.Fragment>
+      <div>
+        This feature requires snapshot support.{' '}
+        <a onClick={_ => showRpcError(snapshotError)}>More info...</a>
+      </div>
+    </React.Fragment>
+  );
+};
+
 const serialize = (obj: any) => window.btoa(JSON.stringify(obj));
 const deserialize = (raw_data: string) =>
   window.atob(raw_data.substring(1, raw_data.length - 1));

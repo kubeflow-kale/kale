@@ -24,3 +24,4 @@ yarn-error.log
 *.tsbuildinfo
 package-lock.json
 
+backend/.vscode/settings.json

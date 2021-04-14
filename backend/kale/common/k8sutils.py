@@ -19,6 +19,7 @@ _k8s_watch = None
 _api_client = None
 _api_v1_client = None
 _k8s_co_client = None
+_k8s_storage_client = None
 
 
 def _load_config():
@@ -55,6 +56,15 @@ def get_co_client():
         _load_config()
         _k8s_co_client = kubernetes.client.CustomObjectsApi()
     return _k8s_co_client
+
+
+def get_storage_client():
+    """Get the Kubernetes V1beta1 StorageClient."""
+    global _k8s_storage_client
+    if not _k8s_storage_client:
+        _load_config()
+        _k8s_storage_client = kubernetes.client.StorageV1beta1Api()
+    return _k8s_storage_client
 
 
 def annotate_object(group, version, plural, name, namespace, annotations):
