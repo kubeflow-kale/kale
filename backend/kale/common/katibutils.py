@@ -41,7 +41,7 @@ TRIAL_ID_ANNOTATION_KEY = "kubeflow.org/katib-trial-id"
 KALE_KATIB_KFP_ANNOTATION_KEY = "kubeflow-kale.org/kfp-run-uuid"
 
 TRIAL_IMAGE_ENV = "KALE_KATIB_KFP_TRIAL_IMAGE"
-TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:dc982fe-d9bf99ac"
+TRIAL_IMAGE = "gcr.io/arrikto/katib-kfp-trial:a7f7bb79-d9bf99ac"
 TRIAL_SA = "pipeline-runner"
 TRIAL_CONTAINER_NAME = "main"
 KALE_PARAM_TRIAL_NAME = "kaleParamTrialName"
