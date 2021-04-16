@@ -34,11 +34,13 @@ def step2():
     from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
+    from kale.common.runutils import ttl as _kale_ttl
     from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {}
 
+    @_kale_ttl(5)
     @_kale_marshal(['_b', '_a'], ['_c'], _kale_pipeline_parameters, "/marshal")
     def step2(a, b):
         c = a + b

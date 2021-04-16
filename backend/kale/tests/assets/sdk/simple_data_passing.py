@@ -11,7 +11,8 @@ def step1():
 @step(name="step2",
       retry_count=5,
       retry_interval="20",
-      retry_factor=2)
+      retry_factor=2,
+      timeout=5)
 def step2(a, b):
     c = a + b
     print(c)
