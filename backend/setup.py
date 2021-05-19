@@ -17,7 +17,7 @@ from setuptools import setup
 
 setup(
     name='kubeflow-kale',
-    version='0.6.1',
+    version='0.7.0',
     description='Convert JupyterNotebooks to Kubeflow Pipelines deployments',
     url='https://github.com/kubeflow-kale/kale',
     author='Stefano Fioravanzo',
