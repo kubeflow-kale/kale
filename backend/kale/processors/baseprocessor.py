@@ -98,6 +98,8 @@ class BaseProcessor(ABC):
                 continue
             if v.type == 'pvc':
                 mount_point = v.mount_point.replace('/', '_').strip('_')
+                if mount_point.strip() == '':
+                    raise ValueError("mount point cannot be empty,name: {}".format(v.name))
                 par_name = "vol_{}".format(mount_point)
                 volume_parameters[par_name] = PipelineParam("str", v.name)
             elif v.type == 'new_pvc':
