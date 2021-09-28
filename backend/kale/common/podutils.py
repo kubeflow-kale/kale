@@ -178,20 +178,20 @@ def _list_volumes(client, namespace, pod_name, container_name):
         #  result in an incomplete notebook snapshot.
         pvc = client.read_namespaced_persistent_volume_claim(
             pvc_spec.claim_name, namespace)
-        if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
-            msg = ("Found PVC with storage class '%s'. Only storage class '%s'"
-                   " is supported."
-                   % (pvc.spec.storage_class_name, ROK_CSI_STORAGE_CLASS))
-            raise RuntimeError(msg)
+        #if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
+        #    msg = ("Found PVC with storage class '%s'. Only storage class '%s'"
+        #           " is supported."
+        #           % (pvc.spec.storage_class_name, ROK_CSI_STORAGE_CLASS))
+        #    raise RuntimeError(msg)
 
-        ann = pvc.metadata.annotations
-        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
-                              None)
-        if provisioner != ROK_CSI_STORAGE_PROVISIONER:
-            msg = ("Found PVC storage provisioner '%s'. Only storage"
-                   " provisioner '%s' is supported."
-                   % (provisioner, ROK_CSI_STORAGE_PROVISIONER))
-            raise RuntimeError(msg)
+        #ann = pvc.metadata.annotations
+        #provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
+        #                      None)
+        #if provisioner != ROK_CSI_STORAGE_PROVISIONER:
+        #    msg = ("Found PVC storage provisioner '%s'. Only storage"
+        #           " provisioner '%s' is supported."
+        #           % (provisioner, ROK_CSI_STORAGE_PROVISIONER))
+        #    raise RuntimeError(msg)
 
         mount_path = _get_mount_path(container, volume)
         volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])
