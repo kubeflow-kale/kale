@@ -825,8 +825,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 variant={'outlined'}
                 label={'N Initial Points'}
                 value={
-                  getAlgorithmSetting('random_state') ||
-                  updateAlgorithmSetting('random_state')('10')
+                  getAlgorithmSetting('n_initial_points') ||
+                  updateAlgorithmSetting('n_initial_points')('10')
                 }
                 updateValue={updateAlgorithmSetting('n_initial_points')}
                 style={{ marginLeft: '4px', marginRight: '4px', width: '95%' }}
