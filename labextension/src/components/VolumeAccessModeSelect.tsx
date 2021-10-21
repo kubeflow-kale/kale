@@ -17,22 +17,22 @@
 import * as React from 'react';
 import { Select, ISelectOption } from './Select';
 
-const VOLUME_ACCESS_MODE_ROM: ISelectOption = {
+const VOLUME_ACCESS_MODE_ROX: ISelectOption = {
   label: 'ReadOnlyMany',
-  value: 'rom',
+  value: 'rox',
 };
 const VOLUME_ACCESS_MODE_RWO: ISelectOption = {
   label: 'ReadWriteOnce',
   value: 'rwo',
 };
-const VOLUME_ACCESS_MODE_RWM: ISelectOption = {
+const VOLUME_ACCESS_MODE_RWX: ISelectOption = {
   label: 'ReadWriteMany',
-  value: 'rwm',
+  value: 'rwx',
 };
 const VOLUME_ACCESS_MODES: ISelectOption[] = [
-  VOLUME_ACCESS_MODE_ROM,
+  VOLUME_ACCESS_MODE_ROX,
   VOLUME_ACCESS_MODE_RWO,
-  VOLUME_ACCESS_MODE_RWM,
+  VOLUME_ACCESS_MODE_RWX,
 ];
 
 interface VolumeAccessModeSelectProps {

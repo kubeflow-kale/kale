@@ -195,7 +195,7 @@ class VolumeTypeValidator(EnumValidator):
 class VolumeAccessModeValidator(EnumValidator):
     """Validates the access mode of a Volume."""
 
-    enum = ("", "rom", "rwo", "rwm")
+    enum = ("", "rox", "rwo", "rwx")
 
 
 class IsLowerValidator(Validator):
