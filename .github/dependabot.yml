@@ -1,0 +1,47 @@
+updates:
+- directory: docker/jupyterlab
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  schedule:
+    interval: daily
+- directory: docker/katib
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  schedule:
+    interval: daily
+- directory: labextension
+  open-pull-requests-limit: 10
+  package-ecosystem: npm
+  schedule:
+    interval: daily
+- directory: examples/dog-breed-classification/requirements
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+- directory: examples/openvaccine-kaggle-competition
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+- directory: examples/serving/sklearn
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+- directory: examples/serving/xgboost
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+- directory: examples/titanic-ml-dataset
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+- directory: examples/taxi-cab-classification
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+version: 2
