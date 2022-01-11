@@ -1,0 +1,6 @@
+scikit-learn==0.23.2
+auto-sklearn==0.12.0
+tensorboardX==2.2
+Pillow==8.2.0
+fastai==2.3.0
+yellowbrick==1.3
