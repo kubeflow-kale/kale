@@ -6,5 +6,5 @@ scipy==0.18.1
 tqdm==4.11.2
 keras==2.0.2
 scikit-learn==0.18.1
-pillow==4.0.0
+pillow==9.0.0
 tensorflow==1.0.0
