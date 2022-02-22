@@ -136,7 +136,7 @@ warnings.warn("B", DeprecationWarning)
 ```
 
 **Expected**:
-No warnings should not be emitted.
+No warnings should be emitted.
 
 **What happens**:
 Warning `B` is emitted.
