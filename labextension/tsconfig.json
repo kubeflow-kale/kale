@@ -1,18 +1,24 @@
 {
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    // "composite": true,
     "declaration": true,
-    "lib": ["es2017", "dom"],
-    "module": "commonjs",
+    "esModuleInterop": true,
+    "incremental": true,
+    "jsx": "react",
+    "module": "esnext",
     "moduleResolution": "node",
     "noEmitOnError": true,
+    "noImplicitAny": true,
     "noUnusedLocals": false,
-    "outDir": "./lib",
-    "target": "es2017",
-    "jsx": "react",
+    "preserveWatchOutput": true,
+    "resolveJsonModule": true,
+    "outDir": "lib",
+    "rootDir": "src",
     "strict": true,
     "strictNullChecks": false,
-    "types": [],
-    "esModuleInterop": true
+    "target": "es2017",
+    "types": []
   },
-  "include": ["src/*"]
+  "include": ["src/**/*.ts"]
 }

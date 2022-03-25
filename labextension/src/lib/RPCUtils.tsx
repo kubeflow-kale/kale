@@ -304,15 +304,15 @@ export abstract class BaseError extends Error {
   constructor(message: string, public error: any) {
     super(message);
     this.name = this.constructor.name;
-    if (typeof Error.captureStackTrace === 'function') {
-      Error.captureStackTrace(this, this.constructor);
-    } else {
-      this.stack = new Error(message).stack;
-    }
+    // if (typeof Error.captureStackTrace === 'function') {
+    //   Error.captureStackTrace(this, this.constructor);
+    // } else {
+    //   this.stack = new Error(message).stack;
+    // }
     Object.setPrototypeOf(this, BaseError.prototype);
   }
 
-  public abstract async showDialog(refresh: boolean): Promise<void>;
+  public abstract showDialog(refresh: boolean): Promise<void>;
 }
 
 export class KernelError extends BaseError {
