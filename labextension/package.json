@@ -5,6 +5,7 @@
   "keywords": [
     "jupyter",
     "jupyterlab",
+    "jupyterlab3.0",
     "jupyterlab-extension"
   ],
   "homepage": "https://github.com/kubeflow-kale/kale",
