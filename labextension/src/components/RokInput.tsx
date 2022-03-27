@@ -15,8 +15,8 @@
  */
 
 import * as React from 'react';
-import Button from '@material-ui/core/Button';
-import InputAdornment from '@material-ui/core/InputAdornment';
+import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
 import BrowseInRokBlue from '../icons/BrowseInRokBlue';
 import { InputProps, Input } from './Input';
 
@@ -38,7 +38,7 @@ export const RokInput: React.FunctionComponent<IRokInput> = props => {
     const mode: string = 'file';
     let create: boolean = false;
     if (rest.label) {
-      const temp: string = rest.label as string;
+      rest.label as string;
     }
     const goTo: string =
       `${state[0].origin}/rok/buckets?mode=${mode}-chooser` +

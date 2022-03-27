@@ -23,7 +23,7 @@ import {
   ILayoutRestorer,
 } from '@jupyterlab/application';
 
-import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
@@ -40,7 +40,6 @@ import NotebookUtils from './lib/NotebookUtils';
 import {
   executeRpc,
   globalUnhandledRejection,
-  BaseError,
   IRPCError,
   RPCError,
   RPC_CALL_STATUS,

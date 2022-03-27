@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
-    // "composite": true,
+    "composite": true,
     "declaration": true,
     "esModuleInterop": true,
     "incremental": true,
@@ -10,7 +10,7 @@
     "moduleResolution": "node",
     "noEmitOnError": true,
     "noImplicitAny": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
     "outDir": "lib",
@@ -20,5 +20,5 @@
     "target": "es2017",
     "types": []
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.tsx", "src/**/*.json", "src/**/*.ts"]
 }

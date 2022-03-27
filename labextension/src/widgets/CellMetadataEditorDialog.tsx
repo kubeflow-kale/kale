@@ -25,9 +25,9 @@ import {
   Grid,
   Switch,
 } from '@mui/material';
-import ColorUtils from '../../lib/ColorUtils';
-import { Input } from '../../components/Input';
-import { Select } from '../../components/Select';
+import ColorUtils from '../lib/ColorUtils';
+import { Input } from '../components/Input';
+import { Select } from '../components/Select';
 
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },

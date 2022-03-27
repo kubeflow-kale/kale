@@ -30,9 +30,9 @@ import {
 } from './deploys-progress/DeploysProgress';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { ThemeProvider } from '@material-ui/core/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '../Theme';
-import { Button, Switch, Zoom } from '@material-ui/core';
+import { Button, Switch, Zoom } from '@mui/material';
 import { KatibDialog } from './KatibDialog';
 import { Input } from '../components/Input';
 import { LightTooltip } from '../components/LightTooltip';
@@ -800,7 +800,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         <LightTooltip
           title={'Enable this option to run HyperParameter Tuning with Katib'}
           placement="top-start"
-          interactive={true}
+          // interactive={true}
           TransitionComponent={Zoom}
         >
           <div className="toolbar">

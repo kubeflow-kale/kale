@@ -15,9 +15,9 @@
  */
 
 import * as React from 'react';
-import { Button, Switch, Zoom } from '@material-ui/core';
-import AddIcon from '@material-ui/icons/Add';
-import DeleteIcon from '@material-ui/icons/Delete';
+import { Button, Switch, Zoom } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { IVolumeMetadata } from './LeftPanel';
 import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import { Input } from '../components/Input';
@@ -523,7 +523,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
               'on your pipeline steps'
         }
         placement="top-start"
-        interactive={props.rokError ? true : false}
+        // interactive={props.rokError ? true : false}
         TransitionComponent={Zoom}
       >
         <div className="toolbar">
@@ -554,7 +554,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
               'pipeline execution'
         }
         placement="top-start"
-        interactive={props.rokError ? true : false}
+        // interactive={props.rokError ? true : false}
         TransitionComponent={Zoom}
       >
         <div className="toolbar">

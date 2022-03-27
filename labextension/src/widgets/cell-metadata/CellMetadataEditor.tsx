@@ -15,13 +15,13 @@
  */
 
 import * as React from 'react';
-import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
+import { NotebookPanel } from '@jupyterlab/notebook'
 import TagsUtils from '../../lib/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
-import CloseIcon from '@material-ui/icons/Close';
+import CloseIcon from '@mui/icons-material/Close';
 import ColorUtils from '../../lib/ColorUtils';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import { Button, IconButton } from '@material-ui/core';
+import { Button, IconButton } from '@mui/material';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';

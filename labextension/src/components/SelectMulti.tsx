@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 import * as React from 'react';
-import { findDOMNode } from 'react-dom';
-import { Input, MenuItem, Select } from '@material-ui/core';
-import OutlinedInput from '@material-ui/core/OutlinedInput';
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
-import Chip from '@material-ui/core/Chip';
+import { Input, MenuItem, Select } from '@mui/material';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Chip from '@mui/material/Chip';
 import ColorUtils from '../lib/ColorUtils';
+import { findDOMNode } from 'react-dom';
 
 const useStyles = makeStyles(() =>
   createStyles({
@@ -63,9 +63,7 @@ interface SelectMultiProps {
 export const SelectMulti: React.FunctionComponent<SelectMultiProps> = props => {
   const classes = useStyles({});
   const [inputLabelRef, setInputLabelRef] = React.useState(undefined);
-  const labelOffsetWidth = inputLabelRef
-    ? (findDOMNode(inputLabelRef) as HTMLElement).offsetWidth
-    : 0;
+  inputLabelRef ? (findDOMNode(inputLabelRef) as HTMLElement).offsetWidth : 0;
 
   const {
     id,
@@ -82,7 +80,7 @@ export const SelectMulti: React.FunctionComponent<SelectMultiProps> = props => {
 
   if (!variant || variant === 'outlined') {
     inputComponent = (
-      <OutlinedInput margin="dense" labelWidth={labelOffsetWidth} id={id} />
+      <OutlinedInput margin="dense" id={id} />
     );
   }
 

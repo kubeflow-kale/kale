@@ -16,14 +16,13 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import Help from '@mui/icons-material/Help';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { IKatibMetadata, IKatibParameter } from './LeftPanel';
-// import { NotebookPanel } from '@jupyterlab/notebook';
-import { executeRpc, RPC_CALL_STATUS, RPCError } from '../lib/RPCUtils';
+import { IKatibMetadata, IKatibParameter } from '../LeftPanel';
+import { executeRpc, RPC_CALL_STATUS, RPCError } from '../../lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { useTheme } from '@mui/material/styles';
-import { Input } from '../components/Input';
-import { Select } from '../components/Select';
-import { LightTooltip } from '../components/LightTooltip';
+import { Input } from '../../components/Input';
+import { Select } from '../../components/Select';
+import { LightTooltip } from '../../components/LightTooltip';
 
 // python to katib types
 const katibTypeMapper: { [id: string]: string } = {
@@ -441,6 +440,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         <Grid
           container
           direction="row"
+          // @mui/icons-materialflex-start"
           alignItems="center"
         >
           <div
@@ -540,7 +540,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             <Grid
               container
               direction="row"
-              // @mui/icons-materialflex-end"
               alignItems="center"
             >
               <div className="add-button" style={{ padding: 0 }}>

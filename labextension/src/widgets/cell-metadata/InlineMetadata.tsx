@@ -15,13 +15,13 @@
  */
 
 import * as React from 'react';
-import { Chip, Tooltip } from '@material-ui/core';
+import { Chip, Tooltip } from '@mui/material';
 import ColorUtils from '../../lib/ColorUtils';
 import {
   RESERVED_CELL_NAMES,
   RESERVED_CELL_NAMES_HELP_TEXT,
 } from './CellMetadataEditor';
-import EditIcon from '@material-ui/icons/Edit';
+import EditIcon from '@mui/icons-material/Edit';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
 
 interface IProps {
