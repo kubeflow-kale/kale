@@ -81,14 +81,12 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
         <Grid
           container
           direction="row"
-          // @mui/icons-materialspace-between"
           alignItems="center"
         >
           <Grid item xs={9}>
             <Grid
               container
               direction="row"
-              // @mui/icons-material
               alignItems="center"
             >
               <p>Require GPU for step </p>
@@ -107,7 +105,6 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
             <Grid
               container
               direction="row"
-            //   @mui/icons-materialflex-end"
               alignItems="center"
             >
               <Switch
@@ -136,7 +133,6 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
           <Grid
             container
             direction="row"
-            // @mui/icons-materialspace-between"
             alignItems="center"
             style={{ marginTop: '15px' }}
           >

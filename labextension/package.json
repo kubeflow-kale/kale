@@ -62,6 +62,7 @@
     "watch:src": "tsc -w"
   },
   "dependencies": {
+    "@babel/core": "^7.17.8",
     "@emotion/react": "^11.8.1",
     "@emotion/styled": "^11.8.1",
     "@jupyterlab/application": "^3.3.2",
@@ -75,13 +76,15 @@
     "@mui/styles": "^5.5.1",
     "@types/js-yaml": "^3.12.4",
     "@types/node": "^14.0.20",
-    "@types/react": "^17.0.39",
-    "@types/react-dom": "^17.0.1",
+    "@types/react": "^17.0.43",
+    "@types/react-dom": "^17.0.14",
+    "acorn": "^8.7.0",
     "csstype": "^3.0.11",
     "js-yaml": "^3.14.0",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "react-sanitized-html": "^2.0.0",
+    "sanitize-html": "^2.7.0",
     "use-debounce": "^3.0.1"
   },
   "devDependencies": {

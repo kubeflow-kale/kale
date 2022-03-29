@@ -70,11 +70,15 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   }
 
   componentDidMount() {
-    this.setState(this.updateIsMergedState);
-    this.checkIfReservedName();
-    this.updateStyles();
-    this.updateDependencies();
-    this.moveComponentElementInCell();
+    try {
+      this.setState(this.updateIsMergedState);
+      this.checkIfReservedName();
+      this.updateStyles();
+      this.updateDependencies();
+      this.moveComponentElementInCell();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   moveComponentElementInCell() {
@@ -163,17 +167,21 @@ export class InlineMetadata extends React.Component<IProps, IState> {
    * apply the corresponding css class to the HTML Cell element.
    */
   checkIfReservedName() {
-    this.setState((state: IState, props: IProps) => {
-      let cellTypeClass = '';
-      if (RESERVED_CELL_NAMES.includes(props.blockName)) {
-        cellTypeClass = 'kale-reserved-cell';
-      }
-
-      if (cellTypeClass === state.cellTypeClass) {
-        return null;
-      }
-      return { cellTypeClass };
-    });
+    try {
+      this.setState((state: IState, props: IProps) => {
+        let cellTypeClass = '';
+        if (RESERVED_CELL_NAMES.includes(props.blockName)) {
+          cellTypeClass = 'kale-reserved-cell';
+        }
+  
+        if (cellTypeClass === state.cellTypeClass) {
+          return null;
+        }
+        return { cellTypeClass };
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   /**
@@ -246,6 +254,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   }
 
   openEditor() {
+    console.log("Hello World!");
     const showEditor = true;
     this.setState({ showEditor });
     this.context.onEditorVisibilityChange(showEditor);
@@ -302,7 +311,6 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
             {details}
           </div>
-
           <div
             style={{ position: 'relative' }}
             className={this.state.showEditor ? ' hidden' : ''}

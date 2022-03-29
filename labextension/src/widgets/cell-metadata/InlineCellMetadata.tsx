@@ -60,7 +60,7 @@ const DefaultState: IState = {
   metadataCmp: [],
   checked: false,
   editors: {},
-  isEditorVisible: false,
+  isEditorVisible: true,
 };
 
 type SaveState = 'started' | 'completed' | 'failed';

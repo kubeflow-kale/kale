@@ -114,7 +114,6 @@ export const Select: React.FunctionComponent<SelectProps> = props => {
             <LightTooltip
               title={option.tooltip}
               placement="top-start"
-              // interactive={!(typeof option.tooltip === 'string')}
               TransitionComponent={Zoom}
             >
               <div

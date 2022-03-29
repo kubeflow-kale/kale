@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import { NotebookPanel } from '@jupyterlab/notebook'
+import { NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../lib/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@mui/icons-material/Close';

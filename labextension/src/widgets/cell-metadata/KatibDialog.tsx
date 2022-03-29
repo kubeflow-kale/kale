@@ -440,7 +440,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         <Grid
           container
           direction="row"
-          // @mui/icons-materialflex-start"
           alignItems="center"
         >
           <div
@@ -452,7 +451,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           <LightTooltip
             title={helpContent}
             placement="top-start"
-            // interactive={true}
             TransitionComponent={Zoom}
           >
             <Help
@@ -499,7 +497,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 <Grid
                   container
                   direction="row"
-                  // @mui/icons-materialflex-end"
                   alignItems="center"
                 >
                   <Input
@@ -620,7 +617,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             <Grid
               container
               direction="row"
-              // @mui/icons-materialflex-start"
               alignItems="center"
             >
               <Grid item xs={1}>
@@ -778,7 +774,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           <Grid
             container
             direction="row"
-            // @mui/icons-materialflex-start"
             alignItems="center"
           >
             <Input

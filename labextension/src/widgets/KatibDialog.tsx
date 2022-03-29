@@ -491,7 +491,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           <Grid
             container
             direction="column"
-            // @mui/icons-materialflex-end"
             alignItems="center"
           >
             {(metadataParameter.feasibleSpace.list || []).map((value, idx) => {
@@ -499,7 +498,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 <Grid
                   container
                   direction="row"
-                  // @mui/icons-materialflex-end"
                   alignItems="center"
                 >
                   <Input
@@ -540,7 +538,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             <Grid
               container
               direction="row"
-              // @mui/icons-materialflex-end"
               alignItems="center"
             >
               <div className="add-button" style={{ padding: 0 }}>
@@ -621,7 +618,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             <Grid
               container
               direction="row"
-              // @mui/icons-materialflex-start"
               alignItems="center"
             >
               <Grid item xs={1}>
@@ -779,7 +775,6 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           <Grid
             container
             direction="row"
-            // @mui/icons-materialflex-start"
             alignItems="center"
           >
             <Input

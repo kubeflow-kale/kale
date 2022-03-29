@@ -800,7 +800,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         <LightTooltip
           title={'Enable this option to run HyperParameter Tuning with Katib'}
           placement="top-start"
-          // interactive={true}
           TransitionComponent={Zoom}
         >
           <div className="toolbar">
