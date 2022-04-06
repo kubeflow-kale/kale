@@ -17,8 +17,8 @@
 import * as React from 'react';
 import { Input } from './Input';
 import { RokInput } from './RokInput';
-import { Button } from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
+import { Button } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export interface IAnnotation {
   key: string;
@@ -39,6 +39,7 @@ interface AnnotationInputProps {
 export const AnnotationInput: React.FunctionComponent<AnnotationInputProps> = props => {
   const [annotation, setAnnotation] = React.useState({ key: '', value: '' });
 
+  console.log(annotation)
   React.useEffect(() => {
     // need this to set the annotation when the notebook is loaded
     // and the metadata is updated

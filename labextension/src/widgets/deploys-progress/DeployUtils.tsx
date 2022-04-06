@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import * as React from 'react';
-import WarningIcon from '@material-ui/icons/Warning';
-import InfoIcon from '@material-ui/icons/Info';
+import WarningIcon from '@mui/icons-material/Warning';
+import InfoIcon from '@mui/icons-material/Info';
 
 import NotebookUtils from '../../lib/NotebookUtils';
 

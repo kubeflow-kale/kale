@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import { Theme, withStyles } from '@material-ui/core/styles';
-import { Tooltip } from '@material-ui/core';
+import { Theme } from '@mui/material/styles';
+import { withStyles } from '@mui/styles';
+import { Tooltip } from '@mui/material';
 
 export const LightTooltip = withStyles((theme: Theme) => ({
   tooltip: {

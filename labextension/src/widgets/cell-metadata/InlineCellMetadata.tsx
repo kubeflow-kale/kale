@@ -35,7 +35,7 @@ import {
   IProps as EditorProps,
 } from './CellMetadataEditor';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import { Switch } from '@material-ui/core';
+import { Switch } from '@mui/material';
 import NotebookUtils from '../../lib/NotebookUtils';
 
 interface IProps {
@@ -60,7 +60,7 @@ const DefaultState: IState = {
   metadataCmp: [],
   checked: false,
   editors: {},
-  isEditorVisible: false,
+  isEditorVisible: true,
 };
 
 type SaveState = 'started' | 'completed' | 'failed';

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["pip==22.0.4", "jupyter-packaging==0.10.6",  "jupyterlab==3.2.2", "setuptools==60.10.0"]
+build-backend = "jupyter_packaging.build_api"
+
+[tool.jupyter-packaging.options]
+skip-if-exists = ["kubeflow-kale-labextension/labextension/static/style.js"]
+ensured-targets = ["kubeflow-kale-labextension/labextension/static/style.js", "kubeflow-kale-labextension/labextension/package.json"]
+
+[tool.jupyter-packaging.builder]
+factory = "jupyter_packaging.npm_builder"
+
+[tool.jupyter-packaging.build-args]
+build_cmd = "build:prod"
+npm = ["jlpm"]
+
+[tool.check-manifest]
+ignore = ["kubeflow-kale-labextension/labextension/**", "yarn.lock", ".*", "package-lock.json"]

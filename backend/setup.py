@@ -37,7 +37,6 @@ setup(
         'autopep8 >=1.4, <1.5',
         'astor >= 0.8.1',
         'networkx >=2.3, <3.0',
-        'jinja2 >=2.10, <3.0',
         'pyflakes >=2.1.1',
         'dill >=0.3, <0.4',
         'IPython >= 7.6.0',
@@ -52,6 +51,8 @@ setup(
         'progress >= 1.5',
         'kfserving >= 0.4.0, < 0.5.0',
         'kubernetes < 12.0.0',
+        'jinja2 == 3.0.3',
+        "jupyter-server == 1.13.5"
     ],
     extras_require={
         'dev': [

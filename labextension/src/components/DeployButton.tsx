@@ -15,17 +15,17 @@
  */
 
 import * as React from 'react';
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
-import ButtonGroup from '@material-ui/core/ButtonGroup';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
-import ClickAwayListener from '@material-ui/core/ClickAwayListener';
-import Grow from '@material-ui/core/Grow';
-import Paper from '@material-ui/core/Paper';
-import Popper from '@material-ui/core/Popper';
-import MenuItem from '@material-ui/core/MenuItem';
-import MenuList from '@material-ui/core/MenuList';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
+import ButtonGroup from '@mui/material/ButtonGroup';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ClickAwayListener from '@mui/base/ClickAwayListener';
+import Grow from '@mui/material/Grow';
+import Paper from '@mui/material/Paper';
+import Popper from '@mui/material/Popper';
+import MenuItem from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
+import CircularProgress from '@mui/material/CircularProgress';
 
 interface ISplitDeployButton {
   running: boolean;
@@ -59,7 +59,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = pr
     setOpen(prevOpen => !prevOpen);
   };
 
-  const handleClose = (event: React.MouseEvent<Document>) => {
+  const handleClose = () => {
     if (anchorRef.current && anchorRef.current.contains(event.target)) {
       return;
     }
