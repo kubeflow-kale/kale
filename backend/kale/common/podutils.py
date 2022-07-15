@@ -118,7 +118,7 @@ def get_container_name():
         raise RuntimeError("Too many container candidates.Cannot infer the"
                            " name of the current container from: %s "
                            % candidates)
-    if len(candidates) > 0:
+    if len(candidates) == 0:
         raise RuntimeError("No container names left. Could not infer the name"
                            " of the running container.")
     log.info("Choosing '%s'" % candidates[0])
