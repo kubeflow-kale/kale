@@ -24,7 +24,8 @@ class PipelineParam(NamedTuple):
 class Artifact(NamedTuple):
     """A Step artifact."""
     name: str
-    path: str
+    type: str
+    is_input: bool = False
 
 
 from .step import Step, StepConfig
@@ -32,6 +33,6 @@ from .pipeline import Pipeline, PipelineConfig, VolumeConfig
 from .compiler import Compiler
 from .processors import NotebookProcessor, NotebookConfig, PythonProcessor
 
-from kale.common import logutils
+from backend.kale.common import logutils
 logutils.get_or_create_logger(module=__name__, name="kale")
 del logutils

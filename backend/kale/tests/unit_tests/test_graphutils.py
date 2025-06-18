@@ -14,7 +14,7 @@
 
 import networkx as nx
 
-from kale.common import graphutils
+from backend.common import graphutils
 
 
 def test_get_ordered_ancestors():

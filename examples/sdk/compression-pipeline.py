@@ -57,7 +57,7 @@ the docstrings nicely:
 
 """
 
-from kale.sdk import pipeline, step
+from backend.sdk import pipeline, step
 
 
 @step(name="download")

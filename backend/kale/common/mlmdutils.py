@@ -25,10 +25,10 @@ import logging
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.proto.metadata_store_pb2 import (MetadataStoreClientConfig,
                                                   GrpcChannelArguments)
-from ml_metadata.metadata_store import metadata_store
-from ml_metadata.errors import AlreadyExistsError
+from ml_metadata.metadata_store import metadata_store 
+# from ml_metadata.errors import AlreadyExistsError   
 
-from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
+from backend.kale.common import utils, podutils, workflowutils, k8sutils, kfputils
 
 
 METADATA_GRPC_SERVICE_SERVICE_HOST_ENV = "METADATA_GRPC_SERVICE_SERVICE_HOST"
@@ -266,12 +266,13 @@ class MLMetadata(object):
                     context_name=context_name, type_name=type_name,
                     property_types=property_types, properties=properties)
                 log.info("Succesfully created context")
-            except AlreadyExistsError:
+            except Exception as ex:
                 # XXX: We get here if two concurrent steps try to create this
                 # new context
-                log.info("Context already exists")
-                context = self.store.get_context_by_type_and_name(
-                    type_name=type_name, context_name=context_name)
+                if "AlreadyExists" in str(ex):
+                    log.info("Context already exists")
+                    context = self.store.get_context_by_type_and_name(
+                        type_name=type_name, context_name=context_name)
         else:
             log.info("Context already exists")
         log.info("ContextType ID: %s - Context ID: %s", context.type_id,
@@ -403,7 +404,7 @@ class MLMetadata(object):
         artifact_name = task["task"]["action_params"]["params"]["commit_title"]
         log.info("Creating %s artifact for '%s/%s?version=%s...'",
                  ROK_SNAPSHOT_ARTIFACT_TYPE_NAME, bucket, obj, version)
-        from rok_gw_client.client import RokClient
+        from rok_gw_client.client import RokClient # noqa: E402
         rok_client = RokClient()
         task_info = rok_client.version_info(bucket, obj, version)
         members = int(task_info["group_member_count"])

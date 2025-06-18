@@ -16,7 +16,7 @@ import os
 import pytest
 import nbformat
 
-from kale.rpc import nb
+from backend.rpc import nb
 
 
 @pytest.fixture(scope='module')

@@ -16,7 +16,7 @@ import pytest
 
 from testfixtures import mock
 
-from kale.common import jputils as ju
+from backend.common import jputils as ju
 
 
 def _output_display(data):

@@ -1,4 +1,4 @@
-from kale.sdk import pipeline, step
+from backend.kale.sdk import pipeline, step
 
 
 @step(name="step1")

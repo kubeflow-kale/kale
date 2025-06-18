@@ -21,9 +21,10 @@ from typing import Iterable, Dict
 from kubernetes.config import ConfigException
 from kubernetes.client.rest import ApiException
 
-from kale import Step, PipelineParam
-from kale.config import Config, Field, validators
-from kale.common import graphutils, utils, podutils
+from backend.kale.step import Step
+from backend.kale.config.config import PipelineParam
+from backend.kale.config import Config, Field, validators
+from backend.kale.common import graphutils, utils, podutils
 
 log = logging.getLogger(__name__)
 
@@ -69,8 +70,7 @@ class VolumeConfig(Config):
 
     def _parse_access_mode(self):
         if self.volume_access_mode:
-            self.volume_access_mode = (
-                VOLUME_ACCESS_MODE_MAP[self.volume_access_mode])
+            self.volume_access_mode = (VOLUME_ACCESS_MODE_MAP[self.volume_access_mode])
 
     def _postprocess(self):
         self._parse_annotations()
@@ -183,8 +183,7 @@ class PipelineConfig(Config):
         wd = os.path.realpath(self.abs_working_dir)
         # get the volumes for which the working directory is a sub-path of
         # the mount point
-        vols = list(
-            filter(lambda x: wd.startswith(x.mount_point), self.volumes))
+        vols = list(filter(lambda x: wd.startswith(x.mount_point), self.volumes))
         # if we found any, then set marshal directory inside working directory
         if len(vols) > 0:
             basename = os.path.basename(self.source_path)

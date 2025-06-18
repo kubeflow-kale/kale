@@ -1,8 +1,8 @@
 def final_auto_snapshot():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.common import rokutils as _kale_rokutils
+    from backend.kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "test",

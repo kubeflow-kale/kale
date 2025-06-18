@@ -144,7 +144,7 @@ def graceful_exit(exit_code):
     inside the `kale.common.jputils.capture_streams` function.
     """
     if is_ipython():
-        from kale.common.jputils import KaleGracefulExit
+        from backend.kale.common.jputils import KaleGracefulExit
         raise KaleGracefulExit
     else:
         sys.exit(exit_code)

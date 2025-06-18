@@ -20,18 +20,26 @@ import autopep8
 
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
-from kale import Pipeline, Step
-from kale.common import kfputils
-
+from backend.kale import Pipeline, Step
+from backend.kale.common import kfputils
+from backend.kale.step import PipelineParam, Artifact
 
 log = logging.getLogger(__name__)
 
 PY_FN_TEMPLATE = "py_function_template.jinja2"
-NB_FN_TEMPLATE = "nb_function_template.jinja2"
-PIPELINE_TEMPLATE = "pipeline_template.jinja2"
+NB_FN_TEMPLATE = "new_nb_function_template.jinja2"
+PIPELINE_TEMPLATE = "new_pipeline_template.jinja2"
 PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE,
                    "py": PY_FN_TEMPLATE}
 
+KFP_DSL_ARTIFACT_IMPORTS = [
+    "Dataset",
+    "Model",
+    "Metrics",
+    "ClassificationMetrics",
+    "Artifact",
+    "HTML"
+]
 
 class Compiler:
     """Converts a Pipeline object into a KFP executable.
@@ -108,14 +116,48 @@ class Compiler:
                            for s in step_source_raw]
 
         _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
-        template = self._get_templating_env().get_template(_template_filename)
-        fn_code = template.render(step=step, **self.pipeline.config.to_dict())
+        template = self._get_templating_env("D:/Projects/kale/backend/kale/templates/").get_template(_template_filename)
+        # fn_code = template.render(step=step, **self.pipeline.config.to_dict())   #OLD
         # fix code style using pep8 guidelines
+        
+        component_params_list = []
+
+        # Inputs (PipelineParams and Input Artifacts)
+        # Combine and sort inputs for consistent signature
+        all_inputs_for_signature = step.kfp_inputs
+
+        for io_obj in all_inputs_for_signature:
+            if isinstance(io_obj, PipelineParam):
+                param_type = io_obj.param_type
+                # Safely format value using repr to handle strings, None, etc.
+                param_value_str = repr(io_obj.param_value)
+                component_params_list.append(f"{io_obj.name}: {param_type} = {param_value_str}")
+            elif isinstance(io_obj, Artifact):
+                # Ensure artifact type is valid and capitalize for KFP DSL
+                artifact_type_name = io_obj.type or "Artifact" # Default to 'Artifact' if type is None
+                component_params_list.append(f"{io_obj.name}: Input[{artifact_type_name}]")
+        
+        all_outputs_for_signature = step.kfp_outputs
+
+        for io_obj in all_outputs_for_signature:
+            if isinstance(io_obj, Artifact):
+                artifact_type_name = io_obj.type or "Artifact" # Default to 'Artifact' if type is None
+                component_params_list.append(f"{io_obj.name}: Output[{artifact_type_name}]")
+        
+        component_signature_args = ", ".join(component_params_list)
+
+        fn_code = template.render(
+            step=step,
+            component_signature_args=component_signature_args,
+            # Pass the list of artifact types to be imported in the component file
+            kfp_dsl_artifact_imports=KFP_DSL_ARTIFACT_IMPORTS,
+            **self.pipeline.config.to_dict()
+        )
         return autopep8.fix_code(fn_code)
 
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
-        template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
+        template = self._get_templating_env("D:/Projects/kale/backend/kale/templates/").get_template(PIPELINE_TEMPLATE)
         pipeline_code = template.render(
             pipeline=self.pipeline,
             lightweight_components=lightweight_components,

@@ -8,10 +8,10 @@ from kubernetes import client as k8s_client
 
 
 def step1():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.common import rokutils as _kale_rokutils
+    from backend.kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
         "test",
@@ -19,8 +19,8 @@ def step1():
         "",
         before=True)
 
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.kale.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {}
 
@@ -44,10 +44,10 @@ def step1():
 
 
 def step3(b: str):
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.common import rokutils as _kale_rokutils
+    from backend.kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
         "test",
@@ -55,8 +55,8 @@ def step3(b: str):
         "",
         before=True)
 
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.kale.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {"b": b}
 
@@ -80,10 +80,10 @@ def step3(b: str):
 
 
 def step2(a: int, c: int):
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.common import rokutils as _kale_rokutils
+    from backend.kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
         "test",
@@ -91,8 +91,8 @@ def step2(a: int, c: int):
         "",
         before=True)
 
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.kale.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {"a": a, "c": c}
 
@@ -117,11 +117,11 @@ def step2(a: int, c: int):
 
 
 def final_auto_snapshot():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.kale.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {}
 
@@ -134,7 +134,7 @@ def final_auto_snapshot():
     _kale_artifacts = {}
 
     _kale_link_artifacts(_kale_artifacts)
-    from kale.common import rokutils as _kale_rokutils
+    from backend.kale.common import rokutils as _kale_rokutils
     _kale_mlmdutils.call("link_input_rok_artifacts")
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "test",
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('test')
 
     # Submit a pipeline run
-    from kale.common import kfputils
+    from backend.kale.common import kfputils
     pipeline_id, version_id = kfputils.upload_pipeline(
         pipeline_filename, "test")
     run_result = kfputils.run_pipeline(

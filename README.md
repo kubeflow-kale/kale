@@ -1,147 +1,99 @@
-<p align="center">
-<img alt="Kale Logo" src="https://raw.githubusercontent.com/kubeflow-kale/kale/master/docs/imgs/kale_logo.png" height="130">
-</p>
-<p align="center">
-<a href="#">
-  <img alt="GitHub License" src="https://badgen.net/github/license/kubeflow-kale/kale">
-</a>
-<a target="_blank" href="https://pypi.org/project/kubeflow-kale/">
-    <img alt="PyPI Version" src="https://badgen.net/pypi/v/kubeflow-kale">
-</a>
-<a target="_blank" href="https://www.npmjs.com/package/kubeflow-kale-labextension">
-  <img alt="npm Version" src="https://badgen.net/npm/v/kubeflow-kale-labextension">
-</a>
-<a target="_blank" href="https://github.com/kubeflow-kale/kale/actions">
-  <img alt="Kale CI Workflow Status" src="https://github.com/kubeflow-kale/kale/workflows/CI/badge.svg">
-</a>
-</p>
+# kale
 
----
+[![Github Actions Status](https://github.com/kubeflow-kale/kale.git/workflows/Build/badge.svg)](https://github.com/kubeflow-kale/kale.git/actions/workflows/build.yml)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/kubeflow-kale/kale.git/main?urlpath=lab)
 
-KALE (Kubeflow Automated pipeLines Engine) is a project that aims at simplifying
-the Data Science experience of deploying Kubeflow Pipelines workflows.
 
-Kubeflow is a great platform for orchestrating complex workflows on top
-Kubernetes and Kubeflow Pipeline provides the mean to create reusable components
-that can be executed as part of workflows. The self-service nature of Kubeflow
-make it extremely appealing for Data Science use, at it provides an easy access
-to advanced distributed jobs orchestration, re-usability of components, Jupyter
-Notebooks, rich UIs and more. Still, developing and maintaining Kubeflow
-workflows can be hard for data scientists, who may not be experts in working
-orchestration platforms and related SDKs. Additionally, data science often
-involve processes of data exploration, iterative modelling and interactive
-environments (mostly Jupyter notebook).
+A JupyterLab extension.
 
-Kale bridges this gap by providing a simple UI to define Kubeflow Pipelines
-workflows directly from you JupyterLab interface, without the need to change a
-single line of code.
+## Requirements
 
-Read more about Kale and how it works in this Medium post:
-[Automating Jupyter Notebook Deployments to Kubeflow Pipelines with Kale](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
+- JupyterLab >= 4.0.0
 
-## Getting started
+## Install
 
-Install the Kale backend from PyPI and the JupyterLab extension. You can find a
-set of curated Notebooks in the
-[examples repository](https://github.com/kubeflow-kale/examples)
+To install the extension, execute:
 
 ```bash
-# install kale
-pip install kubeflow-kale
+pip install kale
+```
 
-# install jupyter lab
-pip install "jupyterlab>=2.0.0,<3.0.0"
+## Uninstall
 
-# install the extension
-jupyter labextension install kubeflow-kale-labextension
-# verify extension status
-jupyter labextension list
+To remove the extension, execute:
 
-# run
+```bash
+pip uninstall kale
+```
+
+## Contributing
+
+### Development install
+
+Note: You will need NodeJS to build the extension package.
+
+The `jlpm` command is JupyterLab's pinned version of
+[yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
+`yarn` or `npm` in lieu of `jlpm` below.
+
+```bash
+# Clone the repo to your local environment
+# Change directory to the kale directory
+# Install package in development mode
+pip install -e "."
+# Link your development version of the extension with JupyterLab
+jupyter labextension develop . --overwrite
+# Rebuild extension Typescript source after making changes
+jlpm build
+```
+
+You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
+
+```bash
+# Watch the source directory in one terminal, automatically rebuilding when needed
+jlpm watch
+# Run JupyterLab in another terminal
 jupyter lab
 ```
 
-<img alt="Kale JupyterLab Extension" src="https://raw.githubusercontent.com/kubeflow-kale/kale/master/docs/imgs/labextension.png"/>
+With the watch command running, every saved change will immediately be built locally and available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
 
-To build images to be used as a NotebookServer in Kubeflow, refer to the
-Dockerfile in the `docker` folder.
-
-### FAQ
-
-Head over to [FAQ](FAQ.md) to read about some known issues and some of the
-limitations imposed by the Kale data marshalling model.
-
-## Resources
-
-- Kale introduction [blog post](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
-- Codelabs showcasing Kale working in MiniKF with Arrikto's [Rok](https://www.arrikto.com/):
-  - [From Notebook to Kubeflow Pipelines](https://codelabs.developers.google.com/codelabs/cloud-kubeflow-minikf-kale/#0)
-  - [From Notebook to Kubeflow Pipelines with HP Tuning](https://arrik.to/demowfhp)
-- KubeCon NA Tutorial 2019: [From Notebook to Kubeflow Pipelines: An End-to-End Data Science Workflow](https://kccncna19.sched.com/event/Uaeq/tutorial-from-notebook-to-kubeflow-pipelines-an-end-to-end-data-science-workflow-michelle-casbon-google-stefano-fioravanzo-fondazione-bruno-kessler-ilias-katsakioris-arrikto?iframe=no&w=100%&sidebar=yes&bg=no)
-  / [video](http://youtube.com/watch?v=C9rJzTzVzvQ)
-- CNCF Webinar 2020: [From Notebook to Kubeflow Pipelines with MiniKF & Kale](https://www.cncf.io/webinars/from-notebook-to-kubeflow-pipelines-with-minikf-kale/)
-  / [video](https://www.youtube.com/watch?v=1fX9ZFWkvvs)
-- KubeCon EU Tutorial 2020: [From Notebook to Kubeflow Pipelines with HP Tuning: A Data Science Journey](https://kccnceu20.sched.com/event/ZerG/tutorial-from-notebook-to-kubeflow-pipelines-with-hp-tuning-a-data-science-journey-stefano-fioravanzo-ilias-katsakioris-arrikto)
-  / [video](https://www.youtube.com/watch?v=QK0NxhyADpM)
-
-## Contribute
-
-#### Backend
-
-Create a new Python virtual environment with `Python >= 3.6`. Then:
+By default, the `jlpm build` command generates the source maps for this extension to make it easier to debug using the browser dev tools. To also generate source maps for the JupyterLab core extensions, you can run the following command:
 
 ```bash
-cd backend/
-pip install -e .[dev]
-
-# run tests
-pytest -x -vv
+jupyter lab build --minimize=False
 ```
 
-#### Labextension
-
-The JupyterLab Python package comes with its own yarn wrapper, called `jlpm`.
-While using the previously installed venv, install JupyterLab by running:
+### Development uninstall
 
 ```bash
-pip install "jupyterlab>=2.0.0,<3.0.0"
+pip uninstall kale
 ```
 
-You can then run the following to install the Kale extension:
+In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
+command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
+folder is located. Then you can remove the symlink named `kale` within that folder.
 
-```bash
-cd labextension/
+### Testing the extension
 
-# install dependencies from package.lock
-jlpm install
-# build extension
-jlpm run build
+#### Frontend tests
 
-# list installed jp extensions
-jlpm labextension list
-# install Kale extension
-jlpm labextension install .
+This extension is using [Jest](https://jestjs.io/) for JavaScript code testing.
 
-# for development:
-# build and watch
-jlpm run watch
+To execute them, execute:
 
-# in another shell, run JupyterLab in watch mode
-jupyter lab --no-browser --watch
+```sh
+jlpm
+jlpm test
 ```
 
-#### Git Hooks
+#### Integration tests
 
-This repository uses
-[husky](https://github.com/typicode/husky)
-to set up git hooks.
+This extension uses [Playwright](https://playwright.dev/docs/intro) for the integration tests (aka user level tests).
+More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jupyterlab/tree/master/galata) is used to handle testing the extension in JupyterLab.
 
-For `husky` to function properly, you need to have `yarn` installed and in your
-`PATH`. The reason that is required is that `husky` is installed via
-`jlpm install` and `jlpm` is a `yarn` wrapper. (Similarly, if it was installed
-using the `npm` package manager, then `npm` would have to be in `PATH`.)
+More information are provided within the [ui-tests](./ui-tests/README.md) README.
 
-Currently installed git hooks:
+### Packaging the extension
 
-- `pre-commit`: Run a prettier check on staged files, using
-  [pretty-quick](https://github.com/azz/pretty-quick)
+See [RELEASE](RELEASE.md)

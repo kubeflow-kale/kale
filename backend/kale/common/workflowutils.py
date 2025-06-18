@@ -14,7 +14,7 @@
 
 """Suite of helpers regarding workflow manipulation."""
 
-from kale.common import k8sutils
+from backend.kale.common import k8sutils
 
 
 ARGO_WORKFLOW_LABEL_KEY = "workflows.argoproj.io/workflow"

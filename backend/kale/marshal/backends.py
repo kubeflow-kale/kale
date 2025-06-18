@@ -14,7 +14,7 @@
 
 import logging
 
-from kale.marshal.backend import get_dispatcher, MarshalBackend
+from backend.kale.marshal.backend import get_dispatcher, MarshalBackend
 
 
 log = logging.getLogger(__name__)

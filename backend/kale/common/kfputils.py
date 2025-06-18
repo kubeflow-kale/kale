@@ -27,7 +27,7 @@ from functools import lru_cache
 from kfp import Client
 from kfp.compiler import Compiler
 
-from kale.common import utils, podutils, workflowutils
+from backend.kale.common import utils, podutils, workflowutils
 
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
@@ -65,9 +65,9 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
         f = next(filter(
-            lambda x: x.name == pipeline_name, pipelines.pipelines), None)
+            lambda x: x.display_name == pipeline_name, pipelines.pipelines), None)
         if f is not None:
-            pipeline_id = f.id
+            pipeline_id = f.pipeline_id
     return pipeline_id
 
 
@@ -138,28 +138,30 @@ def upload_pipeline(pipeline_package_path: str, pipeline_name: str,
         # The first version of the pipeline is set to the pipeline name value.
         # To work around this, upload the first pipeline, then another one
         # with a proper version name. Finally delete the original pipeline.
-        upp = client.pipeline_uploads.upload_pipeline(
+        upp = client.upload_pipeline(
             uploadfile=pipeline_package_path,
-            name=pipeline_name)
-        pipeline_id = upp.id
-        upv = client.pipeline_uploads.upload_pipeline_version(
-            uploadfile=pipeline_package_path,
-            name=version_name,
-            pipelineid=pipeline_id)
+            pipeline_name=pipeline_name)
+        pipeline_id = upp.pipeline_id
+        log.info("Pipeline '%s' uploaded with ID: %s", pipeline_name, pipeline_id)
+        upv = client.upload_pipeline_version(
+            pipeline_package_path=pipeline_package_path,
+            pipeline_version_name=version_name)
         # delete the first version which has the same name as the pipeline
-        client.pipelines.delete_pipeline_version(upp.default_version.id)
+        client.pipelines.delete_pipeline_version(upp.pipeline_id)
+        log.info("Deleted pipeline version with name '%s' and ID: %s",
+                 pipeline_name, upp.pipeline_id)
     else:
-        upv = client.pipeline_uploads.upload_pipeline_version(
-            uploadfile=pipeline_package_path,
-            name=version_name,
-            pipelineid=pipeline_id)
+        upv = client.upload_pipeline_version(
+            pipeline_package_path=pipeline_package_path,
+            pipeline_version_name=version_name,
+            pipeline_id=pipeline_id)
     log.info("Successfully uploaded version '%s' for pipeline '%s'.",
              version_name, pipeline_name)
-    return pipeline_id, upv.id
+    return pipeline_id, upv.pipeline_version_id
 
 
 def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
-                 version_id: str = None, host: str = None, **kwargs) -> Any:
+                 version_id: str = None, host: str = None, pipeline_package_path: str = None, **kwargs) -> Any:
     """Run pipeline (without uploading) in kfp.
 
     Args:
@@ -175,10 +177,12 @@ def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
     client = _get_kfp_client(host)
     log.info("Creating KFP experiment '%s'...", experiment_name)
     experiment = client.create_experiment(experiment_name)
-    pipeline = client.pipelines.get_pipeline(pipeline_id)
-    pipeline_name = pipeline.name
-    _version_id = version_id if version_id else pipeline.default_version.id
-    version_name = client.pipelines.get_pipeline_version(_version_id).name
+    pipeline = client.get_pipeline(pipeline_id)
+    pipeline_name = pipeline.display_name
+    _version_id = version_id if version_id else pipeline.pipeline_id
+    print(f"Pipeline ID: {_version_id}")
+    version_name = client.get_pipeline_version(pipeline_id=pipeline_id, pipeline_version_id=_version_id).display_name
+    print(f"Pipeline version: {version_name}")
     if not run_name:
         run_name = ("%s-%s-%s"
                     % (pipeline_name, version_name, utils.random_string()))
@@ -187,12 +191,22 @@ def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
                           version_name))
     log.info("Submitting new pipeline run '%s' for pipeline '%s' %s ...",
              run_name, pipeline_name, display_version)
-    run = client.run_pipeline(experiment.id, run_name,
-                              pipeline_id=pipeline_id,
-                              version_id=_version_id,
-                              params=kwargs)
-    run_url = ("%s/?ns=%s#/runs/details/%s"
-               % (client._get_url_prefix(), podutils.get_namespace(), run.id))
+    # run = client.run_pipeline(experiment.id, run_name,
+    #                           pipeline_id=pipeline_id,
+    #                           version_id=_version_id,
+    #                           params=kwargs)
+    run = client.create_run_from_pipeline_package(
+        pipeline_file= pipeline_package_path,
+        arguments=kwargs,
+        run_name=run_name,
+        experiment_name=experiment_name
+    )
+        
+    print(f"✅ Pipeline submitted!")
+    log.info("Run ID: %s", run.run_id)
+    # run_url = ("%s/?ns=%s#/runs/details/%s"
+    #            % (client._get_url_prefix(), podutils.get_namespace(), run.id))
+    run_url = f"🌐 View: {host}/#/runs/details/{run.run_id}"
     log.info("Successfully submitted pipeline run.")
     log.info("Run URL: <host>%s", run_url)
     return run

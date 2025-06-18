@@ -8,11 +8,11 @@ from kubernetes import client as k8s_client
 
 
 def step1():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.kale.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {}
 
@@ -31,12 +31,12 @@ def step1():
 
 
 def step2():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.common.runutils import ttl as _kale_ttl
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.kale.common.runutils import ttl as _kale_ttl
+    from backend.kale.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {}
 
@@ -56,11 +56,11 @@ def step2():
 
 
 def step3():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
-    from kale.marshal.decorator import marshal as _kale_marshal
-    from kale.common.runutils import link_artifacts as _kale_link_artifacts
+    from backend.marshal.decorator import marshal as _kale_marshal
+    from backend.kale.common.runutils import link_artifacts as _kale_link_artifacts
 
     _kale_pipeline_parameters = {}
 
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('test')
 
     # Submit a pipeline run
-    from kale.common import kfputils
+    from backend.kale.common import kfputils
     pipeline_id, version_id = kfputils.upload_pipeline(
         pipeline_filename, "test")
     run_result = kfputils.run_pipeline(

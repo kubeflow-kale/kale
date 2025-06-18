@@ -17,7 +17,7 @@ import logging
 
 from typing import Dict, List, Any, Union
 
-from kale import PipelineParam, marshal as marshal_utils
+from backend.kale import PipelineParam, marshal as marshal_utils
 
 
 log = logging.getLogger(__name__)

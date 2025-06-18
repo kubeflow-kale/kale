@@ -3,7 +3,7 @@ This pipeline showcases how you can easily define a retry strategy for a
 failing step.
 """
 
-from kale.sdk import pipeline, step
+from backend.sdk import pipeline, step
 
 
 """

@@ -20,7 +20,7 @@ import logging
 import tabulate
 
 from functools import lru_cache
-from kale.common import k8sutils
+from backend.kale.common import k8sutils
 
 ROK_CSI_STORAGE_CLASS = "rok"
 ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"

@@ -19,10 +19,10 @@ import math
 import logging
 import kubernetes
 
-from progress.bar import IncrementalBar
+from progress.bar import IncrementalBar 
 
-from kale.common import utils
-from kale.common import podutils, kfputils, k8sutils
+from backend.kale.common import utils
+from backend.kale.common import podutils, kfputils, k8sutils
 
 _client = None
 

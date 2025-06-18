@@ -17,7 +17,7 @@ import types
 import logging
 import kfserving
 
-from kale.common import serveutils, utils
+from backend.kale.common import serveutils, utils
 from kale import NotebookProcessor, marshal
 
 from typing import Dict, List

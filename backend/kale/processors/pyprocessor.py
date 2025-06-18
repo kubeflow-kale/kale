@@ -19,9 +19,9 @@ import logging
 from inspect import Parameter
 from typing import Callable, Dict
 
-from kale.common import astutils
-from kale import step as step_module
-from kale import Step, PipelineParam, PipelineConfig
+from backend.kale.common import astutils
+from backend.kale import step as step_module
+from backend.kale import Step, PipelineParam, PipelineConfig
 
 from .baseprocessor import BaseProcessor
 

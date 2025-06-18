@@ -17,7 +17,7 @@ import pytest
 
 from unittest import mock
 
-from kale import Pipeline, Step, Compiler, NotebookConfig
+from backend.kale import Pipeline, Step, Compiler, NotebookConfig
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

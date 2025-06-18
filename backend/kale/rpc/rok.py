@@ -14,9 +14,9 @@
 
 import logging
 
-from kale.common import podutils, rokutils
-from kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
-from kale.rpc.log import create_adapter
+from backend.kale.common import podutils, rokutils
+from backend.kale.rpc.errors import (RPCNotFoundError, RPCServiceUnavailableError)
+from backend.kale.rpc.log import create_adapter
 
 
 logger = create_adapter(logging.getLogger(__name__))

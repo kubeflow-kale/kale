@@ -27,6 +27,6 @@ from .decorator import Marshaller
 # External code shouldn't care about the Dispatcher instance
 del get_dispatcher
 
-from kale.common import logutils
+from backend.kale.common import logutils
 logutils.get_or_create_logger(module=__name__, name="marshalling")
 del logutils

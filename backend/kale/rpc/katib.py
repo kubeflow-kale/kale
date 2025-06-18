@@ -15,8 +15,8 @@
 import os
 from kubernetes.client.rest import ApiException
 
-from kale.common import podutils, k8sutils, katibutils
-from kale.rpc.errors import RPCNotFoundError, RPCUnhandledError
+from backend.kale.common import podutils, k8sutils, katibutils
+from backend.kale.rpc.errors import RPCNotFoundError, RPCUnhandledError
 
 KATIB_PARAMETER_NAMES = ("objective", "algorithm", "parallelTrialCount",
                          "maxTrialCount", "maxFailedTrialCount", "parameters")

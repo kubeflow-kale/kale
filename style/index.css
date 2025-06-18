@@ -1,0 +1,188 @@
+/* Custom Extension Styles */
+
+.jp-ReactWidget {
+  font-family: var(--jp-ui-font-family);
+}
+
+/* Custom panel styling */
+#custom-side-panel {
+  min-width: 300px;
+  max-width: 400px;
+}
+
+/* Button styles */
+.custom-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--jp-ui-font-family);
+  font-size: var(--jp-ui-font-size1);
+  transition: background-color 0.2s ease;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.custom-button:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.custom-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.custom-button-primary {
+  background-color: var(--jp-brand-color1);
+  color: white;
+}
+
+.custom-button-secondary {
+  background-color: var(--jp-brand-color2);
+  color: white;
+}
+
+.custom-button-danger {
+  background-color: var(--jp-error-color1);
+  color: white;
+}
+
+/* Status indicator */
+.status-indicator {
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.status-connected {
+  background-color: var(--jp-success-color3);
+  color: var(--jp-success-color0);
+}
+
+.status-disconnected {
+  background-color: var(--jp-warn-color3);
+  color: var(--jp-warn-color0);
+}
+
+/* Output area */
+.output-area {
+  padding: 8px;
+  background-color: var(--jp-layout-color2);
+  border-radius: 4px;
+  min-height: 100px;
+  max-height: 300px;
+  overflow: auto;
+  font-family: var(--jp-code-font-family);
+  font-size: 12px;
+  white-space: pre-wrap;
+  border: 1px solid var(--jp-border-color1);
+  margin-top: 8px;
+}
+
+.output-area:empty::before {
+  content: 'No output yet...';
+  color: var(--jp-ui-font-color2);
+  font-style: italic;
+}
+
+/* Panel header */
+.panel-header {
+  margin: 0 0 16px 0;
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size2);
+  font-weight: bold;
+  border-bottom: 1px solid var(--jp-border-color1);
+  padding-bottom: 8px;
+}
+
+/* Section headers */
+.section-header {
+  margin: 16px 0 8px 0;
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size1);
+  font-weight: 600;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--jp-border-color2);
+  border-radius: 50%;
+  border-top-color: var(--jp-brand-color1);
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Code blocks in output */
+.output-area code {
+  background-color: var(--jp-layout-color1);
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-family: var(--jp-code-font-family);
+}
+
+/* Error messages */
+.error-message {
+  color: var(--jp-error-color1);
+  background-color: var(--jp-error-color3);
+  padding: 8px;
+  border-radius: 4px;
+  margin: 8px 0;
+  border-left: 4px solid var(--jp-error-color1);
+}
+
+/* Success messages */
+.success-message {
+  color: var(--jp-success-color1);
+  background-color: var(--jp-success-color3);
+  padding: 8px;
+  border-radius: 4px;
+  margin: 8px 0;
+  border-left: 4px solid var(--jp-success-color1);
+}
+
+/* Info messages */
+.info-message {
+  color: var(--jp-info-color1);
+  background-color: var(--jp-info-color3);
+  padding: 8px;
+  border-radius: 4px;
+  margin: 8px 0;
+  border-left: 4px solid var(--jp-info-color1);
+}
+
+/* Panel content container */
+.panel-content {
+  padding: 16px;
+  font-family: var(--jp-ui-font-family);
+}
+
+/* Button group */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 320px) {
+  #custom-side-panel {
+    min-width: 280px;
+  }
+  
+  .panel-content {
+    padding: 12px;
+  }
+}

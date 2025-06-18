@@ -18,7 +18,7 @@ import logging
 
 from typing import Callable, Dict
 
-from kale.common import utils, kfputils
+from backend.kale.common import utils, kfputils
 
 
 log = logging.getLogger(__name__)

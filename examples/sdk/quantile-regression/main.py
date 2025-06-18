@@ -1,4 +1,4 @@
-from kale.sdk import pipeline
+from backend.sdk import pipeline
 
 
 from init import init

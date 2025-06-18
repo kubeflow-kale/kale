@@ -13,7 +13,7 @@ def create_matrix(d1: int, d2: int):
     d2 = {}
     '''.format(d1, d2)
 
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
     _kale_block1 = '''
@@ -25,7 +25,7 @@ def create_matrix(d1: int, d2: int):
     '''
 
     _kale_block3 = '''
-    from kale.common import kfputils as _kale_kfputils
+    from backend.kale.common import kfputils as _kale_kfputils
     _kale_kfp_metrics = {
         "d1": d1,
         "d2": d2
@@ -42,8 +42,8 @@ def create_matrix(d1: int, d2: int):
     '''
 
     # run the code blocks inside a jupyter kernel
-    from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
+    from backend.kale.common.jputils import run_code as _kale_run_code
+    from backend.kale.common.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_pipeline_parameters_block,
                     _kale_block1,
@@ -59,7 +59,7 @@ def create_matrix(d1: int, d2: int):
 
 
 def sum_matrix():
-    from kale.common import mlmdutils as _kale_mlmdutils
+    from backend.kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
@@ -79,7 +79,7 @@ def sum_matrix():
     '''
 
     _kale_block3 = '''
-    from kale.common import kfputils as _kale_kfputils
+    from backend.kale.common import kfputils as _kale_kfputils
     _kale_kfp_metrics = {
         "sum-result": sum_result
     }
@@ -87,8 +87,8 @@ def sum_matrix():
     '''
 
     # run the code blocks inside a jupyter kernel
-    from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
+    from backend.kale.common.jputils import run_code as _kale_run_code
+    from backend.kale.common.kfputils import \
         update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     experiment = client.create_experiment('hp-tuning')
 
     # Submit a pipeline run
-    from kale.common import kfputils
+    from backend.kale.common import kfputils
     pipeline_id, version_id = kfputils.upload_pipeline(
         pipeline_filename, "hp-test")
     run_result = kfputils.run_pipeline(

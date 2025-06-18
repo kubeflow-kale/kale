@@ -207,6 +207,6 @@ if __name__ == "__main__":
     experiment = client.create_experiment('{{ experiment_name }}')
 
     # Submit a pipeline run
-    from kale.common import kfputils
+    from backend.kale.common import kfputils
     pipeline_id, version_id = kfputils.upload_pipeline(pipeline_filename, "{{ pipeline_name }}")
     run_result = kfputils.run_pipeline(experiment_name=experiment.name, pipeline_id=pipeline_id, version_id=version_id)

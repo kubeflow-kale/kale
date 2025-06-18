@@ -16,7 +16,7 @@ import ast
 import pytest
 from testfixtures import compare
 
-from kale.common import astutils as kale_ast
+from backend.common import astutils as kale_ast
 
 _numpy_snippet = '''
 import os
