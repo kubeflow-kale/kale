@@ -1,0 +1,296 @@
+# PIPELINE DEFINITION
+# Name: example
+# Description: Generated from annotated notebook
+components:
+  comp-data-loading:
+    executorLabel: exec-data-loading
+    outputDefinitions:
+      artifacts:
+        Output:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-evaluation:
+    executorLabel: exec-evaluation
+    outputDefinitions:
+      artifacts:
+        Output:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+  comp-preprocessing:
+    executorLabel: exec-preprocessing
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-training:
+    executorLabel: exec-training
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-data-loading:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - data_loading
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'numpy' 'pandas'\
+          \ 'scikit-learn' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef data_loading() -> Dataset:\n    \"\"\"\n    Pipeline step: step:data-loading\n\
+          \    Generated from notebook cell 0\n    Original tags: step:data-loading\n\
+          \    \"\"\"\n    # Imports\n    import os\n    import sys\n    import json\n\
+          \    import pickle\n    from pathlib import Path\n\n    print(f\"\U0001F504\
+          \ Executing data_loading component...\")\n    print(f\"\U0001F4DD Original\
+          \ cell content from notebook cell 0\")\n\n    # Original cell code\n   \
+          \ import pandas as pd\n    import numpy as np\n\n    print(\"\U0001F504\
+          \ Creating simple dataset...\")\n\n    # Create a simple synthetic dataset\n\
+          \    np.random.seed(42)\n    n_samples = 100\n\n    # Features: age, income\n\
+          \    age = np.random.randint(18, 65, n_samples)\n    income = age * 1000\
+          \ + np.random.normal(0, 5000, n_samples)\n\n    # Target: can_buy_house\
+          \ (1 if income > 50000, 0 otherwise)\n    target = (income > 50000).astype(int)\n\
+          \n    # Create DataFrame\n    data = pd.DataFrame({\n        'age': age,\n\
+          \        'income': income,\n        'can_buy_house': target\n    })\n\n\
+          \    print(f\"\u2705 Dataset created with {len(data)} samples\")\n    print(f\"\
+          \U0001F4CA Features: age, income\")\n    print(f\"\U0001F3AF Target: can_buy_house\"\
+          )\n    print(\"\\nFirst 5 rows:\")\n    print(data.head())\n\n    dataset_size\
+          \ = len(data)\n    feature_count = 2\n\n    print(f\"\u2705 data_loading\
+          \ component execution completed\")\n\n    # Return results\n    # Return\
+          \ the specific output if available\n    if \"dataset\" in locals():\n  \
+          \      return str(dataset) if hasattr(dataset, '__str__') else f\"Created\
+          \ dataset\"\n    else:\n        return \"Expected output 'dataset' not found,\
+          \ but step completed\"\n\n"
+        image: python:3.9
+    exec-evaluation:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluation
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'numpy' 'pandas'\
+          \ 'scikit-learn' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluation() -> Metrics:\n    \"\"\"\n    Pipeline step: step:evaluation\n\
+          \    Generated from notebook cell 3\n    Original tags: step:evaluation\n\
+          \    \"\"\"\n    # Imports\n    import os\n    import sys\n    import json\n\
+          \    import pickle\n    from pathlib import Path\n\n    print(f\"\U0001F504\
+          \ Executing evaluation component...\")\n    print(f\"\U0001F4DD Original\
+          \ cell content from notebook cell 3\")\n\n    # Original cell code\n   \
+          \ # Model evaluation\n    from sklearn.metrics import classification_report\n\
+          \n    print(\"\U0001F504 Evaluating model...\")\n\n    # Make predictions\n\
+          \    test_predictions = model.predict(X_test)\n    test_accuracy = accuracy_score(y_test,\
+          \ test_predictions)\n\n    print(f\"\U0001F3AF Test accuracy: {test_accuracy:.3f}\"\
+          )\n\n    # Detailed evaluation\n    print(\"\\n\U0001F4CB Classification\
+          \ Report:\")\n    print(classification_report(y_test, test_predictions))\n\
+          \n    # Simple predictions on new data\n    print(\"\\n\U0001F52E Sample\
+          \ predictions:\")\n    sample_data = [[25, 30000], [45, 80000], [35, 60000]]\n\
+          \    sample_predictions = model.predict(sample_data)\n\n    for i, (age,\
+          \ income) in enumerate(sample_data):\n        prediction = \"Yes\" if sample_predictions[i]\
+          \ == 1 else \"No\"\n        print(f\"   Age {age}, Income ${income:,} \u2192\
+          \ Can buy house: {prediction}\")\n\n    # Final metrics\n    final_accuracy\
+          \ = test_accuracy\n    total_correct = int(test_accuracy * len(y_test))\n\
+          \    model_performance = \"Good\" if test_accuracy > 0.8 else \"Fair\" if\
+          \ test_accuracy > 0.6 else \"Poor\"\n\n    print(f\"\\n\u2705 Evaluation\
+          \ completed!\")\n    print(f\"\U0001F4CA Final accuracy: {final_accuracy:.3f}\"\
+          )\n    print(f\"\U0001F4CA Correct predictions: {total_correct}/{len(y_test)}\"\
+          )\n    print(f\"\U0001F4CA Model performance: {model_performance}\")\n\n\
+          \    print(f\"\u2705 evaluation component execution completed\")\n\n   \
+          \ # Return results\n    # Return the specific output if available\n    if\
+          \ \"metrics\" in locals():\n        return str(metrics) if hasattr(metrics,\
+          \ '__str__') else f\"Created metrics\"\n    else:\n        return \"Expected\
+          \ output 'metrics' not found, but step completed\"\n\n"
+        image: python:3.9
+    exec-preprocessing:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - preprocessing
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'numpy' 'pandas'\
+          \ 'scikit-learn' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef preprocessing() -> str:\n    \"\"\"\n    Pipeline step: step:preprocessing\n\
+          \    Generated from notebook cell 1\n    Original tags: step:preprocessing\n\
+          \    \"\"\"\n    # Imports\n    import os\n    import sys\n    import json\n\
+          \    import pickle\n    from pathlib import Path\n\n    print(f\"\U0001F504\
+          \ Executing preprocessing component...\")\n    print(f\"\U0001F4DD Original\
+          \ cell content from notebook cell 1\")\n\n    # Original cell code\n   \
+          \ # Data preparation\n    from sklearn.model_selection import train_test_split\n\
+          \n    print(\"\U0001F504 Preparing data for training...\")\n\n    # Separate\
+          \ features and target\n    X = data[['age', 'income']]\n    y = data['can_buy_house']\n\
+          \n    print(f\"\U0001F4CA Features shape: {X.shape}\")\n    print(f\"\U0001F3AF\
+          \ Target shape: {y.shape}\")\n\n    # Split data\n    X_train, X_test, y_train,\
+          \ y_test = train_test_split(\n        X, y, test_size=0.3, random_state=42\n\
+          \    )\n\n    print(f\"\U0001F4C8 Training samples: {len(X_train)}\")\n\
+          \    print(f\"\U0001F4C9 Test samples: {len(X_test)}\")\n\n    # Basic statistics\n\
+          \    print(f\"\\n\U0001F4CA Training data stats:\")\n    print(f\"   Average\
+          \ age: {X_train['age'].mean():.1f}\")\n    print(f\"   Average income: ${X_train['income'].mean():.0f}\"\
+          )\n    print(f\"   Positive cases: {y_train.sum()}/{len(y_train)}\")\n\n\
+          \    train_samples = len(X_train)\n    test_samples = len(X_test)\n\n  \
+          \  print(\"\u2705 Data preparation completed!\")\n\n    print(f\"\u2705\
+          \ preprocessing component execution completed\")\n\n    # Return results\n\
+          \    # Try to return meaningful output from the executed code\n    result_vars\
+          \ = [k for k in locals().keys() if not k.startswith('_') and not callable(locals()[k])]\n\
+          \    if result_vars:\n        # Return a summary of what was created/computed\n\
+          \        summary = f\"Executed successfully. Created variables: {', '.join(result_vars[:5])}\"\
+          \n        if len(result_vars) > 5:\n            summary += f\" and {len(result_vars)\
+          \ - 5} more\"\n        return summary\n    else:\n        return \"Step\
+          \ completed successfully\"\n\n"
+        image: python:3.9
+    exec-training:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - training
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'numpy' 'pandas'\
+          \ 'scikit-learn' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef training() -> NamedTuple('Outputs', [('model', Model), ('metrics',\
+          \ Metrics)]):\n    \"\"\"\n    Pipeline step: step:training\n    Generated\
+          \ from notebook cell 2\n    Original tags: step:training\n    \"\"\"\n \
+          \   # Imports\n    import os\n    import sys\n    import json\n    import\
+          \ pickle\n    from pathlib import Path\n\n    print(f\"\U0001F504 Executing\
+          \ training component...\")\n    print(f\"\U0001F4DD Original cell content\
+          \ from notebook cell 2\")\n\n    # Original cell code\n    # Model training\n\
+          \    from sklearn.linear_model import LogisticRegression\n    from sklearn.metrics\
+          \ import accuracy_score\n\n    print(\"\U0001F504 Training model...\")\n\
+          \n    # Create and train model\n    model = LogisticRegression(random_state=42)\n\
+          \    model.fit(X_train, y_train)\n\n    print(\"\u2705 Model training completed!\"\
+          )\n\n    # Check training accuracy\n    train_predictions = model.predict(X_train)\n\
+          \    train_accuracy = accuracy_score(y_train, train_predictions)\n\n   \
+          \ print(f\"\U0001F4C8 Training accuracy: {train_accuracy:.3f}\")\n\n   \
+          \ # Model info\n    model_type = \"LogisticRegression\"\n    coefficients\
+          \ = model.coef_[0]\n\n    print(f\"\U0001F527 Model coefficients:\")\n \
+          \   print(f\"   Age coefficient: {coefficients[0]:.4f}\")\n    print(f\"\
+          \   Income coefficient: {coefficients[1]:.6f}\")\n\n    training_accuracy\
+          \ = train_accuracy\n\n    print(f\"\u2705 training component execution completed\"\
+          )\n\n    # Return results\n    from collections import namedtuple\n    Outputs\
+          \ = namedtuple('Outputs', ['model', 'metrics'])\n    return Outputs(locals().get(\"\
+          model\", f\"Missing: model\"), locals().get(\"metrics\", f\"Missing: metrics\"\
+          ))\n\n"
+        image: python:3.9
+pipelineInfo:
+  description: Generated from annotated notebook
+  name: example
+root:
+  dag:
+    tasks:
+      data-loading:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-data-loading
+        taskInfo:
+          name: data-loading
+      evaluation:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluation
+        dependentTasks:
+        - training
+        taskInfo:
+          name: evaluation
+      preprocessing:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-preprocessing
+        dependentTasks:
+        - data-loading
+        taskInfo:
+          name: preprocessing
+      training:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-training
+        dependentTasks:
+        - preprocessing
+        taskInfo:
+          name: training
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.13.0

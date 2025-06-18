@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.3.8
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: amritkmr4272@gmail.com
+author_name: Amrit Kumar
+has_binder: true
+has_settings: true
+kind: frontend
+labextension_name: kale
+project_short_description: A JupyterLab extension.
+python_name: kale
+repository: https://github.com/kubeflow-kale/kale.git
+test: true
+
