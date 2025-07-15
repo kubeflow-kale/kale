@@ -73,7 +73,7 @@ const PanelComponent: React.FC<IPanelProps> = ({ serviceManager, getCurrentNoteb
       setIsLoading(true);
       setResponse('Initializing direct notebook to KFP converter...');
       
-      const result = await kernelManager.initializeNotebookToKFPConverter();
+      const result = await kernelManager.initializeConverter();
       setResponse(result);
       setConverterInitialized(true);
     } catch (error) {
@@ -160,7 +160,7 @@ const PanelComponent: React.FC<IPanelProps> = ({ serviceManager, getCurrentNoteb
       setResponse('Analyzing notebook annotations...');
 
       const notebookPath = currentNotebook.context.path;
-      const result = await kernelManager.analyzeNotebookAnnotations(notebookPath);
+      const result = await kernelManager.analyzeNotebook(notebookPath);
       setResponse(result);
 
     } catch (error) {
@@ -194,7 +194,7 @@ const PanelComponent: React.FC<IPanelProps> = ({ serviceManager, getCurrentNoteb
       const notebookPath = currentNotebook.context.path;
       const outputPath = notebookPath.replace('.ipynb', '_kfp_pipeline.py');
       
-      const result = await kernelManager.convertNotebookToKFP(notebookPath, outputPath);
+      const result = await kernelManager.convertNotebook(notebookPath, outputPath);
       setResponse(result);
       setLastGeneratedKFPFile(outputPath);
 

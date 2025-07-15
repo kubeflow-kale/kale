@@ -7,8 +7,8 @@ node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
+.vscode/
 kale/labextension
-# Version file is handled by hatchling
 kale/_version.py
 
 # Integration tests
@@ -123,3 +123,4 @@ dmypy.json
 
 # Yarn cache
 .yarn/
+
