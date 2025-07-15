@@ -1,0 +1,383 @@
+# PIPELINE DEFINITION
+# Name: kale-pipeline
+# Description: Share some candies between three lovely kids
+# Inputs:
+#    candies: int [Default: 20.0]
+components:
+  comp-kid1:
+    executorLabel: exec-kid1
+    inputDefinitions:
+      parameters:
+        candies_in_sack:
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      artifacts:
+        kid1_handful:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-kid2:
+    executorLabel: exec-kid2
+    inputDefinitions:
+      artifacts:
+        kid1_handful:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        candies_in_sack:
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      artifacts:
+        kid2_handful:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-kid3:
+    executorLabel: exec-kid3
+    inputDefinitions:
+      artifacts:
+        kid1_handful:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        kid2_handful:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        candies_in_sack:
+          parameterType: NUMBER_INTEGER
+  comp-sack:
+    executorLabel: exec-sack
+    inputDefinitions:
+      parameters:
+        candies_param:
+          parameterType: NUMBER_INTEGER
+deploymentSpec:
+  executors:
+    exec-kid1:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - kid1
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'dill' 'pandas'\
+          \ 'numpy' 'scikit-learn' 'joblib' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef kid1(candies_in_sack: int, kid1_handful: Output[Dataset]):\n\
+          \    _kale_pipeline_parameters_block = f'''\n    CANDIES = {candies_in_sack}\n\
+          \    '''\n\n    from backend.kale.common import mlmdutils as _kale_mlmdutils\n\
+          \    _kale_mlmdutils.init_metadata()\n\n    _kale_data_loading_block = '''\n\
+          \    # -----------------------DATA LOADING START--------------------------------\n\
+          \    from backend.kale import marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"\
+          /marshal\")\n    # -----------------------DATA LOADING END----------------------------------\n\
+          \    '''\n\n    _kale_block1 = '''\n    import random\n    '''\n\n    _kale_block2\
+          \ = '''\n    def get_handful(left):\n        if left == 0:\n           \
+          \ print(\"There are no candies left! I want to cry :(\")\n            return\
+          \ 0\n        c = random.randint(1, left)\n        print(\"I got %s candies!\"\
+          \ % c)\n        return c\n    '''\n\n    _kale_block3 = '''\n    # kid1\
+          \ gets a handful, without looking in the bad!\n    kid1_val = get_handful(CANDIES)\n\
+          \    '''\n\n    _kale_data_saving_block = '''\n    # -----------------------DATA\
+          \ SAVING START---------------------------------\n    from backend.kale import\
+          \ marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"/marshal\"\
+          )\n    # -----------------------DATA SAVING END-----------------------------------\n\
+          \    '''\n\n    # run the code blocks inside a jupyter kernel\n    from\
+          \ backend.kale.common.jputils import run_code as _kale_run_code\n    from\
+          \ backend.kale.common.kfputils import \\\n        update_uimetadata as _kale_update_uimetadata\n\
+          \n    _kale_blocks = (\n        _kale_pipeline_parameters_block,\n     \
+          \   _kale_data_loading_block,\n        _kale_block1,\n        _kale_block2,\n\
+          \        _kale_block3,\n        _kale_data_saving_block\n    )\n\n    _kale_html_artifact\
+          \ = _kale_run_code(_kale_blocks)\n    with open(\"/kid1.html\", \"w\") as\
+          \ f:\n        f.write(_kale_html_artifact)\n    _kale_update_uimetadata('kid1')\n\
+          \n    _kale_mlmdutils.call(\"mark_execution_complete\")\n\n    # To pass\
+          \ the value as a Dataset artifact, write it to the artifact's path\n   \
+          \ # For a simple integer, you might save it to a text file within the Dataset.\n\
+          \    # In a real scenario, a Dataset would typically contain more structured\
+          \ data.\n    import re\n    match = re.search(r\"I got (\\d+) candies!\"\
+          , _kale_html_artifact)\n    if match:\n        handful_count = int(match.group(1))\n\
+          \        with open(kid1_handful.path, \"w\") as f:\n            f.write(str(handful_count))\n\
+          \    else:\n        # Handle case where the value isn't found in the output.\n\
+          \        # This is a simplification; in production, you'd parse more robustly.\n\
+          \        with open(kid1_handful.path, \"w\") as f:\n            f.write(\"\
+          0\") # Default to 0 if not found\n\n"
+        image: python:3.10
+    exec-kid2:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - kid2
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'dill' 'pandas'\
+          \ 'numpy' 'scikit-learn' 'joblib' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef kid2(candies_in_sack: int, kid1_handful: Input[Dataset], kid2_handful:\
+          \ Output[Dataset]):\n    # Read kid1's handful from the Dataset artifact\n\
+          \    with open(kid1_handful.path, \"r\") as f:\n        kid1_val = int(f.read())\n\
+          \n    _kale_pipeline_parameters_block = f'''\n    CANDIES = {candies_in_sack}\n\
+          \    kid1 = {kid1_val}\n    '''\n\n    from backend.kale.common import mlmdutils\
+          \ as _kale_mlmdutils\n    _kale_mlmdutils.init_metadata()\n\n    _kale_data_loading_block\
+          \ = '''\n    # -----------------------DATA LOADING START--------------------------------\n\
+          \    from backend.kale import marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"\
+          /marshal\")\n    # -----------------------DATA LOADING END----------------------------------\n\
+          \    '''\n\n    _kale_block1 = '''\n    import random\n    '''\n\n    _kale_block2\
+          \ = '''\n    def get_handful(left):\n        if left == 0:\n           \
+          \ print(\"There are no candies left! I want to cry :(\")\n            return\
+          \ 0\n        c = random.randint(1, left)\n        print(\"I got %s candies!\"\
+          \ % c)\n        return c\n    '''\n\n    _kale_block3 = '''\n    kid2_val\
+          \ = get_handful(CANDIES - kid1)\n    '''\n\n    _kale_data_saving_block\
+          \ = '''\n    # -----------------------DATA SAVING START---------------------------------\n\
+          \    from backend.kale import marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"\
+          /marshal\")\n    # -----------------------DATA SAVING END-----------------------------------\n\
+          \    '''\n\n    # run the code blocks inside a jupyter kernel\n    from\
+          \ backend.kale.common.jputils import run_code as _kale_run_code\n    from\
+          \ backend.kale.common.kfputils import \\\n        update_uimetadata as _kale_update_uimetadata\n\
+          \n    _kale_blocks = (\n        _kale_pipeline_parameters_block,\n     \
+          \   _kale_data_loading_block,\n        _kale_block1,\n        _kale_block2,\n\
+          \        _kale_block3,\n        _kale_data_saving_block\n    )\n\n    _kale_html_artifact\
+          \ = _kale_run_code(_kale_blocks)\n    with open(\"/kid2.html\", \"w\") as\
+          \ f:\n        f.write(_kale_html_artifact)\n    _kale_update_uimetadata('kid2')\n\
+          \n    _kale_mlmdutils.call(\"mark_execution_complete\")\n\n    import re\n\
+          \    match = re.search(r\"I got (\\d+) candies!\", _kale_html_artifact)\n\
+          \    if match:\n        handful_count = int(match.group(1))\n        with\
+          \ open(kid2_handful.path, \"w\") as f:\n            f.write(str(handful_count))\n\
+          \    else:\n        with open(kid2_handful.path, \"w\") as f:\n        \
+          \    f.write(\"0\")\n\n"
+        image: python:3.10
+    exec-kid3:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - kid3
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'dill' 'pandas'\
+          \ 'numpy' 'scikit-learn' 'joblib' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef kid3(candies_in_sack: int, kid1_handful: Input[Dataset], kid2_handful:\
+          \ Input[Dataset]):\n    # Read kid1's and kid2's handfuls from Dataset artifacts\n\
+          \    with open(kid1_handful.path, \"r\") as f:\n        kid1_val = int(f.read())\n\
+          \    with open(kid2_handful.path, \"r\") as f:\n        kid2_val = int(f.read())\n\
+          \n    _kale_pipeline_parameters_block = f'''\n    CANDIES = {candies_in_sack}\n\
+          \    kid1 = {kid1_val}\n    kid2 = {kid2_val}\n    '''\n\n    from backend.kale.common\
+          \ import mlmdutils as _kale_mlmdutils\n    _kale_mlmdutils.init_metadata()\n\
+          \n    _kale_data_loading_block = '''\n    # -----------------------DATA\
+          \ LOADING START--------------------------------\n    from backend.kale import\
+          \ marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"/marshal\"\
+          )\n    # -----------------------DATA LOADING END----------------------------------\n\
+          \    '''\n\n    _kale_block1 = '''\n    import random\n    '''\n\n    _kale_block2\
+          \ = '''\n    def get_handful(left):\n        if left == 0:\n           \
+          \ print(\"There are no candies left! I want to cry :(\")\n            return\
+          \ 0\n        c = random.randint(1, left)\n        print(\"I got %s candies!\"\
+          \ % c)\n        return c\n    '''\n\n    _kale_block3 = '''\n    kid3_val\
+          \ = get_handful(CANDIES - kid1 - kid2)\n    '''\n\n    _kale_data_saving_block\
+          \ = '''\n    # -----------------------DATA SAVING START---------------------------------\n\
+          \    from backend.kale import marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"\
+          /marshal\")\n    # -----------------------DATA SAVING END-----------------------------------\n\
+          \    '''\n\n    # run the code blocks inside a jupyter kernel\n    from\
+          \ backend.kale.common.jputils import run_code as _kale_run_code\n    from\
+          \ backend.kale.common.kfputils import \\\n        update_uimetadata as _kale_update_uimetadata\n\
+          \n    _kale_blocks = (\n        _kale_pipeline_parameters_block,\n     \
+          \   _kale_data_loading_block,\n        _kale_block1,\n        _kale_block2,\n\
+          \        _kale_block3,\n        _kale_data_saving_block\n    )\n\n    _kale_html_artifact\
+          \ = _kale_run_code(_kale_blocks)\n    with open(\"/kid3.html\", \"w\") as\
+          \ f:\n        f.write(_kale_html_artifact)\n    _kale_update_uimetadata('kid3')\n\
+          \n    _kale_mlmdutils.call(\"mark_execution_complete\")\n\n    # kid3 doesn't\
+          \ have an output declared in the original KFP v1 code,\n    # so no explicit\
+          \ output artifact is created here.\n    # If you want kid3's handful as\
+          \ an output, add it as an Output[Dataset] parameter.\n\n"
+        image: python:3.10
+    exec-sack:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - sack
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'dill' 'pandas'\
+          \ 'numpy' 'scikit-learn' 'joblib' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef sack(candies_param: int): # Changed CANDIES to candies_param\
+          \ for clarity as a component input\n    # This block populates pipeline\
+          \ parameters. If these are also component args,\n    # then they will be\
+          \ overwritten by values passed as args.\n    _kale_pipeline_parameters_block\
+          \ = f'''\n    CANDIES = {candies_param} # Use the passed parameter\n   \
+          \ '''\n\n    from backend.kale.common import mlmdutils as _kale_mlmdutils\n\
+          \    _kale_mlmdutils.init_metadata()\n\n    _kale_data_loading_block = '''\n\
+          \    # -----------------------DATA LOADING START--------------------------------\n\
+          \    from backend.kale import marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"\
+          /marshal\")\n    # -----------------------DATA LOADING END----------------------------------\n\
+          \    '''\n\n    _kale_block1 = '''\n    import random\n    '''\n\n    _kale_block2\
+          \ = '''\n    def get_handful(left):\n        if left == 0:\n           \
+          \ print(\"There are no candies left! I want to cry :(\")\n            return\
+          \ 0\n        c = random.randint(1, left)\n        print(\"I got %s candies!\"\
+          \ % c)\n        return c\n    '''\n\n    _kale_block3 = '''\n    print(\"\
+          Let's put in a bag %s candies and have three kids get a handful of them\
+          \ each\" % CANDIES)\n    '''\n\n    _kale_data_saving_block = '''\n    #\
+          \ -----------------------DATA SAVING START---------------------------------\n\
+          \    from backend.kale import marshal as _kale_marshal\n    _kale_marshal.set_data_dir(\"\
+          /marshal\")\n    # -----------------------DATA SAVING END-----------------------------------\n\
+          \    '''\n\n    # run the code blocks inside a jupyter kernel\n    from\
+          \ backend.kale.common.jputils import run_code as _kale_run_code\n    from\
+          \ backend.kale.common.kfputils import \\\n        update_uimetadata as _kale_update_uimetadata\n\
+          \n    _kale_blocks = (\n        _kale_pipeline_parameters_block,\n     \
+          \   _kale_data_loading_block,\n        _kale_block1,\n        _kale_block2,\n\
+          \        _kale_block3,\n        _kale_data_saving_block\n    )\n\n    _kale_html_artifact\
+          \ = _kale_run_code(_kale_blocks)\n    with open(\"/sack.html\", \"w\") as\
+          \ f: # This file will be an output artifact if declared\n        f.write(_kale_html_artifact)\n\
+          \    _kale_update_uimetadata('sack')\n\n    _kale_mlmdutils.call(\"mark_execution_complete\"\
+          )\n\n    # In KFP v2, if you want an HTML artifact, you need to return it\n\
+          \    # However, since sack() doesn't have an HTML output declared,\n   \
+          \ # this part would need to be modified if you want to expose the HTML.\n\
+          \    # For now, it's just writing to a local file within the container.\n\
+          \n"
+        image: python:3.10
+pipelineInfo:
+  description: Share some candies between three lovely kids
+  name: kale-pipeline
+root:
+  dag:
+    tasks:
+      kid1:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-kid1
+        dependentTasks:
+        - sack
+        inputs:
+          parameters:
+            candies_in_sack:
+              componentInputParameter: candies
+        taskInfo:
+          name: Kid 1 takes candies
+      kid2:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-kid2
+        dependentTasks:
+        - kid1
+        inputs:
+          artifacts:
+            kid1_handful:
+              taskOutputArtifact:
+                outputArtifactKey: kid1_handful
+                producerTask: kid1
+          parameters:
+            candies_in_sack:
+              componentInputParameter: candies
+        taskInfo:
+          name: Kid 2 takes candies
+      kid3:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-kid3
+        dependentTasks:
+        - kid1
+        - kid2
+        inputs:
+          artifacts:
+            kid1_handful:
+              taskOutputArtifact:
+                outputArtifactKey: kid1_handful
+                producerTask: kid1
+            kid2_handful:
+              taskOutputArtifact:
+                outputArtifactKey: kid2_handful
+                producerTask: kid2
+          parameters:
+            candies_in_sack:
+              componentInputParameter: candies
+        taskInfo:
+          name: Kid 3 takes candies
+      sack:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-sack
+        inputs:
+          parameters:
+            candies_param:
+              componentInputParameter: candies
+        taskInfo:
+          name: Put Candies in Sack
+  inputDefinitions:
+    parameters:
+      candies:
+        defaultValue: 20.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.13.0
