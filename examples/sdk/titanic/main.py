@@ -1,4 +1,4 @@
-from backend.sdk import pipeline
+from kale.sdk import pipeline
 
 # data functions
 from loaddata import loaddata

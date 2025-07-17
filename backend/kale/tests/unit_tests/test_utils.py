@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from backend.common import utils
+from kale.common import utils
 
 
 def test_comment_magic_commands():

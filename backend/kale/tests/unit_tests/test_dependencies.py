@@ -14,7 +14,7 @@
 
 import pytest
 
-import backend.common.flakeutils
+import kale.common.flakeutils
 from kale import Pipeline, Step
 
 

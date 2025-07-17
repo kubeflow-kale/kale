@@ -17,7 +17,7 @@ from testfixtures import mock
 
 from kubernetes.client.models import V1Volume
 
-from backend.common import podutils
+from kale.common import podutils
 
 
 _list_volumes_return_value = [("/mount/path", V1Volume(name="vol1"), "5Gi"),

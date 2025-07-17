@@ -1,4 +1,4 @@
-from backend.sdk import step, pipeline
+from kale.sdk import step, pipeline
 
 
 @step(name="step1", limits={"amd/gpu": "1"})

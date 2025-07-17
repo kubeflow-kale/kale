@@ -12,10 +12,6 @@ const path = require('path');
 const CONFIG = {
   sourceDir: 'src/',
   destDir: 'lib/',
-  // backendSourceDir: 'src/backend',
-  // backendDestDir: 'lib/backend',
-  // commonSourceDir: 'src/common',
-  // commonDestDir: 'lib/common',
 };
 
 /**
@@ -84,20 +80,6 @@ function main() {
   
   console.log('\nCopying processors:');
   copyDir(processorsSource, processorsDestination);
-  
-  // Copy backend directory
-  // const backendSource = path.join(baseDir, CONFIG.backendSourceDir);
-  // const backendDestination = path.join(baseDir, CONFIG.backendDestDir);
-  
-  // console.log('\nCopying backend:');
-  // copyDir(backendSource, backendDestination);
-
-  // // Copy common directory
-  // const commonSource = path.join(baseDir, CONFIG.commonSourceDir);
-  // const commonDestination = path.join(baseDir, CONFIG.commonDestDir);
-
-  // console.log('\nCopying common:');
-  // copyDir(commonSource, commonDestination);
   
   console.log('\nCopy completed!');
 }

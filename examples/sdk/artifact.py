@@ -3,7 +3,7 @@ This pipeline showcases how you can create a KFP artifact as part
 of a step.
 """
 
-from backend.sdk import pipeline, step, artifact
+from kale.sdk import pipeline, step, artifact
 
 
 # Annotate the step with the @artifact decorator and specify the path to

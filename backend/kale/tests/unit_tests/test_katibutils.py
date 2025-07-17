@@ -15,7 +15,7 @@
 import os
 import yaml
 
-from backend.common import katibutils
+from kale.common import katibutils
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 

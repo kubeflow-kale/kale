@@ -7,7 +7,7 @@ using the Kale SDK.
 The only imports you need to convert your python code to a pipeline are these
 two decorators.
 """
-from backend.sdk import pipeline, step
+from kale.sdk import pipeline, step
 
 
 """

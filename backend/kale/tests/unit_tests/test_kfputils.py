@@ -16,7 +16,7 @@ import os
 import json
 
 from testfixtures import mock
-from backend.common import kfputils
+from kale.common import kfputils
 
 
 @mock.patch('kale.common.kfputils.workflowutils')
