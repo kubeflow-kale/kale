@@ -1,5 +1,4 @@
 *.bundle.*
-lib/
 node_modules/
 *.log
 .eslintcache
@@ -35,7 +34,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib
 lib64/
 parts/
 sdist/
