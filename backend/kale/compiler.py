@@ -121,7 +121,7 @@ class Compiler:
                            for s in step_source_raw]
 
         _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
-        template = self._get_templating_env("D:/Projects/kale/backend/kale/templates/").get_template(_template_filename)
+        template = self._get_templating_env().get_template(_template_filename)
         
         component_params_list = []
 
@@ -181,7 +181,7 @@ class Compiler:
 
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
-        template = self._get_templating_env("D:/Projects/kale/backend/kale/templates/").get_template(PIPELINE_TEMPLATE)
+        template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
         
         # Prepare step dependencies and outputs for pipeline generation
         step_outputs = {}
