@@ -15,13 +15,17 @@
 import sys
 import logging
 
-from typing import Dict, List, Any, Union
+from typing import Dict, List, Any, Union, NamedTuple
 
-from backend.kale import PipelineParam, marshal as marshal_utils
+import marshal as marshal_utils
 
 
 log = logging.getLogger(__name__)
 
+class PipelineParam(NamedTuple):
+    """A pipeline parameter."""
+    param_type: str
+    param_value: Any
 
 def marshal(ins: List,
             outs: List,

@@ -27,7 +27,7 @@ def sack(candies_param: int): # Changed CANDIES to candies_param for clarity as 
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
-    from backend.kale import marshal as _kale_marshal
+    from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -52,7 +52,7 @@ def sack(candies_param: int): # Changed CANDIES to candies_param for clarity as 
 
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
-    from backend.kale import marshal as _kale_marshal
+    from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -185,7 +185,7 @@ def kid2(candies_in_sack: int, kid1_handful: Input[Dataset], kid2_handful: Outpu
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
-    from backend.kale import marshal as _kale_marshal
+    from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -210,7 +210,7 @@ def kid2(candies_in_sack: int, kid1_handful: Input[Dataset], kid2_handful: Outpu
 
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
-    from backend.kale import marshal as _kale_marshal
+    from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # -----------------------DATA SAVING END-----------------------------------
     '''

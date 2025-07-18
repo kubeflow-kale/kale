@@ -14,7 +14,7 @@
 
 import kfp
 
-from backend.kale.common import kfputils
+from kale.common import kfputils
 
 
 def _get_client(host=None):

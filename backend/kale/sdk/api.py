@@ -18,7 +18,7 @@ import sys
 import logging
 import argparse
 
-from backend.kale.common import rokutils, utils
+from kale.common import rokutils, utils
 from kale import (Compiler, Step, PythonProcessor, PipelineConfig, StepConfig,
                   Artifact)
 

@@ -32,7 +32,9 @@ from .step import Step, StepConfig
 from .pipeline import Pipeline, PipelineConfig, VolumeConfig
 from .compiler import Compiler
 from .processors import NotebookProcessor, NotebookConfig, PythonProcessor
+from .marshal import Marshaller, marshal
+from kale.common import logutils
 
-from backend.kale.common import logutils
+__all__ = ["PipelineParam", "Artifact",'NotebookProcessor', 'Step', 'StepConfig', 'Pipeline', 'PipelineConfig', 'VolumeConfig', 'Compiler', 'marshal']
 logutils.get_or_create_logger(module=__name__, name="kale")
 del logutils

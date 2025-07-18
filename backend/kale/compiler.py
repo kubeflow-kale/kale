@@ -17,12 +17,11 @@ import re
 import logging
 import argparse
 import autopep8
-
+from typing import NamedTuple
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
-from backend.kale import Pipeline, Step
-from backend.kale.common import kfputils
-from backend.kale.step import PipelineParam, Artifact
+from kale.pipeline import Pipeline, Step, PipelineParam
+from kale.common import kfputils
 
 log = logging.getLogger(__name__)
 
@@ -34,12 +33,18 @@ PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE,
 
 KFP_DSL_ARTIFACT_IMPORTS = [
     "Dataset",
-    "Model",
+    "Model", 
     "Metrics",
     "ClassificationMetrics",
     "Artifact",
     "HTML"
 ]
+
+class Artifact(NamedTuple):
+    """A Step artifact."""
+    name: str
+    type: str
+    is_input: bool = False
 
 class Compiler:
     """Converts a Pipeline object into a KFP executable.
@@ -117,39 +122,58 @@ class Compiler:
 
         _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
         template = self._get_templating_env("D:/Projects/kale/backend/kale/templates/").get_template(_template_filename)
-        # fn_code = template.render(step=step, **self.pipeline.config.to_dict())   #OLD
-        # fix code style using pep8 guidelines
         
         component_params_list = []
 
-        # Inputs (PipelineParams and Input Artifacts)
-        # Combine and sort inputs for consistent signature
-        all_inputs_for_signature = step.kfp_inputs
-
-        for io_obj in all_inputs_for_signature:
-            if isinstance(io_obj, PipelineParam):
-                param_type = io_obj.param_type
-                # Safely format value using repr to handle strings, None, etc.
-                param_value_str = repr(io_obj.param_value)
-                component_params_list.append(f"{io_obj.name}: {param_type} = {param_value_str}")
-            elif isinstance(io_obj, Artifact):
-                # Ensure artifact type is valid and capitalize for KFP DSL
-                artifact_type_name = io_obj.type or "Artifact" # Default to 'Artifact' if type is None
-                component_params_list.append(f"{io_obj.name}: Input[{artifact_type_name}]")
+        # Handle step input artifacts (ins)
+        if hasattr(step, 'ins') and step.ins:
+            for var_name in step.ins:
+                component_params_list.append(f"{var_name}_input: Input[Dataset]")
         
-        all_outputs_for_signature = step.kfp_outputs
+        # Handle step output artifacts (outs)
+        if hasattr(step, 'outs') and step.outs:
+            for var_name in step.outs:
+                component_params_list.append(f"{var_name}_output: Output[Dataset]")
 
-        for io_obj in all_outputs_for_signature:
-            if isinstance(io_obj, Artifact):
-                artifact_type_name = io_obj.type or "Artifact" # Default to 'Artifact' if type is None
-                component_params_list.append(f"{io_obj.name}: Output[{artifact_type_name}]")
+        # Add pipeline parameters to all components
+        # Pipeline parameters are stored as a dict where key is param name and value is PipelineParam
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
+            for param_name, param in self.pipeline.pipeline_parameters.items():
+                if isinstance(param, PipelineParam):
+                    param_type = param.param_type or "str"
+                    param_value_str = repr(param.param_value)
+                    # Convert parameter name to a clean component parameter name
+                    clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
+                    component_params_list.append(f"{clean_param_name}: {param_type} = {param_value_str}")
         
         component_signature_args = ", ".join(component_params_list)
+
+        # Create step artifacts info for template
+        step_inputs = []
+        step_outputs = []
+        
+        if hasattr(step, 'ins') and step.ins:
+            for var_name in step.ins:
+                step_inputs.append(Artifact(name=f"{var_name}_input", type="Dataset", is_input=True))
+        
+        if hasattr(step, 'outs') and step.outs:
+            for var_name in step.outs:
+                step_outputs.append(Artifact(name=f"{var_name}_output", type="Dataset", is_input=False))
+
+        # Create pipeline parameter mapping for the template
+        pipeline_params = {}
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
+            for param_name, param in self.pipeline.pipeline_parameters.items():
+                if isinstance(param, PipelineParam):
+                    clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
+                    pipeline_params[param_name] = clean_param_name
 
         fn_code = template.render(
             step=step,
             component_signature_args=component_signature_args,
-            # Pass the list of artifact types to be imported in the component file
+            pipeline_params=pipeline_params,
+            step_inputs=step_inputs,
+            step_outputs=step_outputs,
             kfp_dsl_artifact_imports=KFP_DSL_ARTIFACT_IMPORTS,
             **self.pipeline.config.to_dict()
         )
@@ -158,9 +182,34 @@ class Compiler:
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
         template = self._get_templating_env("D:/Projects/kale/backend/kale/templates/").get_template(PIPELINE_TEMPLATE)
+        
+        # Prepare step dependencies and outputs for pipeline generation
+        step_outputs = {}
+        step_inputs = {}
+        for step in self.pipeline.steps:
+            if hasattr(step, 'outs') and step.outs:
+                step_outputs[step.name] = step.outs
+            if hasattr(step, 'ins') and step.ins:
+                step_inputs[step.name] = step.ins
+        
+        # Pipeline parameters info
+        pipeline_param_info = {}
+        if hasattr(self.pipeline, 'parameters') and self.pipeline.parameters:
+            for param_name, param in self.pipeline.parameters.items():
+                if isinstance(param, PipelineParam):
+                    clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
+                    pipeline_param_info[param_name] = {
+                        'clean_name': clean_param_name,
+                        'type': param.param_type,
+                        'default': param.param_value
+                    }
+        
         pipeline_code = template.render(
             pipeline=self.pipeline,
             lightweight_components=lightweight_components,
+            step_outputs=step_outputs,
+            step_inputs=step_inputs,
+            pipeline_param_info=pipeline_param_info,
             **self.pipeline.config.to_dict()
         )
         # fix code style using pep8 guidelines

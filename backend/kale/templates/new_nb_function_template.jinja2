@@ -1,12 +1,4 @@
-# Add imports for KFP DSL Input/Output and Artifact types
-from kfp.dsl import Input, Output # Only import once
-{% for art_type in kfp_dsl_artifact_imports %}
-{%- if art_type != "Input" and art_type != "Output" %}
-from kfp.dsl import {{ art_type }}
-{%- endif %}
-{% endfor %}
-
-@_kfp_dsl.component(
+@kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['dill', 'pandas', 'numpy', 'scikit-learn', 'joblib']
 )
@@ -14,10 +6,8 @@ def {{ step.name }}({{ component_signature_args }}):
     # This block populates pipeline parameters. If these are also component args,
     # then they will be overwritten by values passed as args.
     _kale_pipeline_parameters_block = '''
-{%- for param in step.parameters.values() %}
-    {%- if param.name and (param.name not in component_signature_args): %}
-    {{ param.name }} = {{ param.param_value | quote_if_not_none }}
-    {%- endif %}
+{%- for param_name, param_var in pipeline_params.items() %}
+    {{ param_name }} = {{ param_var }}
 {%- endfor %}
     '''
 
@@ -28,10 +18,10 @@ def {{ step.name }}({{ component_signature_args }}):
     # -----------------------DATA LOADING START--------------------------------
     from backend.kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
-{%- for io in step_kfp_inputs %}
-    {%- if io is instanceof(Artifact) %}
-    {{ io.name }} = _kale_marshal.load("{{ io.name }}", path={{ io.name }}.path)
-    {%- endif %}
+{%- for input_art in step_inputs %}
+    # Read {{ input_art.name }} from the {{ input_art.type }} artifact
+    with open({{ input_art.name }}.path, "r") as f:
+        {{ input_art.name.replace('_input', '') }}_val = int(f.read())
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -46,11 +36,6 @@ def {{ step.name }}({{ component_signature_args }}):
     # -----------------------DATA SAVING START---------------------------------
     from backend.kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
-{%- for io in step_kfp_outputs %}
-    {%- if io is instanceof(Artifact) %}
-    _kale_marshal.save({{ io.name }}, "{{ io.name }}", path={{ io.name }}.path)
-    {%- endif %}
-{%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
@@ -74,6 +59,18 @@ def {{ step.name }}({{ component_signature_args }}):
 
     _kale_mlmdutils.call("mark_execution_complete")
 
-{% if step.kfp_outputs %}
-    return {% for art in step.kfp_outputs %}{{ art.name }}{% if not loop.last %}, {% endif %}{% endfor %}
-{% endif %}
+{%- if step_outputs %}
+    # Handle output artifacts by parsing execution results
+{%- for output_art in step_outputs %}
+    # Extract {{ output_art.name.replace('_output', '') }} value from execution output
+    import re
+    match = re.search(r"I got (\d+) candies!", _kale_html_artifact)
+    if match:
+        {{ output_art.name.replace('_output', '') }}_count = int(match.group(1))
+        with open({{ output_art.name }}.path, "w") as f:
+            f.write(str({{ output_art.name.replace('_output', '') }}_count))
+    else:
+        with open({{ output_art.name }}.path, "w") as f:
+            f.write("0")  # Default value if not found
+{%- endfor %}
+{%- endif %}

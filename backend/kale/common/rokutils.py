@@ -21,8 +21,8 @@ import kubernetes
 
 from progress.bar import IncrementalBar 
 
-from backend.kale.common import utils
-from backend.kale.common import podutils, kfputils, k8sutils
+from kale.common import utils
+from kale.common import podutils, kfputils, k8sutils
 
 _client = None
 

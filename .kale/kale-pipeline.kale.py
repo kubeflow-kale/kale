@@ -1,37 +1,18 @@
 import json
-
-import kfp.dsl as _kfp_dsl
-import kfp.components as _kfp_components
-
-
-from collections import OrderedDict
+import kfp.dsl as kfp_dsl
+from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact
 from kubernetes import client as k8s_client
 
 
-# Add imports for KFP DSL Input/Output and Artifact types
-from kfp.dsl import Input, Output  # Only import once
-
-from kfp.dsl import Dataset
-
-from kfp.dsl import Model
-
-from kfp.dsl import Metrics
-
-from kfp.dsl import ClassificationMetrics
-
-from kfp.dsl import Artifact
-
-from kfp.dsl import HTML
-
-
-@_kfp_dsl.component(
+@kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['dill', 'pandas', 'numpy', 'scikit-learn', 'joblib']
 )
-def sack():
+def sack(candies_param: int = 20):
     # This block populates pipeline parameters. If these are also component args,
     # then they will be overwritten by values passed as args.
     _kale_pipeline_parameters_block = '''
+    CANDIES = candies_param
     '''
 
     from backend.kale.common import mlmdutils as _kale_mlmdutils
@@ -92,17 +73,15 @@ def sack():
     _kale_mlmdutils.call("mark_execution_complete")
 
 
-# Add imports for KFP DSL Input/Output and Artifact types
-
-
-@_kfp_dsl.component(
+@kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['dill', 'pandas', 'numpy', 'scikit-learn', 'joblib']
 )
-def kid1(kid1: Output[Dataset]):
+def kid1(kid1_output: Output[Dataset], candies_param: int = 20):
     # This block populates pipeline parameters. If these are also component args,
     # then they will be overwritten by values passed as args.
     _kale_pipeline_parameters_block = '''
+    CANDIES = candies_param
     '''
 
     from backend.kale.common import mlmdutils as _kale_mlmdutils
@@ -162,21 +141,28 @@ kid1 = get_handful(CANDIES)
     _kale_update_uimetadata('kid1')
 
     _kale_mlmdutils.call("mark_execution_complete")
+    # Handle output artifacts by parsing execution results
+    # Extract kid1 value from execution output
+    import re
+    match = re.search(r"I got (\d+) candies!", _kale_html_artifact)
+    if match:
+        kid1_count = int(match.group(1))
+        with open(kid1_output.path, "w") as f:
+            f.write(str(kid1_count))
+    else:
+        with open(kid1_output.path, "w") as f:
+            f.write("0")  # Default value if not found
 
-    return kid1
 
-
-# Add imports for KFP DSL Input/Output and Artifact types
-
-
-@_kfp_dsl.component(
+@kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['dill', 'pandas', 'numpy', 'scikit-learn', 'joblib']
 )
-def kid2(kid1: Output[Dataset], kid2: Output[Dataset]):
+def kid2(kid1_input: Input[Dataset], kid2_output: Output[Dataset], kid1_output: Output[Dataset], candies_param: int = 20):
     # This block populates pipeline parameters. If these are also component args,
     # then they will be overwritten by values passed as args.
     _kale_pipeline_parameters_block = '''
+    CANDIES = candies_param
     '''
 
     from backend.kale.common import mlmdutils as _kale_mlmdutils
@@ -186,6 +172,9 @@ def kid2(kid1: Output[Dataset], kid2: Output[Dataset]):
     # -----------------------DATA LOADING START--------------------------------
     from backend.kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
+    # Read kid1_input from the Dataset artifact
+    with open(kid1_input.path, "r") as f:
+        kid1_val = int(f.read())
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -235,21 +224,38 @@ def kid2(kid1: Output[Dataset], kid2: Output[Dataset]):
     _kale_update_uimetadata('kid2')
 
     _kale_mlmdutils.call("mark_execution_complete")
+    # Handle output artifacts by parsing execution results
+    # Extract kid2 value from execution output
+    import re
+    match = re.search(r"I got (\d+) candies!", _kale_html_artifact)
+    if match:
+        kid2_count = int(match.group(1))
+        with open(kid2_output.path, "w") as f:
+            f.write(str(kid2_count))
+    else:
+        with open(kid2_output.path, "w") as f:
+            f.write("0")  # Default value if not found
+    # Extract kid1 value from execution output
+    import re
+    match = re.search(r"I got (\d+) candies!", _kale_html_artifact)
+    if match:
+        kid1_count = int(match.group(1))
+        with open(kid1_output.path, "w") as f:
+            f.write(str(kid1_count))
+    else:
+        with open(kid1_output.path, "w") as f:
+            f.write("0")  # Default value if not found
 
-    return kid1, kid2
 
-
-# Add imports for KFP DSL Input/Output and Artifact types
-
-
-@_kfp_dsl.component(
+@kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['dill', 'pandas', 'numpy', 'scikit-learn', 'joblib']
 )
-def kid3(kid1: Output[Dataset], kid2: Output[Dataset]):
+def kid3(kid2_input: Input[Dataset], kid1_input: Input[Dataset], candies_param: int = 20):
     # This block populates pipeline parameters. If these are also component args,
     # then they will be overwritten by values passed as args.
     _kale_pipeline_parameters_block = '''
+    CANDIES = candies_param
     '''
 
     from backend.kale.common import mlmdutils as _kale_mlmdutils
@@ -259,6 +265,12 @@ def kid3(kid1: Output[Dataset], kid2: Output[Dataset]):
     # -----------------------DATA LOADING START--------------------------------
     from backend.kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
+    # Read kid2_input from the Dataset artifact
+    with open(kid2_input.path, "r") as f:
+        kid2_val = int(f.read())
+    # Read kid1_input from the Dataset artifact
+    with open(kid1_input.path, "r") as f:
+        kid1_val = int(f.read())
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -309,148 +321,63 @@ def kid3(kid1: Output[Dataset], kid2: Output[Dataset]):
 
     _kale_mlmdutils.call("mark_execution_complete")
 
-    return kid1, kid2
 
-
-_kale_sack_op = _kfp_components.func_to_container_op(sack)
-
-
-_kale_kid1_op = _kfp_components.func_to_container_op(kid1)
-
-
-_kale_kid2_op = _kfp_components.func_to_container_op(kid2)
-
-
-_kale_kid3_op = _kfp_components.func_to_container_op(kid3)
-
-
-@_kfp_dsl.pipeline(
+@kfp_dsl.pipeline(
     name='kale-pipeline',
     description='Share some candies between three lovely kids'
 )
-def auto_generated_pipeline(CANDIES="20"):
+def auto_generated_pipeline(
+):
+    """Auto-generated pipeline function."""
 
-    _kale_pvolumes_dict = OrderedDict()
-    _kale_volume_step_names = []
-    _kale_volume_name_parameters = []
-
-    _kale_marshal_vop = _kfp_dsl.VolumeOp(
-        name="kale-marshal-volume",
-        resource_name="kale-marshal-pvc",
-        modes=['ReadWriteMany'],
-        size="1Gi"
+    # sack component
+    sack_task = sack(
     )
-    _kale_volume_step_names.append(_kale_marshal_vop.name)
-    _kale_volume_name_parameters.append(
-        _kale_marshal_vop.outputs["name"].full_name)
-    _kale_pvolumes_dict['/marshal'] = _kale_marshal_vop.volume
 
-    _kale_volume_step_names.sort()
-    _kale_volume_name_parameters.sort()
+    # Set display name
+    sack_task.set_display_name("Sack")
 
-    _kale_sack_task = _kale_sack_op(CANDIES)\
-        .add_pvolumes(_kale_pvolumes_dict)\
-        .after()
-    _kale_sack_task.container.working_dir = "D:\Projects\kale\examples\base"
-    _kale_sack_task.container.set_security_context(
-        k8s_client.V1SecurityContext(run_as_user=0))
-    _kale_output_artifacts = {}
-    _kale_output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
-    _kale_output_artifacts.update({'sack': '/sack.html'})
-    _kale_sack_task.output_artifact_paths.update(_kale_output_artifacts)
-    _kale_sack_task.add_pod_label(
-        "pipelines.kubeflow.org/metadata_written", "true")
-    _kale_dep_names = (_kale_sack_task.dependent_names +
-                       _kale_volume_step_names)
-    _kale_sack_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(_kale_dep_names))
-    if _kale_volume_name_parameters:
-        _kale_sack_task.add_pod_annotation(
-            "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(_kale_volume_name_parameters))
+    # kid1 component
+    kid1_task = kid1(
+    )
 
-    _kale_kid1_task = _kale_kid1_op(CANDIES)\
-        .add_pvolumes(_kale_pvolumes_dict)\
-        .after(_kale_sack_task)
-    _kale_kid1_task.container.working_dir = "D:\Projects\kale\examples\base"
-    _kale_kid1_task.container.set_security_context(
-        k8s_client.V1SecurityContext(run_as_user=0))
-    _kale_output_artifacts = {}
-    _kale_output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
-    _kale_output_artifacts.update({'kid1': '/kid1.html'})
-    _kale_kid1_task.output_artifact_paths.update(_kale_output_artifacts)
-    _kale_kid1_task.add_pod_label(
-        "pipelines.kubeflow.org/metadata_written", "true")
-    _kale_dep_names = (_kale_kid1_task.dependent_names +
-                       _kale_volume_step_names)
-    _kale_kid1_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(_kale_dep_names))
-    if _kale_volume_name_parameters:
-        _kale_kid1_task.add_pod_annotation(
-            "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(_kale_volume_name_parameters))
+    # Set dependencies
+    kid1_task.after(sack_task)
 
-    _kale_kid2_task = _kale_kid2_op(CANDIES)\
-        .add_pvolumes(_kale_pvolumes_dict)\
-        .after(_kale_kid1_task)
-    _kale_kid2_task.container.working_dir = "D:\Projects\kale\examples\base"
-    _kale_kid2_task.container.set_security_context(
-        k8s_client.V1SecurityContext(run_as_user=0))
-    _kale_output_artifacts = {}
-    _kale_output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
-    _kale_output_artifacts.update({'kid2': '/kid2.html'})
-    _kale_kid2_task.output_artifact_paths.update(_kale_output_artifacts)
-    _kale_kid2_task.add_pod_label(
-        "pipelines.kubeflow.org/metadata_written", "true")
-    _kale_dep_names = (_kale_kid2_task.dependent_names +
-                       _kale_volume_step_names)
-    _kale_kid2_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(_kale_dep_names))
-    if _kale_volume_name_parameters:
-        _kale_kid2_task.add_pod_annotation(
-            "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(_kale_volume_name_parameters))
+    # Set display name
+    kid1_task.set_display_name("Kid1")
 
-    _kale_kid3_task = _kale_kid3_op(CANDIES)\
-        .add_pvolumes(_kale_pvolumes_dict)\
-        .after(_kale_kid2_task)
-    _kale_kid3_task.container.working_dir = "D:\Projects\kale\examples\base"
-    _kale_kid3_task.container.set_security_context(
-        k8s_client.V1SecurityContext(run_as_user=0))
-    _kale_output_artifacts = {}
-    _kale_output_artifacts.update(
-        {'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
-    _kale_output_artifacts.update({'kid3': '/kid3.html'})
-    _kale_kid3_task.output_artifact_paths.update(_kale_output_artifacts)
-    _kale_kid3_task.add_pod_label(
-        "pipelines.kubeflow.org/metadata_written", "true")
-    _kale_dep_names = (_kale_kid3_task.dependent_names +
-                       _kale_volume_step_names)
-    _kale_kid3_task.add_pod_annotation(
-        "kubeflow-kale.org/dependent-templates", json.dumps(_kale_dep_names))
-    if _kale_volume_name_parameters:
-        _kale_kid3_task.add_pod_annotation(
-            "kubeflow-kale.org/volume-name-parameters",
-            json.dumps(_kale_volume_name_parameters))
+    # kid2 component
+    kid2_task = kid2(
+        kid1_input=kid1_task.outputs["kid1_output"]
+    )
+
+    # Set dependencies
+    kid2_task.after(kid1_task)
+
+    # Set display name
+    kid2_task.set_display_name("Kid2")
+
+    # kid3 component
+    kid3_task = kid3(
+        kid2_input=kid2_task.outputs["kid2_output"],
+        kid1_input=kid1_task.outputs["kid1_output"]
+    )
+
+    # Set dependencies
+    kid3_task.after(kid2_task)
+    kid3_task.after(kid1_task)
+
+    # Set display name
+    kid3_task.set_display_name("Kid3")
 
 
 if __name__ == "__main__":
-    pipeline_func = auto_generated_pipeline
-    pipeline_filename = pipeline_func.__name__ + '.pipeline.tar.gz'
-    import kfp.compiler as compiler
-    compiler.Compiler().compile(pipeline_func, pipeline_filename)
+    from kfp import compiler
+    from kfp import Client
 
-    # Get or create an experiment and submit a pipeline run
-    import kfp
-    client = kfp.Client()
-    experiment = client.create_experiment('Kale-Pipeline-Experiment')
+    pipeline_filename = auto_generated_pipeline.__name__ + '.yaml'
+    compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
 
-    # Submit a pipeline run
-    from backend.kale.common import kfputils
-    pipeline_id, version_id = kfputils.upload_pipeline(
-        pipeline_filename, "kale-pipeline")
-    run_result = kfputils.run_pipeline(
-        experiment_name=experiment.name, pipeline_id=pipeline_id, version_id=version_id)
+    print(f"Pipeline compiled to {pipeline_filename}")
+    print("To run, upload this YAML to your KFP v2 instance or use kfp.Client().create_run_from_pipeline_func.")

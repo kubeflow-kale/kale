@@ -16,9 +16,9 @@ import sys
 import logging
 import importlib
 
-from backend.kale.common.utils import random_string
-from backend.kale.rpc import errors, utils
-from backend.kale.rpc.log import create_adapter
+from kale.common.utils import random_string
+from kale.rpc import errors, utils
+from kale.rpc.log import create_adapter
 
 
 logger = create_adapter(logging.getLogger(__name__))

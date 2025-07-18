@@ -15,7 +15,7 @@
 import argparse
 import kfserving
 
-from backend.kale.kfserving.transformer import KaleTransformer
+from kale.kfserving.transformer import KaleTransformer
 
 DEFAULT_MODEL_NAME = "model"
 

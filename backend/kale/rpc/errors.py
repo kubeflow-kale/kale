@@ -14,8 +14,8 @@
 
 import enum
 
-from backend.kale.rpc.utils import serialize
-from backend.kale.rpc.log import KALE_LOG_FILE
+from kale.rpc.utils import serialize
+from kale.rpc.log import KALE_LOG_FILE
 
 
 class Code(enum.Enum):

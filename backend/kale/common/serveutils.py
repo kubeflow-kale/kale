@@ -26,8 +26,8 @@ from typing import Any, Dict, Callable
 
 from kubernetes.client.rest import ApiException
 
-from backend.kale import NotebookProcessor, marshal
-from backend.kale.common import (astutils, flakeutils, podutils, k8sutils, rokutils,
+from kale import NotebookProcessor, marshal
+from kale.common import (astutils, flakeutils, podutils, k8sutils, rokutils,
                          jputils, utils)
 
 log = logging.getLogger(__name__)

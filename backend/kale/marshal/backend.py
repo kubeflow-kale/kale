@@ -18,7 +18,7 @@ import logging
 
 from typing import Dict, Any, Type
 
-from backend.kale.common import utils
+from kale.common import utils
 
 log = logging.getLogger(__name__)
 
@@ -177,7 +177,7 @@ class Dispatcher(object):
     two publicly exposed functions `save` and `load` like so:
 
     ```
-    from backend.kale.marshal import save, load
+    from kale.marshal import save, load
     ```
     """
 

@@ -19,11 +19,10 @@ import logging
 from tabulate import tabulate
 
 from kale import marshal
-from backend.kale.rpc.log import create_adapter
-from kale.compiler import Compiler
-from kale.processors import NotebookProcessor
-from backend.kale.rpc.errors import RPCInternalError
-from backend.kale.common import podutils, kfputils, kfutils, astutils
+from kale.rpc.log import create_adapter
+from kale import Compiler, NotebookProcessor
+from kale.rpc.errors import RPCInternalError
+from kale.common import podutils, kfputils, kfutils, astutils
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"

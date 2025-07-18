@@ -27,7 +27,7 @@ from functools import lru_cache
 from kfp import Client
 from kfp.compiler import Compiler
 
-from backend.kale.common import utils, podutils, workflowutils
+from kale.common import utils, podutils, workflowutils
 
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"

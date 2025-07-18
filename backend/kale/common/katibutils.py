@@ -21,7 +21,7 @@ import logging
 
 from kubernetes.client.rest import ApiException
 
-from backend.kale.common import k8sutils, podutils, kfputils, workflowutils
+from kale.common import k8sutils, podutils, kfputils, workflowutils
 
 
 log = logging.getLogger(__name__)

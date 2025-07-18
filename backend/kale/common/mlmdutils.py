@@ -28,7 +28,7 @@ from ml_metadata.proto.metadata_store_pb2 import (MetadataStoreClientConfig,
 from ml_metadata.metadata_store import metadata_store 
 # from ml_metadata.errors import AlreadyExistsError   
 
-from backend.kale.common import utils, podutils, workflowutils, k8sutils, kfputils
+from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
 
 
 METADATA_GRPC_SERVICE_SERVICE_HOST_ENV = "METADATA_GRPC_SERVICE_SERVICE_HOST"

@@ -15,7 +15,7 @@
 import logging
 import os
 
-from backend.kale.common import logutils
+from kale.common import logutils
 
 # FIXME: We could have a chowned folder in /var/log and use it. But this won't
 # work for other kale installations. It would require that setting in the

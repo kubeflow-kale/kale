@@ -20,11 +20,10 @@ from typing import Any, Dict, NamedTuple, Optional
 
 import nbformat as nb
 
-from backend.kale.config import Field
-from backend.kale.step import Step
-from backend.kale.pipeline import PipelineConfig
-from backend.kale.common import astutils, flakeutils, graphutils, utils
-
+from kale.config import Field
+from kale.step import Step, PipelineParam
+from kale.common import astutils, flakeutils, graphutils, utils
+from kale.pipeline import PipelineConfig
 from .baseprocessor import BaseProcessor, PipelineParam
 
 
@@ -71,7 +70,7 @@ _STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG,
 
 
 METRICS_TEMPLATE = '''\
-from backend.kale.common import kfputils as _kale_kfputils
+from kale.common import kfputils as _kale_kfputils
 _kale_kfp_metrics = {
 %s
 }

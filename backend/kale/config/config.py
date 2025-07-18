@@ -20,11 +20,6 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 log = logging.getLogger(__name__)
 
-class PipelineParam(NamedTuple):
-    """A pipeline parameter."""
-    param_type: str
-    param_value: Any
-
 class Field:
     """Define a strongly typed config field.
 

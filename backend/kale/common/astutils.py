@@ -22,7 +22,7 @@ from collections import deque
 from functools import lru_cache
 from typing import Callable, Dict, List
 
-from backend.kale.common import utils
+from kale.common import utils
 
 
 def walk(node, stop_at=tuple(), ignore=tuple()):

@@ -17,12 +17,9 @@ import logging
 
 from abc import ABC, abstractmethod
 
-from backend.kale.common import kfutils
-from backend.kale.pipeline import Pipeline, PipelineConfig
-from backend.kale.step import Step
-from backend.kale.pipeline import VolumeConfig
-from typing import Optional, Any, NamedTuple
-from backend.kale.config.config import PipelineParam
+from kale.common import kfutils
+from kale.pipeline import Pipeline, PipelineConfig, Step, PipelineParam, VolumeConfig
+from typing import Optional
 
 log = logging.getLogger(__name__)
 

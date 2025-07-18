@@ -17,7 +17,7 @@ import logging
 from typing import Dict, List
 from kubernetes.client.models import V1Pod
 
-from backend.kale.common import podutils, k8sutils
+from kale.common import podutils, k8sutils
 
 log = logging.getLogger(__name__)
 

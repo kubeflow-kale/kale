@@ -16,13 +16,23 @@ import logging
 
 from typing import Any, Dict, List, Callable, Union, NamedTuple
 
-from backend.kale.marshal.decorator import Marshaller
-from backend.kale import PipelineParam, Artifact
-from backend.kale.common import astutils, runutils
-from backend.kale.config import Config, Field, validators
-
+from kale.marshal import Marshaller
+from kale.common import astutils, runutils
+from kale.config import Config, Field, validators
 log = logging.getLogger(__name__)
 
+class PipelineParam(NamedTuple):
+    """A pipeline parameter."""
+    param_type: str
+    param_value: Any
+
+
+class Artifact(NamedTuple):
+    """A Step artifact."""
+    name: str
+    type: str
+    is_input: bool = False
+    
 class StepConfig(Config):
     """Config class used for the Step object."""
 

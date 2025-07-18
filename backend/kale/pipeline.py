@@ -21,10 +21,9 @@ from typing import Iterable, Dict
 from kubernetes.config import ConfigException
 from kubernetes.client.rest import ApiException
 
-from backend.kale.step import Step
-from backend.kale.config.config import PipelineParam
-from backend.kale.config import Config, Field, validators
-from backend.kale.common import graphutils, utils, podutils
+from kale.step import Step, PipelineParam
+from kale.config import Config, Field, validators
+from kale.common import graphutils, utils, podutils
 
 log = logging.getLogger(__name__)
 
