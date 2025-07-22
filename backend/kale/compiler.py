@@ -132,7 +132,7 @@ class Compiler:
             for var_name in step.ins:
                 # Determine the correct input type based on variable name
                 input_type = "Model" if "model" in var_name else "Dataset"
-                params_without_defaults.append(f"{var_name}_input: Input[{input_type}]")
+                params_without_defaults.append(f"{var_name}: Input[{input_type}]")
         
         step_outputs_list = []
         
@@ -141,7 +141,7 @@ class Compiler:
         
         for var_name in step_outputs_list:
             artifact_type = "Model" if "model" in var_name else "Dataset"
-            params_without_defaults.append(f"{var_name}_output: Output[{artifact_type}]")
+            params_without_defaults.append(f"{var_name}: Output[{artifact_type}]")
 
         if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
             for param_name, param in self.pipeline.pipeline_parameters.items():
@@ -169,11 +169,11 @@ class Compiler:
         if hasattr(step, 'ins') and step.ins:
             for var_name in step.ins:
                 input_type = "Model" if "model" in var_name else "Dataset"
-                step_inputs.append(Artifact(name=f"{var_name}_input", type=input_type, is_input=True))
+                step_inputs.append(Artifact(name=f"{var_name}", type=input_type, is_input=True))
         
         for var_name in step_outputs_list:
             artifact_type = "Model" if "model" in var_name else "Dataset"
-            step_outputs.append(Artifact(name=f"{var_name}_output", type=artifact_type, is_input=False))
+            step_outputs.append(Artifact(name=f"{var_name}", type=artifact_type, is_input=False))
 
         packages_list = self._get_package_list_from_imports()
    

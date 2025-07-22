@@ -17,8 +17,8 @@ def {{ step.name }}({{ component_signature_args }}):
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
 {%- for input_art in step_inputs %}
-    # Load {{ input_art.name.replace('_input', '') }} from input artifact
-    {{ input_art.name.replace('_input', '') }} = _kale_marshal.load("{{ input_art.name.replace('_input', '') }}", path={{ input_art.name }}.path)
+    # Load {{ input_art.name }} from input artifact
+    {{ input_art.name }} = _kale_marshal.load("{{ input_art.name }}", path={{ input_art.name }}.path)
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -34,8 +34,8 @@ def {{ step.name }}({{ component_signature_args }}):
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
 {%- for output_art in step_outputs %}
-    # Save {{ output_art.name.replace('_output', '') }} to output artifact
-    _kale_marshal.save({{ output_art.name.replace('_output', '') }}, "{{ output_art.name.replace('_output', '') }}", path={{ output_art.name }}.path)
+    # Save {{ output_art.name }} to output artifact
+    _kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}", path={{ output_art.name }}.path)
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''

@@ -30,7 +30,7 @@ def auto_generated_pipeline(
     {{ step.name }}_task = {{ step.name }}(
     {%- if step_inputs.get(step.name) %}
         {%- for input_var in step_inputs[step.name] %}
-        {{ input_var }}_input={{ output_to_step.get(input_var, 'UNKNOWN') }}_task.outputs["{{ input_var }}_output"]{% if not loop.last or pipeline_param_info %},{% endif %}
+        {{ input_var }}={{ output_to_step.get(input_var, 'UNKNOWN') }}_task.outputs["{{ input_var }}"]{% if not loop.last or pipeline_param_info %},{% endif %}
         {%- endfor %}
     {%- endif %}
     {%- if pipeline_param_info %}
