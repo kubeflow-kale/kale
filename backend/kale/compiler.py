@@ -56,11 +56,12 @@ class Compiler:
     The Pipeline object is assumed to provide all the necessary information
     (environment, configuration, etc...) for the script to be compiled.
     """
-    def __init__(self, pipeline: Pipeline):
+    def __init__(self, pipeline: Pipeline, imports_and_functions: str):
         self.pipeline = pipeline
         self.templating_env = None
         self.dsl_source = ""
         self.dsl_script_path = None
+        self.imports_and_functions = imports_and_functions
 
     @staticmethod
     def _get_args():
@@ -122,43 +123,36 @@ class Compiler:
 
         _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
         template = self._get_templating_env().get_template(_template_filename)
-        
-        component_params_list = []
 
-        # Handle step input artifacts (ins)
+        # Separate parameters with and without defaults for proper ordering
+        params_without_defaults = []
+        params_with_defaults = []
+
         if hasattr(step, 'ins') and step.ins:
             for var_name in step.ins:
-                component_params_list.append(f"{var_name}_input: Input[Dataset]")
+                # Determine the correct input type based on variable name
+                input_type = "Model" if "model" in var_name else "Dataset"
+                params_without_defaults.append(f"{var_name}_input: Input[{input_type}]")
         
-        # Handle step output artifacts (outs)
+        step_outputs_list = []
+        
         if hasattr(step, 'outs') and step.outs:
-            for var_name in step.outs:
-                component_params_list.append(f"{var_name}_output: Output[Dataset]")
+            step_outputs_list = list(step.outs)
+        
+        for var_name in step_outputs_list:
+            artifact_type = "Model" if "model" in var_name else "Dataset"
+            params_without_defaults.append(f"{var_name}_output: Output[{artifact_type}]")
 
-        # Add pipeline parameters to all components
-        # Pipeline parameters are stored as a dict where key is param name and value is PipelineParam
         if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
                     param_type = param.param_type or "str"
                     param_value_str = repr(param.param_value)
-                    # Convert parameter name to a clean component parameter name
                     clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
-                    component_params_list.append(f"{clean_param_name}: {param_type} = {param_value_str}")
-        
-        component_signature_args = ", ".join(component_params_list)
+                    params_with_defaults.append(f"{clean_param_name}: {param_type} = {param_value_str}")
 
-        # Create step artifacts info for template
-        step_inputs = []
-        step_outputs = []
-        
-        if hasattr(step, 'ins') and step.ins:
-            for var_name in step.ins:
-                step_inputs.append(Artifact(name=f"{var_name}_input", type="Dataset", is_input=True))
-        
-        if hasattr(step, 'outs') and step.outs:
-            for var_name in step.outs:
-                step_outputs.append(Artifact(name=f"{var_name}_output", type="Dataset", is_input=False))
+        component_params_list = params_without_defaults + params_with_defaults
+        component_signature_args = ", ".join(component_params_list)
 
         # Create pipeline parameter mapping for the template
         pipeline_params = {}
@@ -168,10 +162,26 @@ class Compiler:
                     clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
                     pipeline_params[param_name] = clean_param_name
 
+        # Create step artifacts info for template
+        step_inputs = []
+        step_outputs = []
+        
+        if hasattr(step, 'ins') and step.ins:
+            for var_name in step.ins:
+                input_type = "Model" if "model" in var_name else "Dataset"
+                step_inputs.append(Artifact(name=f"{var_name}_input", type=input_type, is_input=True))
+        
+        for var_name in step_outputs_list:
+            artifact_type = "Model" if "model" in var_name else "Dataset"
+            step_outputs.append(Artifact(name=f"{var_name}_output", type=artifact_type, is_input=False))
+
+        packages_list = self._get_package_list_from_imports()
+   
         fn_code = template.render(
             step=step,
             component_signature_args=component_signature_args,
             pipeline_params=pipeline_params,
+            packages_list = packages_list,
             step_inputs=step_inputs,
             step_outputs=step_outputs,
             kfp_dsl_artifact_imports=KFP_DSL_ARTIFACT_IMPORTS,
@@ -183,19 +193,19 @@ class Compiler:
         """Generate Python code using the pipeline template."""
         template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
         
-        # Prepare step dependencies and outputs for pipeline generation
         step_outputs = {}
         step_inputs = {}
         for step in self.pipeline.steps:
-            if hasattr(step, 'outs') and step.outs:
-                step_outputs[step.name] = step.outs
             if hasattr(step, 'ins') and step.ins:
-                step_inputs[step.name] = step.ins
+                step_inputs[step.name] = list(step.ins)
+
+            if hasattr(step, 'outs') and step.outs:
+                step_outputs[step.name] = list(step.outs)
         
-        # Pipeline parameters info
         pipeline_param_info = {}
-        if hasattr(self.pipeline, 'parameters') and self.pipeline.parameters:
-            for param_name, param in self.pipeline.parameters.items():
+        
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters: 
+            for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
                     clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
                     pipeline_param_info[param_name] = {
@@ -215,6 +225,37 @@ class Compiler:
         # fix code style using pep8 guidelines
         return autopep8.fix_code(pipeline_code)
 
+    def _get_package_list_from_imports(self):
+        """
+        Extracts a list of unique top-level package names from the tagged cell of import statements.
+
+        Args:
+            imports_str: A string containing Python import statements.
+
+        Returns:
+            A list of unique top-level package names.
+        """
+        package_names = set()
+        package_names.add("kale") # Ensure 'kale' is always included
+        lines = self.imports_and_functions.strip().split('\n')
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith('import '):
+                # For 'import package' or 'import package as alias'
+                parts = line.split(' ')
+                if len(parts) > 1:
+                    # If it's 'import package.submodule', we only want 'package'
+                    package_name = parts[1].split('.')[0]
+                    package_names.add(package_name)
+            elif line.startswith('from '):
+                # For 'from package import module' or 'from package.submodule import item'
+                parts = line.split(' ')
+                if len(parts) > 1:
+                    package_name = parts[1].split('.')[0]
+                    package_names.add(package_name)
+        return sorted(list(package_names))
+    
     def _get_templating_env(self, templates_path=None):
         if self.templating_env:
             return self.templating_env

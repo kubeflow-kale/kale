@@ -50,7 +50,7 @@ set of curated Notebooks in the
 pip install kubeflow-kale
 
 # install jupyter lab
-pip install "jupyterlab>=2.0.0,<3.0.0"
+pip install "jupyterlab>=4.0.0"
 
 # install the extension
 jupyter labextension install kubeflow-kale-labextension
@@ -88,15 +88,31 @@ limitations imposed by the Kale data marshalling model.
 
 #### Backend
 
-Create a new Python virtual environment with `Python >= 3.6`. Then:
+Clone the repository and create a conda environment:
+```bash
+git clone https://github.com/kubeflow-kale/kale.git
+cd kale
+conda create --name my_project_env python=3.10
+conda activate my_project_env
+```
+Checkout to v2.0-dev branch. Then:
 
 ```bash
+git checkout v2.0-dev
 cd backend/
 pip install -e .[dev]
+
+#start kfp locally in another terminal (optional)
+kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
+
+#run cli from outside the backend
+cd ..
+python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080/ --run_pipeline
 
 # run tests
 pytest -x -vv
 ```
+DSL script will be generated inside .kale of root directory and pipeline would be visible in KFP UI
 
 #### Labextension
 
@@ -104,7 +120,7 @@ The JupyterLab Python package comes with its own yarn wrapper, called `jlpm`.
 While using the previously installed venv, install JupyterLab by running:
 
 ```bash
-pip install "jupyterlab>=2.0.0,<3.0.0"
+pip install "jupyterlab>=4.0.0"
 ```
 
 You can then run the following to install the Kale extension:

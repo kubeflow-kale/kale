@@ -67,7 +67,7 @@ setup(
                   ['kale=kale.cli:main',
                    'kale_server=kale.cli:server',
                    'kale-volumes=kale.cli:kale_volumes']},
-    python_requires='>=3.10.0',
+    python_requires='>=3.6.0',
     include_package_data=True,
     zip_safe=False
 )

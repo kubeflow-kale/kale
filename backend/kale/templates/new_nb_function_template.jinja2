@@ -1,27 +1,24 @@
 @kfp_dsl.component(
     base_image='python:3.10',
-    packages_to_install=['dill', 'pandas', 'numpy', 'scikit-learn', 'joblib']
+    packages_to_install={{ packages_list}},
 )
 def {{ step.name }}({{ component_signature_args }}):
-    # This block populates pipeline parameters. If these are also component args,
-    # then they will be overwritten by values passed as args.
     _kale_pipeline_parameters_block = '''
 {%- for param_name, param_var in pipeline_params.items() %}
     {{ param_name }} = {{ param_var }}
 {%- endfor %}
     '''
 
-    from backend.kale.common import mlmdutils as _kale_mlmdutils
+    from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
-    from backend.kale import marshal as _kale_marshal
+    from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
 {%- for input_art in step_inputs %}
-    # Read {{ input_art.name }} from the {{ input_art.type }} artifact
-    with open({{ input_art.name }}.path, "r") as f:
-        {{ input_art.name.replace('_input', '') }}_val = int(f.read())
+    # Load {{ input_art.name.replace('_input', '') }} from input artifact
+    {{ input_art.name.replace('_input', '') }} = _kale_marshal.load("{{ input_art.name.replace('_input', '') }}", path={{ input_art.name }}.path)
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -34,16 +31,20 @@ def {{ step.name }}({{ component_signature_args }}):
 
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
-    from backend.kale import marshal as _kale_marshal
+    from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
+{%- for output_art in step_outputs %}
+    # Save {{ output_art.name.replace('_output', '') }} to output artifact
+    _kale_marshal.save({{ output_art.name.replace('_output', '') }}, "{{ output_art.name.replace('_output', '') }}", path={{ output_art.name }}.path)
+{%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
     # run the code blocks inside a jupyter kernel
-    from backend.kale.common.jputils import run_code as _kale_run_code
-    from backend.kale.common.kfputils import \
+    from kale.common.jputils import run_code as _kale_run_code
+    from kale.common.kfputils import \
         update_uimetadata as _kale_update_uimetadata
-    
+
     _kale_blocks = (
         _kale_pipeline_parameters_block,
         _kale_data_loading_block,
@@ -51,26 +52,10 @@ def {{ step.name }}({{ component_signature_args }}):
         _kale_block{{ block_index }},{% endfor %}
         _kale_data_saving_block
     )
-    
+
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open("/{{ step.name }}.html", "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('{{ step.name }}')
 
     _kale_mlmdutils.call("mark_execution_complete")
-
-{%- if step_outputs %}
-    # Handle output artifacts by parsing execution results
-{%- for output_art in step_outputs %}
-    # Extract {{ output_art.name.replace('_output', '') }} value from execution output
-    import re
-    match = re.search(r"I got (\d+) candies!", _kale_html_artifact)
-    if match:
-        {{ output_art.name.replace('_output', '') }}_count = int(match.group(1))
-        with open({{ output_art.name }}.path, "w") as f:
-            f.write(str({{ output_art.name.replace('_output', '') }}_count))
-    else:
-        with open({{ output_art.name }}.path, "w") as f:
-            f.write("0")  # Default value if not found
-{%- endfor %}
-{%- endif %}

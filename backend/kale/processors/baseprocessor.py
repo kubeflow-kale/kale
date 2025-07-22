@@ -60,7 +60,7 @@ class BaseProcessor(ABC):
         self._add_final_autosnapshot_step()
         self._configure_poddefaults()
         self._apply_steps_defaults()
-        self._set_volume_pipeline_parameters()
+        # self._set_volume_pipeline_parameters()
 
     def _add_final_autosnapshot_step(self):
         if not self.no_op_step:

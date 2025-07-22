@@ -594,11 +594,10 @@ class NotebookProcessor(BaseProcessor):
             # get all the marshal candidates from father's source and intersect
             # with the metrics that have not been matched yet
             marshal_candidates = astutils.get_marshal_candidates(anc_source)
-            print(f"Anc step {anc} marshal candidates: {marshal_candidates}")
             assigned_metrics = metrics_left.intersection(marshal_candidates)
-            print(f"Anc step {anc} assigned metrics: {assigned_metrics}")
             # Remove the metrics that have already been assigned.
             metrics_left.difference_update(assigned_metrics)
+
             # Generate code to produce the metrics artifact in the current step
             if assigned_metrics:
                 code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
@@ -908,22 +907,3 @@ class NotebookProcessor(BaseProcessor):
                 free_vars.difference_update(consumed_params)
             fns_free_vars[fn_name] = (free_vars, consumed_params)
         return fns_free_vars
-    
-    def _infer_variable_type(self, var_name: str) -> str:
-        """Infer KFP artifact type for variable"""
-        var_lower = var_name.lower()
-        
-        # Model variables
-        if any(term in var_lower for term in ['model', 'classifier', 'regressor', 'estimator']):
-            return 'Model'
-        
-        # Dataset variables
-        if any(term in var_lower for term in ['data', 'df', 'dataset', 'x_train', 'x_test', 'y_train', 'y_test']):
-            return 'Dataset'
-        
-        # Metrics variables
-        if any(term in var_lower for term in ['accuracy', 'score', 'metric', 'result']):
-            return 'Metrics'
-        
-        # Default to Artifact
-        return 'Artifact'

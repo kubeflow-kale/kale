@@ -267,8 +267,9 @@ def main():
     # FIXME: We are removing the `debug` arg. This shouldn't be an issue
     processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
     pipeline = processor.run()
+    imports_and_functions = processor.get_imports_and_functions()
     
-    dsl_script_path = Compiler(pipeline).compile()
+    dsl_script_path = Compiler(pipeline, imports_and_functions).compile()
     pipeline_name = pipeline.config.pipeline_name
     print(f"dsl_script_path: {dsl_script_path}")
 
