@@ -1,7 +1,6 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
-from kubernetes import client as k8s_client
 
 {{ lightweight_components | join('\n\n') }}
 
@@ -27,10 +26,10 @@ def auto_generated_pipeline(
 {% endfor %}
 
 {% for step in steps_list %}
-    {{ step.name }}_task = {{ step.name }}(
+    {{ step.name }}_task = {{ step.name }}_step(
     {%- if step_inputs.get(step.name) %}
         {%- for input_var in step_inputs[step.name] %}
-        {{ input_var }}={{ output_to_step.get(input_var, 'UNKNOWN') }}_task.outputs["{{ input_var }}"]{% if not loop.last or pipeline_param_info %},{% endif %}
+        {{ input_var }}_artifact={{ output_to_step.get(input_var, 'UNKNOWN') }}_task.outputs["{{ input_var }}_artifact"]{% if not loop.last or pipeline_param_info %},{% endif %}
         {%- endfor %}
     {%- endif %}
     {%- if pipeline_param_info %}
@@ -50,13 +49,12 @@ def auto_generated_pipeline(
     {%- endif %}
     {% endif %}
     
-    {{ step.name }}_task.set_display_name("{{ step.name | title }}")
+    {{ step.name }}_task.set_display_name("{{ step.name }}_step")
 
 {% endfor %}
 
 if __name__ == "__main__":
     from kfp import compiler
-    from kfp import Client
 
     pipeline_filename = auto_generated_pipeline.__name__ + '.yaml'
     compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)

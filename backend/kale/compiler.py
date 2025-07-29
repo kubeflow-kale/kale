@@ -111,7 +111,7 @@ class Compiler:
 
         def _encode_source(s):
             # Encode line by line a multiline string
-            return "\n".join([line.encode("unicode_escape").decode("utf-8")
+            return "\n    ".join([line.encode("unicode_escape").decode("utf-8")
                               for line in s.splitlines()])
 
         if self.pipeline.processor.id == "nb":
@@ -125,14 +125,14 @@ class Compiler:
         template = self._get_templating_env().get_template(_template_filename)
 
         # Separate parameters with and without defaults for proper ordering
-        params_without_defaults = []
+        params_without_defaults = [f"{step.name}_html_report: Output[HTML]"]
         params_with_defaults = []
 
         if hasattr(step, 'ins') and step.ins:
             for var_name in step.ins:
                 # Determine the correct input type based on variable name
                 input_type = "Model" if "model" in var_name else "Dataset"
-                params_without_defaults.append(f"{var_name}: Input[{input_type}]")
+                params_without_defaults.append(f"{var_name}_artifact: Input[{input_type}]")
         
         step_outputs_list = []
         
@@ -141,7 +141,7 @@ class Compiler:
         
         for var_name in step_outputs_list:
             artifact_type = "Model" if "model" in var_name else "Dataset"
-            params_without_defaults.append(f"{var_name}: Output[{artifact_type}]")
+            params_without_defaults.append(f"{var_name}_artifact: Output[{artifact_type}]")
 
         if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
             for param_name, param in self.pipeline.pipeline_parameters.items():
@@ -160,7 +160,8 @@ class Compiler:
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
                     clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
-                    pipeline_params[param_name] = clean_param_name
+                    param = {clean_param_name: param.param_value}
+                    pipeline_params[param_name] = param
 
         # Create step artifacts info for template
         step_inputs = []
@@ -236,7 +237,8 @@ class Compiler:
             A list of unique top-level package names.
         """
         package_names = set()
-        package_names.add("kale") # Ensure 'kale' is always included
+        package_names.add("kubeflow-kale==1.0.0.dev6") # Ensure 'kale' is always included
+        package_names.add("kfp>=2.0.0")  # Ensure 'kfp' is always included
         lines = self.imports_and_functions.strip().split('\n')
 
         for line in lines:
@@ -247,12 +249,18 @@ class Compiler:
                 if len(parts) > 1:
                     # If it's 'import package.submodule', we only want 'package'
                     package_name = parts[1].split('.')[0]
+                    if package_name == 'random':
+                        package_name = 'random2'
+                    if package_name == 'sklearn':
+                        package_name = 'scikit-learn'
                     package_names.add(package_name)
             elif line.startswith('from '):
                 # For 'from package import module' or 'from package.submodule import item'
                 parts = line.split(' ')
                 if len(parts) > 1:
                     package_name = parts[1].split('.')[0]
+                    if package_name == 'sklearn':
+                        package_name = 'scikit-learn'
                     package_names.add(package_name)
         return sorted(list(package_names))
     

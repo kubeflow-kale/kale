@@ -23,8 +23,6 @@ import time
 import logging
 
 from ml_metadata.proto import metadata_store_pb2
-from ml_metadata.proto.metadata_store_pb2 import (MetadataStoreClientConfig,
-                                                  GrpcChannelArguments)
 from ml_metadata.metadata_store import metadata_store 
 # from ml_metadata.errors import AlreadyExistsError   
 
@@ -166,10 +164,9 @@ class MLMetadata(object):
             METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH_ENV,
             DEFAULT_METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH))
 
-        metadata_service_channel_args = GrpcChannelArguments(
+        metadata_service_channel_args = metadata_store_pb2.GrpcChannelArguments(
             max_receive_message_length=metadata_service_max_msg)
-
-        mlmd_connection_config = MetadataStoreClientConfig(
+        mlmd_connection_config = metadata_store_pb2.ConnectionConfig(
             host=metadata_service_host, port=metadata_service_port,
             channel_arguments=metadata_service_channel_args)
         mlmd_store = metadata_store.MetadataStore(mlmd_connection_config)
