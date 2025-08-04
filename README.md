@@ -105,14 +105,23 @@ pip install -e .[dev]
 #start kfp locally in another terminal (optional)
 kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
 
-#run cli from outside the backend
+#run cli from outside the backend directory
 cd ..
 python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080/ --run_pipeline
 
 # run tests
-pytest -x -vv
+pytest -x -vv # TODO
 ```
-DSL script will be generated inside .kale of root directory and pipeline would be visible in KFP UI
+DSL script will be generated inside .kale of root directory and pipeline would be visible in KFP UI running at 'http://127.0.0.1:8080/'.
+
+#### Note to consider
+1. Component names can't be same as any other variable with same name being used in the user code.
+2. Component name can't have _ and spaces, but instead have '-'
+3. Component names can't have capital letters and numbers after a '-'.
+4. Step names shouldn't have capital letters and no numbers after '-', eg. 'kid1' is fine, but not 'kid-1'.
+5. Step names with _ are replaced to '-' for component names and appended with '-step' in the DSL script.
+6. Artifact variables are appended with '-artifact' in the DSL script.
+
 
 #### Labextension
 

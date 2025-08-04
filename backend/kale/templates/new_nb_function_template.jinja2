@@ -20,9 +20,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_marshal.set_data_dir("/marshal")
 {%- for input_art in step_inputs %}
     # Load {{ input_art.name }}_artifact from input artifact
-    {{ input_art.name }}_data = _kale_marshal.load("{{ input_art.name }}_artifact")
-    {{ input_art.name }} = {{ input_art.name }}_data["{{ input_art.name }}"]
-    #{{ input_art.name }} = _kale_marshal.load("{{ input_art.name }}_artifact")
+    {{ input_art.name }} = _kale_marshal.load("{{ input_art.name }}_artifact")
 {%- endfor %}
     # -----------------------DATA LOADING END----------------------------------
     '''
@@ -39,9 +37,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_marshal.set_data_dir("/marshal")
 {%- for output_art in step_outputs %}
     # Save {{ output_art.name }} to output artifact
-    {{ output_art.name }}_json = {"{{ output_art.name }}": {{ output_art.name }}}
-    _kale_marshal.save({{ output_art.name }}_json, "{{ output_art.name }}_artifact")
-    #_kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}_artifact")
+    _kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}_artifact")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''

@@ -214,13 +214,19 @@ class Compiler:
                         'type': param.param_type,
                         'default': param.param_value
                     }
-        
+        if hasattr(self.pipeline, 'steps') and self.pipeline.steps:
+            # Ensure that the first step is always the pipeline entry point
+            component_names = {}
+            for step in self.pipeline.steps:
+                component_names[step.name] = step.name.replace("_", "-")
+                
         pipeline_code = template.render(
             pipeline=self.pipeline,
             lightweight_components=lightweight_components,
             step_outputs=step_outputs,
             step_inputs=step_inputs,
             pipeline_param_info=pipeline_param_info,
+            component_names=component_names,
             **self.pipeline.config.to_dict()
         )
         # fix code style using pep8 guidelines
@@ -237,7 +243,7 @@ class Compiler:
             A list of unique top-level package names.
         """
         package_names = set()
-        package_names.add("kubeflow-kale==1.0.0.dev6") # Ensure 'kale' is always included
+        package_names.add("kubeflow-kale==1.0.0.dev8") # Ensure 'kale' is always included
         package_names.add("kfp>=2.0.0")  # Ensure 'kfp' is always included
         lines = self.imports_and_functions.strip().split('\n')
 

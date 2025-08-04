@@ -49,7 +49,7 @@ def auto_generated_pipeline(
     {%- endif %}
     {% endif %}
     
-    {{ step.name }}_task.set_display_name("{{ step.name }}_step")
+    {{ step.name }}_task.set_display_name("{{ component_names[step.name] }}-step")
 
 {% endfor %}
 

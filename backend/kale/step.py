@@ -78,11 +78,18 @@ class Step:
         """Handler for when the @step decorated function is called."""
         return execution_handler(self, *args, **kwargs)
 
-    # helper method to manage artifacts
     def add_artifact(self, artifact_name: str, artifact_type: str, is_input: bool):
-        # artifact_type will be like 'Dataset', 'Model', etc.
-        # This will simplify tracking what should be an Input[Artifact] or Output[Artifact]
-        
+        """
+        Helper method to add an artifact to the step.
+        artifact_type will be either 'Dataset', 'Model', 'HTML', 'Metrics', 
+        'ClassificationMetrics' or 'Artifact'.
+        This will simplify tracking what should be an Input[Artifact] or Output[Artifact].
+
+        Args:
+            artifact_name (str): Name of the artifact.
+            artifact_type (str): Type of the artifact.
+            is_input (bool): Whether the artifact is an input or output.
+        """
         # Check if artifact already exists, update if it's an output
         for existing_art in self.artifacts:
             if existing_art.name == artifact_name:

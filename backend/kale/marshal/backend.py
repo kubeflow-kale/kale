@@ -89,8 +89,8 @@ class MarshalBackend(object):
         saved file.
         """
         abs_path = os.path.join(get_data_dir(), name + "." + self.file_type)
-        log.info("Saving %s object using %s: %s",
-                 self.display_name, self.name, name)
+        log.info("Saving %s object using %s: %s to %s",
+                 self.display_name, self.name, name, abs_path)
         try:
             self.save(obj, abs_path)
         except ImportError as e:
@@ -257,9 +257,13 @@ class Dispatcher(object):
                    if ((os.path.isfile(os.path.join(get_data_dir(), ls))
                         or os.path.isdir(os.path.join(get_data_dir(), ls)))
                        and os.path.splitext(ls)[0] == basename)]
+        log.info("Found %d entries for basename '%s': %s",
+                 len(entries), basename, entries)
         if not entries:
-            raise ValueError("No file or folder found with basename '%s'"
-                             % basename)
+            log.info("Looking for unique file/folder with basename '%s' in %s",
+                  basename, get_data_dir())
+            raise ValueError("No file or folder found with basename '%s' in %s"
+                             % basename, get_data_dir())
         if len(entries) > 1:
             raise ValueError("Found multiple files/folders with name %s: %s"
                              % (basename, entries))

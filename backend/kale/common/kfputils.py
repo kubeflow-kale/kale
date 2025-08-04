@@ -180,9 +180,8 @@ def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
     pipeline = client.get_pipeline(pipeline_id)
     pipeline_name = pipeline.display_name
     _version_id = version_id if version_id else pipeline.pipeline_id
-    print(f"Pipeline ID: {_version_id}")
     version_name = client.get_pipeline_version(pipeline_id=pipeline_id, pipeline_version_id=_version_id).display_name
-    print(f"Pipeline version: {version_name}")
+
     if not run_name:
         run_name = ("%s-%s-%s"
                     % (pipeline_name, version_name, utils.random_string()))
