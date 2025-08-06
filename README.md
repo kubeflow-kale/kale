@@ -41,6 +41,10 @@ Read more about Kale and how it works in this Medium post:
 
 ## Getting started
 
+### Requirements
+- Install Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
+- Kubernetes
+
 Install the Kale backend from PyPI and the JupyterLab extension. You can find a
 set of curated Notebooks in the
 [examples repository](https://github.com/kubeflow-kale/examples)
@@ -88,7 +92,7 @@ limitations imposed by the Kale data marshalling model.
 
 #### Backend
 
-Install kubeflow pipelines as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
+Make sure you have installed Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
 
 Clone the repository and create a conda environment:
 ```bash
@@ -116,7 +120,7 @@ pytest -x -vv # TODO
 ```
 DSL script will be generated inside .kale of root directory and pipeline would be visible in KFP UI running at 'http://127.0.0.1:8080/'.
 
-#### Note to consider
+#### Notes to consider:
 1. Component names can't be same as any other variable with same name being used in the user code.
 2. Component name can't have _ and spaces, but instead have '-'
 3. Component names can't have capital letters and numbers after a '-'.
