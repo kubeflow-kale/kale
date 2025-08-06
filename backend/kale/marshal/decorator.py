@@ -22,10 +22,12 @@ import marshal as marshal_utils
 
 log = logging.getLogger(__name__)
 
+
 class PipelineParam(NamedTuple):
     """A pipeline parameter."""
     param_type: str
     param_value: Any
+
 
 def marshal(ins: List,
             outs: List,

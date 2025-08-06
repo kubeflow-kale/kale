@@ -33,18 +33,20 @@ PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE,
 
 KFP_DSL_ARTIFACT_IMPORTS = [
     "Dataset",
-    "Model", 
+    "Model",
     "Metrics",
     "ClassificationMetrics",
     "Artifact",
     "HTML"
 ]
 
+
 class Artifact(NamedTuple):
     """A Step artifact."""
     name: str
     type: str
     is_input: bool = False
+
 
 class Compiler:
     """Converts a Pipeline object into a KFP executable.
@@ -112,7 +114,7 @@ class Compiler:
         def _encode_source(s):
             # Encode line by line a multiline string
             return "\n    ".join([line.encode("unicode_escape").decode("utf-8")
-                              for line in s.splitlines()])
+                              for line in s.splitlines()]) # noqa: E128, E261
 
         if self.pipeline.processor.id == "nb":
             # Since the code will be wrapped in triple quotes inside the
@@ -127,62 +129,85 @@ class Compiler:
         # Separate parameters with and without defaults for proper ordering
         params_without_defaults = [f"{step.name}_html_report: Output[HTML]"]
         params_with_defaults = []
-
+        step_inputs_list, step_outputs_list = [], []
         if hasattr(step, 'ins') and step.ins:
-            for var_name in step.ins:
+            step_inputs_list = sorted(step.ins)
+            for var_name in step_inputs_list:
                 # Determine the correct input type based on variable name
                 input_type = "Model" if "model" in var_name else "Dataset"
-                params_without_defaults.append(f"{var_name}_artifact: Input[{input_type}]")
-        
-        step_outputs_list = []
-        
-        if hasattr(step, 'outs') and step.outs:
-            step_outputs_list = list(step.outs)
-        
-        for var_name in step_outputs_list:
-            artifact_type = "Model" if "model" in var_name else "Dataset"
-            params_without_defaults.append(f"{var_name}_artifact: Output[{artifact_type}]")
+                params_without_defaults.append(
+                    f"{var_name}_artifact: Input[{input_type}]"
+                )
 
-        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
+        step_outputs_list = []
+
+        if hasattr(step, 'outs') and step.outs:
+            step_outputs_list = sorted(step.outs)
+            for var_name in step_outputs_list:
+                output_type = "Model" if "model" in var_name else "Dataset"
+                params_without_defaults.append(
+                    f"{var_name}_artifact: Output[{output_type}]"
+                )
+
+        if (hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters):  # noqa: E501
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
                     param_type = param.param_type or "str"
                     param_value_str = repr(param.param_value)
-                    clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
-                    params_with_defaults.append(f"{clean_param_name}: {param_type} = {param_value_str}")
+                    clean_param_name = (
+                        f"{param_name.lower()}_param"
+                        if param_name.isupper() else param_name
+                    )
+                    params_with_defaults.append(
+                        f"{clean_param_name}: {param_type} = {param_value_str}"
+                    )
 
         component_params_list = params_without_defaults + params_with_defaults
         component_signature_args = ", ".join(component_params_list)
 
         # Create pipeline parameter mapping for the template
         pipeline_params = {}
-        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:  # noqa: E501
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
-                    clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
+                    clean_param_name = (
+                        f"{param_name.lower()}_param"
+                        if param_name.isupper() else param_name
+                    )
                     param = {clean_param_name: param.param_value}
                     pipeline_params[param_name] = param
 
         # Create step artifacts info for template
         step_inputs = []
         step_outputs = []
-        
-        if hasattr(step, 'ins') and step.ins:
-            for var_name in step.ins:
-                input_type = "Model" if "model" in var_name else "Dataset"
-                step_inputs.append(Artifact(name=f"{var_name}", type=input_type, is_input=True))
-        
+
+        for var_name in step_inputs_list:
+            input_type = "Model" if "model" in var_name else "Dataset"
+            step_inputs.append(
+                Artifact(
+                    name=f"{var_name}",
+                    type=input_type,
+                    is_input=True
+                )
+            )
+
         for var_name in step_outputs_list:
-            artifact_type = "Model" if "model" in var_name else "Dataset"
-            step_outputs.append(Artifact(name=f"{var_name}", type=artifact_type, is_input=False))
+            output_type = "Model" if "model" in var_name else "Dataset"
+            step_outputs.append(
+                Artifact(
+                    name=f"{var_name}",
+                    type=output_type,
+                    is_input=False
+                )
+            )
 
         packages_list = self._get_package_list_from_imports()
-   
+
         fn_code = template.render(
             step=step,
             component_signature_args=component_signature_args,
             pipeline_params=pipeline_params,
-            packages_list = packages_list,
+            packages_list=packages_list,
             step_inputs=step_inputs,
             step_outputs=step_outputs,
             kfp_dsl_artifact_imports=KFP_DSL_ARTIFACT_IMPORTS,
@@ -193,22 +218,24 @@ class Compiler:
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
         template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
-        
         step_outputs = {}
         step_inputs = {}
         for step in self.pipeline.steps:
             if hasattr(step, 'ins') and step.ins:
-                step_inputs[step.name] = list(step.ins)
+                step_inputs[step.name] = list(sorted(step.ins))
 
             if hasattr(step, 'outs') and step.outs:
-                step_outputs[step.name] = list(step.outs)
-        
+                step_outputs[step.name] = list(sorted(step.outs))
+
         pipeline_param_info = {}
-        
-        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters: 
+
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:  # noqa: E501
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
-                    clean_param_name = f"{param_name.lower()}_param" if param_name.isupper() else param_name
+                    clean_param_name = (
+                        f"{param_name.lower()}_param"
+                        if param_name.isupper() else param_name
+                    )
                     pipeline_param_info[param_name] = {
                         'clean_name': clean_param_name,
                         'type': param.param_type,
@@ -219,7 +246,7 @@ class Compiler:
             component_names = {}
             for step in self.pipeline.steps:
                 component_names[step.name] = step.name.replace("_", "-")
-                
+
         pipeline_code = template.render(
             pipeline=self.pipeline,
             lightweight_components=lightweight_components,
@@ -233,8 +260,7 @@ class Compiler:
         return autopep8.fix_code(pipeline_code)
 
     def _get_package_list_from_imports(self):
-        """
-        Extracts a list of unique top-level package names from the tagged cell of import statements.
+        """Extracts unique package names from the tagged imports cell.
 
         Args:
             imports_str: A string containing Python import statements.
@@ -243,8 +269,10 @@ class Compiler:
             A list of unique top-level package names.
         """
         package_names = set()
-        package_names.add("kubeflow-kale==1.0.0.dev8") # Ensure 'kale' is always included
-        package_names.add("kfp>=2.0.0")  # Ensure 'kfp' is always included
+        # Ensure 'kale' is always included
+        package_names.add("kubeflow-kale==1.0.0.dev8")
+        # Ensure 'kfp' is always included
+        package_names.add("kfp>=2.0.0")
         lines = self.imports_and_functions.strip().split('\n')
 
         for line in lines:
@@ -253,7 +281,6 @@ class Compiler:
                 # For 'import package' or 'import package as alias'
                 parts = line.split(' ')
                 if len(parts) > 1:
-                    # If it's 'import package.submodule', we only want 'package'
                     package_name = parts[1].split('.')[0]
                     if package_name == 'random':
                         package_name = 'random2'
@@ -261,7 +288,6 @@ class Compiler:
                         package_name = 'scikit-learn'
                     package_names.add(package_name)
             elif line.startswith('from '):
-                # For 'from package import module' or 'from package.submodule import item'
                 parts = line.split(' ')
                 if len(parts) > 1:
                     package_name = parts[1].split('.')[0]
@@ -269,7 +295,7 @@ class Compiler:
                         package_name = 'scikit-learn'
                     package_names.add(package_name)
         return sorted(list(package_names))
-    
+
     def _get_templating_env(self, templates_path=None):
         if self.templating_env:
             return self.templating_env

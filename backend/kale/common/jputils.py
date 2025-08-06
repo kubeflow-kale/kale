@@ -19,7 +19,6 @@ import time
 import json
 import signal
 import logging
-import asyncio
 import nbformat
 import requests
 import threading
@@ -30,7 +29,6 @@ from jupyter_server import serverapp
 from jupyter_client.kernelspec import get_kernel_spec
 from kale.common.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
-from jupyter_client.manager import AsyncKernelManager
 
 from packaging import version as pkg_version
 

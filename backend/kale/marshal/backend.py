@@ -27,7 +27,7 @@ __DATA_DIR = os.path.curdir
 
 def set_data_dir(path):
     """Set the data directory where marshalling happens."""
-    global __DATA_DIR
+    global __DATA_DIR  # noqa: F824
     __DATA_DIR = path
     # create dir if not exists
     if not os.path.isdir(__DATA_DIR):
@@ -36,7 +36,7 @@ def set_data_dir(path):
 
 def get_data_dir():
     """Get the data directory where marshalling happens."""
-    global __DATA_DIR
+    global __DATA_DIR  # noqa: F824
     return __DATA_DIR
 
 
@@ -261,7 +261,7 @@ class Dispatcher(object):
                  len(entries), basename, entries)
         if not entries:
             log.info("Looking for unique file/folder with basename '%s' in %s",
-                  basename, get_data_dir())
+                     basename, get_data_dir())
             raise ValueError("No file or folder found with basename '%s' in %s"
                              % basename, get_data_dir())
         if len(entries) > 1:

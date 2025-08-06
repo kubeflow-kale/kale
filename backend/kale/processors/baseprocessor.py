@@ -18,11 +18,10 @@ import logging
 from abc import ABC, abstractmethod
 
 from kale.common import kfutils
-from kale.pipeline import Pipeline, PipelineConfig, Step, PipelineParam, VolumeConfig
+from kale.pipeline import Pipeline, PipelineConfig, Step, PipelineParam
 from typing import Optional
 
 log = logging.getLogger(__name__)
-
 
 
 class BaseProcessor(ABC):

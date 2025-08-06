@@ -105,7 +105,7 @@ def get_or_create_logger(module, name=None, level=logging.INFO, fmt=None,
         file_fmt: override default file format
         log_path: logfile path (if None, then no FileHandler is created)
     """
-    global _loggers
+    global _loggers  # noqa: F824
     log = _loggers.get(module)
     if log:
         for h in log.handlers:

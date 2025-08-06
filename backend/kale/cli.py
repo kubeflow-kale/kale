@@ -13,12 +13,11 @@
 #  limitations under the License.
 
 import argparse
-import os
-import warnings
+# import os
+# import warnings
 
 from argparse import RawTextHelpFormatter
-
-from kale.processors import NotebookProcessor 
+from kale.processors import NotebookProcessor
 from kale.compiler import Compiler
 from kale.common import kfputils
 
@@ -45,8 +44,9 @@ METADATA_GROUP_DESC = """
 Override the arguments of the source Notebook's Kale metadata section
 """
 
+
 def main():
-    """Command line interface"""
+    """Command line interface."""
     parser = argparse.ArgumentParser(description=ARGS_DESC,
                                      formatter_class=RawTextHelpFormatter)
     general_group = parser.add_argument_group('General')
@@ -63,9 +63,11 @@ def main():
 
     metadata_group = parser.add_argument_group('Notebook Metadata Overrides',
                                                METADATA_GROUP_DESC)
-    metadata_group.add_argument('--experiment_name', type=str, default="Kale-Pipeline-Experiment",
+    metadata_group.add_argument('--experiment_name', type=str,
+                                default="Kale-Pipeline-Experiment",
                                 help='Name of the created experiment')
-    metadata_group.add_argument('--pipeline_name', type=str, default="kale-pipeline",
+    metadata_group.add_argument('--pipeline_name', type=str,
+                                default="kale-pipeline",
                                 help='Name of the deployed pipeline')
     metadata_group.add_argument('--pipeline_description', type=str,
                                 help='Description of the deployed pipeline')
@@ -90,17 +92,16 @@ def main():
     mt_overrides_group_dict = {a.dest: getattr(args, a.dest, None)
                                for a in mt_overrides_group._group_actions
                                if getattr(args, a.dest, None) is not None}
-
-    # FIXME: We are removing the `debug` arg. This shouldn't be an issue
+    print(f"mt_overrides_group_dict: {mt_overrides_group_dict}")
     processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
     pipeline = processor.run()
     imports_and_functions = processor.get_imports_and_functions()
-    
     dsl_script_path = Compiler(pipeline, imports_and_functions).compile()
     pipeline_name = pipeline.config.pipeline_name
     print(f"dsl_script_path: {dsl_script_path}")
 
-    pipeline_package_path = kfputils.compile_pipeline(dsl_script_path,pipeline_name)
+    pipeline_package_path = kfputils.compile_pipeline(dsl_script_path,
+                                                      pipeline_name)
     if args.upload_pipeline or args.run_pipeline:
         pipeline_id, version_id = kfputils.upload_pipeline(
             pipeline_package_path=pipeline_package_path,
@@ -114,8 +115,9 @@ def main():
                 pipeline_id=pipeline_id,
                 version_id=version_id,
                 host=pipeline.config.kfp_host,
-                pipeline_package_path = pipeline_package_path
+                pipeline_package_path=pipeline_package_path
             )
-    
+
+
 if __name__ == "__main__":
     main()

@@ -63,8 +63,13 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     while pipeline_id is None and token is not None:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
-        f = next(filter(
-            lambda x: x.display_name == pipeline_name, pipelines.pipelines), None)
+        f = next(
+            filter(
+                lambda x: x.display_name == pipeline_name,
+                pipelines.pipelines
+            ),
+            None
+        )
         if f is not None:
             pipeline_id = f.pipeline_id
     return pipeline_id
@@ -141,7 +146,7 @@ def upload_pipeline(pipeline_package_path: str, pipeline_name: str,
             pipeline_package_path=pipeline_package_path,
             pipeline_name=pipeline_name)
         pipeline_id = upp.pipeline_id
-        log.info("Pipeline '%s' uploaded with ID: %s", pipeline_name, pipeline_id)
+        log.info("Uploaded Pipeline '%s' id: %s", pipeline_name, pipeline_id)
         upv = client.upload_pipeline_version(
             pipeline_package_path=pipeline_package_path,
             pipeline_version_name=version_name,
@@ -161,7 +166,8 @@ def upload_pipeline(pipeline_package_path: str, pipeline_name: str,
 
 
 def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
-                 version_id: str = None, host: str = None, pipeline_package_path: str = None, **kwargs) -> Any:
+                 version_id: str = None, host: str = None,
+                 pipeline_package_path: str = None, **kwargs) -> Any:
     """Run pipeline (without uploading) in kfp.
 
     Args:
@@ -176,11 +182,14 @@ def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
     """
     client = _get_kfp_client(host)
     log.info("Creating KFP experiment '%s'...", experiment_name)
-    experiment = client.create_experiment(experiment_name)
+    client.create_experiment(experiment_name)
     pipeline = client.get_pipeline(pipeline_id)
     pipeline_name = pipeline.display_name
     _version_id = version_id if version_id else pipeline.pipeline_id
-    version_name = client.get_pipeline_version(pipeline_id=pipeline_id, pipeline_version_id=_version_id).display_name
+    version_name = client.get_pipeline_version(
+        pipeline_id=pipeline_id,
+        pipeline_version_id=_version_id
+    ).display_name
 
     if not run_name:
         run_name = ("%s-%s-%s"
@@ -190,15 +199,15 @@ def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
                           version_name))
     log.info("Submitting new pipeline run '%s' for pipeline '%s' %s ...",
              run_name, pipeline_name, display_version)
-    
+
     run = client.create_run_from_pipeline_package(
-        pipeline_file= pipeline_package_path,
+        pipeline_file=pipeline_package_path,
         arguments=kwargs,
         run_name=run_name,
         experiment_name=experiment_name
     )
-        
-    print(f"Pipeline submitted!")
+
+    print("Pipeline submitted!")
     log.info("Run ID: %s", run.run_id)
     run_url = f"View: {host}/#/runs/details/{run.run_id}"
     log.info("Successfully submitted pipeline run.")

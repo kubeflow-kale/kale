@@ -88,6 +88,8 @@ limitations imposed by the Kale data marshalling model.
 
 #### Backend
 
+Install kubeflow pipelines as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
+
 Clone the repository and create a conda environment:
 ```bash
 git clone https://github.com/kubeflow-kale/kale.git

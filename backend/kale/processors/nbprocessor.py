@@ -14,9 +14,8 @@
 
 import os
 import re
-import warnings
 
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, Optional
 
 import nbformat as nb
 
@@ -24,8 +23,7 @@ from kale.config import Field
 from kale.step import Step, PipelineParam
 from kale.common import astutils, flakeutils, graphutils, utils
 from kale.pipeline import PipelineConfig
-from .baseprocessor import BaseProcessor, PipelineParam
-
+from .baseprocessor import BaseProcessor
 
 # fixme: Change the name of this key to `kale_metadata`
 KALE_NB_METADATA_KEY = 'kubeflow_notebook'
@@ -77,14 +75,15 @@ _kale_kfp_metrics = {
 _kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
 '''
 
-KFP_ARTIFACT_TYPE_MAPPING = {
-    "model": "Model",      # if "model" in var_name.lower() -> kfp.dsl.Model
-    "dataset": "Dataset",  # if "dataset" in var_name.lower() -> kfp.dsl.Dataset
-    "data": "Dataset",     # if "data" in var_name.lower() -> kfp.dsl.Dataset
-    "metrics": "Metrics",  # if "metrics" in var_name.lower() -> kfp.dsl.Metrics
+KFP_ARTIFACT_TYPE_MAP = {
+    "model": "Model",      # if "model" in var_name.lower()-> kfp.dsl.Model
+    "dataset": "Dataset",  # if "dataset" in var_name.lower()-> kfp.dsl.Dataset
+    "data": "Dataset",     # if "data" in var_name.lower()-> kfp.dsl.Dataset
+    "metrics": "Metrics",  # if "metrics" in var_name.lower()-> kfp.dsl.Metrics
     "classification": "ClassificationMetrics",
     r'a-zA-Z0-9_': "Artifact",  # default for any other variable
 }
+
 
 def get_annotation_or_label_from_tag(tag_parts):
     """Get the key and value from an annotation or label tag.
@@ -600,32 +599,32 @@ class NotebookProcessor(BaseProcessor):
         self.pipeline.remove_node(tmp_step_name)
 
     def dependencies_detection(self, imports_and_functions: str = ""):
-        """Detects data dependencies between pipeline steps, with support 
-         for KFP v2 artifacts.
+        """Detects data dependencies between pipeline steps to support KFPv2.
 
         The data dependencies detection algorithm roughly works as follows:
         1.  Process each step in topological order.
-        2.  Identify the `ins` (required variables and their types) for the 
+        2.  Identify the `ins` (required variables and their types) for the
          current step. This includes variables from the pipeline's parameters.
-        3.  Find functions called within the current step and determine their 
-         free variables. This is crucial for handling recursive dependencies 
+        3.  Find functions called within the current step and determine their
+         free variables. This is crucial for handling recursive dependencies
          and function calls that rely on external data.
-        4.  For each ancestor of the current step, find potential `outs` 
-         (variables and artifacts) that the current step requires. The intersection
-         of the current step's `ins` and the ancestor's potential outputs forms a dependency.
-        5.  If a function called in the current step was defined in an ancestor, 
-         ensure its free variables are added to both the current step's `ins` and 
-         the ancestor's `outs`.
-        6.  The detected dependencies are enriched with their associated KFP v2 artifact
-         types, enabling the KFP compiler to correctly link components.
+        4.  For each ancestor of the current step, find potential `outs`
+         (variables and artifacts) that the current step requires. The
+         intersection of the current step's `ins` and the ancestor's potential
+         outputs forms a dependency.
+        5.  If a function called in the current step was defined in an
+         ancestor, ensure its free variables are added to both the current
+         step's `ins` and the ancestor's `outs`.
+        6.  Detected dependencies are enriched with their associated KFPv2
+         artifact types, enabling the compiler to correctly link components.
 
         Args:
-            imports_and_functions: A string containing multiline Python source code 
-            for global imports and functions that are prepended to every pipeline step.
+            imports_and_functions: A string containing multiline source-code
+            for global imports and functions prepended to every pipeline step.
 
         Returns:
-            An annotated pipeline graph where each step is updated with 
-            its detected `ins`, `outs`, `parameters`, and `fns_free_variables` 
+            An annotated pipeline graph where each step is updated with
+            its detected `ins`, `outs`, `parameters`, and `fns_free_variables`
             to facilitate KFP v2 artifact handling.
         """
         # resolve the data dependencies between steps, looping through the
@@ -640,7 +639,7 @@ class NotebookProcessor(BaseProcessor):
                 pipeline_parameters=self.pipeline.pipeline_parameters)
             step.parameters = parameters
 
-            fns_free_variables = self._detect_fns_free_variables(
+            fns_free_vars = self._detect_fns_free_variables(
                 step_source, imports_and_functions,
                 self.pipeline.pipeline_parameters)
 
@@ -670,26 +669,30 @@ class NotebookProcessor(BaseProcessor):
                 outs = ins_left.intersection(marshal_candidates)
                 for out_name in outs:
                     # Heuristic for type inference:
-                    inferred_type = "str" # Default for primitives not otherwise caught
+                    inferred_type = "str"  # Default
                     is_artifact = False
-                    for key_part, kfp_type in KFP_ARTIFACT_TYPE_MAPPING.items():
-                        if key_part in out_name.lower():
+                    for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
+                        if key in out_name.lower():
                             inferred_type = kfp_type
                             is_artifact = True
                             break
-                    
-                    # Update ancestor's outputs (list of str)
-                    if out_name not in anc_step.outs:
-                        anc_step.outs.append(out_name)                    
-                    if is_artifact:
-                        anc_step.add_artifact(out_name, inferred_type, is_input=False)
 
-                    # Update current step's inputs for input artifacts (list of str)
-                    if out_name not in step.ins:
-                        step.ins.append(out_name)                    
+                    # Update ancestor's outputs
+                    if out_name not in anc_step.outs:
+                        anc_step.outs.append(out_name)
                     if is_artifact:
-                        step.add_artifact(out_name, inferred_type, is_input=True)
-                    
+                        anc_step.add_artifact(
+                            out_name, inferred_type, is_input=False
+                        )
+
+                    # Update current step's inputs for input artifacts
+                    if out_name not in step.ins:
+                        step.ins.append(out_name)
+                    if is_artifact:
+                        step.add_artifact(
+                            out_name, inferred_type, is_input=True
+                        )
+
                     # This input is satisfied, remove from the set
                     ins_left.remove(out_name)
 
@@ -698,50 +701,50 @@ class NotebookProcessor(BaseProcessor):
                 for fn_call in fn_calls:
                     anc_fns_free_vars = anc_step.fns_free_variables
                     if fn_call in anc_fns_free_vars.keys():
-                        fn_free_vars_names, used_params_names = anc_fns_free_vars[fn_call]
-                        
-                        _left_free_vars = list(fn_free_vars_names)
+                        fn_free_vars, used_params = anc_fns_free_vars[fn_call]
+                        _left_free_vars = list(fn_free_vars)
                         while _left_free_vars:
-                            _cur_fv_name = _left_free_vars.pop(0)
-                            if _cur_fv_name in anc_fns_free_vars:
-                                nested_fv_names, _ = anc_fns_free_vars[_cur_fv_name]
-                                fn_free_vars_names.update(nested_fv_names)
+                            _cur_fv = _left_free_vars.pop(0)
+                            if _cur_fv in anc_fns_free_vars:
+                                nested_fv_names, _ = anc_fns_free_vars[_cur_fv]
+                                fn_free_vars.update(nested_fv_names)
                                 _left_free_vars.extend(list(nested_fv_names))
-                        
-                        # Add these free variables' names to step.ins (if not already there)
-                        for fv_name in fn_free_vars_names:
+
+                        # Add free variables' name to step.ins(if not exists)
+                        for fv_name in fn_free_vars:
                             if fv_name not in step.ins:
                                 step.ins.append(fv_name)
-                            
                             # Heuristic for type inference for free variables
                             inferred_type = "str"
                             is_artifact = False
-                            for key_part, kfp_type in KFP_ARTIFACT_TYPE_MAPPING.items():
-                                if key_part in fv_name.lower():
+                            for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
+                                if key in fv_name.lower():
                                     inferred_type = kfp_type
                                     is_artifact = True
                                     break
-                            
-                            # Add to current step's artifacts (if it's an artifact)
+
+                            # Add to current step's artifacts
                             if is_artifact:
-                                step.add_artifact(fv_name, inferred_type, is_input=True)
+                                step.add_artifact(
+                                    fv_name,
+                                    inferred_type,
+                                    is_input=True
+                                )
 
-                            # Add to ancestor's outs (list of str) if defined there
-                            if fv_name in marshal_candidates and fv_name not in anc_step.outs:
+                            # Add to ancestor's outs if doesn't exists
+                            if fv_name in marshal_candidates and fv_name not in anc_step.outs:  # noqa: E501
                                 anc_step.outs.append(fv_name)
-                                # Add to ancestor's artifacts (if it's an artifact)
+                                # Add to ancestor's artifacts
                                 if is_artifact:
-                                    anc_step.add_artifact(fv_name, inferred_type, is_input=False)
+                                    anc_step.add_artifact(
+                                        fv_name,
+                                        inferred_type,
+                                        is_input=False
+                                    )
 
-
-                        # The pipeline parameters used by the function
-                        _pps = self.pipeline.pipeline_parameters
-                        for param_name in used_params_names:
-                            # These are already in step.parameters and processed at the start
-                            pass
-
+                        # Add ipeline params used by the function
                         to_remove_fn_calls.add(fn_call)
-                        fns_free_variables[fn_call] = anc_fns_free_vars[fn_call]
+                        fns_free_vars[fn_call] = anc_fns_free_vars[fn_call]
 
                 fn_calls.difference_update(to_remove_fn_calls)
 
@@ -765,7 +768,7 @@ class NotebookProcessor(BaseProcessor):
             # these are the parameters that are actually needed by this step.
             relevant_parameters = ins.intersection(pipeline_parameters.keys())
             ins.difference_update(relevant_parameters)
-        step_params = {k: pipeline_parameters[k] for k in relevant_parameters} if pipeline_parameters else {}
+        step_params = {k: pipeline_parameters[k] for k in relevant_parameters} if pipeline_parameters else {}  # noqa: E501
         return ins, step_params
 
     def _detect_fns_free_variables(self,

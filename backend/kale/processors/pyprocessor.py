@@ -21,7 +21,7 @@ from typing import Callable, Dict
 
 from kale.common import astutils
 from kale import step as step_module
-from kale.step import Step, PipelineParam 
+from kale.step import Step, PipelineParam
 from kale.pipeline import PipelineConfig
 
 from .baseprocessor import BaseProcessor

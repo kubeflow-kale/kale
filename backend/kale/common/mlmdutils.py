@@ -23,11 +23,9 @@ import time
 import logging
 
 from ml_metadata.proto import metadata_store_pb2
-from ml_metadata.metadata_store import metadata_store 
-# from ml_metadata.errors import AlreadyExistsError   
-
+from ml_metadata.metadata_store import metadata_store
+# from ml_metadata.errors import AlreadyExistsError
 from kale.common import utils, podutils, workflowutils, k8sutils, kfputils
-
 
 METADATA_GRPC_SERVICE_SERVICE_HOST_ENV = "METADATA_GRPC_SERVICE_SERVICE_HOST"
 DEFAULT_METADATA_GRPC_SERVICE_SERVICE_HOST = ("metadata-grpc-service.kubeflow"
@@ -164,7 +162,7 @@ class MLMetadata(object):
             METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH_ENV,
             DEFAULT_METADATA_GRPC_MAX_RECEIVE_MESSAGE_LENGTH))
 
-        metadata_service_channel_args = metadata_store_pb2.GrpcChannelArguments(
+        metadata_service_channel_args = metadata_store_pb2.GrpcChannelArguments(  # noqa: E501
             max_receive_message_length=metadata_service_max_msg)
         mlmd_connection_config = metadata_store_pb2.ConnectionConfig(
             host=metadata_service_host, port=metadata_service_port,
@@ -399,9 +397,8 @@ class MLMetadata(object):
         obj = result["event"]["object"]
         bucket = task["task"]["bucket"]
         artifact_name = task["task"]["action_params"]["params"]["commit_title"]
-        log.info("Creating %s artifact for '%s/%s?version=%s...'",
-                 ROK_SNAPSHOT_ARTIFACT_TYPE_NAME, bucket, obj, version)
-        from rok_gw_client.client import RokClient # noqa: E402
+
+        from rok_gw_client.client import RokClient  # noqa: E402
         rok_client = RokClient()
         task_info = rok_client.version_info(bucket, obj, version)
         members = int(task_info["group_member_count"])
@@ -522,7 +519,7 @@ class MLMetadata(object):
 
 def get_mlmd_instance():
     """Get MLMetadata instance."""
-    global mlmd_instance
+    global mlmd_instance  # noqa: F824
     if not mlmd_instance:
         init_metadata()
     return mlmd_instance

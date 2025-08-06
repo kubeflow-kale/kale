@@ -16,9 +16,10 @@ import logging
 import inspect
 
 from abc import ABC
-from typing import Any, Callable, Dict, List, NamedTuple, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 log = logging.getLogger(__name__)
+
 
 class Field:
     """Define a strongly typed config field.

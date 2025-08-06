@@ -10,7 +10,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
 )
 def auto_generated_pipeline(
 {%- for param_name, param_info in pipeline_param_info.items() %}
-    {{ param_name.lower() }}: {{ param_info.type }} = {{ param_info.default | tojson }}{% if not loop.last %},{% endif %}
+    {{ param_name.lower() }}: {{ param_info.type }} = {% if param_info.type == 'bool' %}{{ param_info.default }}{% else %}{{ param_info.default | tojson }}{% endif %}{% if not loop.last %},{% endif %}
 {%- endfor %}
 ):
     """Auto-generated pipeline function."""

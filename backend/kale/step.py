@@ -21,6 +21,7 @@ from kale.common import astutils, runutils
 from kale.config import Config, Field, validators
 log = logging.getLogger(__name__)
 
+
 class PipelineParam(NamedTuple):
     """A pipeline parameter."""
     param_type: str
@@ -32,7 +33,8 @@ class Artifact(NamedTuple):
     name: str
     type: str
     is_input: bool = False
-    
+
+
 class StepConfig(Config):
     """Config class used for the Step object."""
 
@@ -78,12 +80,13 @@ class Step:
         """Handler for when the @step decorated function is called."""
         return execution_handler(self, *args, **kwargs)
 
-    def add_artifact(self, artifact_name: str, artifact_type: str, is_input: bool):
-        """
-        Helper method to add an artifact to the step.
-        artifact_type will be either 'Dataset', 'Model', 'HTML', 'Metrics', 
+    def add_artifact(self, artifact_name, artifact_type, is_input):
+        """Helper method to add an artifact to the step.
+
+        Artifact_type will be either 'Dataset', 'Model', 'HTML', 'Metrics',
         'ClassificationMetrics' or 'Artifact'.
-        This will simplify tracking what should be an Input[Artifact] or Output[Artifact].
+        This will simplify tracking what should be an Input[Artifact]
+          or Output[Artifact].
 
         Args:
             artifact_name (str): Name of the artifact.
@@ -91,16 +94,19 @@ class Step:
             is_input (bool): Whether the artifact is an input or output.
         """
         # Check if artifact already exists, update if it's an output
+        # TODO: This could be improved to handle more complex cases
         for existing_art in self.artifacts:
             if existing_art.name == artifact_name:
                 # If it's an output, ensure its type is set
                 if not is_input and existing_art.type is None:
                     existing_art.type = artifact_type
-                # If it's an input and already an output from another step, don't re-add
-                # This logic might need more refinement depending on specific KFP artifact handling
                 return
 
-        new_artifact = Artifact(name=artifact_name, type=artifact_type, is_input=is_input)
+        new_artifact = Artifact(
+            name=artifact_name,
+            type=artifact_type,
+            is_input=is_input
+        )
         self.artifacts.append(new_artifact)
 
     def run(self, pipeline_parameters_values: Dict[str, PipelineParam]):
@@ -160,29 +166,34 @@ class Step:
 
     @property
     def kfp_inputs(self) -> List[Union[PipelineParam, Artifact]]:
-        # This combines PipelineParams and Artifacts marked as inputs
+        """Get the inputs of the step for KFP.
+
+        This combines PipelineParams and Artifacts marked as inputs.
+        Add PipelineParams first (as they're usually positional/keyword args)
+        """
         inputs = []
-        # Add PipelineParams first (as they are usually positional or keyword args)
+
         # Sort them for consistent signature generation
         sorted_param_names = sorted(self.parameters.keys())
         for name in sorted_param_names:
             inputs.append(self.parameters[name])
-        
+
         # Add Artifacts that are inputs
         for art in sorted(self.artifacts, key=lambda a: a.name):
-            if getattr(art, '_is_input', False): # Check our custom flag
+            if getattr(art, '_is_input', False):  # Check custom input flag
                 inputs.append(art)
         return inputs
 
     @property
     def kfp_outputs(self) -> List[Artifact]:
-        # Get Artifacts that are outputs
+        """Get Artifacts that are outputs."""
         outputs = []
         for art in sorted(self.artifacts, key=lambda a: a.name):
-            if not getattr(art, '_is_input', False): # Check our custom flag
+            if not getattr(art, '_is_input', False):  # Check custom input flag
                 outputs.append(art)
         return outputs
-    
+
+
 def __default_execution_handler(step: Step, *args, **kwargs):
     log.info("No Pipeline registration handler is set.")
     if not callable(step.source):
