@@ -41,6 +41,9 @@ interface VolumeAccessModeSelectProps {
 }
 
 export const VolumeAccessModeSelect: React.FunctionComponent<VolumeAccessModeSelectProps> = props => {
+  const handleVolumeAccess = (value: string, index?: number) => {
+    props.updateValue(value, index);
+  };
   return (
     <Select
       variant="standard"
@@ -48,7 +51,7 @@ export const VolumeAccessModeSelect: React.FunctionComponent<VolumeAccessModeSel
       index={-1}
       values={VOLUME_ACCESS_MODES}
       value={props.value}
-      updateValue={props.updateValue}
+      updateValue={handleVolumeAccess}
     />
   );
 };

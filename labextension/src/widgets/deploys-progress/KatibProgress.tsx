@@ -16,10 +16,10 @@
 
 import * as React from 'react';
 import * as yaml from 'js-yaml';
-import { LinearProgress, Zoom } from '@material-ui/core';
-import UnknownIcon from '@material-ui/icons/Help';
-import ErrorIcon from '@material-ui/icons/Error';
-import SuccessIcon from '@material-ui/icons/CheckCircle';
+import { LinearProgress, Zoom } from '@mui/material';
+import UnknownIcon from '@mui/icons-material/Help';
+import ErrorIcon from '@mui/icons-material/Error';
+import SuccessIcon from '@mui/icons-material/CheckCircle';
 
 import StatusRunning from '../../icons/statusRunning';
 import { IKatibExperiment } from '../LeftPanel';

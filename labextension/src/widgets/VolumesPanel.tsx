@@ -17,7 +17,7 @@
 import * as React from 'react';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
-import DeleteIcon from '@material-ui/icons/Delete';
+import DeleteIcon from '@mui/icons-material/Delete';;
 import { IVolumeMetadata } from './LeftPanel';
 import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import { Input } from '../components/Input';

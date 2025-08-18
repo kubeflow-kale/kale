@@ -18,7 +18,7 @@ import * as React from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from './NotebookUtils';
-
+import { isError, IError, IOutput } from '@jupyterlab/nbformat';
 export const globalUnhandledRejection = async (event: any) => {
   // console.error(event.reason);
   if (event.reason instanceof BaseError) {
@@ -120,14 +120,21 @@ export const executeRpc = async (
             expressions,
           )
         : await NotebookUtils.sendKernelRequest(env, cmd, expressions);
-  } catch (e) {
-    console.warn(e);
-    const error = {
-      rpc: `${func}`,
-      status: `${e.ename}: ${e.evalue}`,
-      output: e.traceback,
-    };
-    throw new KernelError(error);
+  } catch (e)  {
+    if (typeof e === 'object' && e !== null) {
+      if ('output_type' in e && isError(e as IOutput)) {
+        console.warn(e);
+        const error = {
+          rpc: `${func}`,
+          status: `${(e as IError).ename}: ${(e as IError).evalue}`,
+          output: (e as IError).traceback,
+        };
+        throw new KernelError(error);
+      }
+    }
+    // Handle other types of errors
+    console.error('An unexpected error occurred:', e);
+    throw new Error('An unexpected error occurred.');
   }
 
   // const argsAsStr = Object.keys(kwargs).map(key => `${key}=${kwargs[key]}`).join(', ');
@@ -199,9 +206,9 @@ export const showError = async (
   message: string,
   details: string,
   refresh: boolean = true,
-  method: string = null,
-  code: number = null,
-  trans_id: number = null,
+  method: string | null = null,
+  code: number | null = null,
+  trans_id: number | null = null,
 ): Promise<void> => {
   let msg: string[] = [
     `Browser: ${navigator ? navigator.userAgent : 'other'}`,
@@ -247,7 +254,7 @@ export const _legacy_executeRpc = async (
   kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
-  nb_path: string = null,
+  nb_path: string | null= null,
 ) => {
   if (!nb_path && notebook) {
     nb_path = notebook.context.path;
@@ -280,7 +287,7 @@ export const _legacy_executeRpcAndShowRPCError = async (
   kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
-  nb_path: string = null,
+  nb_path: string | null= null,
 ) => {
   try {
     const result = await _legacy_executeRpc(
@@ -312,7 +319,7 @@ export abstract class BaseError extends Error {
     Object.setPrototypeOf(this, BaseError.prototype);
   }
 
-  public abstract async showDialog(refresh: boolean): Promise<void>;
+  public abstract showDialog(refresh: boolean): Promise<void>;
 }
 
 export class KernelError extends BaseError {

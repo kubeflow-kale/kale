@@ -1,18 +1,24 @@
 {
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "composite": true,
     "declaration": true,
-    "lib": ["es2017", "dom"],
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "noEmitOnError": true,
-    "noUnusedLocals": false,
-    "outDir": "./lib",
-    "target": "es2017",
+    "esModuleInterop": true,
+    "incremental": true,
     "jsx": "react",
+    "lib": ["DOM", "ES2018", "ES2020.Intl"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmitOnError": false,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+    "preserveWatchOutput": true,
+    "resolveJsonModule": true,
+    "outDir": "./lib",
     "strict": true,
-    "strictNullChecks": false,
-    "types": [],
-    "esModuleInterop": true
+    "strictNullChecks": true,
+    "target": "ES2018"
   },
-  "include": ["src/*"]
+  "include": ["src/**/*"],
+  "exclude": ["src/widgets/deploys-progress/KatibProgress.tsx", "src/widgets/KatibDialog.tsx"]
 }

@@ -94,7 +94,8 @@ def compile_notebook(request, source_notebook_path,
     processor = NotebookProcessor(source_notebook_path,
                                   notebook_metadata_overrides)
     pipeline = processor.run()
-    script_path = Compiler(pipeline).compile()
+    imports_and_functions = processor.get_imports_and_functions()
+    script_path = Compiler(pipeline, imports_and_functions).compile()
     # FIXME: Why were we tapping into the Kale logger?
     # instance = Kale(source_notebook_path, notebook_metadata_overrides, debug)
     # instance.logger = request.log if hasattr(request, "log") else logger

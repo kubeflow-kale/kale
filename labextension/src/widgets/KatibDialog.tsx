@@ -12,15 +12,15 @@ import {
   IconButton,
   CircularProgress,
   Zoom,
-} from '@material-ui/core';
-import AddIcon from '@material-ui/icons/Add';
-import Help from '@material-ui/icons/Help';
-import DeleteIcon from '@material-ui/icons/Delete';
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import Help from '@mui/icons-material/Help';
+import DeleteIcon from '@mui/icons-material/Delete';;
 import { IKatibMetadata, IKatibParameter } from './LeftPanel';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { executeRpc, RPC_CALL_STATUS, RPCError } from '../lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
-import { useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';
 import { LightTooltip } from '../components/LightTooltip';

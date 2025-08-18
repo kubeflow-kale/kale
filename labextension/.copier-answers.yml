@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.4.0
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: ''
+author_name: Stefano Fioravanzo <stefano.fioravanzo@gmail.com>
+has_binder: false
+has_settings: false
+kind: frontend
+labextension_name: kubeflow-kale-labextension
+project_short_description: Convert Notebooks to Kubeflow pipelines with Kale
+python_name: kubeflow-kale-labextension
+repository: https://github.com/kubeflow-kale/kale.git
+test: false
+

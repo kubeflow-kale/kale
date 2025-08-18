@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import { CircularProgress } from '@material-ui/core';
+import { CircularProgress } from '@mui/material';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';

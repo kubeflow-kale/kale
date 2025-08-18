@@ -35,7 +35,7 @@ import {
   IProps as EditorProps,
 } from './CellMetadataEditor';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import { Switch } from '@material-ui/core';
+import { Switch } from '@mui/material';
 import NotebookUtils from '../../lib/NotebookUtils';
 
 interface IProps {

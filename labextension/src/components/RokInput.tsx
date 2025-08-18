@@ -15,8 +15,8 @@
  */
 
 import * as React from 'react';
-import Button from '@material-ui/core/Button';
-import InputAdornment from '@material-ui/core/InputAdornment';
+import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
 import BrowseInRokBlue from '../icons/BrowseInRokBlue';
 import { InputProps, Input } from './Input';
 

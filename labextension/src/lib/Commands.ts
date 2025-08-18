@@ -162,10 +162,11 @@ export default class Commands {
 
     if (notebookVolumes) {
       notebookVolumes = notebookVolumes.map(volume => {
+        const size = volume.size ?? 0;
         const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
-          s => volume.size >= s.base,
+          s => size >= s.base,
         )[0];
-        volume.size = Math.ceil(volume.size / sizeGroup.base);
+        volume.size = Math.ceil(size / sizeGroup.base);
         volume.size_type = sizeGroup.value;
         volume.annotations = [];
         return volume;
@@ -191,7 +192,7 @@ export default class Commands {
   };
 
   getBaseImage = async () => {
-    let baseImage: string = null;
+    let baseImage: string | null = null;
     try {
       baseImage = await _legacy_executeRpc(
         this._notebook,
@@ -224,7 +225,7 @@ export default class Commands {
     }
 
     // Fix experiment metadata
-    let newExperiment: IExperiment = null;
+    let newExperiment: IExperiment | null = null;
     let selectedExperiments: IExperiment[] = experimentsList.filter(
       e =>
         e.id === experiment.id ||
@@ -421,67 +422,67 @@ export default class Commands {
     return uploadPipeline;
   };
 
-  runKatib = async (
-    notebookPath: string,
-    metadata: IKaleNotebookMetadata,
-    pipelineId: string,
-    versionId: string,
-    onUpdate: Function,
-  ): Promise<IKatibExperiment> => {
-    onUpdate({ showKatibKFPExperiment: true });
-    // create a new experiment, using the base name of the currently
-    // selected one
-    const newExpName: string =
-      metadata.experiment.name +
-      '-' +
-      Math.random()
-        .toString(36)
-        .slice(2, 7);
+  // runKatib = async (
+  //   notebookPath: string,
+  //   metadata: IKaleNotebookMetadata,
+  //   pipelineId: string,
+  //   versionId: string,
+  //   onUpdate: Function,
+  // ): Promise<IKatibExperiment> => {
+  //   onUpdate({ showKatibKFPExperiment: true });
+  //   // create a new experiment, using the base name of the currently
+  //   // selected one
+  //   const newExpName: string =
+  //     metadata.experiment.name +
+  //     '-' +
+  //     Math.random()
+  //       .toString(36)
+  //       .slice(2, 7);
 
-    // create new KFP experiment
-    let kfpExperiment: { id: string; name: string };
-    try {
-      kfpExperiment = await _legacy_executeRpc(
-        this._notebook,
-        this._kernel,
-        'kfp.create_experiment',
-        {
-          experiment_name: newExpName,
-        },
-      );
-      onUpdate({ katibKFPExperiment: kfpExperiment });
-    } catch (error) {
-      onUpdate({
-        showKatibProgress: false,
-        katibKFPExperiment: { id: 'error', name: 'error' },
-      });
-      throw error;
-    }
+  //   // create new KFP experiment
+  //   let kfpExperiment: { id: string; name: string };
+  //   try {
+  //     kfpExperiment = await _legacy_executeRpc(
+  //       this._notebook,
+  //       this._kernel,
+  //       'kfp.create_experiment',
+  //       {
+  //         experiment_name: newExpName,
+  //       },
+  //     );
+  //     onUpdate({ katibKFPExperiment: kfpExperiment });
+  //   } catch (error) {
+  //     onUpdate({
+  //       showKatibProgress: false,
+  //       katibKFPExperiment: { id: 'error', name: 'error' },
+  //     });
+  //     throw error;
+  //   }
 
-    onUpdate({ showKatibProgress: true });
-    const runKatibArgs: IKatibRunArgs = {
-      pipeline_id: pipelineId,
-      version_id: versionId,
-      pipeline_metadata: {
-        ...metadata,
-        experiment_name: kfpExperiment.name,
-      },
-      output_path: notebookPath.substring(0, notebookPath.lastIndexOf('/')),
-    };
-    let katibExperiment: IKatibExperiment = null;
-    try {
-      katibExperiment = await _legacy_executeRpc(
-        this._notebook,
-        this._kernel,
-        'katib.create_katib_experiment',
-        runKatibArgs,
-      );
-    } catch (error) {
-      onUpdate({ katib: { status: 'error' } });
-      throw error;
-    }
-    return katibExperiment;
-  };
+  //   onUpdate({ showKatibProgress: true });
+  //   const runKatibArgs: IKatibRunArgs = {
+  //     pipeline_id: pipelineId,
+  //     version_id: versionId,
+  //     pipeline_metadata: {
+  //       ...metadata,
+  //       experiment_name: kfpExperiment.name,
+  //     },
+  //     output_path: notebookPath.substring(0, notebookPath.lastIndexOf('/')),
+  //   };
+  //   let katibExperiment: IKatibExperiment | null = null;
+  //   try {
+  //     katibExperiment = await _legacy_executeRpc(
+  //       this._notebook,
+  //       this._kernel,
+  //       'katib.create_katib_experiment',
+  //       runKatibArgs,
+  //     );
+  //   } catch (error) {
+  //     onUpdate({ katib: { status: 'error' } });
+  //     throw error;
+  //   }
+  //   return katibExperiment;
+  // };
 
   runPipeline = async (
     pipelineId: string,
@@ -528,7 +529,7 @@ export default class Commands {
     if (runCellResponse.status === RUN_CELL_STATUS.OK) {
       // unmarshalData runs in the same kernel as the .ipynb, so it requires the
       // filename
-      await this.unmarshalData(notebookPath.split('/').pop());
+      await this.unmarshalData(notebookPath.split('/').pop() || '');
       const cell = CellUtils.getCellByStepName(
         this._notebook,
         exploration.step_name,
