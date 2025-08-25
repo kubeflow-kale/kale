@@ -598,6 +598,79 @@ class NotebookProcessor(BaseProcessor):
 
         self.pipeline.remove_node(tmp_step_name)
 
+    def _ensure_fns_free_variables(self, anc_step, anc_source: str, imports_and_functions: str):
+        """Lazily compute ancestor functions' free vars if missing."""
+        if not getattr(anc_step, 'fns_free_variables', None):
+            anc_step.fns_free_variables = self._detect_fns_free_variables(
+                anc_source,
+                imports_and_functions,
+                self.pipeline.pipeline_parameters
+            )
+
+    def _propagate_free_vars_from_function(self, step: Step, anc_step: Step, fn_name: str):
+        """
+        Propagate free variables of a function defined in anc_step to
+        both the current step's inputs and the ancestor's outputs, including
+        nested functions' free variables. Also apply artifact heuristics.
+        Additionally, propagate transitive free variables via earlier ancestors of anc_step.
+        """
+        anc_fns_free_vars = getattr(anc_step, 'fns_free_variables', {})
+        if fn_name not in anc_fns_free_vars:
+            return
+        fn_free_vars, _ = anc_fns_free_vars[fn_name]
+        aggregated = set(fn_free_vars)
+        queue = list(fn_free_vars)
+
+        # First, expand using functions defined in the same ancestor
+        while queue:
+            cur = queue.pop(0)
+            if cur in anc_fns_free_vars:
+                nested_fv_names, _ = anc_fns_free_vars[cur]
+                new_names = set(nested_fv_names) - aggregated
+                if new_names:
+                    aggregated.update(new_names)
+                    queue.extend(list(new_names))
+
+        # Then, expand transitively using functions defined in earlier ancestors
+        # of anc_step (i.e., ancestors that lead to anc_step).
+        earlier_ancestors = graphutils.get_ordered_ancestors(self.pipeline, anc_step.name)
+        for ea_name in earlier_ancestors:
+            ea_step = self.pipeline.get_step(ea_name)
+            ea_source = '\n'.join(ea_step.source)
+            # Ensure their fns_free_variables are computed
+            self._ensure_fns_free_variables(ea_step, ea_source, self.get_imports_and_functions())
+            ea_fns_free_vars = getattr(ea_step, 'fns_free_variables', {})
+            # We iterate over a snapshot of aggregated to allow growth during the loop
+            to_check = list(aggregated)
+            idx = 0
+            while idx < len(to_check):
+                sym = to_check[idx]
+                idx += 1
+                if sym in ea_fns_free_vars:
+                    nested_fv_names, _ = ea_fns_free_vars[sym]
+                    for n in nested_fv_names:
+                        if n not in aggregated:
+                            aggregated.add(n)
+                            to_check.append(n)
+
+        # Apply artifact heuristic and update step.ins and anc_step.outs for all aggregated names
+        for fv_name in aggregated:
+            if fv_name not in step.ins:
+                step.ins.append(fv_name)
+            inferred_type = "str"
+            is_artifact = False
+            for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
+                if key in fv_name.lower():
+                    inferred_type = kfp_type
+                    is_artifact = True
+                    break
+            if is_artifact:
+                step.add_artifact(fv_name, inferred_type, is_input=True)
+            if fv_name not in anc_step.outs:
+                anc_step.outs.append(fv_name)
+                if is_artifact:
+                    anc_step.add_artifact(fv_name, inferred_type, is_input=False)
+
     def dependencies_detection(self, imports_and_functions: str = ""):
         """Detects data dependencies between pipeline steps to support KFPv2.
 
@@ -662,6 +735,8 @@ class NotebookProcessor(BaseProcessor):
                     break
                 anc_step = self.pipeline.get_step(anc)
                 anc_source = '\n'.join(anc_step.source)
+                # Ensure ancestor's functions free variables are available
+                self._ensure_fns_free_variables(anc_step, anc_source, imports_and_functions)
                 # get all the marshal candidates from father's source and
                 # intersect with the required names of the current node
                 marshal_candidates = astutils.get_marshal_candidates(
@@ -696,52 +771,17 @@ class NotebookProcessor(BaseProcessor):
                     # This input is satisfied, remove from the set
                     ins_left.remove(out_name)
 
+                    # If the marshaled name is a function defined in the ancestor,
+                    # propagate its free variables as additional ins/outs.
+                    self._propagate_free_vars_from_function(step, anc_step, out_name)
+
                 # Include free variables and add them as inputs/outputs
                 to_remove_fn_calls = set()
                 for fn_call in fn_calls:
                     anc_fns_free_vars = anc_step.fns_free_variables
                     if fn_call in anc_fns_free_vars.keys():
-                        fn_free_vars, used_params = anc_fns_free_vars[fn_call]
-                        _left_free_vars = list(fn_free_vars)
-                        while _left_free_vars:
-                            _cur_fv = _left_free_vars.pop(0)
-                            if _cur_fv in anc_fns_free_vars:
-                                nested_fv_names, _ = anc_fns_free_vars[_cur_fv]
-                                fn_free_vars.update(nested_fv_names)
-                                _left_free_vars.extend(list(nested_fv_names))
-
-                        # Add free variables' name to step.ins(if not exists)
-                        for fv_name in fn_free_vars:
-                            if fv_name not in step.ins:
-                                step.ins.append(fv_name)
-                            # Heuristic for type inference for free variables
-                            inferred_type = "str"
-                            is_artifact = False
-                            for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
-                                if key in fv_name.lower():
-                                    inferred_type = kfp_type
-                                    is_artifact = True
-                                    break
-
-                            # Add to current step's artifacts
-                            if is_artifact:
-                                step.add_artifact(
-                                    fv_name,
-                                    inferred_type,
-                                    is_input=True
-                                )
-
-                            # Add to ancestor's outs if doesn't exists
-                            if fv_name not in anc_step.outs:
-                                anc_step.outs.append(fv_name)
-                                # Add to ancestor's artifacts
-                                if is_artifact:
-                                    anc_step.add_artifact(
-                                        fv_name,
-                                        inferred_type,
-                                        is_input=False
-                                    )
-
+                        # Ensure free vars of the called function are propagated
+                        self._propagate_free_vars_from_function(step, anc_step, fn_call)
                         to_remove_fn_calls.add(fn_call)
                         fns_free_vars[fn_call] = anc_fns_free_vars[fn_call]
 
