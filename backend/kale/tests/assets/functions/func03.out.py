@@ -15,6 +15,6 @@ def test():
         "test",
         "/path/to/nb",
         before=False)
-    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_snapshot_task)
+    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_sapshot_task)
 
     _kale_mlmdutils.call("mark_execution_complete")

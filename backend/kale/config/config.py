@@ -16,7 +16,7 @@ import logging
 import inspect
 
 from abc import ABC
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 log = logging.getLogger(__name__)
 
@@ -36,9 +36,9 @@ class Field:
                  # inheritance and complain
                  items_config_type=None,
                  default: Any = None,
-                 validators: List[Callable] = None,
+                 validators: Optional[List[Callable]] = None,
                  required: bool = False,
-                 dict_name: str = None):
+                 dict_name: Optional[str] = None):
         self.type = type
         # when using items_config_type, each element of the list becomes a
         # config object.

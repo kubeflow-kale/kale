@@ -17,20 +17,35 @@ import re
 import logging
 import argparse
 import autopep8
-
+from typing import NamedTuple
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
-from kale import Pipeline, Step
+from kale.pipeline import Pipeline, Step, PipelineParam
 from kale.common import kfputils
-
 
 log = logging.getLogger(__name__)
 
 PY_FN_TEMPLATE = "py_function_template.jinja2"
-NB_FN_TEMPLATE = "nb_function_template.jinja2"
-PIPELINE_TEMPLATE = "pipeline_template.jinja2"
+NB_FN_TEMPLATE = "new_nb_function_template.jinja2"
+PIPELINE_TEMPLATE = "new_pipeline_template.jinja2"
 PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE,
                    "py": PY_FN_TEMPLATE}
+
+KFP_DSL_ARTIFACT_IMPORTS = [
+    "Dataset",
+    "Model",
+    "Metrics",
+    "ClassificationMetrics",
+    "Artifact",
+    "HTML"
+]
+
+
+class Artifact(NamedTuple):
+    """A Step artifact."""
+    name: str
+    type: str
+    is_input: bool = False
 
 
 class Compiler:
@@ -43,11 +58,12 @@ class Compiler:
     The Pipeline object is assumed to provide all the necessary information
     (environment, configuration, etc...) for the script to be compiled.
     """
-    def __init__(self, pipeline: Pipeline):
+    def __init__(self, pipeline: Pipeline, imports_and_functions: str):
         self.pipeline = pipeline
         self.templating_env = None
         self.dsl_source = ""
         self.dsl_script_path = None
+        self.imports_and_functions = imports_and_functions
 
     @staticmethod
     def _get_args():
@@ -97,8 +113,8 @@ class Compiler:
 
         def _encode_source(s):
             # Encode line by line a multiline string
-            return "\n".join([line.encode("unicode_escape").decode("utf-8")
-                              for line in s.splitlines()])
+            return "\n    ".join([line.encode("unicode_escape").decode("utf-8")
+                              for line in s.splitlines()]) # noqa: E128, E261
 
         if self.pipeline.processor.id == "nb":
             # Since the code will be wrapped in triple quotes inside the
@@ -109,20 +125,176 @@ class Compiler:
 
         _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
         template = self._get_templating_env().get_template(_template_filename)
-        fn_code = template.render(step=step, **self.pipeline.config.to_dict())
-        # fix code style using pep8 guidelines
+
+        # Separate parameters with and without defaults for proper ordering
+        params_without_defaults = [f"{step.name}_html_report: Output[HTML]"]
+        params_with_defaults = []
+        step_inputs_list, step_outputs_list = [], []
+        if hasattr(step, 'ins') and step.ins:
+            step_inputs_list = sorted(step.ins)
+            for var_name in step_inputs_list:
+                # Determine the correct input type based on variable name
+                input_type = "Model" if "model" in var_name else "Dataset"
+                params_without_defaults.append(
+                    f"{var_name}_artifact: Input[{input_type}]"
+                )
+
+        step_outputs_list = []
+
+        if hasattr(step, 'outs') and step.outs:
+            step_outputs_list = sorted(step.outs)
+            for var_name in step_outputs_list:
+                output_type = "Model" if "model" in var_name else "Dataset"
+                params_without_defaults.append(
+                    f"{var_name}_artifact: Output[{output_type}]"
+                )
+
+        if (hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters):  # noqa: E501
+            for param_name, param in self.pipeline.pipeline_parameters.items():
+                if isinstance(param, PipelineParam):
+                    param_type = param.param_type or "str"
+                    param_value_str = repr(param.param_value)
+                    clean_param_name = (
+                        f"{param_name.lower()}_param"
+                        if param_name.isupper() else param_name
+                    )
+                    params_with_defaults.append(
+                        f"{clean_param_name}: {param_type} = {param_value_str}"
+                    )
+
+        component_params_list = params_without_defaults + params_with_defaults
+        component_signature_args = ", ".join(component_params_list)
+
+        # Create pipeline parameter mapping for the template
+        pipeline_params = {}
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:  # noqa: E501
+            for param_name, param in self.pipeline.pipeline_parameters.items():
+                if isinstance(param, PipelineParam):
+                    clean_param_name = (
+                        f"{param_name.lower()}_param"
+                        if param_name.isupper() else param_name
+                    )
+                    param = {clean_param_name: param.param_value}
+                    pipeline_params[param_name] = param
+
+        # Create step artifacts info for template
+        step_inputs = []
+        step_outputs = []
+
+        for var_name in step_inputs_list:
+            input_type = "Model" if "model" in var_name else "Dataset"
+            step_inputs.append(
+                Artifact(
+                    name=f"{var_name}",
+                    type=input_type,
+                    is_input=True
+                )
+            )
+
+        for var_name in step_outputs_list:
+            output_type = "Model" if "model" in var_name else "Dataset"
+            step_outputs.append(
+                Artifact(
+                    name=f"{var_name}",
+                    type=output_type,
+                    is_input=False
+                )
+            )
+
+        packages_list = self._get_package_list_from_imports()
+
+        fn_code = template.render(
+            step=step,
+            component_signature_args=component_signature_args,
+            pipeline_params=pipeline_params,
+            packages_list=packages_list,
+            step_inputs=step_inputs,
+            step_outputs=step_outputs,
+            kfp_dsl_artifact_imports=KFP_DSL_ARTIFACT_IMPORTS,
+            **self.pipeline.config.to_dict()
+        )
         return autopep8.fix_code(fn_code)
 
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
         template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
+        step_outputs = {}
+        step_inputs = {}
+        for step in self.pipeline.steps:
+            if hasattr(step, 'ins') and step.ins:
+                step_inputs[step.name] = list(sorted(step.ins))
+
+            if hasattr(step, 'outs') and step.outs:
+                step_outputs[step.name] = list(sorted(step.outs))
+
+        pipeline_param_info = {}
+
+        if hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters:  # noqa: E501
+            for param_name, param in self.pipeline.pipeline_parameters.items():
+                if isinstance(param, PipelineParam):
+                    clean_param_name = (
+                        f"{param_name.lower()}_param"
+                        if param_name.isupper() else param_name
+                    )
+                    pipeline_param_info[param_name] = {
+                        'clean_name': clean_param_name,
+                        'type': param.param_type,
+                        'default': param.param_value
+                    }
+        if hasattr(self.pipeline, 'steps') and self.pipeline.steps:
+            # Ensure that the first step is always the pipeline entry point
+            component_names = {}
+            for step in self.pipeline.steps:
+                component_names[step.name] = step.name.replace("_", "-")
+
         pipeline_code = template.render(
             pipeline=self.pipeline,
             lightweight_components=lightweight_components,
+            step_outputs=step_outputs,
+            step_inputs=step_inputs,
+            pipeline_param_info=pipeline_param_info,
+            component_names=component_names,
             **self.pipeline.config.to_dict()
         )
         # fix code style using pep8 guidelines
         return autopep8.fix_code(pipeline_code)
+
+    def _get_package_list_from_imports(self):
+        """Extracts unique package names from the tagged imports cell.
+
+        Args:
+            imports_str: A string containing Python import statements.
+
+        Returns:
+            A list of unique top-level package names.
+        """
+        package_names = set()
+        # Ensure 'kale' is always included
+        package_names.add("kubeflow-kale==1.0.0.dev8")
+        # Ensure 'kfp' is always included
+        package_names.add("kfp>=2.0.0")
+        lines = self.imports_and_functions.strip().split('\n')
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith('import '):
+                # For 'import package' or 'import package as alias'
+                parts = line.split(' ')
+                if len(parts) > 1:
+                    package_name = parts[1].split('.')[0]
+                    if package_name == 'random':
+                        package_name = 'random2'
+                    if package_name == 'sklearn':
+                        package_name = 'scikit-learn'
+                    package_names.add(package_name)
+            elif line.startswith('from '):
+                parts = line.split(' ')
+                if len(parts) > 1:
+                    package_name = parts[1].split('.')[0]
+                    if package_name == 'sklearn':
+                        package_name = 'scikit-learn'
+                    package_names.add(package_name)
+        return sorted(list(package_names))
 
     def _get_templating_env(self, templates_path=None):
         if self.templating_env:

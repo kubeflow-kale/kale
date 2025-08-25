@@ -25,7 +25,7 @@ import threading
 import ipykernel
 
 from queue import Empty
-from notebook import notebookapp
+from jupyter_server import serverapp
 from jupyter_client.kernelspec import get_kernel_spec
 from kale.common.utils import remove_ansi_color_sequences
 from nbconvert.preprocessors.execute import ExecutePreprocessor
@@ -186,7 +186,7 @@ def process_outputs(cells):
     return html_artifact
 
 
-def capture_streams(kc, exit_on_error=False):
+async def capture_streams(kc, exit_on_error=False):
     """Capture stream and error outputs from a kernel connection.
 
     Get messages from the iopub channel of the `kc` kernel connection
@@ -201,7 +201,7 @@ def capture_streams(kc, exit_on_error=False):
     """
     while True:
         try:
-            msg = kc.iopub_channel.get_msg()
+            msg = await kc.iopub_channel.get_msg()
         except Empty:
             print("The Kale kernel stream watcher thread raised an Empty"
                   " exception, exiting...")
@@ -329,7 +329,7 @@ def get_notebook_path():
         log.error("Could not load kernel id.")
         return None
 
-    for srv in notebookapp.list_running_servers():
+    for srv in serverapp.list_running_servers():
         sess_url = "%sapi/sessions" % srv["url"]
         # No token and no password
         if srv["token"] == "" and not srv['password']:

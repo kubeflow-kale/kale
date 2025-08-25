@@ -14,16 +14,15 @@
 
 import os
 import re
-import warnings
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import nbformat as nb
 
 from kale.config import Field
-from kale import Step, PipelineConfig, PipelineParam
+from kale.step import Step, PipelineParam
 from kale.common import astutils, flakeutils, graphutils, utils
-
+from kale.pipeline import PipelineConfig
 from .baseprocessor import BaseProcessor
 
 # fixme: Change the name of this key to `kale_metadata`
@@ -75,6 +74,15 @@ _kale_kfp_metrics = {
 }
 _kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
 '''
+
+KFP_ARTIFACT_TYPE_MAP = {
+    "model": "Model",      # if "model" in var_name.lower()-> kfp.dsl.Model
+    "dataset": "Dataset",  # if "dataset" in var_name.lower()-> kfp.dsl.Dataset
+    "data": "Dataset",     # if "data" in var_name.lower()-> kfp.dsl.Dataset
+    "metrics": "Metrics",  # if "metrics" in var_name.lower()-> kfp.dsl.Metrics
+    "classification": "ClassificationMetrics",
+    r'a-zA-Z0-9_': "Artifact",  # default for any other variable
+}
 
 
 def get_annotation_or_label_from_tag(tag_parts):
@@ -166,7 +174,7 @@ class NotebookProcessor(BaseProcessor):
 
     def __init__(self,
                  nb_path: str,
-                 nb_metadata_overrides: Dict[str, Any] = None,
+                 nb_metadata_overrides: Optional[Dict[str, Any]] = None,
                  **kwargs):
         """Instantiate a new NotebookProcessor.
 
@@ -201,7 +209,6 @@ class NotebookProcessor(BaseProcessor):
          imports_and_functions) = self.parse_notebook()
 
         self.parse_pipeline_parameters(pipeline_parameters_source)
-
         # get a list of variables that need to be logged as pipeline metrics
         pipeline_metrics = astutils.parse_metrics_print_statements(
             pipeline_metrics_source)
@@ -252,6 +259,7 @@ class NotebookProcessor(BaseProcessor):
                                           " with %s  step names"
                                           % tags['step_names'])
 
+            # get the step name from the tags
             step_name = (tags['step_names'][0]
                          if 0 < len(tags['step_names'])
                          else None)
@@ -393,7 +401,7 @@ class NotebookProcessor(BaseProcessor):
                 parsed_tags['step_names'] = [t]
                 return parsed_tags
 
-            # now only `block|step` and `prev` tags remain to be parsed.
+            # now only `step` and `prev` tags remain to be parsed.
             tag_parts = t.split(':')
             tag_name = tag_parts.pop(0)
 
@@ -410,12 +418,7 @@ class NotebookProcessor(BaseProcessor):
                 cell_limits.update({key: value})
 
             # name of the future Pipeline step
-            # TODO: Deprecate `block` in future release
-            if tag_name in ["block", "step"]:
-                if tag_name == "block":
-                    warnings.warn("`block` tag will be deprecated in a future"
-                                  " version, use `step` tag instead",
-                                  DeprecationWarning)
+            if tag_name in ["step"]:
                 step_name = tag_parts.pop(0)
                 parsed_tags['step_names'].append(step_name)
             # name(s) of the father Pipeline step(s)
@@ -595,35 +598,116 @@ class NotebookProcessor(BaseProcessor):
 
         self.pipeline.remove_node(tmp_step_name)
 
+    def _ensure_fns_free_variables(self, anc_step, anc_source: str,
+                                   imports_and_functions: str):
+        """Lazily compute ancestor functions' free vars if missing."""
+        if not getattr(anc_step, 'fns_free_variables', None):
+            anc_step.fns_free_variables = self._detect_fns_free_variables(
+                anc_source,
+                imports_and_functions,
+                self.pipeline.pipeline_parameters
+            )
+
+    def _propagate_free_vars_from_function(self, step: Step, anc_step: Step,
+                                           fn_name: str):
+        """Helper method.
+
+        Propagate free variables of a function defined in anc_step to
+        both the current step's inputs and the ancestor's outputs, including
+        nested functions' free variables. Also apply artifact heuristics.
+        Additionally, propagate transitive free variables via earlier ancestors
+        of anc_step.
+        """
+        anc_fns_free_vars = getattr(anc_step, 'fns_free_variables', {})
+        if fn_name not in anc_fns_free_vars:
+            return
+        fn_free_vars, _ = anc_fns_free_vars[fn_name]
+        aggregated = set(fn_free_vars)
+        queue = list(fn_free_vars)
+
+        # First, expand using functions defined in the same ancestor
+        while queue:
+            cur = queue.pop(0)
+            if cur in anc_fns_free_vars:
+                nested_fv_names, _ = anc_fns_free_vars[cur]
+                new_names = set(nested_fv_names) - aggregated
+                if new_names:
+                    aggregated.update(new_names)
+                    queue.extend(list(new_names))
+
+        # Then, expand transitively using functions defined in earlier
+        # ancestors of anc_step (i.e., ancestors that lead to anc_step).
+        earlier_ancestors = graphutils.get_ordered_ancestors(self.pipeline,
+                                                             anc_step.name)
+        for ea_name in earlier_ancestors:
+            ea_step = self.pipeline.get_step(ea_name)
+            ea_source = '\n'.join(ea_step.source)
+            # Ensure their fns_free_variables are computed
+            self._ensure_fns_free_variables(ea_step, ea_source,
+                                            self.get_imports_and_functions())
+            ea_fns_free_vars = getattr(ea_step, 'fns_free_variables', {})
+            # We iterate over a snapshot of aggregated to allow growth
+            # during the loop
+            to_check = list(aggregated)
+            idx = 0
+            while idx < len(to_check):
+                sym = to_check[idx]
+                idx += 1
+                if sym in ea_fns_free_vars:
+                    nested_fv_names, _ = ea_fns_free_vars[sym]
+                    for n in nested_fv_names:
+                        if n not in aggregated:
+                            aggregated.add(n)
+                            to_check.append(n)
+
+        # Apply artifact heuristic and update step.ins and anc_step.outs
+        # for all aggregated names
+        for fv_name in aggregated:
+            if fv_name not in step.ins:
+                step.ins.append(fv_name)
+            inferred_type = "str"
+            is_artifact = False
+            for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
+                if key in fv_name.lower():
+                    inferred_type = kfp_type
+                    is_artifact = True
+                    break
+            if is_artifact:
+                step.add_artifact(fv_name, inferred_type, is_input=True)
+            if fv_name not in anc_step.outs:
+                anc_step.outs.append(fv_name)
+                if is_artifact:
+                    anc_step.add_artifact(fv_name, inferred_type,
+                                          is_input=False)
+
     def dependencies_detection(self, imports_and_functions: str = ""):
-        """Detect the data dependencies between nodes in the graph.
+        """Detects data dependencies between pipeline steps to support KFPv2.
 
         The data dependencies detection algorithm roughly works as follows:
-
-        1. Traversing the graph in topological order, for every node `step` do
-        2. Detect the `ins` of current `step` by running PyFlakes on the source
-         code. During this action the pipeline parameters are taken into
-         consideration
-        3. Parse `step`'s global function definitions to get free variables
-         (i.e. variables that would need to be marshalled in other steps that
-         call these functions) - in this action pipeline parameters are taken
-         into consideration.
-        4. Get all the function that `step` calls
-        5. For every `step`'s ancestor `anc` do
-            - Get all the potential names (objects, functions, ...) of `anc`
-             that could be marshalled (saved)
-            - Intersect this with the `step`'s `ins` (from action 2) and add
-             the result to `anc`'s `outs`.
-            - for every `step`'s function call (action 4), check if this
-             function was defined in `anc` and if it has free variables
-             (action 3). If so, add to `step`'s `ins` and to `anc`'s `outs`
-             these free variables.
+        1.  Process each step in topological order.
+        2.  Identify the `ins` (required variables and their types) for the
+         current step. This includes variables from the pipeline's parameters.
+        3.  Find functions called within the current step and determine their
+         free variables. This is crucial for handling recursive dependencies
+         and function calls that rely on external data.
+        4.  For each ancestor of the current step, find potential `outs`
+         (variables and artifacts) that the current step requires. The
+         intersection of the current step's `ins` and the ancestor's potential
+         outputs forms a dependency.
+        5.  If a function called in the current step was defined in an
+         ancestor, ensure its free variables are added to both the current
+         step's `ins` and the ancestor's `outs`.
+        6.  Detected dependencies are enriched with their associated KFPv2
+         artifact types, enabling the compiler to correctly link components.
 
         Args:
-            imports_and_functions: Multiline Python source that is prepended to
-                every pipeline step
+            imports_and_functions: A string containing multiline source-code
+            for global imports and functions prepended to every pipeline step.
 
-        Returns: annotated graph
+        Returns:
+            An annotated pipeline graph where each step is updated with
+            its detected `ins`, `outs`, `parameters`, and `fns_free_variables`
+            to facilitate KFP v2 artifact handling.
         """
         # resolve the data dependencies between steps, looping through the
         # graph
@@ -635,7 +719,9 @@ class NotebookProcessor(BaseProcessor):
             ins, parameters = self._detect_in_dependencies(
                 source_code=step_source,
                 pipeline_parameters=self.pipeline.pipeline_parameters)
-            fns_free_variables = self._detect_fns_free_variables(
+            step.parameters = parameters
+
+            fns_free_vars = self._detect_fns_free_variables(
                 step_source, imports_and_functions,
                 self.pipeline.pipeline_parameters)
 
@@ -643,7 +729,6 @@ class NotebookProcessor(BaseProcessor):
             # any of the ancestors declare any of these functions. Is that is
             # so, the free variables of those functions will have to be loaded.
             fn_calls = astutils.get_function_calls(step_source)
-
             # add OUT dependencies annotations in the PARENT nodes-------------
             # Intersect the missing names of this father's child with all
             # the father's names. The intersection is the list of variables
@@ -659,67 +744,80 @@ class NotebookProcessor(BaseProcessor):
                     break
                 anc_step = self.pipeline.get_step(anc)
                 anc_source = '\n'.join(anc_step.source)
+                # Ensure ancestor's functions free variables are available
+                self._ensure_fns_free_variables(anc_step, anc_source,
+                                                imports_and_functions)
                 # get all the marshal candidates from father's source and
                 # intersect with the required names of the current node
                 marshal_candidates = astutils.get_marshal_candidates(
                     anc_source)
                 outs = ins_left.intersection(marshal_candidates)
-                # Remove the ins that have already been assigned to an ancestor
-                ins_left.difference_update(outs)
-                # Include free variables
-                to_remove = set()
+                for out_name in outs:
+                    # Heuristic for type inference:
+                    inferred_type = "str"  # Default
+                    is_artifact = False
+                    for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
+                        if key in out_name.lower():
+                            inferred_type = kfp_type
+                            is_artifact = True
+                            break
+
+                    # Update ancestor's outputs
+                    if out_name not in anc_step.outs:
+                        anc_step.outs.append(out_name)
+                    if is_artifact:
+                        anc_step.add_artifact(
+                            out_name, inferred_type, is_input=False
+                        )
+
+                    # Update current step's inputs for input artifacts
+                    if out_name not in step.ins:
+                        step.ins.append(out_name)
+                    if is_artifact:
+                        step.add_artifact(
+                            out_name, inferred_type, is_input=True
+                        )
+
+                    # This input is satisfied, remove from the set
+                    ins_left.remove(out_name)
+
+                    # If the marshaled name is a function defined in the
+                    # ancestor, propagate its free variables as additional
+                    # ins/outs.
+                    self._propagate_free_vars_from_function(step, anc_step,
+                                                            out_name)
+
+                # Include free variables and add them as inputs/outputs
+                to_remove_fn_calls = set()
                 for fn_call in fn_calls:
                     anc_fns_free_vars = anc_step.fns_free_variables
                     if fn_call in anc_fns_free_vars.keys():
-                        # the current step needs to load these variables
-                        fn_free_vars, used_params = anc_fns_free_vars[fn_call]
-                        # search if this function calls other functions (i.e.
-                        # if its free variables are found in the free variables
-                        # dict)
-                        _left = list(fn_free_vars)
-                        while _left:
-                            _cur = _left.pop(0)
-                            # if the free var is itself a fn with free vars
-                            if _cur in anc_fns_free_vars:
-                                fn_free_vars.update(anc_fns_free_vars[_cur][0])
-                                _left = _left + list(
-                                    anc_fns_free_vars[_cur][0])
-                        ins.update(fn_free_vars)
-                        # the current ancestor needs to save these variables
-                        outs.update(fn_free_vars)
-                        # add the parameters used by the function to the list
-                        # of pipeline parameters used by the step
-                        _pps = self.pipeline.pipeline_parameters
-                        for param in used_params:
-                            parameters[param] = _pps[param]
+                        # Ensure free vars of the called fn are propagated
+                        self._propagate_free_vars_from_function(step, anc_step,
+                                                                fn_call)
+                        to_remove_fn_calls.add(fn_call)
+                        fns_free_vars[fn_call] = anc_fns_free_vars[fn_call]
 
-                        # Remove this function as it has been served. We don't
-                        # want other ancestors to save free variables for this
-                        # function. Using the helper to_remove because the set
-                        # can not be resized during iteration.
-                        to_remove.add(fn_call)
-                        # add the function and its free variables to the
-                        # current step as well. This is useful in case
-                        # *another* function will call this one (`fn_call`) in
-                        # a child step. In this way we can track the calls up
-                        # to the last free variable. (refer to test
-                        # `test_dependencies_detection_recursive`)
-                        fns_free_variables[fn_call] = anc_fns_free_vars[
-                            fn_call]
-                fn_calls.difference_update(to_remove)
-                # Add to ancestor the new outs annotations. First merge the
-                # current outs present in the anc with the new ones
-                cur_outs = set(anc_step.outs)
-                cur_outs.update(outs)
-                anc_step.outs = list(cur_outs)
+                    # Propagate pipeline parameters from the ancestor step
+                    # whenever we call a function it provides (directly or via
+                    # marshal candidates).
+                    if (getattr(anc_step, 'parameters', None)
+                            and (fn_call in anc_fns_free_vars or fn_call in
+                                 marshal_candidates)):
+                        if not hasattr(step, 'parameters') or \
+                                step.parameters is None:
+                            step.parameters = {}
+                        for _pname, _pval in anc_step.parameters.items():
+                            if _pname not in step.parameters:
+                                step.parameters[_pname] = _pval
 
-            step.ins = list(ins)
-            step.parameters = parameters
-            step.fns_free_variables = fns_free_variables
+                fn_calls.difference_update(to_remove_fn_calls)
+                # finalize bookkeeping for this step
+                step.fns_free_variables = fns_free_vars
 
     def _detect_in_dependencies(self,
                                 source_code: str,
-                                pipeline_parameters: dict = None):
+                                pipeline_parameters: Optional[dict] = None):
         """Detect missing names from one pipeline step source code.
 
         Args:
@@ -728,7 +826,6 @@ class NotebookProcessor(BaseProcessor):
         """
         commented_source_code = utils.comment_magic_commands(source_code)
         ins = flakeutils.pyflakes_report(code=commented_source_code)
-
         # Pipeline parameters will be part of the names that are missing,
         # but of course we don't want to marshal them in as they will be
         # present as parameters
@@ -738,13 +835,14 @@ class NotebookProcessor(BaseProcessor):
             # these are the parameters that are actually needed by this step.
             relevant_parameters = ins.intersection(pipeline_parameters.keys())
             ins.difference_update(relevant_parameters)
-        step_params = {k: pipeline_parameters[k] for k in relevant_parameters}
+        step_params = {k: pipeline_parameters[k] for k in relevant_parameters}\
+            if pipeline_parameters else {}
         return ins, step_params
 
     def _detect_fns_free_variables(self,
                                    source_code: str,
                                    imports_and_functions: str = "",
-                                   step_parameters: dict = None):
+                                   step_parameters: Optional[dict] = None):
         """Return the function's free variables.
 
         Free variable: _If a variable is used in a code block but not defined

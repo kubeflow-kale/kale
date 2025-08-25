@@ -18,7 +18,8 @@ import logging
 from abc import ABC, abstractmethod
 
 from kale.common import kfutils
-from kale import Pipeline, PipelineConfig, Step, PipelineParam, VolumeConfig
+from kale.pipeline import Pipeline, PipelineConfig, Step, PipelineParam
+from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -31,13 +32,13 @@ class BaseProcessor(ABC):
     config_cls = PipelineConfig
 
     def __init__(self,
-                 config: PipelineConfig = None,
+                 config: Optional[PipelineConfig] = None,
                  skip_validation: bool = False,
                  **kwargs):
         self.config = config
         if not config and not skip_validation:
             self.config = self.config_cls(**kwargs)
-        self.pipeline = Pipeline(self.config)
+        self.pipeline = Pipeline(self.config) if self.config else None
 
     def run(self) -> Pipeline:
         """Process the source into a Pipeline object."""
@@ -53,11 +54,12 @@ class BaseProcessor(ABC):
     def _post_pipeline(self):
         # keep reference to original processor, so the pipeline knows
         # what backend generated it.
-        self.pipeline.processor = self
+        if self.pipeline:
+            self.pipeline.processor = self
         self._add_final_autosnapshot_step()
         self._configure_poddefaults()
         self._apply_steps_defaults()
-        self._set_volume_pipeline_parameters()
+        # self._set_volume_pipeline_parameters()
 
     def _add_final_autosnapshot_step(self):
         if not self.no_op_step:
@@ -92,7 +94,7 @@ class BaseProcessor(ABC):
     def _set_volume_pipeline_parameters(self):
         """Create pipeline parameters for volumes to be mounted on steps."""
         volume_parameters = dict()
-        for v in self.pipeline.config.volumes:  # type: VolumeConfig
+        for v in self.pipeline.config.volumes:
             if v.type == 'pv':
                 # FIXME: How should we handle existing PVs?
                 continue

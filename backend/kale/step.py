@@ -14,14 +14,25 @@
 
 import logging
 
-from typing import Any, Dict, List, Callable, Union
+from typing import Any, Dict, List, Callable, Union, NamedTuple
 
 from kale.marshal import Marshaller
-from kale import PipelineParam, Artifact
 from kale.common import astutils, runutils
 from kale.config import Config, Field, validators
-
 log = logging.getLogger(__name__)
+
+
+class PipelineParam(NamedTuple):
+    """A pipeline parameter."""
+    param_type: str
+    param_value: Any
+
+
+class Artifact(NamedTuple):
+    """A Step artifact."""
+    name: str
+    type: str
+    is_input: bool = False
 
 
 class StepConfig(Config):
@@ -60,7 +71,7 @@ class Step:
         # whether the step produces KFP metrics or not
         self.metrics = False
         # the pipeline parameters consumed by the step
-        self.parameters = dict()
+        self.parameters: Dict[str, PipelineParam] = dict()
         self._pps_names = None
         # used to keep track of the "free variables" used by the step
         self.fns_free_variables = dict()
@@ -68,6 +79,35 @@ class Step:
     def __call__(self, *args, **kwargs):
         """Handler for when the @step decorated function is called."""
         return execution_handler(self, *args, **kwargs)
+
+    def add_artifact(self, artifact_name, artifact_type, is_input):
+        """Helper method to add an artifact to the step.
+
+        Artifact_type will be either 'Dataset', 'Model', 'HTML', 'Metrics',
+        'ClassificationMetrics' or 'Artifact'.
+        This will simplify tracking what should be an Input[Artifact]
+          or Output[Artifact].
+
+        Args:
+            artifact_name (str): Name of the artifact.
+            artifact_type (str): Type of the artifact.
+            is_input (bool): Whether the artifact is an input or output.
+        """
+        # Check if artifact already exists, update if it's an output
+        # TODO: This could be improved to handle more complex cases
+        for existing_art in self.artifacts:
+            if existing_art.name == artifact_name:
+                # If it's an output, ensure its type is set
+                if not is_input and existing_art.type is None:
+                    existing_art.type = artifact_type
+                return
+
+        new_artifact = Artifact(
+            name=artifact_name,
+            type=artifact_type,
+            is_input=is_input
+        )
+        self.artifacts.append(new_artifact)
 
     def run(self, pipeline_parameters_values: Dict[str, PipelineParam]):
         """Run the step locally."""
@@ -123,6 +163,35 @@ class Step:
         #  both for the notebook of the SDK all the way from the step object
         #  to the template.
         return astutils.get_function_source(self.source, strip_signature=False)
+
+    @property
+    def kfp_inputs(self) -> List[Union[PipelineParam, Artifact]]:
+        """Get the inputs of the step for KFP.
+
+        This combines PipelineParams and Artifacts marked as inputs.
+        Add PipelineParams first (as they're usually positional/keyword args)
+        """
+        inputs = []
+
+        # Sort them for consistent signature generation
+        sorted_param_names = sorted(self.parameters.keys())
+        for name in sorted_param_names:
+            inputs.append(self.parameters[name])
+
+        # Add Artifacts that are inputs
+        for art in sorted(self.artifacts, key=lambda a: a.name):
+            if getattr(art, '_is_input', False):  # Check custom input flag
+                inputs.append(art)
+        return inputs
+
+    @property
+    def kfp_outputs(self) -> List[Artifact]:
+        """Get Artifacts that are outputs."""
+        outputs = []
+        for art in sorted(self.artifacts, key=lambda a: a.name):
+            if not getattr(art, '_is_input', False):  # Check custom input flag
+                outputs.append(art)
+        return outputs
 
 
 def __default_execution_handler(step: Step, *args, **kwargs):

@@ -42,7 +42,7 @@ _EMPTY_TAG = {"step_names": [], "prev_steps": []}
     # test skip tag
     ({"tags": ["skip"]},
      {"step_names": ["skip"], "prev_steps": []}),
-    ({"tags": ["skip", "block:other"]},
+    ({"tags": ["skip", "step:other"]},
      {"step_names": ["skip"], "prev_steps": []}),
     # test that prev tag is ignored when having a special tag
     ({"tags": ["imports", "prev:step1"]},
@@ -51,21 +51,14 @@ _EMPTY_TAG = {"step_names": [], "prev_steps": []}
      {"step_names": ["functions"], "prev_steps": []}),
     ({"tags": ["pipeline-parameters", "prev:step1"]},
      {"step_names": ["pipeline-parameters"], "prev_steps": []}),
-    # when specifying multiple blocks, only the special block tag name
+    # when specifying multiple steps, only the special step tag name
     # is returned
-    ({"tags": ["imports", "block:step1"]},
+    ({"tags": ["imports", "step:step1"]},
      {"step_names": ["imports"], "prev_steps": []}),
-    ({"tags": ["functions", "block:step1"]},
+    ({"tags": ["functions", "step:step1"]},
      {"step_names": ["functions"], "prev_steps": []}),
-    ({"tags": ["pipeline-parameters", "block:step1"]},
+    ({"tags": ["pipeline-parameters", "step:step1"]},
      {"step_names": ["pipeline-parameters"], "prev_steps": []}),
-    # test simple block names and prev step names
-    ({"tags": ["block:step1"]},
-     {"step_names": ["step1"], "prev_steps": []}),
-    ({"tags": ["block:step1", "block:step2"]},
-     {"step_names": ["step1", "step2"], "prev_steps": []}),
-    ({"tags": ["block:step1", "prev:step2"]},
-     {"step_names": ["step1"], "prev_steps": ["step2"]}),
 ])
 def test_parse_metadata_success(notebook_processor, metadata, target):
     """Test parse_metadata function."""

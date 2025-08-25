@@ -1,0 +1,63 @@
+@kfp_dsl.component(
+    base_image='python:3.10',
+    packages_to_install={{ packages_list}},
+    pip_index_urls = [ 'https://test.pypi.org/simple', 'https://pypi.org/simple' ],
+)
+def {{ step.name }}_step({{ component_signature_args }}):
+    _kale_pipeline_parameters_block = '''
+{%- for param_name, param_var in pipeline_params.items() %}
+    {%- for value in param_var.values() %}
+        {{ param_name }} = {{ value }}
+    {%- endfor %}
+{%- endfor %}
+    '''
+    #from kale.common import mlmdutils as _kale_mlmdutils
+    #_kale_mlmdutils.init_metadata()
+
+    _kale_data_loading_block = '''
+    # -----------------------DATA LOADING START--------------------------------
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+{%- for input_art in step_inputs %}
+    # Load {{ input_art.name }}_artifact from input artifact
+    {{ input_art.name }} = _kale_marshal.load("{{ input_art.name }}_artifact")
+{%- endfor %}
+    # -----------------------DATA LOADING END----------------------------------
+    '''
+
+    {% for block_content in step.source %}
+    _kale_block{{ loop.index }} = '''
+    {{ block_content }}
+    '''
+    {% endfor %}
+
+    _kale_data_saving_block = '''
+    # -----------------------DATA SAVING START---------------------------------
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+{%- for output_art in step_outputs %}
+    # Save {{ output_art.name }} to output artifact
+    _kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}_artifact")
+{%- endfor %}
+    # -----------------------DATA SAVING END-----------------------------------
+    '''
+
+    # run the code blocks inside a jupyter kernel
+    from kale.common.jputils import run_code as _kale_run_code
+    from kale.common.kfputils import \
+        update_uimetadata as _kale_update_uimetadata
+
+    _kale_blocks = (
+        _kale_pipeline_parameters_block,
+        _kale_data_loading_block,
+{% for block_index in range(1, step.source | length + 1) %}
+        _kale_block{{ block_index }},{% endfor %}
+        _kale_data_saving_block
+    )
+
+    _kale_html_artifact = _kale_run_code(_kale_blocks)
+    with open({{ step.name }}_html_report.path, "w") as f:
+        f.write(_kale_html_artifact)
+    _kale_update_uimetadata('{{ step.name }}_html_report')
+
+    #_kale_mlmdutils.call("mark_execution_complete")

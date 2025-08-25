@@ -13,10 +13,12 @@
 #  limitations under the License.
 
 import argparse
+# import os
+# import warnings
 
 from argparse import RawTextHelpFormatter
-
-from kale import NotebookProcessor, Compiler
+from kale.processors import NotebookProcessor
+from kale.compiler import Compiler
 from kale.common import kfputils
 
 ARGS_DESC = """
@@ -44,7 +46,7 @@ Override the arguments of the source Notebook's Kale metadata section
 
 
 def main():
-    """Entry-point of CLI command."""
+    """Command line interface."""
     parser = argparse.ArgumentParser(description=ARGS_DESC,
                                      formatter_class=RawTextHelpFormatter)
     general_group = parser.add_argument_group('General')
@@ -62,8 +64,10 @@ def main():
     metadata_group = parser.add_argument_group('Notebook Metadata Overrides',
                                                METADATA_GROUP_DESC)
     metadata_group.add_argument('--experiment_name', type=str,
+                                default="Kale-Pipeline-Experiment",
                                 help='Name of the created experiment')
     metadata_group.add_argument('--pipeline_name', type=str,
+                                default="kale-pipeline",
                                 help='Name of the deployed pipeline')
     metadata_group.add_argument('--pipeline_description', type=str,
                                 help='Description of the deployed pipeline')
@@ -78,7 +82,6 @@ def main():
                                      ' volumes')
     metadata_group.add_argument('--volume-access-mode', type=str,
                                 help='The access mode for the created volumes')
-
     args = parser.parse_args()
 
     # get the notebook metadata args group
@@ -89,126 +92,31 @@ def main():
     mt_overrides_group_dict = {a.dest: getattr(args, a.dest, None)
                                for a in mt_overrides_group._group_actions
                                if getattr(args, a.dest, None) is not None}
-
-    # FIXME: We are removing the `debug` arg. This shouldn't be an issue
+    print(f"mt_overrides_group_dict: {mt_overrides_group_dict}")
     processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
     pipeline = processor.run()
-    dsl_script_path = Compiler(pipeline).compile()
+    imports_and_functions = processor.get_imports_and_functions()
+    dsl_script_path = Compiler(pipeline, imports_and_functions).compile()
     pipeline_name = pipeline.config.pipeline_name
+    print(f"dsl_script_path: {dsl_script_path}")
+
     pipeline_package_path = kfputils.compile_pipeline(dsl_script_path,
                                                       pipeline_name)
-
     if args.upload_pipeline or args.run_pipeline:
         pipeline_id, version_id = kfputils.upload_pipeline(
             pipeline_package_path=pipeline_package_path,
             pipeline_name=pipeline_name,
             host=pipeline.config.kfp_host
         )
-
+        print(f"pipeline_id: {pipeline_id}, version_id: {version_id}")
         if args.run_pipeline:
             kfputils.run_pipeline(
                 experiment_name=pipeline.config.experiment_name,
                 pipeline_id=pipeline_id,
                 version_id=version_id,
-                host=pipeline.config.kfp_host
+                host=pipeline.config.kfp_host,
+                pipeline_package_path=pipeline_package_path
             )
-
-
-KALE_VOLUMES_DESCRIPTION = """
-Call kale-volumes to get information about Rok volumes currently mounted on
-your Notebook Server.
-"""
-
-
-def kale_volumes():
-    """This function handles kale-volumes CLI command."""
-    import logging
-    import os
-    import sys
-    import tabulate
-    from pathlib import Path
-    import json
-    from kale.common import podutils
-
-    # Add logger
-    # Log to stdout. Set logging level according to --debug flag
-    # Log to file ./kale-volumes.log. Logging level == DEBUG
-    logger = logging.getLogger("kubeflow-kale")
-    formatter = logging.Formatter(
-        "%(asctime)s | %(name)s | %(levelname)s: %(message)s",
-        datefmt="%m-%d %H:%M"
-    )
-    logger.setLevel(logging.DEBUG)
-
-    log_dir_path = Path(".")
-    file_handler = logging.FileHandler(
-        filename=log_dir_path / 'kale-volumes.log',
-        mode='a'
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.DEBUG)
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.INFO)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
-
-    def list_volumes(args, logger):
-        """This function gets invoked by the sub-command 'list'."""
-        volumes = podutils.list_volumes()
-
-        if args.output == "table":
-            headers = ["Mount Path", "Volume Name", "PVC Name", "Volume Size"]
-            data = [(path, volume.name,
-                     volume.persistent_volume_claim.claim_name, size)
-                    for path, volume, size in volumes]
-            logger.info(tabulate.tabulate(data, headers=headers))
-        else:
-            volumes_out = [{"type": "clone",
-                            "name": volume.name,
-                            "mount_point": path,
-                            "size": size,
-                            "size_type": "",
-                            "snapshot": False}
-                           for path, volume, size in volumes]
-            print(json.dumps(volumes_out,
-                             sort_keys=True,
-                             indent=3,
-                             separators=(",", ": ")))
-
-    parser = argparse.ArgumentParser(description=KALE_VOLUMES_DESCRIPTION)
-    parser.add_argument(
-        "--output",
-        "-o",
-        choices=["table", "json"],
-        default="table",
-        nargs="?",
-        type=str,
-        help="Output format - Default: 'table'"
-    )
-    parser.add_argument('--debug', action='store_true')
-    subparsers = parser.add_subparsers(
-        dest="subcommand",
-        help="kale-volumes sub-commands"
-    )
-
-    parser_list = subparsers.add_parser("list",
-                                        help="List Rok volumes currently "
-                                             "mounted on the Notebook "
-                                             "Server")
-    parser_list.set_defaults(func=list_volumes)
-
-    args = parser.parse_args()
-
-    if args.debug:
-        stream_handler.setLevel(logging.DEBUG)
-
-    if not os.getenv("NB_PREFIX"):
-        logger.error("You may run this command only inside a Notebook Server.")
-        sys.exit(1)
-
-    args.func(args, logger)
 
 
 if __name__ == "__main__":
