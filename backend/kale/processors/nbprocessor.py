@@ -598,7 +598,8 @@ class NotebookProcessor(BaseProcessor):
 
         self.pipeline.remove_node(tmp_step_name)
 
-    def _ensure_fns_free_variables(self, anc_step, anc_source: str, imports_and_functions: str):
+    def _ensure_fns_free_variables(self, anc_step, anc_source: str,
+                                   imports_and_functions: str):
         """Lazily compute ancestor functions' free vars if missing."""
         if not getattr(anc_step, 'fns_free_variables', None):
             anc_step.fns_free_variables = self._detect_fns_free_variables(
@@ -607,12 +608,15 @@ class NotebookProcessor(BaseProcessor):
                 self.pipeline.pipeline_parameters
             )
 
-    def _propagate_free_vars_from_function(self, step: Step, anc_step: Step, fn_name: str):
-        """
+    def _propagate_free_vars_from_function(self, step: Step, anc_step: Step,
+                                           fn_name: str):
+        """Helper method.
+
         Propagate free variables of a function defined in anc_step to
         both the current step's inputs and the ancestor's outputs, including
         nested functions' free variables. Also apply artifact heuristics.
-        Additionally, propagate transitive free variables via earlier ancestors of anc_step.
+        Additionally, propagate transitive free variables via earlier ancestors
+        of anc_step.
         """
         anc_fns_free_vars = getattr(anc_step, 'fns_free_variables', {})
         if fn_name not in anc_fns_free_vars:
@@ -631,16 +635,19 @@ class NotebookProcessor(BaseProcessor):
                     aggregated.update(new_names)
                     queue.extend(list(new_names))
 
-        # Then, expand transitively using functions defined in earlier ancestors
-        # of anc_step (i.e., ancestors that lead to anc_step).
-        earlier_ancestors = graphutils.get_ordered_ancestors(self.pipeline, anc_step.name)
+        # Then, expand transitively using functions defined in earlier
+        # ancestors of anc_step (i.e., ancestors that lead to anc_step).
+        earlier_ancestors = graphutils.get_ordered_ancestors(self.pipeline,
+                                                             anc_step.name)
         for ea_name in earlier_ancestors:
             ea_step = self.pipeline.get_step(ea_name)
             ea_source = '\n'.join(ea_step.source)
             # Ensure their fns_free_variables are computed
-            self._ensure_fns_free_variables(ea_step, ea_source, self.get_imports_and_functions())
+            self._ensure_fns_free_variables(ea_step, ea_source,
+                                            self.get_imports_and_functions())
             ea_fns_free_vars = getattr(ea_step, 'fns_free_variables', {})
-            # We iterate over a snapshot of aggregated to allow growth during the loop
+            # We iterate over a snapshot of aggregated to allow growth
+            # during the loop
             to_check = list(aggregated)
             idx = 0
             while idx < len(to_check):
@@ -653,7 +660,8 @@ class NotebookProcessor(BaseProcessor):
                             aggregated.add(n)
                             to_check.append(n)
 
-        # Apply artifact heuristic and update step.ins and anc_step.outs for all aggregated names
+        # Apply artifact heuristic and update step.ins and anc_step.outs
+        # for all aggregated names
         for fv_name in aggregated:
             if fv_name not in step.ins:
                 step.ins.append(fv_name)
@@ -669,7 +677,8 @@ class NotebookProcessor(BaseProcessor):
             if fv_name not in anc_step.outs:
                 anc_step.outs.append(fv_name)
                 if is_artifact:
-                    anc_step.add_artifact(fv_name, inferred_type, is_input=False)
+                    anc_step.add_artifact(fv_name, inferred_type,
+                                          is_input=False)
 
     def dependencies_detection(self, imports_and_functions: str = ""):
         """Detects data dependencies between pipeline steps to support KFPv2.
@@ -736,7 +745,8 @@ class NotebookProcessor(BaseProcessor):
                 anc_step = self.pipeline.get_step(anc)
                 anc_source = '\n'.join(anc_step.source)
                 # Ensure ancestor's functions free variables are available
-                self._ensure_fns_free_variables(anc_step, anc_source, imports_and_functions)
+                self._ensure_fns_free_variables(anc_step, anc_source,
+                                                imports_and_functions)
                 # get all the marshal candidates from father's source and
                 # intersect with the required names of the current node
                 marshal_candidates = astutils.get_marshal_candidates(
@@ -771,25 +781,31 @@ class NotebookProcessor(BaseProcessor):
                     # This input is satisfied, remove from the set
                     ins_left.remove(out_name)
 
-                    # If the marshaled name is a function defined in the ancestor,
-                    # propagate its free variables as additional ins/outs.
-                    self._propagate_free_vars_from_function(step, anc_step, out_name)
+                    # If the marshaled name is a function defined in the
+                    # ancestor, propagate its free variables as additional
+                    # ins/outs.
+                    self._propagate_free_vars_from_function(step, anc_step,
+                                                            out_name)
 
                 # Include free variables and add them as inputs/outputs
                 to_remove_fn_calls = set()
                 for fn_call in fn_calls:
                     anc_fns_free_vars = anc_step.fns_free_variables
                     if fn_call in anc_fns_free_vars.keys():
-                        # Ensure free vars of the called function are propagated
-                        self._propagate_free_vars_from_function(step, anc_step, fn_call)
+                        # Ensure free vars of the called fn are propagated
+                        self._propagate_free_vars_from_function(step, anc_step,
+                                                                fn_call)
                         to_remove_fn_calls.add(fn_call)
                         fns_free_vars[fn_call] = anc_fns_free_vars[fn_call]
 
-                    # Propagate pipeline parameters from the ancestor step whenever
-                    # we call a function it provides (directly or via marshal candidates).
+                    # Propagate pipeline parameters from the ancestor step
+                    # whenever we call a function it provides (directly or via
+                    # marshal candidates).
                     if (getattr(anc_step, 'parameters', None)
-                            and (fn_call in anc_fns_free_vars or fn_call in marshal_candidates)):
-                        if not hasattr(step, 'parameters') or step.parameters is None:
+                            and (fn_call in anc_fns_free_vars or fn_call in
+                                 marshal_candidates)):
+                        if not hasattr(step, 'parameters') or \
+                                step.parameters is None:
                             step.parameters = {}
                         for _pname, _pval in anc_step.parameters.items():
                             if _pname not in step.parameters:
@@ -819,7 +835,8 @@ class NotebookProcessor(BaseProcessor):
             # these are the parameters that are actually needed by this step.
             relevant_parameters = ins.intersection(pipeline_parameters.keys())
             ins.difference_update(relevant_parameters)
-        step_params = {k: pipeline_parameters[k] for k in relevant_parameters} if pipeline_parameters else {}  # noqa: E501
+        step_params = {k: pipeline_parameters[k] for k in relevant_parameters}\
+            if pipeline_parameters else {}
         return ins, step_params
 
     def _detect_fns_free_variables(self,
