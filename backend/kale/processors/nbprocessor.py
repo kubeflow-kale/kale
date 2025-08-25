@@ -732,7 +732,7 @@ class NotebookProcessor(BaseProcessor):
                                 )
 
                             # Add to ancestor's outs if doesn't exists
-                            if fv_name in marshal_candidates and fv_name not in anc_step.outs:  # noqa: E501
+                            if fv_name not in anc_step.outs:
                                 anc_step.outs.append(fv_name)
                                 # Add to ancestor's artifacts
                                 if is_artifact:
@@ -742,11 +742,22 @@ class NotebookProcessor(BaseProcessor):
                                         is_input=False
                                     )
 
-                        # Add ipeline params used by the function
                         to_remove_fn_calls.add(fn_call)
                         fns_free_vars[fn_call] = anc_fns_free_vars[fn_call]
 
+                    # Propagate pipeline parameters from the ancestor step whenever
+                    # we call a function it provides (directly or via marshal candidates).
+                    if (getattr(anc_step, 'parameters', None)
+                            and (fn_call in anc_fns_free_vars or fn_call in marshal_candidates)):
+                        if not hasattr(step, 'parameters') or step.parameters is None:
+                            step.parameters = {}
+                        for _pname, _pval in anc_step.parameters.items():
+                            if _pname not in step.parameters:
+                                step.parameters[_pname] = _pval
+
                 fn_calls.difference_update(to_remove_fn_calls)
+                # finalize bookkeeping for this step
+                step.fns_free_variables = fns_free_vars
 
     def _detect_in_dependencies(self,
                                 source_code: str,
