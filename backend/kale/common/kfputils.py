@@ -152,7 +152,14 @@ def upload_pipeline(pipeline_package_path: str, pipeline_name: str,
             pipeline_version_name=version_name,
             pipeline_id=pipeline_id)
         # delete the first version which has the same name as the pipeline
-        client.delete_pipeline_version(upp.pipeline_id)
+        versions = client.list_pipeline_versions(pipeline_id=pipeline_id)
+        sorted_versions = sorted(versions.pipeline_versions,
+                                 key=lambda v: v.created_at)
+        delete_vid = sorted_versions[0].pipeline_version_id
+        client.delete_pipeline_version(
+            pipeline_id=pipeline_id,
+            pipeline_version_id=delete_vid
+        )
         log.info("Deleted pipeline version with name '%s' and ID: %s",
                  pipeline_name, upp.pipeline_id)
     else:

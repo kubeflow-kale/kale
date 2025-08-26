@@ -270,7 +270,7 @@ class Compiler:
         """
         package_names = set()
         # Ensure 'kale' is always included
-        package_names.add("kubeflow-kale==1.0.0.dev8")
+        package_names.add("kubeflow-kale==1.0.0.dev13")
         # Ensure 'kfp' is always included
         package_names.add("kfp>=2.0.0")
         lines = self.imports_and_functions.strip().split('\n')

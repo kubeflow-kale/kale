@@ -5,7 +5,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
 
 @kfp_dsl.component(
     base_image='python:3.10',
-    packages_to_install=['kfp>=2.0.0', 'kubeflow-kale==1.0.0.dev8', 'numpy'],
+    packages_to_install=['kfp>=2.0.0', 'kubeflow-kale==1.0.0.dev13', 'numpy'],
     pip_index_urls=['https://test.pypi.org/simple', 'https://pypi.org/simple'],
 )
 def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
@@ -76,7 +76,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
 
 @kfp_dsl.component(
     base_image='python:3.10',
-    packages_to_install=['kfp>=2.0.0', 'kubeflow-kale==1.0.0.dev8', 'numpy'],
+    packages_to_install=['kfp>=2.0.0', 'kubeflow-kale==1.0.0.dev13', 'numpy'],
     pip_index_urls=['https://test.pypi.org/simple', 'https://pypi.org/simple'],
 )
 def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
