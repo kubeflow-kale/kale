@@ -92,7 +92,7 @@ def main():
     mt_overrides_group_dict = {a.dest: getattr(args, a.dest, None)
                                for a in mt_overrides_group._group_actions
                                if getattr(args, a.dest, None) is not None}
-
+    print(f"mt_overrides_group_dict: {mt_overrides_group_dict}")
     processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
     pipeline = processor.run()
     imports_and_functions = processor.get_imports_and_functions()
