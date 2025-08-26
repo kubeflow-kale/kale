@@ -153,7 +153,7 @@ def upload_pipeline(pipeline_package_path: str, pipeline_name: str,
             pipeline_id=pipeline_id)
         # delete the first version which has the same name as the pipeline
         versions = client.list_pipeline_versions(pipeline_id=pipeline_id)
-        sorted_versions = sorted(versions.pipeline_versions, 
+        sorted_versions = sorted(versions.pipeline_versions,
                                  key=lambda v: v.created_at)
         delete_vid = sorted_versions[0].pipeline_version_id
         client.delete_pipeline_version(
