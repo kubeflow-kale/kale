@@ -101,10 +101,9 @@ cd kale
 conda create --name my_project_env python=3.10
 conda activate my_project_env
 ```
-Checkout to v2.0-dev branch. Then:
+Checkout to backend directory. Then:
 
 ```bash
-git checkout v2.0-dev
 cd backend/
 pip install -e .[dev]
 
@@ -113,7 +112,7 @@ kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
 
 #run cli from outside the backend directory
 cd ..
-python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080/ --run_pipeline
+python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080 --run_pipeline
 
 # run tests
 pytest -x -vv # TODO
@@ -143,22 +142,25 @@ You can then run the following to install the Kale extension:
 ```bash
 cd labextension/
 
-# install dependencies from package.lock
-jlpm install
 # build extension
-jlpm run build
+jlpm build
 
+# install dependencies using pyproject.toml
+pip install -e . --force-reinstal
+
+# install labextension in dev mode
+jupyter labextension develop . --overwrite
 # list installed jp extensions
 jlpm labextension list
-# install Kale extension
-jlpm labextension install .
 
-# for development:
-# build and watch
-jlpm run watch
+# open jupyterlab
+jupyter lab
 
-# in another shell, run JupyterLab in watch mode
-jupyter lab --no-browser --watch
+# To make changes and rebuild
+# open 2nd tab inside labextension, then
+jlpm build
+
+# copy paste static directory files inside kubeflow-kale-labextension/labextension folder and refresh jupyterlab
 ```
 
 #### Git Hooks
@@ -176,3 +178,10 @@ Currently installed git hooks:
 
 - `pre-commit`: Run a prettier check on staged files, using
   [pretty-quick](https://github.com/azz/pretty-quick)
+
+#### Issues to cover
+1. Fix Progress bar in left panel during compile and run.
+2. Fix opening of editor after clicking edit pencil icon above cells.
+3. Fix weakmap warning related in InlineMetadata.tsx which gets displayed while toggling the kale icon to enable state. It can be skipped for now in UI.
+4. Fix Kale icon in LeftPanel
+5. Fix building and packaging of labextension related with package.json, pyproject.toml, and tsconfig.json

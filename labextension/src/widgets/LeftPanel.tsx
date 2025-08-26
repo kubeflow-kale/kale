@@ -18,15 +18,15 @@ import * as React from 'react';
 import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 import NotebookUtils from '../lib/NotebookUtils';
 import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
-import { AdvancedSettings } from '../components/AdvancedSettings';
+// import { AdvancedSettings } from '../components/AdvancedSettings';
 import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
-import { SELECT_VOLUME_TYPES, VolumesPanel } from './VolumesPanel';
+// import { SELECT_VOLUME_TYPES, VolumesPanel } from './VolumesPanel';
 import { SplitDeployButton } from '../components/DeployButton';
 import { Kernel } from '@jupyterlab/services';
 import { ExperimentInput } from '../components/ExperimentInput';
 import {
   DeployProgressState,
-  DeploysProgress,
+  DeploysProgress
 } from './deploys-progress/DeploysProgress';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
@@ -50,7 +50,7 @@ export interface IExperiment {
 
 export const NEW_EXPERIMENT: IExperiment = {
   name: '+ New Experiment',
-  id: 'new',
+  id: 'new'
 };
 
 interface IProps {
@@ -59,7 +59,6 @@ interface IProps {
   docManager: IDocumentManager;
   backend: boolean;
   kernel: Kernel.IKernelConnection;
-  rokError: IRPCError;
 }
 
 interface IState {
@@ -69,83 +68,83 @@ interface IState {
   deployDebugMessage: boolean;
   experiments: IExperiment[];
   gettingExperiments: boolean;
-  notebookVolumes?: IVolumeMetadata[];
-  volumes?: IVolumeMetadata[];
-  selectVolumeTypes: ISelectOption[];
+  // notebookVolumes?: IVolumeMetadata[];
+  // volumes?: IVolumeMetadata[];
+  // selectVolumeTypes: ISelectOption[];
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
-  katibDialog: boolean;
+  // katibDialog: boolean;
   namespace: string;
 }
 
 // Katib types
 // v1alpha3: https://github.com/kubeflow/katib/blob/v0.9.0/pkg/apis/controller/experiments/v1alpha3/experiment_types.go
 // v1beta1: https://github.com/kubeflow/katib/blob/v0.10.0/pkg/apis/controller/experiments/v1beta1/experiment_types.go
-export interface IKatibParameter {
-  name: string;
-  parameterType: 'unknown' | 'double' | 'int' | 'categorical' | 'discrete';
-  feasibleSpace: { min?: string; max?: string; list?: string[]; step?: string };
-}
+// export interface IKatibParameter {
+//   name: string;
+//   parameterType: 'unknown' | 'double' | 'int' | 'categorical' | 'discrete';
+//   feasibleSpace: { min?: string; max?: string; list?: string[]; step?: string };
+// }
 
-interface IKatibObjective {
-  goal?: number;
-  type: 'minimize' | 'maximize';
-  objectiveMetricName: string;
-  additionalMetricNames?: string[];
-}
+// interface IKatibObjective {
+//   goal?: number;
+//   type: 'minimize' | 'maximize';
+//   objectiveMetricName: string;
+//   additionalMetricNames?: string[];
+// }
 
-interface IKatibAlgorithm {
-  algorithmName:
-    | 'random'
-    | 'grid'
-    | 'bayesianoptimization'
-    | 'hyperband'
-    | 'tpe';
-  algorithmSettings?: { name: string; value: string }[];
-  earlyStopping?: {
-    earlyStoppingAlgorithmName: { name: string; value: string }[];
-  };
-}
+// interface IKatibAlgorithm {
+//   algorithmName:
+//     | 'random'
+//     | 'grid'
+//     | 'bayesianoptimization'
+//     | 'hyperband'
+//     | 'tpe';
+//   algorithmSettings?: { name: string; value: string }[];
+//   earlyStopping?: {
+//     earlyStoppingAlgorithmName: { name: string; value: string }[];
+//   };
+// }
 
-export interface IKatibMetadata {
-  parameters: IKatibParameter[];
-  objective: IKatibObjective;
-  algorithm: IKatibAlgorithm;
-  maxTrialCount: number;
-  maxFailedTrialCount: number;
-  parallelTrialCount: number;
-}
+// export interface IKatibMetadata {
+//   parameters: IKatibParameter[];
+//   objective: IKatibObjective;
+//   algorithm: IKatibAlgorithm;
+//   maxTrialCount: number;
+//   maxFailedTrialCount: number;
+//   parallelTrialCount: number;
+// }
 
-const DefaultKatibMetadata: IKatibMetadata = {
-  parameters: [],
-  objective: {
-    type: 'minimize',
-    objectiveMetricName: '',
-  },
-  algorithm: {
-    algorithmName: 'grid',
-  },
-  maxTrialCount: 12,
-  maxFailedTrialCount: 3,
-  parallelTrialCount: 3,
-};
+// const DefaultKatibMetadata: IKatibMetadata = {
+//   parameters: [],
+//   objective: {
+//     type: 'minimize',
+//     objectiveMetricName: '',
+//   },
+//   algorithm: {
+//     algorithmName: 'grid',
+//   },
+//   maxTrialCount: 12,
+//   maxFailedTrialCount: 3,
+//   parallelTrialCount: 3,
+// };
 
-export interface IVolumeMetadata {
-  type: string;
-  // name field will have different meaning based on the type:
-  //  - pv: name of the PV
-  //  - pvc: name of the pvc
-  //  - new_pvc: new pvc with dynamic provisioning
-  //  - clone: clone a volume which is currently mounted to the Notebook Server
-  //  - snap: new_pvc from Rok Snapshot
-  name: string;
-  mount_point: string;
-  size?: number;
-  size_type?: string;
-  annotations: IAnnotation[];
-  snapshot: boolean;
-  snapshot_name?: string;
-}
+// export interface IVolumeMetadata {
+//   type: string;
+//   // name field will have different meaning based on the type:
+//   //  - pv: name of the PV
+//   //  - pvc: name of the pvc
+//   //  - new_pvc: new pvc with dynamic provisioning
+//   //  - clone: clone a volume which is currently mounted to the Notebook Server
+//   //  - snap: new_pvc from Rok Snapshot
+//   name: string;
+//   mount_point: string;
+//   size?: number;
+//   size_type?: string;
+//   annotations: IAnnotation[];
+//   snapshot: boolean;
+//   snapshot_name?: string;
+// }
 
 // keep names with Python notation because they will be read
 // in python by Kale.
@@ -155,42 +154,42 @@ export interface IKaleNotebookMetadata {
   pipeline_name: string;
   pipeline_description: string;
   docker_image: string;
-  volumes: IVolumeMetadata[];
-  snapshot_volumes: boolean;
-  autosnapshot: boolean;
-  katib_run: boolean;
-  katib_metadata?: IKatibMetadata;
+  // volumes: IVolumeMetadata[];
+  // snapshot_volumes: boolean;
+  // autosnapshot: boolean;
+  // katib_run: boolean;
+  // katib_metadata?: IKatibMetadata;
   steps_defaults?: string[];
   storage_class_name?: string;
-  volume_access_mode?: string;
+  // volume_access_mode?: string;
 }
 
-export interface IKatibExperiment {
-  apiVersion: string;
-  name?: string;
-  namespace?: string;
-  status: string;
-  reason: string;
-  message: string;
-  trials?: number;
-  trialsFailed?: number;
-  trialsRunning?: number;
-  trialsSucceeded?: number;
-  maxTrialCount?: number;
-  currentOptimalTrial?: {
-    bestTrialName: string;
-    parameterAssignments: { name: string; value: string }[];
-    observation: {
-      metrics: {
-        name: string;
-        value?: number; // v1alpha3
-        latest?: string; //v1beta1
-        max?: string; //v1beta1
-        min?: string; //v1beta1
-      }[];
-    };
-  };
-}
+// export interface IKatibExperiment {
+//   apiVersion: string;
+//   name?: string;
+//   namespace?: string;
+//   status: string;
+//   reason: string;
+//   message: string;
+//   trials?: number;
+//   trialsFailed?: number;
+//   trialsRunning?: number;
+//   trialsSucceeded?: number;
+//   maxTrialCount?: number;
+//   currentOptimalTrial?: {
+//     bestTrialName: string;
+//     parameterAssignments: { name: string; value: string }[];
+//     observation: {
+//       metrics: {
+//         name: string;
+//         value?: number; // v1alpha3
+//         latest?: string; //v1beta1
+//         max?: string; //v1beta1
+//         min?: string; //v1beta1
+//       }[];
+//     };
+//   };
+// }
 
 export const DefaultState: IState = {
   metadata: {
@@ -199,25 +198,25 @@ export const DefaultState: IState = {
     pipeline_name: '',
     pipeline_description: '',
     docker_image: '',
-    volumes: [],
-    snapshot_volumes: false,
-    autosnapshot: false,
-    katib_run: false,
-    steps_defaults: [],
-    volume_access_mode: 'rwm',
+    // volumes: [],
+    // snapshot_volumes: false,
+    // autosnapshot: false,
+    // katib_run: false,
+    steps_defaults: []
+    // volume_access_mode: 'rwm',
   },
   runDeployment: false,
   deploymentType: 'compile',
   deployDebugMessage: false,
   experiments: [],
   gettingExperiments: false,
-  notebookVolumes: [],
-  volumes: [],
-  selectVolumeTypes: SELECT_VOLUME_TYPES,
+  // notebookVolumes: [],
+  // volumes: [],
+  // selectVolumeTypes: SELECT_VOLUME_TYPES,
   deploys: {},
   isEnabled: false,
-  katibDialog: false,
-  namespace: '',
+  // katibDialog: false,
+  namespace: ''
 };
 
 let deployIndex = 0;
@@ -226,7 +225,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   // init state default values
   state = DefaultState;
 
-  getActiveNotebook = () => {
+  getActiveNotebook = (): NotebookPanel | null => {
     return this.props.tracker.currentWidget;
   };
 
@@ -247,23 +246,23 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata: {
         ...prevState.metadata,
         experiment: experiment,
-        experiment_name: experiment.name,
-      },
+        experiment_name: experiment.name
+      }
     }));
   updatePipelineName = (name: string) =>
     this.setState((prevState, props) => ({
-      metadata: { ...prevState.metadata, pipeline_name: name },
+      metadata: { ...prevState.metadata, pipeline_name: name }
     }));
   updatePipelineDescription = (desc: string) =>
     this.setState((prevState, props) => ({
-      metadata: { ...prevState.metadata, pipeline_description: desc },
+      metadata: { ...prevState.metadata, pipeline_description: desc }
     }));
   updateDockerImage = (name: string) =>
     this.setState((prevState, props) => ({
       metadata: {
         ...prevState.metadata,
-        docker_image: name,
-      },
+        docker_image: name
+      }
     }));
   // updateVolumesSwitch = () => {
   //   this.setState((prevState, props) => ({
@@ -288,13 +287,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   //     },
   //   }));
 
-  getNotebookMountPoints = (): { label: string; value: string }[] => {
-    const mountPoints: { label: string; value: string }[] = [];
-    this.state.notebookVolumes?.map(item => {   // check is optional using ?
-      mountPoints.push({ label: item.mount_point, value: item.mount_point });
-    });
-    return mountPoints;
-  };
+  // getNotebookMountPoints = (): { label: string; value: string }[] => {
+  //   const mountPoints: { label: string; value: string }[] = [];
+  //   this.state.notebookVolumes?.map(item => {   // check is optional using ?
+  //     mountPoints.push({ label: item.mount_point, value: item.mount_point });
+  //   });
+  //   return mountPoints;
+  // };
 
   activateRunDeployState = (type: string) => {
     if (!this.state.runDeployment) {
@@ -305,45 +304,45 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   changeDeployDebugMessage = () =>
     this.setState((prevState, props) => ({
-      deployDebugMessage: !prevState.deployDebugMessage,
+      deployDebugMessage: !prevState.deployDebugMessage
     }));
 
-  updateStorageClassName = (storage_class_name: string) =>
-    this.setState((prevState, props) => ({
-      metadata: { ...prevState.metadata, storage_class_name },
-    }));
+  // updateStorageClassName = (storage_class_name: string) =>
+  //   this.setState((prevState, props) => ({
+  //     metadata: { ...prevState.metadata, storage_class_name },
+  //   }));
 
-  updateVolumeAccessMode = (volume_access_mode: string) => {
-    this.setState((prevState, props) => ({
-      metadata: { ...prevState.metadata, volume_access_mode },
-    }));
-  };
+  // updateVolumeAccessMode = (volume_access_mode: string) => {
+  //   this.setState((prevState, props) => ({
+  //     metadata: { ...prevState.metadata, volume_access_mode },
+  //   }));
+  // };
 
-  updateKatibRun = () =>
-    this.setState((prevState, props) => ({
-      metadata: {
-        ...prevState.metadata,
-        katib_run: !prevState.metadata.katib_run,
-      },
-    }));
+  // updateKatibRun = () =>
+  //   this.setState((prevState, props) => ({
+  //     metadata: {
+  //       ...prevState.metadata,
+  //       katib_run: !prevState.metadata.katib_run,
+  //     },
+  //   }));
 
-  updateKatibMetadata = (metadata: IKatibMetadata) =>
-    this.setState((prevState, props) => ({
-      metadata: {
-        ...prevState.metadata,
-        katib_metadata: metadata,
-      },
-    }));
+  // updateKatibMetadata = (metadata: IKatibMetadata) =>
+  //   this.setState((prevState, props) => ({
+  //     metadata: {
+  //       ...prevState.metadata,
+  //       katib_metadata: metadata,
+  //     },
+  //   }));
 
-  updateVolumes = (
-    volumes: IVolumeMetadata[],
-    metadataVolumes: IVolumeMetadata[],
-  ) => {
-    this.setState((prevState, props) => ({
-      volumes,
-      metadata: { ...prevState.metadata, volumes: metadataVolumes },
-    }));
-  };
+  // updateVolumes = (
+  //   volumes: IVolumeMetadata[],
+  //   metadataVolumes: IVolumeMetadata[],
+  // ) => {
+  //   this.setState((prevState, props) => ({
+  //     volumes,
+  //     metadata: { ...prevState.metadata, volumes: metadataVolumes },
+  //   }));
+  // };
 
   // toggleKatibDialog = async () => {
   //   // When opening the katib dialog, we sent and RPC to Kale to parse the
@@ -365,7 +364,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   resetState = () =>
     this.setState((prevState, props) => ({
       ...DefaultState,
-      isEnabled: prevState.isEnabled,
+      isEnabled: prevState.isEnabled
     }));
 
   componentDidMount = () => {
@@ -379,7 +378,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   componentDidUpdate = (
     prevProps: Readonly<IProps>,
-    prevState: Readonly<IState>,
+    prevState: Readonly<IState>
   ) => {
     // fast comparison of Metadata objects.
     // warning: this method does not work if keys change order.
@@ -388,13 +387,16 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         JSON.stringify(this.state.metadata) &&
       this.getActiveNotebook()
     ) {
-      // Write new metadata to the notebook and save
-      NotebookUtils.setMetaData(
-        this.getActiveNotebook(),
-        KALE_NOTEBOOK_METADATA_KEY,
-        this.state.metadata,
-        true,
-      );
+      const activeNotebook = this.getActiveNotebook();
+      if (activeNotebook) {
+        // Write new metadata to the notebook and save
+        NotebookUtils.setMetaData(
+          activeNotebook,
+          KALE_NOTEBOOK_METADATA_KEY,
+          this.state.metadata,
+          true
+        );
+      }
     }
   };
 
@@ -404,13 +406,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
    */
   handleNotebookChanged = async (
     tracker: INotebookTracker,
-    notebook: NotebookPanel,
+    notebook: NotebookPanel | null
   ) => {
     // Set the current notebook and wait for the session to be ready
     if (notebook) {
       await this.setNotebookPanel(notebook);
     } else {
-      await this.setNotebookPanel(null);
+      // Handle null case - reset to default state
+      this.resetState();
     }
   };
 
@@ -418,51 +421,46 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
    * Read new notebook and assign its metadata to the state.
    * @param notebook active NotebookPanel
    */
-  setNotebookPanel = async (notebook: NotebookPanel) => {
+  setNotebookPanel = async (notebook: NotebookPanel | null) => {
     // if there at least an open notebook
     if (this.props.tracker.size > 0 && notebook) {
-      const commands = new Commands(
-        this.getActiveNotebook,
-        this.getActiveNotebook(),
-        this.props.kernel,
-      );
+      const commands = new Commands(notebook, this.props.kernel);
       // wait for the session to be ready before reading metadata
       await notebook.sessionContext.ready;
 
       // get notebook metadata
       const notebookMetadata = NotebookUtils.getMetaData(
         notebook,
-        KALE_NOTEBOOK_METADATA_KEY,
+        KALE_NOTEBOOK_METADATA_KEY
       );
-      console.log('Kubeflow metadata:');
-      console.log(notebookMetadata);
 
       if (this.props.backend) {
         // Retrieve the notebook's namespace
         this.setState({ namespace: await commands.getNamespace() });
         // Detect whether this is an exploration, i.e., recovery from snapshot
         const nbFilePath = this.getActiveNotebookPath();
-        await commands.resumeStateIfExploreNotebook(nbFilePath);
-
-        if (!this.props.rokError) {
-          // Get information about volumes currently mounted on the notebook server
-          const {
-            notebookVolumes,
-            selectVolumeTypes,
-          } = await commands.getMountedVolumes(this.state.notebookVolumes);
-          this.setState({
-            notebookVolumes,
-            selectVolumeTypes,
-          });
-        } else {
-          this.setState((prevState, props) => ({
-            selectVolumeTypes: prevState.selectVolumeTypes.map(t => {
-              return t.value === 'clone' || t.value === 'snap'
-                ? { ...t, tooltip: rokErrorTooltip(this.props.rokError) }
-                : t;
-            }),
-          }));
+        if (nbFilePath) {
+          await commands.resumeStateIfExploreNotebook(nbFilePath);
         }
+        // if (!this.props.rokError) {
+        //   // Get information about volumes currently mounted on the notebook server
+        //   const {
+        //     notebookVolumes,
+        //     selectVolumeTypes,
+        //   } = await commands.getMountedVolumes(this.state.notebookVolumes);
+        //   this.setState({
+        //     notebookVolumes,
+        //     selectVolumeTypes,
+        //   });
+        // } else {
+        //   this.setState((prevState, props) => ({
+        //     selectVolumeTypes: prevState.selectVolumeTypes.map(t => {
+        //       return t.value === 'clone' || t.value === 'snap'
+        //         ? { ...t, tooltip: rokErrorTooltip(this.props.rokError) }
+        //         : t;
+        //     }),
+        //   }));
+        // }
         // Detect the base image of the current Notebook Server
         const baseImage = await commands.getBaseImage();
         if (baseImage) {
@@ -474,33 +472,30 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // Detect poddefault labels applied on server and add them as steps defaults
         // fixme: This RPC could be called just when starting the widget
         //        and not every time we set a new notebook
-        const podDefaultLabels = await commands.findPodDefaultLabelsOnServer();
-        Object.keys(podDefaultLabels)
-          .map(key => `label:${key}:${podDefaultLabels[key]}`)
-          .forEach(label => {
-            if (!DefaultState.metadata.steps_defaults?.includes(label)) {
-              DefaultState.metadata.steps_defaults?.push(label);
-            }
-          });
+        // const podDefaultLabels = await commands.findPodDefaultLabelsOnServer();
+        // Object.keys(podDefaultLabels)
+        //   .map(key => `label:${key}:${podDefaultLabels[key]}`)
+        //   .forEach(label => {
+        //     if (!DefaultState.metadata.steps_defaults?.includes(label)) {
+        //       DefaultState.metadata.steps_defaults?.push(label);
+        //     }
+        //   });
 
         // Get experiment information last because it may take more time to respond
         this.setState({ gettingExperiments: true });
-        const {
-          experiments,
-          experiment,
-          experiment_name,
-        } = await commands.getExperiments(
-          this.state.metadata.experiment,
-          this.state.metadata.experiment_name,
-        );
+        const { experiments, experiment, experiment_name } =
+          await commands.getExperiments(
+            this.state.metadata.experiment,
+            this.state.metadata.experiment_name
+          );
         this.setState((prevState, props) => ({
           experiments,
           gettingExperiments: false,
           metadata: {
             ...prevState.metadata,
             experiment,
-            experiment_name,
-          },
+            experiment_name
+          }
         }));
       }
 
@@ -512,96 +507,72 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         if (notebookMetadata['experiment']) {
           experiment = {
             id: notebookMetadata['experiment']['id'] || '',
-            name: notebookMetadata['experiment']['name'] || '',
+            name: notebookMetadata['experiment']['name'] || ''
           };
           experiment_name = notebookMetadata['experiment']['name'];
         } else if (notebookMetadata['experiment_name']) {
           const matchingExperiments = this.state.experiments.filter(
-            e => e.name === notebookMetadata['experiment_name'],
+            e => e.name === notebookMetadata['experiment_name']
           );
           if (matchingExperiments.length > 0) {
             experiment = matchingExperiments[0];
           } else {
             experiment = {
               id: NEW_EXPERIMENT.id,
-              name: notebookMetadata['experiment_name'],
+              name: notebookMetadata['experiment_name']
             };
           }
           experiment_name = notebookMetadata['experiment_name'];
         } else {
-      this.resetState();
+          this.resetState();
+        }
+
+        //     let metadataVolumes = (notebookMetadata['volumes'] || []).filter(
+        //       (v: IVolumeMetadata) => v.type !== 'clone',
+        //     );
+        //     let stateVolumes = this.props.rokError
+        //       ? metadataVolumes
+        //       : metadataVolumes.map((volume: IVolumeMetadata) => {
+        //           if (
+        //             volume.type === 'new_pvc' &&
+        //             volume.annotations.length > 0 &&
+        //             volume.annotations[0].key === 'rok/origin'
+        //           ) {
+        //             return { ...volume, type: 'snap' };
+        //           }
+        //           return volume;
+        //         });
+        //     if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
+        //       metadataVolumes = stateVolumes = this.state.notebookVolumes;
+        //     } else {
+        //       metadataVolumes = metadataVolumes.concat(this.state.notebookVolumes);
+        //       stateVolumes = stateVolumes.concat(this.state.notebookVolumes);
+        //     }
+
+        let metadata: IKaleNotebookMetadata = {
+          ...notebookMetadata,
+          experiment: experiment,
+          experiment_name: experiment_name,
+          pipeline_name: notebookMetadata['pipeline_name'] || '',
+          pipeline_description: notebookMetadata['pipeline_description'] || '',
+          docker_image:
+            notebookMetadata['docker_image'] ||
+            DefaultState.metadata.docker_image,
+          steps_defaults: DefaultState.metadata.steps_defaults
+        };
+        this.setState({
+          metadata: metadata
+        });
+      } else {
+        this.setState((prevState, props) => ({
+          metadata: {
+            ...DefaultState.metadata
+          }
+        }));
       }
-
-    //     let metadataVolumes = (notebookMetadata['volumes'] || []).filter(
-    //       (v: IVolumeMetadata) => v.type !== 'clone',
-    //     );
-    //     let stateVolumes = this.props.rokError
-    //       ? metadataVolumes
-    //       : metadataVolumes.map((volume: IVolumeMetadata) => {
-    //           if (
-    //             volume.type === 'new_pvc' &&
-    //             volume.annotations.length > 0 &&
-    //             volume.annotations[0].key === 'rok/origin'
-    //           ) {
-    //             return { ...volume, type: 'snap' };
-    //           }
-    //           return volume;
-    //         });
-    //     if (stateVolumes.length === 0 && metadataVolumes.length === 0) {
-    //       metadataVolumes = stateVolumes = this.state.notebookVolumes;
-    //     } else {
-    //       metadataVolumes = metadataVolumes.concat(this.state.notebookVolumes);
-    //       stateVolumes = stateVolumes.concat(this.state.notebookVolumes);
-    //     }
-
-    //     let metadata: IKaleNotebookMetadata = {
-    //       ...notebookMetadata,
-    //       experiment: experiment,
-    //       experiment_name: experiment_name,
-    //       pipeline_name: notebookMetadata['pipeline_name'] || '',
-    //       pipeline_description: notebookMetadata['pipeline_description'] || '',
-    //       docker_image:
-    //         notebookMetadata['docker_image'] ||
-    //         DefaultState.metadata.docker_image,
-    //       // volumes: metadataVolumes,
-    //       // katib_run:
-    //       //   notebookMetadata['katib_run'] || DefaultState.metadata.katib_run,
-    //       // katib_metadata: {
-    //       //   ...DefaultKatibMetadata,
-    //       //   ...(notebookMetadata['katib_metadata'] || {}),
-    //       // },
-    //       // autosnapshot:
-    //       //   notebookMetadata['autosnapshot'] === undefined
-    //       //     ? !this.props.rokError && this.state.notebookVolumes.length > 0
-    //       //     : notebookMetadata['autosnapshot'],
-    //       // snapshot_volumes:
-    //       //   notebookMetadata['snapshot_volumes'] === undefined
-    //       //     ? !this.props.rokError && this.state.notebookVolumes.length > 0
-    //       //     : notebookMetadata['snapshot_volumes'],
-    //       // fixme: for now we are using the 'steps_defaults' field just for poddefaults
-    //       //        so we replace any existing value every time
-    //       steps_defaults: DefaultState.metadata.steps_defaults,
-    //     };
-    //     this.setState({
-    //       volumes: stateVolumes,
-    //       metadata: metadata,
-    //     });
-    //   } else {
-    //     this.setState((prevState, props) => ({
-    //       metadata: {
-    //         ...DefaultState.metadata,
-    //         volumes: prevState.notebookVolumes,
-    //         snapshot_volumes:
-    //           !this.props.rokError && prevState.notebookVolumes.length > 0,
-    //         autosnapshot:
-    //           !this.props.rokError && prevState.notebookVolumes.length > 0,
-    //       },
-    //       volumes: prevState.notebookVolumes,
-    //     }));
-    //   }
-    // } else {
-    //   this.resetState();
-    // }
+    } else {
+      this.resetState();
+    }
   };
 
   updateDeployProgress = (index: number, progress: DeployProgressState) => {
@@ -621,19 +592,20 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   runDeploymentCommand = async () => {
-    if (!this.getActiveNotebook()) {
+    const activeNotebook = this.getActiveNotebook();
+    if (!activeNotebook) {
       this.setState({ runDeployment: false });
       return;
     }
 
-    await this.getActiveNotebook().context.save();
+    await activeNotebook.context.save();
 
-    const commands = new Commands(this.getActiveNotebook(), this.props.kernel);
+    const commands = new Commands(activeNotebook, this.props.kernel);
     const _deployIndex = ++deployIndex;
     const _updateDeployProgress = (x: DeployProgressState) => {
       this.updateDeployProgress(_deployIndex, {
         ...x,
-        namespace: this.state.namespace,
+        namespace: this.state.namespace
       });
     };
 
@@ -648,9 +620,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
     if (!nbFilePath) {
       // Handle the error, show a message, or return early
-      _updateDeployProgress({
-        message: 'No active notebook path found.',
-      });
+      const extendedProgress: DeployProgressState = {
+        message: 'No active notebook path found.'
+      };
+      _updateDeployProgress(extendedProgress);
+      this.setState({ runDeployment: false });
       return;
     }
 
@@ -658,31 +632,33 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     const validationSucceeded = await commands.validateMetadata(
       nbFilePath,
       metadata,
-      _updateDeployProgress,
+      _updateDeployProgress
     );
     if (!validationSucceeded) {
       this.setState({ runDeployment: false });
       return;
     }
-
+    _updateDeployProgress({
+      message: 'Validation completed successfully'
+    });
     // SNAPSHOT VOLUMES
-    if (
-      metadata.volumes.filter((v: IVolumeMetadata) => v.type === 'clone')
-        .length > 0
-    ) {
-      const task = await commands.runSnapshotProcedure(_updateDeployProgress);
-      console.log(task);
-      if (!task) {
-        this.setState({ runDeployment: false });
-        return;
-      }
-      metadata.volumes = await commands.replaceClonedVolumes(
-        task.bucket,
-        task.result.event.object,
-        task.result.event.version,
-        metadata.volumes,
-      );
-    }
+    // if (
+    //   metadata.volumes.filter((v: IVolumeMetadata) => v.type === 'clone')
+    //     .length > 0
+    // ) {
+    //   const task = await commands.runSnapshotProcedure(_updateDeployProgress);
+    //   console.log(task);
+    //   if (!task) {
+    //     this.setState({ runDeployment: false });
+    //     return;
+    //   }
+    //   metadata.volumes = await commands.replaceClonedVolumes(
+    //     task.bucket,
+    //     task.result.event.object,
+    //     task.result.event.version,
+    //     metadata.volumes,
+    //   );
+    // }
 
     // CREATE PIPELINE
     const compileNotebook = await commands.compilePipeline(
@@ -690,12 +666,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata,
       this.props.docManager,
       this.state.deployDebugMessage,
-      _updateDeployProgress,
+      _updateDeployProgress
     );
     if (!compileNotebook) {
       this.setState({ runDeployment: false });
       return;
     }
+    _updateDeployProgress({
+      message: 'Notebook compiled successfully'
+    });
 
     // UPLOAD
     const uploadPipeline =
@@ -704,7 +683,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         ? await commands.uploadPipeline(
             compileNotebook.pipeline_package_path,
             compileNotebook.pipeline_metadata,
-            _updateDeployProgress,
+            _updateDeployProgress
           )
         : null;
 
@@ -713,7 +692,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       _updateDeployProgress({ pipeline: false });
       return;
     }
-
+    _updateDeployProgress({
+      message: 'Pipeline uploaded successfully',
+      pipeline: true
+    });
     // RUN
     if (this.state.deploymentType === 'run') {
       // if (metadata.katib_run) {
@@ -735,7 +717,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         uploadPipeline.pipeline.pipelineid,
         uploadPipeline.pipeline.versionid,
         compileNotebook.pipeline_metadata,
-        _updateDeployProgress,
+        compileNotebook.pipeline_package_path,
+        _updateDeployProgress
       );
       if (runPipeline) {
         commands.pollRun(runPipeline, _updateDeployProgress);
@@ -754,8 +737,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     const selectedExperiments: IExperiment[] = this.state.experiments.filter(
       e =>
         e.id === this.state.metadata.experiment.id ||
-        e.name === this.state.metadata.experiment.name ||
-        e.name === this.state.metadata.experiment_name,
+        e.name === this.state.metadata.experiment.name
     );
     if (this.state.experiments.length > 0 && selectedExperiments.length === 0) {
       selectedExperiments.push(this.state.experiments[0]);
@@ -829,26 +811,26 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     //   </div>
     // );
 
-    const volsPanel = (
-      <VolumesPanel
-        volumes={this.state.volumes}
-        notebookVolumes={this.state.notebookVolumes}
-        metadataVolumes={this.state.metadata.volumes}
-        notebookMountPoints={this.getNotebookMountPoints()}
-        selectVolumeTypes={this.state.selectVolumeTypes}
-        useNotebookVolumes={this.state.metadata.snapshot_volumes}
-        updateVolumesSwitch={this.updateVolumesSwitch}
-        autosnapshot={this.state.metadata.autosnapshot}
-        updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
-        rokError={this.props.rokError}
-        updateVolumes={this.updateVolumes}
-        storageClassName={this.state.metadata.storage_class_name}
-        updateStorageClassName={this.updateStorageClassName}
-        volumeAccessMode={this.state.metadata.volume_access_mode}
-        updateVolumeAccessMode={this.updateVolumeAccessMode}
-      />
-    );
-
+    // const volsPanel = (
+    //   <VolumesPanel
+    //     volumes={this.state.volumes}
+    //     notebookVolumes={this.state.notebookVolumes}
+    //     metadataVolumes={this.state.metadata.volumes}
+    //     notebookMountPoints={this.getNotebookMountPoints()}
+    //     selectVolumeTypes={this.state.selectVolumeTypes}
+    //     useNotebookVolumes={this.state.metadata.snapshot_volumes}
+    //     updateVolumesSwitch={this.updateVolumesSwitch}
+    //     autosnapshot={this.state.metadata.autosnapshot}
+    //     updateAutosnapshotSwitch={this.updateAutosnapshotSwitch}
+    //     rokError={this.props.rokError}
+    //     updateVolumes={this.updateVolumes}
+    //     storageClassName={this.state.metadata.storage_class_name}
+    //     updateStorageClassName={this.updateStorageClassName}
+    //     volumeAccessMode={this.state.metadata.volume_access_mode}
+    //     updateVolumeAccessMode={this.updateVolumeAccessMode}
+    //   />
+    // );
+    const activeNotebook = this.getActiveNotebook();
     return (
       <ThemeProvider theme={theme}>
         <div className={'kubeflow-widget'} key="kale-widget">
@@ -857,7 +839,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               <p
                 style={{
                   fontSize: 'var(--jp-ui-font-size3)',
-                  color: theme.kale.headers.main,
+                  color: theme.kale.headers.main
                 }}
                 className="kale-header"
               >
@@ -866,10 +848,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             </div>
 
             <div className="kale-component">
-              <InlineCellsMetadata
-                onMetadataEnable={this.onMetadataEnable}
-                notebook={this.getActiveNotebook()}
-              />
+              {activeNotebook && (
+                <InlineCellsMetadata
+                  onMetadataEnable={this.onMetadataEnable}
+                  notebook={activeNotebook}
+                />
+              )}
             </div>
 
             <div
@@ -927,7 +911,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
               }
             >
-              <AdvancedSettings
+              {/* <AdvancedSettings
                 title={'Advanced Settings'}
                 dockerImageValue={this.state.metadata.docker_image}
                 dockerImageDefaultValue={DefaultState.metadata.docker_image}
@@ -935,7 +919,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 debug={this.state.deployDebugMessage}
                 volsPanel={volsPanel}
                 changeDebug={this.changeDeployDebugMessage}
-              />
+              /> */}
             </div>
           </div>
           <div
@@ -949,7 +933,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             <SplitDeployButton
               running={this.state.runDeployment}
               handleClick={this.activateRunDeployState}
-              katibRun={this.state.metadata.katib_run}
             />
           </div>
 

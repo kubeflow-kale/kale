@@ -5,7 +5,6 @@ build-backend = "hatchling.build"
 [project]
 name = "kubeflow-kale-labextension"
 readme = "README.md"
-license = { file = "LICENSE" }
 requires-python = ">=3.9"
 classifiers = [
     "Framework :: Jupyter",

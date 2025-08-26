@@ -1,21 +1,4 @@
-/*
- * Copyright 2019-2020 The Kale Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-// Dependencies
-import { Cell, ICellModel, isCodeCellModel } from '@jupyterlab/cells';
+import { Cell, ICellModel, isCodeCellModel, CodeCellModel } from '@jupyterlab/cells';
 import {
   IError,
   isError,
@@ -37,7 +20,7 @@ export default class CellUtilities {
    * @throws An error message if there are issues in getting the output
    */
   public static readOutput(notebook: Notebook, index: number): any {
-    if (!notebook) {
+    if (!notebook || !notebook.model) {
       throw new Error('Notebook was null!');
     }
     if (index < 0 || index >= notebook.model.cells.length) {
@@ -78,15 +61,20 @@ export default class CellUtilities {
     index: number,
     key: string,
   ): any {
-    if (!notebook) {
+    if (!notebook || !notebook.model) {
       throw new Error('Notebook was null!');
     }
     if (index < 0 || index >= notebook.model.cells.length) {
       throw new Error('Cell index out of range.');
     }
     const cell: ICellModel = notebook.model.cells.get(index);
-    if (cell.metadata.has(key)) {
-      return cell.metadata.get(key);
+    
+    // Safe metadata access
+    const metadata = cell.metadata as any;
+    if (metadata && typeof metadata.get === 'function' && metadata.has && metadata.has(key)) {
+      return metadata.get(key);
+    } else if (metadata && metadata[key] !== undefined) {
+      return metadata[key];
     }
     return null;
   }
@@ -109,7 +97,7 @@ export default class CellUtilities {
     value: any,
     save: boolean = false,
   ): Promise<any> {
-    if (!notebookPanel) {
+    if (!notebookPanel || !notebookPanel.model) {
       throw new Error('Notebook was null!');
     }
     if (index < 0 || index >= notebookPanel.model.cells.length) {
@@ -117,7 +105,17 @@ export default class CellUtilities {
     }
     try {
       const cell: ICellModel = notebookPanel.model.cells.get(index);
-      const oldVal: any = cell.metadata.set(key, value);
+      const metadata = cell.metadata as any;
+      let oldVal: any;
+      
+      // Safe metadata setting
+      if (metadata && typeof metadata.set === 'function') {
+        oldVal = metadata.set(key, value);
+      } else if (metadata) {
+        oldVal = metadata[key];
+        metadata[key] = value;
+      }
+      
       if (save) {
         return notebookPanel.context.save();
       }
@@ -137,15 +135,22 @@ export default class CellUtilities {
   public static findCellWithMetaKey(
     notebookPanel: NotebookPanel,
     key: string,
-  ): [number, ICellModel] {
-    if (!notebookPanel) {
+  ): [number, ICellModel | null] {
+    if (!notebookPanel || !notebookPanel.model) {
       throw new Error('Notebook was null!');
     }
     const cells = notebookPanel.model.cells;
     let cell: ICellModel;
     for (let idx = 0; idx < cells.length; idx += 1) {
       cell = cells.get(idx);
-      if (cell.metadata.has(key)) {
+      const metadata = cell.metadata as any;
+      
+      // Safe metadata checking
+      const hasKey = (metadata && typeof metadata.has === 'function') 
+        ? metadata.has(key)
+        : metadata && metadata[key] !== undefined;
+        
+      if (hasKey) {
         return [idx, cell];
       }
     }
@@ -158,8 +163,8 @@ export default class CellUtilities {
    * @param index The index for the cell
    * @returns Cell - The cell at specified index, or null if not found
    */
-  public static getCell(notebook: Notebook, index: number): ICellModel {
-    if (notebook && index >= 0 && index < notebook.model.cells.length) {
+  public static getCell(notebook: Notebook, index: number): ICellModel | null {
+    if (notebook && notebook.model && index >= 0 && index < notebook.model.cells.length) {
       return notebook.model.cells.get(index);
     }
     return null;
@@ -206,7 +211,7 @@ export default class CellUtilities {
    * @returns void
    */
   public static deleteCellAtIndex(notebook: Notebook, index: number): void {
-    if (notebook === null) {
+    if (notebook === null || !notebook.model) {
       throw new Error(
         'Null or undefined parameter was given for notebook argument.',
       );
@@ -216,7 +221,11 @@ export default class CellUtilities {
     }
     // Save the old index, then set the current active cell
     let oldIndex = notebook.activeCellIndex;
-    notebook.model.cells.remove(index);
+    
+    // Use NotebookActions to delete the cell properly
+    notebook.activeCellIndex = index;
+    NotebookActions.deleteCells(notebook);
+    
     // Adjust old index to account for deleted cell.
     if (oldIndex === index) {
       if (oldIndex > 0) {
@@ -227,7 +236,13 @@ export default class CellUtilities {
     } else if (oldIndex > index) {
       oldIndex -= 1;
     }
-    notebook.activeCellIndex = oldIndex;
+    
+    // Restore the active cell index
+    if (oldIndex < notebook.widgets.length) {
+      notebook.activeCellIndex = oldIndex;
+    } else if (notebook.widgets.length > 0) {
+      notebook.activeCellIndex = notebook.widgets.length - 1;
+    }
   }
 
   /**
@@ -239,8 +254,28 @@ export default class CellUtilities {
    * @returns number - The index it where the cell was inserted
    */
   public static insertCellAtIndex(notebook: Notebook, index: number): number {
-    // Create a new cell
-    const cell = notebook.model.contentFactory.createCodeCell({});
+    if (!notebook || !notebook.model) {
+      throw new Error('Notebook model is null');
+    }
+
+    // Create a new cell - use different approaches based on available APIs
+    let cell: ICellModel;
+    const model = notebook.model as any;
+    
+    if (model.contentFactory && typeof model.contentFactory.createCodeCell === 'function') {
+      // Old API
+      cell = model.contentFactory.createCodeCell({});
+    } else if (model.sharedModel && typeof model.sharedModel.createCell === 'function') {
+      // New API
+      cell = model.sharedModel.createCell('code');
+    } else {
+      // Fallback - try to create using notebook model methods
+      try {
+        cell = (notebook.model as any).createCell('code');
+      } catch (error) {
+        throw new Error('Unable to create new cell: ' + error.message);
+      }
+    }
 
     // Save the old index, then set the current active cell
     let oldIndex = notebook.activeCellIndex;
@@ -249,17 +284,45 @@ export default class CellUtilities {
     if (oldIndex >= index) {
       oldIndex += 1;
     }
+    const cells = notebook.model.cells as any;
     if (index <= 0) {
-      notebook.model.cells.insert(0, cell);
+      // Insert at beginning
+      if (typeof cells.insert === 'function') {
+        cells.insert(0, cell);
+      } else if (typeof cells.insertAll === 'function') {
+        cells.insertAll(0, [cell]);
+      } else {
+        // Fallback
+        (cells as any).unshift(cell);
+      }
       notebook.activeCellIndex = oldIndex;
       return 0;
     }
+    
     if (index >= notebook.widgets.length) {
-      notebook.model.cells.insert(notebook.widgets.length - 1, cell);
+      // Insert at end
+      const insertIndex = notebook.widgets.length;
+      if (typeof cells.insert === 'function') {
+        cells.insert(insertIndex, cell);
+      } else if (typeof cells.insertAll === 'function') {
+        cells.insertAll(insertIndex, [cell]);
+      } else {
+        // Fallback
+        (cells as any).push(cell);
+      }
       notebook.activeCellIndex = oldIndex;
-      return notebook.widgets.length - 1;
+      return insertIndex;
     }
-    notebook.model.cells.insert(index, cell);
+    
+    // Insert at specific index
+    if (typeof cells.insert === 'function') {
+      cells.insert(index, cell);
+    } else if (typeof cells.insertAll === 'function') {
+      cells.insertAll(index, [cell]);
+    } else {
+      // Fallback
+      (cells as any).splice(index, 0, cell);
+    }
     notebook.activeCellIndex = oldIndex;
     return index;
   }
@@ -278,7 +341,7 @@ export default class CellUtilities {
     index: number,
     code: string,
   ): void {
-    if (notebook === null) {
+    if (notebook === null || !notebook.model) {
       throw new Error('Notebook was null or undefined.');
     }
     if (index < 0 || index >= notebook.model.cells.length) {
@@ -286,7 +349,21 @@ export default class CellUtilities {
     }
     const cell: ICellModel = notebook.model.cells.get(index);
     if (isCodeCellModel(cell)) {
-      cell.value.text = code;
+      // Handle different cell value APIs
+      const codeCell = cell as CodeCellModel;
+      if (codeCell.sharedModel && typeof codeCell.sharedModel.setSource === 'function') {
+        // New API
+        codeCell.sharedModel.setSource(code);
+      } else if ((codeCell as any).value && (codeCell as any).value.text !== undefined) {
+        // Old API
+        (codeCell as any).value.text = code;
+      } else if (typeof (codeCell as any).setSource === 'function') {
+        // Alternative API
+        (codeCell as any).setSource(code);
+      } else {
+        // Fallback
+        (codeCell as any).source = code;
+      }
       return;
     }
     throw new Error('Cell is not a code cell.');
@@ -329,7 +406,7 @@ export default class CellUtilities {
     code: string,
     deleteOnError: boolean,
   ): Promise<[number, string]> {
-    let insertionIndex;
+    let insertionIndex: number | undefined;
     try {
       insertionIndex = CellUtilities.insertInjectCode(
         notebookPanel.content,
@@ -344,7 +421,7 @@ export default class CellUtilities {
       );
       return [insertionIndex, output];
     } catch (error) {
-      if (deleteOnError) {
+      if (deleteOnError && insertionIndex !== undefined) {
         CellUtilities.deleteCellAtIndex(notebookPanel.content, insertionIndex);
       }
       throw error;
@@ -370,7 +447,7 @@ export default class CellUtilities {
     code: string,
     deleteOnError: boolean,
   ): Promise<[number, string]> {
-    let insertionIndex;
+    let insertionIndex: number | undefined;
     try {
       insertionIndex = CellUtilities.insertInjectCode(
         notebookPanel.content,
@@ -383,7 +460,7 @@ export default class CellUtilities {
       );
       return [insertionIndex, output];
     } catch (error) {
-      if (deleteOnError) {
+      if (deleteOnError && insertionIndex !== undefined) {
         CellUtilities.deleteCellAtIndex(notebookPanel.content, insertionIndex);
       }
       throw error;
@@ -407,7 +484,7 @@ export default class CellUtilities {
     insertAtEnd = true,
   ): Promise<string> {
     let idx: number = -1;
-    if (insertAtEnd) {
+    if (insertAtEnd && notebookPanel.content.model) {
       idx = notebookPanel.content.model.cells.length;
     }
     const [index, result]: [number, string] = await CellUtilities.insertAndRun(
@@ -432,12 +509,16 @@ export default class CellUtilities {
   public static getCellByStepName(
     notebook: NotebookPanel,
     stepName: string,
-  ): { cell: Cell; index: number } {
+  ): { cell: Cell; index: number } | undefined {
+    if (!notebook.model) {
+      return undefined;
+    }
     for (let i = 0; i < notebook.model.cells.length; i++) {
       const name = this.getStepName(notebook, i);
       if (name === stepName) {
         return { cell: notebook.content.widgets[i], index: i };
       }
     }
+    return undefined;
   }
 }

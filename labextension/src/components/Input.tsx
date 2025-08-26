@@ -168,7 +168,6 @@
 //   );
 // };
 
-
 /*
  * Copyright 2020 The Kale Authors
  *
@@ -194,14 +193,14 @@ const StyledTextField = styled(TextField)({
   width: '100%',
   '& .MuiInputLabel-root': {
     color: 'var(--jp-input-border-color)',
-    fontSize: 'var(--jp-ui-font-size2)',
+    fontSize: 'var(--jp-ui-font-size2)'
   },
   '& .MuiInputBase-input': {
-    color: 'var(--jp-ui-font-color1)',
+    color: 'var(--jp-ui-font-color1)'
   },
   '& .MuiFormHelperText-root': {
-    color: 'var(--jp-info-color0)',
-  },
+    color: 'var(--jp-info-color0)'
+  }
 });
 
 export interface InputProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
@@ -217,7 +216,7 @@ export interface InputProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
   onBeforeUpdate?: (value: string) => boolean;
 }
 
-export const Input: React.FunctionComponent<InputProps> = (props) => {
+export const Input: React.FunctionComponent<InputProps> = props => {
   const [value, setValue] = React.useState<string | number>('');
   const [error, updateError] = React.useState(false);
 
@@ -285,19 +284,19 @@ export const Input: React.FunctionComponent<InputProps> = (props) => {
     setValue(propsValue);
   }, [propsValue]); // Only re-run the effect if propsValue changes
 
-  const [debouncedCallback] = useDebouncedCallback(
+  const debouncedCallback = useDebouncedCallback(
     // function
     (value: string, idx?: number) => {
       onChange(value, idx);
     },
     // delay in ms
-    500,
+    500
   );
 
   const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = evt.target.value;
     setValue(newValue);
-    
+
     if (!onBeforeUpdate) {
       debouncedCallback(newValue, inputIndex);
     } else {
@@ -325,11 +324,11 @@ export const Input: React.FunctionComponent<InputProps> = (props) => {
       slotProps={{
         input: {
           readOnly: readOnly,
-          ...InputProps,
+          ...InputProps
         },
         inputLabel: {
-          shrink: !!placeholder || value !== '',
-        },
+          shrink: !!placeholder || value !== ''
+        }
       }}
       onChange={handleChange}
     />

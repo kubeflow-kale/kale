@@ -24,14 +24,15 @@ import {
   DialogTitle,
   Grid,
   Switch,
-} from '@material-ui/core';
+  Box
+} from '@mui/material';
 import ColorUtils from '../../lib/ColorUtils';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },
-  { value: 'amd.com/gpu', label: 'AMD' },
+  { value: 'amd.com/gpu', label: 'AMD' }
 ];
 const DEFAULT_GPU_TYPE = GPU_TYPES[0].value;
 
@@ -43,7 +44,9 @@ interface ICellMetadataEditorDialog {
   toggleDialog: Function;
 }
 
-export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEditorDialog> = props => {
+export const CellMetadataEditorDialog: React.FunctionComponent<
+  ICellMetadataEditorDialog
+> = props => {
   const handleClose = () => {
     props.toggleDialog();
   };
@@ -51,19 +54,19 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
   const limitAction = (
     action: string,
     limitKey: string,
-    limitValue: string = null,
+    limitValue: string = null
   ) => {
     return {
       action,
       limitKey,
-      limitValue,
+      limitValue
     };
   };
 
   // intersect the current limits and the GPU_TYPES. Assume there is at most 1.
   const gpuType =
     Object.keys(props.limits).filter(x =>
-      GPU_TYPES.map(t => t.value).includes(x),
+      GPU_TYPES.map(t => t.value).includes(x)
     )[0] || undefined;
   const gpuCount = props.limits[gpuType] || undefined;
 
@@ -80,35 +83,41 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
       <DialogTitle id="scroll-dialog-title">
         <Grid
           container
-          direction="row"
-          justify="space-between"
-          alignItems="center"
+          sx={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
         >
-          <Grid item xs={9}>
-            <Grid
-              container
-              direction="row"
-              justify="flex-start"
-              alignItems="center"
+          <Grid size={{ xs: 9 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'center'
+              }}
             >
               <p>Require GPU for step </p>
               <Chip
                 className={'kale-chip'}
                 style={{
                   marginLeft: '10px',
-                  backgroundColor: `#${ColorUtils.getColor(props.stepName)}`,
+                  backgroundColor: `#${ColorUtils.getColor(props.stepName)}`
                 }}
                 key={props.stepName}
                 label={props.stepName}
               />
-            </Grid>
+            </Box>
           </Grid>
-          <Grid item xs={3}>
-            <Grid
-              container
-              direction="row"
-              justify="flex-end"
-              alignItems="center"
+          <Grid size={{ xs: 3 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-end',
+                alignItems: 'center'
+              }}
             >
               <Switch
                 checked={gpuType !== undefined}
@@ -116,10 +125,12 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
                   if (c.target.checked) {
                     // default value
                     props.updateLimits([
-                      limitAction('update', DEFAULT_GPU_TYPE, '1'),
+                      limitAction('update', DEFAULT_GPU_TYPE, '1')
                     ]);
                   } else {
-                    props.updateLimits([limitAction('delete', gpuType)]);
+                    if (gpuType) {
+                      props.updateLimits([limitAction('delete', gpuType)]);
+                    }
                   }
                 }}
                 color="primary"
@@ -127,39 +138,52 @@ export const CellMetadataEditorDialog: React.FunctionComponent<ICellMetadataEdit
                 inputProps={{ 'aria-label': 'primary checkbox' }}
                 classes={{ root: 'material-switch' }}
               />
-            </Grid>
+            </Box>
           </Grid>
         </Grid>
       </DialogTitle>
       <DialogContent dividers={true} style={{ paddingTop: 0 }}>
-        <Grid container direction="column" justify="center" alignItems="center">
+        <Grid
+          container
+          sx={{
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+        >
           <Grid
             container
-            direction="row"
-            justify="space-between"
-            alignItems="center"
-            style={{ marginTop: '15px' }}
+            sx={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '15px'
+            }}
           >
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <Input
                 disabled={gpuType === undefined}
                 variant="outlined"
                 label="GPU Count"
                 value={gpuCount || 1}
-                updateValue={(v: string) =>
-                  props.updateLimits([limitAction('update', gpuType, v)])
-                }
+                updateValue={(v: string) => {
+                  if (gpuType) {
+                    props.updateLimits([limitAction('update', gpuType, v)]);
+                  }
+                }}
                 style={{ width: '95%' }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <Select
                 disabled={gpuType === undefined}
                 updateValue={(v: string) => {
-                  props.updateLimits([
-                    limitAction('delete', gpuType),
-                    limitAction('update', v, gpuCount),
-                  ]);
+                  const actions = [];
+                  if (gpuType) {
+                    actions.push(limitAction('delete', gpuType));
+                  }
+                  actions.push(limitAction('update', v, gpuCount));
+                  props.updateLimits(actions);
                 }}
                 values={GPU_TYPES}
                 value={gpuType || DEFAULT_GPU_TYPE}

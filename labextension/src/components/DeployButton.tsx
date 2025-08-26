@@ -60,7 +60,7 @@
 //   };
 
 //   const handleClose = (event: React.MouseEvent | TouchEvent) => {
-//     if (anchorRef.current && 
+//     if (anchorRef.current &&
 //       event.target instanceof Node &&
 //       anchorRef.current.contains(event.target)) {
 //       return;
@@ -161,55 +161,57 @@ import { styled } from '@mui/material/styles';
 const DeployButtonContainer = styled('div')({
   '& .deploy-button': {
     // Add any specific styling for the deploy button container
-  },
+  }
 });
 
 const StyledButtonGroup = styled(ButtonGroup)({
-  width: '100%',
+  width: '100%'
 });
 
 const MainButton = styled(Button)({
-  width: '100%',
+  width: '100%'
 });
 
 const DropdownButton = styled(Button)({
-  width: 'auto',
+  width: 'auto'
 });
 
 const StyledPopper = styled(Popper)({
-  zIndex: 2,
+  zIndex: 2
 });
 
 interface ISplitDeployButton {
   running: boolean;
   handleClick: (value: string) => void;
-  katibRun: boolean;
+  // katibRun: boolean;
 }
 
-export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = (props) => {
+export const SplitDeployButton: React.FunctionComponent<
+  ISplitDeployButton
+> = props => {
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
   const options = [
     {
-      label: 'Compile and Run' + (props.katibRun ? ' Katib Job' : ''),
-      value: 'run',
+      label: 'Compile and Run',
+      value: 'run'
     },
     { label: 'Compile and Upload', value: 'upload' },
-    { label: 'Compile and Save', value: 'compile' },
+    { label: 'Compile and Save', value: 'compile' }
   ];
 
   const handleMenuItemClick = (
     event: React.MouseEvent<HTMLLIElement>,
-    index: number,
+    index: number
   ) => {
     setSelectedIndex(index);
     setOpen(false);
   };
 
   const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
+    setOpen(prevOpen => !prevOpen);
   };
 
   const handleClose = (event: Event) => {
@@ -231,7 +233,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = (p
   return (
     <DeployButtonContainer>
       <div className="deploy-button">
-        <Grid container >
+        <Grid container>
           <Grid size={12} sx={{ padding: '4px 10px' }}>
             <StyledButtonGroup
               variant="contained"
@@ -271,7 +273,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = (p
                   {...TransitionProps}
                   style={{
                     transformOrigin:
-                      placement === 'bottom' ? 'center top' : 'center bottom',
+                      placement === 'bottom' ? 'center top' : 'center bottom'
                   }}
                 >
                   <Paper id="menu-list-grow">
@@ -281,7 +283,7 @@ export const SplitDeployButton: React.FunctionComponent<ISplitDeployButton> = (p
                           <MenuItem
                             key={option.value}
                             selected={index === selectedIndex}
-                            onClick={(event) => handleMenuItemClick(event, index)}
+                            onClick={event => handleMenuItemClick(event, index)}
                           >
                             {option.label}
                           </MenuItem>

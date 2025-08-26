@@ -36,7 +36,9 @@ interface AnnotationInputProps {
   updateValue: Function;
 }
 
-export const AnnotationInput: React.FunctionComponent<AnnotationInputProps> = props => {
+export const AnnotationInput: React.FunctionComponent<
+  AnnotationInputProps
+> = props => {
   const [annotation, setAnnotation] = React.useState({ key: '', value: '' });
 
   React.useEffect(() => {
@@ -49,7 +51,7 @@ export const AnnotationInput: React.FunctionComponent<AnnotationInputProps> = pr
     props.updateValue(
       { ...props.annotation, key: key },
       props.volumeIdx,
-      props.annotationIdx,
+      props.annotationIdx
     );
   };
 
@@ -57,7 +59,7 @@ export const AnnotationInput: React.FunctionComponent<AnnotationInputProps> = pr
     props.updateValue(
       { ...props.annotation, value: value },
       props.volumeIdx,
-      props.annotationIdx,
+      props.annotationIdx
     );
   };
 

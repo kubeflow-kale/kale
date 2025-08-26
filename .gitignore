@@ -9,7 +9,7 @@ node_modules/
 .vscode/
 kale/labextension
 kale/_version.py
-
+.kale/
 # Integration tests
 ui-tests/test-results/
 ui-tests/playwright-report/
@@ -45,6 +45,11 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+labextension/lib/
+# labextension/kubeflow-kale-labextension/
+labextension/static/
+labextension/package-lock.json
+labextension/yarn.lock
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -122,4 +127,3 @@ dmypy.json
 
 # Yarn cache
 .yarn/
-yarn.lock

@@ -18,10 +18,10 @@ import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../lib/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
-import CloseIcon from '@material-ui/icons/Close';
+import CloseIcon from '@mui/icons-material/Close';
 import ColorUtils from '../../lib/ColorUtils';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import { Button, IconButton } from '@material-ui/core';
+import { Button, IconButton } from '@mui/material';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
@@ -33,7 +33,7 @@ const CELL_TYPES = [
   { value: 'pipeline-parameters', label: 'Pipeline Parameters' },
   { value: 'pipeline-metrics', label: 'Pipeline Metrics' },
   { value: 'step', label: 'Pipeline Step' },
-  { value: 'skip', label: 'Skip Cell' },
+  { value: 'skip', label: 'Skip Cell' }
 ];
 
 export const RESERVED_CELL_NAMES = [
@@ -41,7 +41,7 @@ export const RESERVED_CELL_NAMES = [
   'functions',
   'pipeline-parameters',
   'pipeline-metrics',
-  'skip',
+  'skip'
 ];
 
 export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {
@@ -55,14 +55,14 @@ export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {
     ' preserving the current values as defaults.',
   'pipeline-metrics':
     'The variables in this cell will be transformed into pipeline metrics.',
-  skip: 'This cell will be skipped and excluded from pipeline steps',
+  skip: 'This cell will be skipped and excluded from pipeline steps'
 };
 export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
   skip: 'a9a9a9',
   'pipeline-parameters': 'ee7a1a',
   'pipeline-metrics': '773d0d',
   imports: 'a32626',
-  functions: 'a32626',
+  functions: 'a32626'
 };
 
 const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric
@@ -84,19 +84,19 @@ interface IState {
   previousStepName?: string;
   stepNameErrorMsg?: string;
   // a list of blocks that the current step can be dependent on.
-  blockDependenciesChoices?: BlockDependencyChoice[];
+  blockDependenciesChoices: BlockDependencyChoice[];
   // flag to open the metadata editor dialog dialog
   // XXX (stefano): I would like to set this as required, but the return
   // XXX (stefano): statement of updateBlockDependenciesChoices and
   // XXX (stefano): updatePreviousStepName don't allow me.
-  cellMetadataEditorDialog?: boolean;
+  cellMetadataEditorDialog: boolean;
 }
 
 const DefaultState: IState = {
-  previousStepName: null,
+  previousStepName: undefined,
   stepNameErrorMsg: STEP_NAME_ERROR_MSG,
   blockDependenciesChoices: [],
-  cellMetadataEditorDialog: false,
+  cellMetadataEditorDialog: false
 };
 
 /**
@@ -104,7 +104,8 @@ const DefaultState: IState = {
  */
 export class CellMetadataEditor extends React.Component<IProps, IState> {
   static contextType = CellMetadataContext;
-  editorRef: React.RefObject<HTMLDivElement> = null;
+  context!: React.ContextType<typeof CellMetadataContext>;
+  editorRef: React.RefObject<HTMLDivElement>;
 
   constructor(props: IProps) {
     super(props);
@@ -132,7 +133,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       TagsUtils.resetCell(
         this.props.notebook,
         this.context.activeCellIndex,
-        this.props.stepName,
+        this.props.stepName || ''
       );
     }
   };
@@ -150,15 +151,27 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       return;
     }
     // get the HTML element corresponding to the current active cell
-    const metadataWrapper = this.props.notebook.content.node.childNodes[
+    const notebookContent = this.props.notebook.content as any;
+    if (!notebookContent?.node?.childNodes) {
+      return;
+    }
+    const metadataWrapper = notebookContent.node.childNodes[
       this.context.activeCellIndex
     ] as HTMLElement;
+    if (!metadataWrapper) {
+      return;
+    }
     const editor = this.editorRef.current;
     const inlineElement = metadataWrapper.querySelector(
-      '.kale-inline-cell-metadata',
+      '.kale-inline-cell-metadata'
     );
     const elem = metadataWrapper.querySelector('.moved');
-    if (elem && !elem.querySelector('.kale-metadata-editor-wrapper')) {
+    if (
+      editor &&
+      elem &&
+      !elem.querySelector('.kale-metadata-editor-wrapper') &&
+      inlineElement
+    ) {
       elem.insertBefore(editor, inlineElement.nextSibling);
     }
   }
@@ -166,14 +179,33 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
   componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
     this.hideEditorIfNotCodeCell();
     this.moveEditor();
-    this.setState(this.updateBlockDependenciesChoices);
-    this.setState(this.updatePreviousStepName);
+    // this.setState(this.updateBlockDependenciesChoices);
+    // this.setState(this.updatePreviousStepName);
+    const dependenciesState = this.updateBlockDependenciesChoices(
+      this.state,
+      this.props
+    );
+    if (dependenciesState) {
+      this.setState(dependenciesState);
+    }
+
+    const previousStepState = this.updatePreviousStepName(
+      this.state,
+      this.props
+    );
+    if (previousStepState) {
+      this.setState(previousStepState);
+    }
   }
 
   hideEditorIfNotCodeCell() {
-    if (this.props.notebook && !this.props.notebook.isDisposed) {
+    if (
+      this.props.notebook &&
+      !this.props.notebook.isDisposed &&
+      this.props.notebook.model
+    ) {
       const cellModel = this.props.notebook.model.cells.get(
-        this.context.activeCellIndex,
+        this.context.activeCellIndex
       );
       if (!isCodeCellModel(cellModel) && this.context.isEditorVisible) {
         this.closeEditor();
@@ -189,8 +221,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
    */
   updateBlockDependenciesChoices(
     state: Readonly<IState>,
-    props: Readonly<IProps>,
-  ): IState {
+    props: Readonly<IProps>
+  ): Pick<IState, 'blockDependenciesChoices'> | null {
     if (!props.notebook) {
       return null;
     }
@@ -198,7 +230,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const dependencyChoices: BlockDependencyChoice[] = allBlocks
       // remove all reserved names and current step name
       .filter(
-        el => !RESERVED_CELL_NAMES.includes(el) && !(el === props.stepName),
+        el => !RESERVED_CELL_NAMES.includes(el) && !(el === props.stepName)
       )
       .map(name => ({ value: name, color: `#${ColorUtils.getColor(name)}` }));
 
@@ -212,14 +244,14 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
   updatePreviousStepName(
     state: Readonly<IState>,
-    props: Readonly<IProps>,
-  ): IState {
+    props: Readonly<IProps>
+  ): Pick<IState, 'previousStepName'> | null {
     if (!props.notebook) {
       return null;
     }
     const prevBlockName = TagsUtils.getPreviousBlock(
       props.notebook.content,
-      this.context.activeCellIndex,
+      this.context.activeCellIndex
     );
     if (prevBlockName === this.state.previousStepName) {
       return null;
@@ -230,19 +262,19 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
   }
 
   updateCurrentBlockName = (value: string) => {
-    const oldBlockName: string = this.props.stepName;
+    const oldBlockName: string = this.props.stepName || '';
     let currentCellMetadata = {
       prevBlockNames: this.props.stepDependencies,
-      limits: this.props.limits,
-      blockName: value,
+      limits: this.props.limits || {},
+      blockName: value
     };
 
     TagsUtils.setKaleCellTags(
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      false,
-    ).then(oldValue => {
+      false
+    ).then((oldValue: any) => {
       TagsUtils.updateKaleCellsTags(this.props.notebook, oldBlockName, value);
     });
   };
@@ -252,16 +284,16 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
    */
   updatePrevBlocksNames = (previousBlocks: string[]) => {
     let currentCellMetadata = {
-      blockName: this.props.stepName,
-      limits: this.props.limits,
-      prevBlockNames: previousBlocks,
+      blockName: this.props.stepName || '',
+      limits: this.props.limits || {},
+      prevBlockNames: previousBlocks
     };
 
     TagsUtils.setKaleCellTags(
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
+      true
     );
   };
 
@@ -273,32 +305,32 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       action: 'update' | 'delete';
       limitKey: string;
       limitValue?: string;
-    }[],
+    }[]
   ) => {
     let limits = { ...this.props.limits };
     actions.forEach(action => {
-      if (action.action === 'update') {
+      if (action.action === 'update' && action.limitValue !== undefined) {
         limits[action.limitKey] = action.limitValue;
       }
       if (
         action.action === 'delete' &&
-        Object.keys(this.props.limits).includes(action.limitKey)
+        Object.keys(this.props.limits || {}).includes(action.limitKey)
       ) {
         delete limits[action.limitKey];
       }
     });
 
     let currentCellMetadata = {
-      blockName: this.props.stepName,
+      blockName: this.props.stepName || '',
       prevBlockNames: this.props.stepDependencies,
-      limits: limits,
+      limits: limits
     };
 
     TagsUtils.setKaleCellTags(
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
+      true
     );
   };
 
@@ -334,12 +366,12 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
   toggleTagsEditorDialog() {
     this.setState({
-      cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog,
+      cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog
     });
   }
 
   render() {
-    const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName)
+    const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName || '')
       ? this.props.stepName
       : 'step';
     const cellColor = this.props.stepName
@@ -369,7 +401,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               <Select
                 updateValue={this.updateCurrentCellType}
                 values={CELL_TYPES}
-                value={cellType}
+                value={cellType || 'step'}
                 label={'Cell type'}
                 index={0}
                 variant="outlined"
@@ -417,7 +449,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                     variant="contained"
                     size="small"
                     title="GPU"
-                    onClick={_ => this.toggleTagsEditorDialog()}
+                    onClick={() => this.toggleTagsEditorDialog()}
                     style={{ width: '5%' }}
                   >
                     GPU
@@ -447,7 +479,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
         <CellMetadataEditorDialog
           open={this.state.cellMetadataEditorDialog}
           toggleDialog={this.toggleTagsEditorDialog}
-          stepName={this.props.stepName}
+          stepName={this.props.stepName || ''}
           limits={this.props.limits || {}}
           updateLimits={this.updateCurrentLimits}
         />

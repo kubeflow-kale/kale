@@ -19,15 +19,15 @@ import { CircularProgress } from '@mui/material';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';
-import { IKatibExperiment } from '../LeftPanel';
+// import { IKatibExperiment } from '../LeftPanel';
 
 export type DeployProgressState = {
   showValidationProgress?: boolean;
   notebookValidation?: boolean;
   validationWarnings?: boolean;
-  showSnapshotProgress?: boolean;
+  // showSnapshotProgress?: boolean;
   task?: any;
-  snapshotWarnings?: any;
+  // snapshotWarnings?: any;
   showCompileProgress?: boolean;
   compiledPath?: string;
   compileWarnings?: any;
@@ -37,13 +37,14 @@ export type DeployProgressState = {
   showRunProgress?: boolean;
   runPipeline?: any;
   runWarnings?: any;
-  showKatibProgress?: boolean;
-  katib?: IKatibExperiment;
-  showKatibKFPExperiment?: boolean;
-  katibKFPExperiment?: { id: string; name: string };
+  // showKatibProgress?: boolean;
+  // katib?: IKatibExperiment;
+  // showKatibKFPExperiment?: boolean;
+  // katibKFPExperiment?: { id: string; name: string };
   deleted?: boolean;
   docManager?: IDocumentManager;
   namespace?: string;
+  message?: string;
 };
 
 interface DeploysProgress {
@@ -51,12 +52,19 @@ interface DeploysProgress {
   onPanelRemove: (index: number) => void;
 }
 
-export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props => {
-  const [items, setItems] = React.useState([]);
-  const getItems = (_deploys: any) => {
+export const DeploysProgress: React.FunctionComponent<
+  DeploysProgress
+> = props => {
+  const [items, setItems] = React.useState<React.JSX.Element[]>([]);
+  const getItems = (_deploys: {
+    [key: number]: DeployProgressState;
+  }): React.JSX.Element[] => {
     return Object.entries(_deploys)
-      .filter((dp: [string, DeployProgressState]) => !dp[1].deleted)
-      .map((dp: [string, DeployProgressState]) => {
+      .filter((dp): dp is [string, DeployProgressState] => {
+        // Type guard to ensure proper typing
+        return dp[1] && typeof dp[1] === 'object' && !dp[1].deleted;
+      })
+      .map((dp: [string, DeployProgressState]): React.JSX.Element => {
         const index = dp[0];
         const dpState = dp[1];
         return (
@@ -65,9 +73,9 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
             showValidationProgress={dpState.showValidationProgress}
             notebookValidation={dpState.notebookValidation}
             validationWarnings={dpState.validationWarnings}
-            showSnapshotProgress={dpState.showSnapshotProgress}
+            // showSnapshotProgress={dpState.showSnapshotProgress}
             task={dpState.task}
-            snapshotWarnings={dpState.snapshotWarnings}
+            // snapshotWarnings={dpState.snapshotWarnings}
             showCompileProgress={dpState.showCompileProgress}
             compiledPath={dpState.compiledPath}
             compileWarnings={dpState.compileWarnings}
@@ -77,11 +85,11 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
             showRunProgress={dpState.showRunProgress}
             runPipeline={dpState.runPipeline}
             runWarnings={dpState.runWarnings}
-            showKatibProgress={dpState.showKatibProgress}
-            katib={dpState.katib}
-            showKatibKFPExperiment={dpState.showKatibKFPExperiment}
-            katibKFPExperiment={dpState.katibKFPExperiment}
-            onRemove={_onPanelRemove(+index)}
+            // showKatibProgress={dpState.showKatibProgress}
+            // katib={dpState.katib}
+            // showKatibKFPExperiment={dpState.showKatibKFPExperiment}
+            // katibKFPExperiment={dpState.katibKFPExperiment}
+            onRemove={_onPanelRemove(Number(index))}
             docManager={dpState.docManager}
             namespace={dpState.namespace}
           />
@@ -92,7 +100,9 @@ export const DeploysProgress: React.FunctionComponent<DeploysProgress> = props =
   const _onPanelRemove = (index?: number) => {
     return () => {
       console.log('remove', index);
-      props.onPanelRemove(index);
+      if (typeof index === 'number') {
+        props.onPanelRemove(index);
+      }
     };
   };
 

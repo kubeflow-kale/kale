@@ -31,7 +31,7 @@ export const RokInput: React.FunctionComponent<IRokInput> = props => {
 
   const state = React.useState({
     chooserId: 'vol:' + rest.inputIndex + 'annotation:' + annotationIdx,
-    origin: window.location.origin,
+    origin: window.location.origin
   });
 
   const openFileChooser = () => {
@@ -56,7 +56,7 @@ export const RokInput: React.FunctionComponent<IRokInput> = props => {
         `&create=${create}` +
         `&chooser-id=${state[0].chooserId}`,
       'Chooser',
-      `height=500,width=600,menubar=0`,
+      `height=500,width=600,menubar=0`
     );
   };
 
@@ -94,7 +94,7 @@ export const RokInput: React.FunctionComponent<IRokInput> = props => {
           <BrowseInRokBlue />
         </Button>
       </InputAdornment>
-    ),
+    )
   };
 
   return <Input InputProps={InputProps} {...rest} />;

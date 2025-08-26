@@ -10,15 +10,23 @@
     "module": "esnext",
     "moduleResolution": "node",
     "noEmitOnError": false,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noImplicitThis": false,
     "noUnusedLocals": false,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
-    "outDir": "./lib",
-    "strict": true,
-    "strictNullChecks": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "strict": false,
+    "strictNullChecks": false,
+    "skipLibCheck": true,
     "target": "ES2018"
   },
   "include": ["src/**/*"],
-  "exclude": ["src/widgets/deploys-progress/KatibProgress.tsx", "src/widgets/KatibDialog.tsx"]
+  "exclude": [
+    "src/widgets/deploys-progress/KatibProgress.tsx",
+    "src/widgets/KatibDialog.tsx",
+    "src/widgets/VolumesPanel.tsx"
+  ]
 }

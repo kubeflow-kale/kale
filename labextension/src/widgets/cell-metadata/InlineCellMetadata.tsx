@@ -19,20 +19,20 @@ import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import {
   IObservableList,
-  IObservableUndoableList,
+  IObservableUndoableList
 } from '@jupyterlab/observables';
 import {
   Cell,
   CodeCellModel,
   ICellModel,
-  isCodeCellModel,
+  isCodeCellModel
 } from '@jupyterlab/cells';
 import CellUtils from '../../lib/CellUtils';
 import TagsUtils from '../../lib/TagsUtils';
 import { InlineMetadata } from './InlineMetadata';
 import {
   CellMetadataEditor,
-  IProps as EditorProps,
+  IProps as EditorProps
 } from './CellMetadataEditor';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Switch } from '@mui/material';
@@ -56,11 +56,11 @@ interface IState {
 
 const DefaultState: IState = {
   activeCellIndex: 0,
-  prevBlockName: null,
+  prevBlockName: undefined,
   metadataCmp: [],
   checked: false,
   editors: {},
-  isEditorVisible: false,
+  isEditorVisible: false
 };
 
 type SaveState = 'started' | 'completed' | 'failed';
@@ -81,7 +81,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
 
   componentDidUpdate = async (
     prevProps: Readonly<IProps>,
-    prevState: Readonly<IState>,
+    prevState: Readonly<IState>
   ) => {
     if (!this.props.notebook && prevProps.notebook) {
       // no notebook
@@ -108,7 +108,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       this.connectHandlersToNotebook(this.props.notebook);
       this.refreshEditorsPropsAndInlineMetadata();
       this.setState({
-        activeCellIndex: notebook.content.activeCellIndex,
+        activeCellIndex: notebook.content.activeCellIndex
       });
     });
   };
@@ -116,7 +116,9 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   connectHandlersToNotebook = (notebook: NotebookPanel) => {
     notebook.context.saveState.connect(this.handleSaveState);
     notebook.content.activeCellChanged.connect(this.onActiveCellChanged);
-    notebook.model.cells.changed.connect(this.handleCellChange);
+    if (notebook.model) {
+      notebook.model.cells.changed.connect(this.handleCellChange);
+    }
   };
 
   disconnectHandlersFromNotebook = (notebook: NotebookPanel) => {
@@ -128,9 +130,9 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     }
   };
 
-  onActiveCellChanged = (notebook: Notebook, activeCell: Cell) => {
+  onActiveCellChanged = (notebook: Notebook, activeCell: Cell | null) => {
     this.setState({
-      activeCellIndex: notebook.activeCellIndex,
+      activeCellIndex: notebook.activeCellIndex
     });
   };
 
@@ -141,8 +143,8 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   };
 
   handleCellChange = (
-    cells: IObservableUndoableList<ICellModel>,
-    args: IObservableList.IChangedArgs<ICellModel>,
+    cells: any,
+    args: IObservableList.IChangedArgs<ICellModel>
   ) => {
     this.refreshEditorsPropsAndInlineMetadata();
 
@@ -156,7 +158,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         args.newIndex,
         'tags',
         [],
-        true,
+        true
       );
     }
 
@@ -181,16 +183,24 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       // When drawing cell metadata on Kale enable/disable, the targeted
       // cell may be lost. Therefore, we select and scroll to the active
       // cell.
-      if (this.props.notebook && this.props.notebook.content.activeCellIndex) {
-        setTimeout(
-          NotebookUtils.selectAndScrollToCell,
-          200,
-          this.props.notebook,
-          {
-            cell: this.props.notebook.content.activeCell,
-            index: this.props.notebook.content.activeCellIndex,
-          },
-        );
+      if (
+        this.props.notebook &&
+        this.props.notebook.content &&
+        this.props.notebook.content.activeCellIndex !== undefined &&
+        this.props.notebook.content.activeCellIndex >= 0
+      ) {
+        const activeCell = this.props.notebook.content.activeCell;
+        if (activeCell && activeCell.node) {
+          setTimeout(
+            NotebookUtils.selectAndScrollToCell,
+            200,
+            this.props.notebook,
+            {
+              cell: activeCell,
+              index: this.props.notebook.content.activeCellIndex
+            }
+          );
+        }
       }
     } else {
       this.setState({ isEditorVisible: false });
@@ -217,16 +227,15 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   };
 
   generateEditorsPropsAndInlineMetadata = () => {
-    if (!this.props.notebook) {
+    if (!this.props.notebook || !this.props.notebook.model) {
       return;
     }
     const metadata: any[] = [];
     const editors: Editors = {};
     const cells = this.props.notebook.model.cells;
     for (let index = 0; index < cells.length; index++) {
-      const isCodeCell = isCodeCellModel(
-        this.props.notebook.model.cells.get(index),
-      );
+      const cellModel = this.props.notebook.model.cells.get(index);
+      const isCodeCell = isCodeCellModel(cellModel);
       if (!isCodeCell) {
         continue;
       }
@@ -235,7 +244,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       if (!tags) {
         tags = {
           blockName: '',
-          prevBlockNames: [],
+          prevBlockNames: []
         };
       }
       let previousBlockName = '';
@@ -243,31 +252,41 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       if (!tags.blockName) {
         previousBlockName = TagsUtils.getPreviousBlock(
           this.props.notebook.content,
-          index,
+          index
         );
       }
       editors[index] = {
         notebook: this.props.notebook,
         stepName: tags.blockName || '',
         stepDependencies: tags.prevBlockNames || [],
-        limits: tags.limits || {},
+        limits: tags.limits || {}
       };
+
+      const cellElement = this.props.notebook.content.widgets[index]
+        .node as HTMLElement;
+
+      if (!cellElement) {
+        console.warn(
+          `Failed to get cell element for index ${index}, skipping metadata creation`
+        );
+        continue;
+      }
       metadata.push(
         <InlineMetadata
           key={index}
-          cellElement={this.props.notebook.content.node.childNodes[index]}
+          cellElement={cellElement}
           blockName={tags.blockName}
           stepDependencies={tags.prevBlockNames}
           limits={tags.limits || {}}
           previousBlockName={previousBlockName}
           cellIndex={index}
-        />,
+        />
       );
     }
 
     this.setState({
       metadataCmp: metadata,
-      editors: editors,
+      editors: editors
     });
   };
 
@@ -281,9 +300,25 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   render() {
     // Get the editor props of the active cell, so that just one editor is
     // rendered at any given time.
-    const editorProps: EditorProps = {
-      ...this.state.editors[this.state.activeCellIndex],
-    };
+    const activeEditorData = this.state.editors?.[this.state.activeCellIndex];
+
+    //notebook is always a NotebookPanel (never undefined)
+    // stepName is always a string (never undefined)
+    // stepDependencies is always a string array (never undefined)
+    // limits is always an object (never undefined)
+    const editorProps: EditorProps = activeEditorData
+      ? {
+          notebook: activeEditorData.notebook,
+          stepName: activeEditorData.stepName || '',
+          stepDependencies: activeEditorData.stepDependencies || [],
+          limits: activeEditorData.limits || {}
+        }
+      : {
+          notebook: this.props.notebook,
+          stepName: '',
+          stepDependencies: [],
+          limits: {}
+        };
     return (
       <React.Fragment>
         <div className="toolbar input-container">
@@ -302,7 +337,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
             value={{
               activeCellIndex: this.state.activeCellIndex,
               isEditorVisible: this.state.isEditorVisible,
-              onEditorVisibilityChange: this.onEditorVisibilityChange,
+              onEditorVisibilityChange: this.onEditorVisibilityChange
             }}
           >
             <CellMetadataEditor

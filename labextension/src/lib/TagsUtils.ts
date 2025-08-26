@@ -87,8 +87,8 @@ export default class TagsUtils {
         if (RESERVED_CELL_NAMES.includes(v)) {
           return v;
         }
-        if (v.startsWith('block:')) {
-          return v.replace('block:', '');
+        if (v.startsWith('step:')) {
+          return v.replace('step:', '');
         }
       });
 
@@ -238,26 +238,40 @@ export default class TagsUtils {
     if (!(removedCell instanceof CodeCellModel)) {
       return;
     }
-    const tags = removedCell.metadata.get('tags') as string[];
+    const metadata = removedCell.metadata as any;
+    let tagsValue;
+    if (metadata && typeof metadata.get === 'function') {
+      tagsValue = metadata.get('tags');
+    } else if (metadata && metadata.tags) {
+      tagsValue = metadata.tags;
+    } else {
+      return; // No tags found
+    }
+    if (!Array.isArray(tagsValue)) {
+      return;
+    }
+    const tags = tagsValue.filter((tag): tag is string => typeof tag === 'string');
     if (!tags) {
       return;
     }
     const blockName = tags
-      .filter(t => t.startsWith('block:'))
-      .map(t => t.replace('block:', ''))[0];
+      .filter(t => t.startsWith('step:'))
+      .map(t => t.replace('step:', ''))[0];
     if (!blockName) {
       return;
     }
     const removedDependency = `prev:${blockName}`;
     this.cellsToArray(notebook)
-      .filter(cell =>
-        (cell.metadata.get('tags') as string[]).includes(removedDependency),
-      )
+      .filter(cell => {
+        const cellTags = cell.metadata.get('tags');
+        return Array.isArray(cellTags) && cellTags.includes(removedDependency);
+      })
       .forEach(cell => {
-        const newTags = (cell.metadata.get('tags') as string[]).filter(
-          e => e !== removedDependency,
-        );
-        cell.metadata.set('tags', newTags);
+        const cellTags = cell.metadata.get('tags');
+        if (Array.isArray(cellTags)) {
+          const newTags = cellTags.filter(e => e !== removedDependency);
+          cell.metadata.set('tags', newTags);
+        }
       });
     notebook.context.save();
   }

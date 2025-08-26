@@ -17,7 +17,7 @@
 import * as React from 'react';
 import { Button, Switch, Zoom } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
-import DeleteIcon from '@mui/icons-material/Delete';;
+import DeleteIcon from '@mui/icons-material/Delete';
 import { IVolumeMetadata } from './LeftPanel';
 import { IRPCError, rokErrorTooltip } from '../lib/RPCUtils';
 import { Input } from '../components/Input';
@@ -35,26 +35,26 @@ const DEFAULT_EMPTY_VOLUME: IVolumeMetadata = {
   size: 1,
   size_type: 'Gi',
   snapshot: false,
-  snapshot_name: '',
+  snapshot_name: ''
 };
 
 const DEFAULT_EMPTY_ANNOTATION: IAnnotation = {
   key: '',
-  value: '',
+  value: ''
 };
 
 export const SELECT_VOLUME_SIZE_TYPES = [
   { label: 'Gi', value: 'Gi', base: 1024 ** 3 },
   { label: 'Mi', value: 'Mi', base: 1024 ** 2 },
   { label: 'Ki', value: 'Ki', base: 1024 ** 1 },
-  { label: '', value: '', base: 1024 ** 0 },
+  { label: '', value: '', base: 1024 ** 0 }
 ];
 
 enum VOLUME_TOOLTIP {
   CREATE_EMTPY_VOLUME = 'Mount an empty volume on your pipeline steps',
   CLONE_NOTEBOOK_VOLUME = "Clone a Notebook Server's volume and mount it on your pipeline steps",
   CLONE_EXISTING_SNAPSHOT = 'Clone a Rok Snapshot and mount it on your pipeline steps',
-  USE_EXISTING_VOLUME = 'Mount an existing volume on your pipeline steps',
+  USE_EXISTING_VOLUME = 'Mount an existing volume on your pipeline steps'
 }
 
 export const SELECT_VOLUME_TYPES: ISelectOption[] = [
@@ -62,26 +62,26 @@ export const SELECT_VOLUME_TYPES: ISelectOption[] = [
     label: 'Create Empty Volume',
     value: 'new_pvc',
     invalid: false,
-    tooltip: VOLUME_TOOLTIP.CREATE_EMTPY_VOLUME,
+    tooltip: VOLUME_TOOLTIP.CREATE_EMTPY_VOLUME
   },
   {
     label: 'Clone Notebook Volume',
     value: 'clone',
     invalid: true,
-    tooltip: VOLUME_TOOLTIP.CLONE_NOTEBOOK_VOLUME,
+    tooltip: VOLUME_TOOLTIP.CLONE_NOTEBOOK_VOLUME
   },
   {
     label: 'Clone Existing Snapshot',
     value: 'snap',
     invalid: true,
-    tooltip: VOLUME_TOOLTIP.CLONE_EXISTING_SNAPSHOT,
+    tooltip: VOLUME_TOOLTIP.CLONE_EXISTING_SNAPSHOT
   },
   {
     label: 'Use Existing Volume',
     value: 'pvc',
     invalid: false,
-    tooltip: VOLUME_TOOLTIP.USE_EXISTING_VOLUME,
-  },
+    tooltip: VOLUME_TOOLTIP.USE_EXISTING_VOLUME
+  }
 ];
 
 interface VolumesPanelProps {
@@ -102,7 +102,9 @@ interface VolumesPanelProps {
   updateVolumeAccessMode: Function;
 }
 
-export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props => {
+export const VolumesPanel: React.FunctionComponent<
+  VolumesPanelProps
+> = props => {
   // Volume managers
   const deleteVolume = (idx: number) => {
     // If we delete the last volume, turn autosnapshot off
@@ -110,7 +112,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       props.volumes.length === 1 ? false : props.autosnapshot;
     props.updateVolumes(
       removeIdxFromArray(idx, props.volumes),
-      removeIdxFromArray(idx, props.metadataVolumes),
+      removeIdxFromArray(idx, props.metadataVolumes)
     );
     props.updateAutosnapshotSwitch(autosnapshot);
   };
@@ -123,7 +125,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         : !props.rokError && props.autosnapshot;
     props.updateVolumes(
       [...props.volumes, DEFAULT_EMPTY_VOLUME],
-      [...props.metadataVolumes, DEFAULT_EMPTY_VOLUME],
+      [...props.metadataVolumes, DEFAULT_EMPTY_VOLUME]
     );
     props.updateAutosnapshotSwitch(autosnapshot);
   };
@@ -143,7 +145,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         return key === idx
           ? { ...item, type: kaleType, annotations: annotations }
           : item;
-      }),
+      })
     );
   };
   const updateVolumeName = (name: string, idx: number) => {
@@ -153,19 +155,19 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       }),
       props.metadataVolumes.map((item, key) => {
         return key === idx ? { ...item, name: name } : item;
-      }),
+      })
     );
   };
   const updateVolumeMountPoint = (mountPoint: string, idx: number) => {
     let cloneVolume: IVolumeMetadata = null;
     if (props.volumes[idx].type === 'clone') {
       cloneVolume = props.notebookVolumes.filter(
-        v => v.mount_point === mountPoint,
+        v => v.mount_point === mountPoint
       )[0];
     }
     const updateItem = (
       item: IVolumeMetadata,
-      key: number,
+      key: number
     ): IVolumeMetadata => {
       if (key === idx) {
         if (item.type === 'clone') {
@@ -183,7 +185,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       }),
       props.metadataVolumes.map((item, key) => {
         return updateItem(item, key);
-      }),
+      })
     );
   };
   const updateVolumeSnapshot = (idx: number) => {
@@ -192,7 +194,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         return key === idx
           ? {
               ...props.volumes[idx],
-              snapshot: !props.volumes[idx].snapshot,
+              snapshot: !props.volumes[idx].snapshot
             }
           : item;
       }),
@@ -200,10 +202,10 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         return key === idx
           ? {
               ...props.metadataVolumes[idx],
-              snapshot: !props.metadataVolumes[idx].snapshot,
+              snapshot: !props.metadataVolumes[idx].snapshot
             }
           : item;
-      }),
+      })
     );
   };
   const updateVolumeSnapshotName = (name: string, idx: number) => {
@@ -217,7 +219,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         return key === idx
           ? { ...props.metadataVolumes[idx], snapshot_name: name }
           : item;
-      }),
+      })
     );
   };
   const updateVolumeSize = (size: number, idx: number) => {
@@ -229,7 +231,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         return key === idx
           ? { ...props.metadataVolumes[idx], size: size }
           : item;
-      }),
+      })
     );
   };
   const updateVolumeSizeType = (sizeType: string, idx: number) => {
@@ -243,7 +245,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
         return key === idx
           ? { ...props.metadataVolumes[idx], size_type: sizeType }
           : item;
-      }),
+      })
     );
   };
   const addAnnotation = (idx: number) => {
@@ -251,7 +253,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       if (key === idx) {
         return {
           ...item,
-          annotations: [...item.annotations, DEFAULT_EMPTY_ANNOTATION],
+          annotations: [...item.annotations, DEFAULT_EMPTY_ANNOTATION]
         };
       } else {
         return item;
@@ -263,7 +265,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       }),
       props.metadataVolumes.map((item, key) => {
         return updateItem(item, key);
-      }),
+      })
     );
   };
   const deleteAnnotation = (volumeIdx: number, annotationIdx: number) => {
@@ -271,7 +273,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       if (key === volumeIdx) {
         return {
           ...item,
-          annotations: removeIdxFromArray(annotationIdx, item.annotations),
+          annotations: removeIdxFromArray(annotationIdx, item.annotations)
         };
       } else {
         return item;
@@ -283,13 +285,13 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       }),
       props.metadataVolumes.map((item, key) => {
         return updateItem(item, key);
-      }),
+      })
     );
   };
   const updateVolumeAnnotation = (
     annotation: { key: string; value: string },
     volumeIdx: number,
-    annotationIdx: number,
+    annotationIdx: number
   ) => {
     const updateItem = (item: IVolumeMetadata, key: number) => {
       if (key === volumeIdx) {
@@ -298,8 +300,8 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
           annotations: updateIdxInArray(
             annotation,
             annotationIdx,
-            item.annotations,
-          ),
+            item.annotations
+          )
         };
       } else {
         return item;
@@ -311,7 +313,7 @@ export const VolumesPanel: React.FunctionComponent<VolumesPanelProps> = props =>
       }),
       props.metadataVolumes.map((item, key) => {
         return updateItem(item, key);
-      }),
+      })
     );
   };
 

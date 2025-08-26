@@ -20,7 +20,7 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
   ILabShell,
-  ILayoutRestorer,
+  ILayoutRestorer
 } from '@jupyterlab/application';
 
 import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
@@ -43,14 +43,14 @@ import {
   BaseError,
   IRPCError,
   RPCError,
-  RPC_CALL_STATUS,
+  RPC_CALL_STATUS
 } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
-  'kubeflow-kale:IKubeflowKale',
+  'kubeflow-kale:IKubeflowKale'
 );
 
 export interface IKubeflowKale {
@@ -66,7 +66,7 @@ export default {
   id,
   requires: [ILabShell, ILayoutRestorer, INotebookTracker, IDocumentManager],
   provides: IKubeflowKale,
-  autoStart: true,
+  autoStart: true
 } as JupyterFrontEndPlugin<IKubeflowKale>;
 
 async function activate(
@@ -74,55 +74,13 @@ async function activate(
   labShell: ILabShell,
   restorer: ILayoutRestorer,
   tracker: INotebookTracker,
-  docManager: IDocumentManager,
+  docManager: IDocumentManager
 ): Promise<IKubeflowKale> {
-  let widget: ReactWidget;
-  const kernel: Kernel.IKernelConnection = await NotebookUtils.createNewKernel();
+  let widget: ReactWidget | undefined;
+  const kernel: Kernel.IKernelConnection =
+    await NotebookUtils.createNewKernel();
   window.addEventListener('beforeunload', () => kernel.shutdown());
   window.addEventListener('unhandledrejection', globalUnhandledRejection);
-  // TODO: backend can become an Enum that indicates the type of
-  //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
-  const backend = await getBackend(kernel);
-  let rokError: IRPCError = null;
-  if (backend) {
-    try {
-      await executeRpc(kernel, 'log.setup_logging');
-    } catch (error) {
-      globalUnhandledRejection({ reason: error });
-      throw error;
-    }
-
-    try {
-      await executeRpc(kernel, 'rok.check_rok_availability');
-    } catch (error) {
-      const unexpectedErrorCodes = [
-        RPC_CALL_STATUS.EncodingError,
-        RPC_CALL_STATUS.ImportError,
-        RPC_CALL_STATUS.UnhandledError,
-      ];
-      if (
-        error instanceof RPCError &&
-        !unexpectedErrorCodes.includes(error.error.code)
-      ) {
-        rokError = error.error;
-        console.warn('Rok is not available', rokError);
-      } else {
-        globalUnhandledRejection({ reason: error });
-        throw error;
-      }
-    }
-  } else {
-    rokError = {
-      rpc: 'rok.check_rok_availability',
-      code: RPC_CALL_STATUS.ImportError,
-      err_message: 'Rok is not available',
-      err_details:
-        'To use this Rok feature you first need Kale running' +
-        ' in the backend.',
-      err_cls: 'importError',
-    };
-    console.warn('Rok is not available', rokError);
-  }
 
   /**
    * Detect if Kale is installed
@@ -137,13 +95,56 @@ async function activate(
     return true;
   }
 
+  // TODO: backend can become an Enum that indicates the type of
+  //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
+  const backend = await getBackend(kernel);
+  // let rokError: IRPCError = null;
+  if (backend) {
+    try {
+      await executeRpc(kernel, 'log.setup_logging');
+    } catch (error) {
+      globalUnhandledRejection({ reason: error });
+      throw error;
+    }
+  }
+  //   try {
+  //     await executeRpc(kernel, 'rok.check_rok_availability');
+  //   } catch (error) {
+  //     const unexpectedErrorCodes = [
+  //       RPC_CALL_STATUS.EncodingError,
+  //       RPC_CALL_STATUS.ImportError,
+  //       RPC_CALL_STATUS.UnhandledError,
+  //     ];
+  //     if (
+  //       error instanceof RPCError &&
+  //       !unexpectedErrorCodes.includes(error.error.code)
+  //     ) {
+  //       rokError = error.error;
+  //       console.warn('Rok is not available', rokError);
+  //     } else {
+  //       globalUnhandledRejection({ reason: error });
+  //       throw error;
+  //     }
+  //   }
+  // } else {
+  //   rokError = {
+  //     rpc: 'rok.check_rok_availability',
+  //     code: RPC_CALL_STATUS.ImportError,
+  //     err_message: 'Rok is not available',
+  //     err_details:
+  //       'To use this Rok feature you first need Kale running' +
+  //       ' in the backend.',
+  //     err_cls: 'importError',
+  //   };
+  //   console.warn('Rok is not available', rokError);
+
   async function loadPanel() {
     let reveal_widget = undefined;
     if (backend) {
       // Check if KALE_NOTEBOOK_PATH env variable exists and if so load
       // that Notebook
       const path = await executeRpc(kernel, 'nb.resume_notebook_path', {
-        server_root: PageConfig.getOption('serverRoot'),
+        server_root: PageConfig.getOption('serverRoot')
       });
       if (path) {
         console.log('Resuming notebook ' + path);
@@ -153,11 +154,11 @@ async function activate(
     }
 
     // add widget
-    if (!widget.isAttached) {
+    if (widget && !widget.isAttached) {
       labShell.add(widget, 'left');
     }
     // open widget if resuming from a notebook
-    if (reveal_widget) {
+    if (reveal_widget && widget) {
       // open kale panel
       widget.activate();
     }
@@ -174,8 +175,7 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
-        rokError={rokError}
-      />,
+      />
     );
     widget.id = 'kubeflow-kale/kubeflowDeployment';
     widget.title.iconClass = 'jp-kale-logo jp-SideBar-tabIcon';
@@ -191,5 +191,12 @@ async function activate(
     loadPanel();
   });
 
-  return { widget };
+  return {
+    get widget() {
+      if (!widget) {
+        throw new Error('Widget not initialized yet');
+      }
+      return widget;
+    }
+  };
 }

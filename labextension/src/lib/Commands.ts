@@ -26,15 +26,13 @@ import {
   DefaultState,
   IExperiment,
   IKaleNotebookMetadata,
-  IKatibExperiment,
-  IVolumeMetadata,
   NEW_EXPERIMENT,
 } from '../widgets/LeftPanel';
 import NotebookUtils from './NotebookUtils';
-import {
-  SELECT_VOLUME_SIZE_TYPES,
-  SELECT_VOLUME_TYPES,
-} from '../widgets/VolumesPanel';
+// import {
+//   SELECT_VOLUME_SIZE_TYPES,
+//   SELECT_VOLUME_TYPES,
+// } from '../widgets/VolumesPanel';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import CellUtils from './CellUtils';
 
@@ -66,12 +64,12 @@ interface IRunPipelineArgs {
   version_id?: string;
 }
 
-interface IKatibRunArgs {
-  pipeline_id: string;
-  version_id: string;
-  pipeline_metadata: any;
-  output_path: string;
-}
+// interface IKatibRunArgs {
+//   pipeline_id: string;
+//   version_id: string;
+//   pipeline_metadata: any;
+//   output_path: string;
+// }
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
@@ -82,106 +80,106 @@ export default class Commands {
     this._kernel = kernel;
   }
 
-  snapshotNotebook = async () => {
-    return await _legacy_executeRpcAndShowRPCError(
-      this._notebook,
-      this._kernel,
-      'rok.snapshot_notebook',
-    );
-  };
+  // snapshotNotebook = async () => {
+  //   return await _legacy_executeRpcAndShowRPCError(
+  //     this._notebook,
+  //     this._kernel,
+  //     'rok.snapshot_notebook',
+  //   );
+  // };
 
-  getSnapshotProgress = async (task_id: string, ms?: number) => {
-    const task = await _legacy_executeRpcAndShowRPCError(
-      this._notebook,
-      this._kernel,
-      'rok.get_task',
-      {
-        task_id,
-      },
-    );
-    if (ms) {
-      await wait(ms);
-    }
-    return task;
-  };
+  // getSnapshotProgress = async (task_id: string, ms?: number) => {
+  //   const task = await _legacy_executeRpcAndShowRPCError(
+  //     this._notebook,
+  //     this._kernel,
+  //     'rok.get_task',
+  //     {
+  //       task_id,
+  //     },
+  //   );
+  //   if (ms) {
+  //     await wait(ms);
+  //   }
+  //   return task;
+  // };
 
-  runSnapshotProcedure = async (onUpdate: Function) => {
-    const showSnapshotProgress = true;
-    const snapshot = await this.snapshotNotebook();
-    const taskId = snapshot.task.id;
-    let task = await this.getSnapshotProgress(taskId);
-    onUpdate({ task, showSnapshotProgress });
+  // runSnapshotProcedure = async (onUpdate: Function) => {
+  //   const showSnapshotProgress = true;
+  //   const snapshot = await this.snapshotNotebook();
+  //   const taskId = snapshot.task.id;
+  //   let task = await this.getSnapshotProgress(taskId);
+  //   onUpdate({ task, showSnapshotProgress });
 
-    while (!['success', 'error', 'canceled'].includes(task.status)) {
-      task = await this.getSnapshotProgress(taskId, 1000);
-      onUpdate({ task });
-    }
+  //   while (!['success', 'error', 'canceled'].includes(task.status)) {
+  //     task = await this.getSnapshotProgress(taskId, 1000);
+  //     onUpdate({ task });
+  //   }
 
-    if (task.status === 'success') {
-      console.log('Snapshotting successful!');
-      return task;
-    } else if (task.status === 'error') {
-      console.error('Snapshotting failed');
-      console.error('Stopping the deployment...');
-    } else if (task.status === 'canceled') {
-      console.error('Snapshotting canceled');
-      console.error('Stopping the deployment...');
-    }
+  //   if (task.status === 'success') {
+  //     console.log('Snapshotting successful!');
+  //     return task;
+  //   } else if (task.status === 'error') {
+  //     console.error('Snapshotting failed');
+  //     console.error('Stopping the deployment...');
+  //   } else if (task.status === 'canceled') {
+  //     console.error('Snapshotting canceled');
+  //     console.error('Stopping the deployment...');
+  //   }
 
-    return null;
-  };
+  //   return null;
+  // };
 
-  replaceClonedVolumes = async (
-    bucket: string,
-    obj: string,
-    version: string,
-    volumes: IVolumeMetadata[],
-  ) => {
-    return await _legacy_executeRpcAndShowRPCError(
-      this._notebook,
-      this._kernel,
-      'rok.replace_cloned_volumes',
-      {
-        bucket,
-        obj,
-        version,
-        volumes,
-      },
-    );
-  };
+  // replaceClonedVolumes = async (
+  //   bucket: string,
+  //   obj: string,
+  //   version: string,
+  //   volumes: IVolumeMetadata[],
+  // ) => {
+  //   return await _legacy_executeRpcAndShowRPCError(
+  //     this._notebook,
+  //     this._kernel,
+  //     'rok.replace_cloned_volumes',
+  //     {
+  //       bucket,
+  //       obj,
+  //       version,
+  //       volumes,
+  //     },
+  //   );
+  // };
 
-  getMountedVolumes = async (currentNotebookVolumes: IVolumeMetadata[]) => {
-    let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
-      this._notebook,
-      this._kernel,
-      'nb.list_volumes',
-    );
-    let availableVolumeTypes = SELECT_VOLUME_TYPES.map(t => {
-      return t.value === 'snap' ? { ...t, invalid: false } : t;
-    });
+  // getMountedVolumes = async (currentNotebookVolumes: IVolumeMetadata[]) => {
+  //   let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
+  //     this._notebook,
+  //     this._kernel,
+  //     'nb.list_volumes',
+  //   );
+  //   let availableVolumeTypes = SELECT_VOLUME_TYPES.map(t => {
+  //     return t.value === 'snap' ? { ...t, invalid: false } : t;
+  //   });
 
-    if (notebookVolumes) {
-      notebookVolumes = notebookVolumes.map(volume => {
-        const size = volume.size ?? 0;
-        const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
-          s => size >= s.base,
-        )[0];
-        volume.size = Math.ceil(size / sizeGroup.base);
-        volume.size_type = sizeGroup.value;
-        volume.annotations = [];
-        return volume;
-      });
-      availableVolumeTypes = availableVolumeTypes.map(t => {
-        return t.value === 'clone' ? { ...t, invalid: false } : t;
-      });
-    } else {
-      notebookVolumes = currentNotebookVolumes;
-    }
-    return {
-      notebookVolumes,
-      selectVolumeTypes: availableVolumeTypes,
-    };
-  };
+  //   if (notebookVolumes) {
+  //     notebookVolumes = notebookVolumes.map(volume => {
+  //       const size = volume.size ?? 0;
+  //       const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
+  //         s => size >= s.base,
+  //       )[0];
+  //       volume.size = Math.ceil(size / sizeGroup.base);
+  //       volume.size_type = sizeGroup.value;
+  //       volume.annotations = [];
+  //       return volume;
+  //     });
+  //     availableVolumeTypes = availableVolumeTypes.map(t => {
+  //       return t.value === 'clone' ? { ...t, invalid: false } : t;
+  //     });
+  //   } else {
+  //     notebookVolumes = currentNotebookVolumes;
+  //   }
+  //   return {
+  //     notebookVolumes,
+  //     selectVolumeTypes: availableVolumeTypes,
+  //   };
+  // };
 
   unmarshalData = async (nbFileName: string) => {
     const cmd: string =
@@ -267,28 +265,28 @@ export default class Commands {
     });
   }
 
-  pollKatib(katibExperiment: IKatibExperiment, onUpdate: Function) {
-    const getExperimentArgs: any = {
-      experiment: katibExperiment.name,
-      namespace: katibExperiment.namespace,
-    };
-    _legacy_executeRpcAndShowRPCError(
-      this._notebook,
-      this._kernel,
-      'katib.get_experiment',
-      getExperimentArgs,
-    ).then(katib => {
-      if (!katib) {
-        // could not get the experiment
-        onUpdate({ katib: { status: 'error' } });
-        return;
-      }
-      onUpdate({ katib });
-      if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
-        setTimeout(() => this.pollKatib(katibExperiment, onUpdate), 5000);
-      }
-    });
-  }
+  // pollKatib(katibExperiment: IKatibExperiment, onUpdate: Function) {
+  //   const getExperimentArgs: any = {
+  //     experiment: katibExperiment.name,
+  //     namespace: katibExperiment.namespace,
+  //   };
+  //   _legacy_executeRpcAndShowRPCError(
+  //     this._notebook,
+  //     this._kernel,
+  //     'katib.get_experiment',
+  //     getExperimentArgs,
+  //   ).then(katib => {
+  //     if (!katib) {
+  //       // could not get the experiment
+  //       onUpdate({ katib: { status: 'error' } });
+  //       return;
+  //     }
+  //     onUpdate({ katib });
+  //     if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
+  //       setTimeout(() => this.pollKatib(katibExperiment, onUpdate), 5000);
+  //     }
+  //   });
+  // }
 
   validateMetadata = async (
     notebookPath: string,
@@ -488,6 +486,7 @@ export default class Commands {
     pipelineId: string,
     versionId: string,
     compiledPipelineMetadata: IKaleNotebookMetadata,
+    pipelinePackagePath: string,
     onUpdate: Function,
   ) => {
     onUpdate({ showRunProgress: true });
@@ -495,6 +494,7 @@ export default class Commands {
       pipeline_metadata: compiledPipelineMetadata,
       pipeline_id: pipelineId,
       version_id: versionId,
+      pipeline_package_path: pipelinePackagePath,
     };
     const runPipeline = await _legacy_executeRpcAndShowRPCError(
       this._notebook,

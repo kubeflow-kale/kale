@@ -18,7 +18,7 @@
 // import TextField, { BaseTextFieldProps } from '@mui/material/TextField';
 // import { MenuItem, Zoom } from '@mui/material';
 // import { createStyles, makeStyles } from '@mui/material/styles';
-// import { styled } from '@mui/material/styles'; 
+// import { styled } from '@mui/material/styles';
 // import { LightTooltip } from './LightTooltip';
 
 // export interface ISelectOption {
@@ -47,7 +47,6 @@
 //     color: 'var(--jp-info-color0)',
 //   },
 // });
-
 
 // interface SelectProps extends BaseTextFieldProps {
 //   index: number;
@@ -133,7 +132,6 @@
 //   );
 // };
 
-
 import * as React from 'react';
 import TextField, { BaseTextFieldProps } from '@mui/material/TextField';
 import { MenuItem, Zoom } from '@mui/material';
@@ -152,18 +150,18 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   width: '100%',
   '& .MuiInputLabel-root': {
     color: 'var(--jp-input-border-color)',
-    fontSize: 'var(--jp-ui-font-size2)',
+    fontSize: 'var(--jp-ui-font-size2)'
   },
   '& .MuiInputBase-input': {
-    color: 'var(--jp-ui-font-color1)',
+    color: 'var(--jp-ui-font-color1)'
   },
   '& .MuiFormHelperText-root': {
-    color: 'var(--jp-info-color0)',
+    color: 'var(--jp-info-color0)'
   },
   '& .MuiPaper-root': {
     backgroundColor: 'var(--jp-layout-color1)',
-    color: 'var(--jp-ui-font-color1)',
-  },
+    color: 'var(--jp-ui-font-color1)'
+  }
 }));
 
 interface SelectProps extends BaseTextFieldProps {
@@ -173,7 +171,7 @@ interface SelectProps extends BaseTextFieldProps {
   updateValue: (value: string, index: number) => void;
 }
 
-export const Select: React.FC<SelectProps> = (props) => {
+export const Select: React.FC<SelectProps> = props => {
   const {
     index,
     value,
@@ -206,11 +204,11 @@ export const Select: React.FC<SelectProps> = (props) => {
       value={value || ''}
       variant={variant}
       helperText={helperText}
-      onChange={(evt) =>
+      onChange={evt =>
         updateValue((evt.target as HTMLInputElement).value, index)
       }
       InputLabelProps={{
-        shrink: value !== '',
+        shrink: value !== ''
       }}
       slotProps={{
         select: {
@@ -218,11 +216,11 @@ export const Select: React.FC<SelectProps> = (props) => {
             PaperProps: {
               sx: {
                 backgroundColor: 'var(--jp-layout-color1)',
-                color: 'var(--jp-ui-font-color1)',
-              },
-            },
-          },
-        },
+                color: 'var(--jp-ui-font-color1)'
+              }
+            }
+          }
+        }
       }}
     >
       {values.map((option: ISelectOption) => (
@@ -243,16 +241,16 @@ export const Select: React.FC<SelectProps> = (props) => {
                     {
                       name: 'offset',
                       options: {
-                        offset: [0, -14],
-                      },
-                    },
-                  ],
-                },
+                        offset: [0, -14]
+                      }
+                    }
+                  ]
+                }
               }}
             >
               <div
                 className="menu-item-label"
-                onClick={(ev) => disableMenuItem(ev, !!option.invalid)}
+                onClick={ev => disableMenuItem(ev, !!option.invalid)}
               >
                 {option.label}
               </div>

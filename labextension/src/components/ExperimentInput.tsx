@@ -50,9 +50,9 @@
 //     props.updateValue(experiment);
 //   };
 
-  // const options: ISelectOption[] = props.options.map(o => {
-  //   return { label: o.name, value: o.id };
-  // });
+// const options: ISelectOption[] = props.options.map(o => {
+//   return { label: o.name, value: o.id };
+// });
 
 //   return (
 //     <div>
@@ -100,7 +100,9 @@ interface IExperimentInput {
   loading: boolean;
 }
 
-export const ExperimentInput: React.FunctionComponent<IExperimentInput> = (props) => {
+export const ExperimentInput: React.FunctionComponent<
+  IExperimentInput
+> = props => {
   const getName = (x: string): string => {
     const filtered = props.options.filter(o => o.id === x);
     return filtered.length === 0 ? '' : filtered[0].name;
@@ -117,9 +119,9 @@ export const ExperimentInput: React.FunctionComponent<IExperimentInput> = (props
     props.updateValue(experiment);
   };
 
-  const options: ISelectOption[] = props.options.map((o) => ({
+  const options: ISelectOption[] = props.options.map(o => ({
     label: o.name,
-    value: o.id,
+    value: o.id
   }));
 
   return (

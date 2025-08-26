@@ -19,20 +19,20 @@ import { Select, ISelectOption } from './Select';
 
 const VOLUME_ACCESS_MODE_ROM: ISelectOption = {
   label: 'ReadOnlyMany',
-  value: 'rom',
+  value: 'rom'
 };
 const VOLUME_ACCESS_MODE_RWO: ISelectOption = {
   label: 'ReadWriteOnce',
-  value: 'rwo',
+  value: 'rwo'
 };
 const VOLUME_ACCESS_MODE_RWM: ISelectOption = {
   label: 'ReadWriteMany',
-  value: 'rwm',
+  value: 'rwm'
 };
 const VOLUME_ACCESS_MODES: ISelectOption[] = [
   VOLUME_ACCESS_MODE_ROM,
   VOLUME_ACCESS_MODE_RWO,
-  VOLUME_ACCESS_MODE_RWM,
+  VOLUME_ACCESS_MODE_RWM
 ];
 
 interface VolumeAccessModeSelectProps {
@@ -40,7 +40,9 @@ interface VolumeAccessModeSelectProps {
   updateValue: Function;
 }
 
-export const VolumeAccessModeSelect: React.FunctionComponent<VolumeAccessModeSelectProps> = props => {
+export const VolumeAccessModeSelect: React.FunctionComponent<
+  VolumeAccessModeSelectProps
+> = props => {
   const handleVolumeAccess = (value: string, index?: number) => {
     props.updateValue(value, index);
   };

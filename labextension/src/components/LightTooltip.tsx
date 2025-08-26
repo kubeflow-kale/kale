@@ -26,6 +26,6 @@ export const LightTooltip = styled(({ className, ...props }: TooltipProps) => (
     backgroundColor: theme.palette.common.white,
     color: 'rgba(0, 0, 0, 0.87)',
     boxShadow: theme.shadows[1],
-    fontSize: 'var(--jp-ui-font-size1)',
-  },
+    fontSize: 'var(--jp-ui-font-size1)'
+  }
 }));

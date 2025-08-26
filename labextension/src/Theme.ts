@@ -23,17 +23,17 @@ export const theme = createTheme({
     secondary: {
       main: '#753BBD',
       dark: '#512984',
-      light: '#9062ca',
+      light: '#9062ca'
     },
     primary: {
       main: '#2e82d7',
       dark: '#205b96',
-      light: '#579bdf',
-    },
+      light: '#579bdf'
+    }
   },
   kale: {
     headers: {
-      main: '#753BBD',
-    },
-  },
+      main: '#753BBD'
+    }
+  }
 });

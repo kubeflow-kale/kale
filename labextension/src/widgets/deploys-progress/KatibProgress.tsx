@@ -33,7 +33,7 @@ enum KatibExperimentStatus {
   RESTARTING = 'Restarting',
   SUCCEEDED = 'Succeeded',
   FAILED = 'Failed',
-  UNKNOWN = 'Unknown',
+  UNKNOWN = 'Unknown'
 }
 
 enum KatibExperimentStatusReason {
@@ -44,18 +44,20 @@ enum KatibExperimentStatusReason {
   MAX_TRIALS_REACHED = 'ExperimentMaxTrialsReached',
   SUGGESTION_END_REACHED = 'ExperimentSuggestionEndReached',
   FAILED = 'ExperimentFailed',
-  KILLED = 'ExperimentKilled',
+  KILLED = 'ExperimentKilled'
 }
 
 enum KatibExperimentStatusMessage {
-  SUGGESTION_EXHAUSTED = 'Suggestion is exhausted',
+  SUGGESTION_EXHAUSTED = 'Suggestion is exhausted'
 }
 
 interface IKatibProgressProps {
   experiment: IKatibExperiment;
 }
 
-export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props => {
+export const KatibProgress: React.FunctionComponent<
+  IKatibProgressProps
+> = props => {
   // Katib controller sets experiment's status, along with a reason and
   // message for the status. If the experiment is 'Succeeded' or 'Failed' and
   // the reason is 'MaxTrialsReached' or 'SuggestionEndReached' or there's a
@@ -81,7 +83,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
       ? [yaml.safeDump(optimal)]
       : [
           'There are no results yet',
-          'To have a result, there must be at least one successful trial',
+          'To have a result, there must be at least one successful trial'
         ];
   };
 
@@ -94,7 +96,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
       >
         {DeployUtils.getInfoBadge(
           'Katib current best result',
-          getKatibBestResultInfo(experiment),
+          getKatibBestResultInfo(experiment)
         )}
       </LightTooltip>
     );
@@ -113,7 +115,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
 
   const getStatusWarningBadge = (
     experiment: IKatibExperiment,
-    tooltip: string,
+    tooltip: string
   ) => {
     const title =
       experiment.status === KatibExperimentStatus.SUCCEEDED
@@ -129,7 +131,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
           tooltip,
           `Status: ${experiment.status}`,
           `Reason: ${experiment.reason}`,
-          `Message: ${experiment.message}`,
+          `Message: ${experiment.message}`
         ])}
       </LightTooltip>
     );
@@ -148,7 +150,7 @@ export const KatibProgress: React.FunctionComponent<IKatibProgressProps> = props
               tooltipSet = true;
               IconComponent = getStatusWarningBadge(
                 experiment,
-                'The experiment has completed but the goal was not reached',
+                'The experiment has completed but the goal was not reached'
               );
             })()
           : (IconComponent =

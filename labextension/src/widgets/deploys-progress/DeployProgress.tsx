@@ -15,21 +15,21 @@
  */
 
 import * as React from 'react';
-import { LinearProgress } from '@material-ui/core';
-import CloseIcon from '@material-ui/icons/Close';
-import LaunchIcon from '@material-ui/icons/Launch';
-import ErrorIcon from '@material-ui/icons/Error';
-import UnknownIcon from '@material-ui/icons/Help';
-import PendingIcon from '@material-ui/icons/Schedule';
-import SkippedIcon from '@material-ui/icons/SkipNext';
-import SuccessIcon from '@material-ui/icons/CheckCircle';
-import CancelIcon from '@material-ui/icons/Cancel';
+import { LinearProgress } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import LaunchIcon from '@mui/icons-material/Launch';
+import ErrorIcon from '@mui/icons-material/Error';
+import UnknownIcon from '@mui/icons-material/Help';
+import PendingIcon from '@mui/icons-material/Schedule';
+import SkippedIcon from '@mui/icons-material/SkipNext';
+import SuccessIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
 import DeployUtils from './DeployUtils';
-import { KatibProgress } from './KatibProgress';
+// import { KatibProgress } from './KatibProgress';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -41,26 +41,28 @@ enum PipelineStatus {
   SUCCEEDED = 'Succeeded',
   TERMINATING = 'Terminating',
   TERMINATED = 'Terminated',
-  UNKNOWN = 'Unknown',
+  UNKNOWN = 'Unknown'
 }
 
 interface DeployProgress extends DeployProgressState {
   onRemove?: () => void;
 }
 
-export const DeployProgress: React.FunctionComponent<DeployProgress> = props => {
-  const getSnapshotLink = (task: any) => {
-    if (!task.result || !task.result.event) {
-      return '#';
-    }
-    const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
-    return props.namespace ? `${link}?ns=${props.namespace}` : link;
-  };
+export const DeployProgress: React.FunctionComponent<
+  DeployProgress
+> = props => {
+  // const getSnapshotLink = (task: any) => {
+  //   if (!task.result || !task.result.event) {
+  //     return '#';
+  //   }
+  //   const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
+  //   return props.namespace ? `${link}?ns=${props.namespace}` : link;
+  // };
 
-  const getTaskLink = (task: any) => {
-    const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/tasks/${task.id}`;
-    return props.namespace ? `${link}?ns=${props.namespace}` : link;
-  };
+  // const getTaskLink = (task: any) => {
+  //   const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/tasks/${task.id}`;
+  //   return props.namespace ? `${link}?ns=${props.namespace}` : link;
+  // };
 
   const getUploadLink = (pipeline: any) => {
     // link: /_/pipeline/#/pipelines/details/<id>
@@ -158,76 +160,93 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     );
   };
 
-  const getKatibKfpExperimentLink = (experimentId: string) => {
-    // link: /_/pipeline/#/experiments/details/<ud>
-    if (!experimentId) {
-      return '#';
+  const handleCompileClick = () => {
+    if (props.docManager && props.compiledPath) {
+      try {
+        props.docManager.openOrReveal(props.compiledPath);
+      } catch (error) {
+        console.error('Error opening compiled path:', error);
+      }
     }
-    const link = `${window.location.origin}/_/pipeline/#/experiments/details/${experimentId}`;
-    return props.namespace
-      ? link.replace('#', `?ns=${props.namespace}#`)
-      : link;
   };
 
-  const getSnapshotTpl = () => {
-    if (!props.task) {
-      return (
-        <React.Fragment>
-          Unknown status
-          <UnknownIcon
-            style={{
-              color: DeployUtils.color.terminated,
-              height: 18,
-              width: 18,
-            }}
-          />
-        </React.Fragment>
-      );
+  // Handle close click safely
+  const handleCloseClick = () => {
+    if (props.onRemove) {
+      props.onRemove();
     }
-
-    if (!['success', 'error', 'canceled'].includes(props.task.status)) {
-      const progress = props.task.progress || 0;
-      return (
-        <LinearProgress
-          variant="determinate"
-          color="primary"
-          value={progress}
-        />
-      );
-    }
-
-    let getLink: (task: any) => string = () => '#';
-    let message = props.task.message;
-    let IconComponent: any = UnknownIcon;
-    let iconColor = DeployUtils.color.blue;
-
-    switch (props.task.status) {
-      case 'success':
-        getLink = getSnapshotLink;
-        message = 'Done';
-        IconComponent = LaunchIcon;
-        break;
-      case 'error':
-        getLink = getTaskLink;
-        IconComponent = ErrorIcon;
-        iconColor = DeployUtils.color.errorText;
-        break;
-      case 'canceled':
-        IconComponent = CancelIcon;
-        getLink = getTaskLink;
-        iconColor = DeployUtils.color.canceled;
-        break;
-    }
-
-    return (
-      <React.Fragment>
-        <a href={getLink(props.task)} target="_blank" rel="noopener noreferrer">
-          {message}
-          <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
-        </a>
-      </React.Fragment>
-    );
   };
+
+  // const getKatibKfpExperimentLink = (experimentId: string) => {
+  //   // link: /_/pipeline/#/experiments/details/<ud>
+  //   if (!experimentId) {
+  //     return '#';
+  //   }
+  //   const link = `${window.location.origin}/_/pipeline/#/experiments/details/${experimentId}`;
+  //   return props.namespace
+  //     ? link.replace('#', `?ns=${props.namespace}#`)
+  //     : link;
+  // };
+
+  // const getSnapshotTpl = () => {
+  //   if (!props.task) {
+  //     return (
+  //       <React.Fragment>
+  //         Unknown status
+  //         <UnknownIcon
+  //           style={{
+  //             color: DeployUtils.color.terminated,
+  //             height: 18,
+  //             width: 18,
+  //           }}
+  //         />
+  //       </React.Fragment>
+  //     );
+  //   }
+
+  //   if (!['success', 'error', 'canceled'].includes(props.task.status)) {
+  //     const progress = props.task.progress || 0;
+  //     return (
+  //       <LinearProgress
+  //         variant="determinate"
+  //         color="primary"
+  //         value={progress}
+  //       />
+  //     );
+  //   }
+
+  //   let getLink: (task: any) => string = () => '#';
+  //   let message = props.task.message;
+  //   let IconComponent: any = UnknownIcon;
+  //   let iconColor = DeployUtils.color.blue;
+
+  //   switch (props.task.status) {
+  //     case 'success':
+  //       getLink = getSnapshotLink;
+  //       message = 'Done';
+  //       IconComponent = LaunchIcon;
+  //       break;
+  //     case 'error':
+  //       getLink = getTaskLink;
+  //       IconComponent = ErrorIcon;
+  //       iconColor = DeployUtils.color.errorText;
+  //       break;
+  //     case 'canceled':
+  //       IconComponent = CancelIcon;
+  //       getLink = getTaskLink;
+  //       iconColor = DeployUtils.color.canceled;
+  //       break;
+  //   }
+
+  //   return (
+  //     <React.Fragment>
+  //       <a href={getLink(props.task)} target="_blank" rel="noopener noreferrer">
+  //         {message}
+  //         <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
+  //       </a>
+  //     </React.Fragment>
+  //   );
+  // };
 
   let validationTpl;
   if (props.notebookValidation === true) {
@@ -254,7 +273,17 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
   if (props.compiledPath && props.compiledPath !== 'error') {
     compileTpl = (
       <React.Fragment>
-        <a onClick={_ => props.docManager.openOrReveal(props.compiledPath)}>
+        <a
+          onClick={handleCompileClick}
+          style={{ cursor: 'pointer' }}
+          role="button"
+          tabIndex={0}
+          onKeyPress={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleCompileClick();
+            }
+          }}
+        >
           Done
           <SuccessIcon
             style={{ color: DeployUtils.color.success, height: 18, width: 18 }}
@@ -313,7 +342,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         </a>
       </React.Fragment>
     );
-  } else if (props.runPipeline == false) {
+  } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>
         <ErrorIcon
@@ -325,31 +354,31 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
     runTpl = <LinearProgress color="primary" />;
   }
 
-  let katibKfpExpTpl;
-  if (!props.katibKFPExperiment) {
-    katibKfpExpTpl = <LinearProgress color="primary" />;
-  } else if (props.katibKFPExperiment.id !== 'error') {
-    katibKfpExpTpl = (
-      <React.Fragment>
-        <a
-          href={getKatibKfpExperimentLink(props.katibKFPExperiment.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Done
-          <LaunchIcon style={{ fontSize: '1rem' }} />
-        </a>
-      </React.Fragment>
-    );
-  } else {
-    katibKfpExpTpl = (
-      <React.Fragment>
-        <ErrorIcon
-          style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
-        />
-      </React.Fragment>
-    );
-  }
+  // let katibKfpExpTpl;
+  // if (!props.katibKFPExperiment) {
+  //   katibKfpExpTpl = <LinearProgress color="primary" />;
+  // } else if (props.katibKFPExperiment.id !== 'error') {
+  //   katibKfpExpTpl = (
+  //     <React.Fragment>
+  //       <a
+  //         href={getKatibKfpExperimentLink(props.katibKFPExperiment.id)}
+  //         target="_blank"
+  //         rel="noopener noreferrer"
+  //       >
+  //         Done
+  //         <LaunchIcon style={{ fontSize: '1rem' }} />
+  //       </a>
+  //     </React.Fragment>
+  //   );
+  // } else {
+  //   katibKfpExpTpl = (
+  //     <React.Fragment>
+  //       <ErrorIcon
+  //         style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
+  //       />
+  //     </React.Fragment>
+  //   );
+  // }
 
   return (
     <div className="deploy-progress">
@@ -358,12 +387,12 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
           justifyContent: 'flex-end',
           textAlign: 'right',
           paddingRight: '4px',
-          height: '1rem',
+          height: '1rem'
         }}
       >
         <CloseIcon
           style={{ fontSize: '1rem', cursor: 'pointer' }}
-          onClick={_ => props.onRemove()}
+          onClick={handleCloseClick}
         />
       </div>
 
@@ -374,13 +403,13 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             {validationTpl}
             {DeployUtils.getWarningBadge(
               'Validation Warnings',
-              props.validationWarnings,
+              props.validationWarnings
             )}
           </div>
         </div>
       ) : null}
 
-      {props.showSnapshotProgress ? (
+      {/* {props.showSnapshotProgress ? (
         <div className="deploy-progress-row">
           <div className="deploy-progress-label">Taking snapshot...</div>
           <div className="deploy-progress-value">
@@ -391,7 +420,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             )}
           </div>
         </div>
-      ) : null}
+      ) : null} */}
 
       {props.showCompileProgress ? (
         <div className="deploy-progress-row">
@@ -400,7 +429,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             {compileTpl}
             {DeployUtils.getWarningBadge(
               'Compile Warnings',
-              props.compileWarnings,
+              props.compileWarnings
             )}
           </div>
         </div>
@@ -413,7 +442,7 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
             {uploadTpl}
             {DeployUtils.getWarningBadge(
               'Upload Warnings',
-              props.uploadWarnings,
+              props.uploadWarnings
             )}
           </div>
         </div>
@@ -429,18 +458,19 @@ export const DeployProgress: React.FunctionComponent<DeployProgress> = props => 
         </div>
       ) : null}
 
-      {props.showKatibKFPExperiment ? (
+      {/* {props.showKatibKFPExperiment ? (
         <div className="deploy-progress-row">
           <div className="deploy-progress-label">
             Creating KFP experiment...
           </div>
           <div className="deploy-progress-value">{katibKfpExpTpl}</div>
         </div>
-      ) : null}
+      ) : null} */}
 
-      {props.showKatibProgress ? (
+      {/* {props.showKatibProgress ? (
         <KatibProgress experiment={props.katib} />
-      ) : null}
+      ) : null} */}
+      {/* KatibProgress disabled in this build */}
     </div>
   );
 };

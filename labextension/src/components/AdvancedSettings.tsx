@@ -84,7 +84,6 @@
 //   );
 // };
 
-
 import * as React from 'react';
 import { Input } from './Input';
 import { Switch } from '@mui/material';
@@ -92,11 +91,13 @@ import { useTheme } from '@mui/material/styles';
 import { styled } from '@mui/material/styles';
 
 // Styled components for better theming
-const CollapseContainer = styled('div')<{ collapsed: boolean }>(({ collapsed }) => ({
-  '&.jp-Collapse-open': {
-    // Add any specific styles for open state
-  },
-}));
+const CollapseContainer = styled('div')<{ collapsed: boolean }>(
+  ({ collapsed }) => ({
+    '&.jp-Collapse-open': {
+      // Add any specific styles for open state
+    }
+  })
+);
 
 const CollapseHeader = styled('div')(({ theme }) => ({
   cursor: 'pointer',
@@ -104,39 +105,41 @@ const CollapseHeader = styled('div')(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
   fontWeight: 'bold',
   '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-  },
+    backgroundColor: theme.palette.action.hover
+  }
 }));
 
-const CollapseContents = styled('div')<{ collapsed: boolean }>(({ collapsed }) => ({
-  padding: '16px',
-  display: collapsed ? 'none' : 'block',
-}));
+const CollapseContents = styled('div')<{ collapsed: boolean }>(
+  ({ collapsed }) => ({
+    padding: '16px',
+    display: collapsed ? 'none' : 'block'
+  })
+);
 
 const ToolbarContainer = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '12px 4px 0 4px',
+  padding: '12px 4px 0 4px'
 });
 
 const SwitchLabel = styled('div')(({ theme }) => ({
   fontSize: theme.typography.body2.fontSize,
-  color: theme.palette.text.primary,
+  color: theme.palette.text.primary
 }));
 
 const KaleComponent = styled('div')({
-  marginTop: '16px',
+  marginTop: '16px'
 });
 
 const KaleHeaderSwitch = styled('div')({
-  marginBottom: '12px',
+  marginBottom: '12px'
 });
 
 const KaleHeader = styled('p')(({ theme }) => ({
   margin: 0,
   fontWeight: 'bold',
-  fontSize: theme.typography.subtitle2.fontSize,
+  fontSize: theme.typography.subtitle2.fontSize
 }));
 
 interface AdvancedSettingsProps {
@@ -149,7 +152,9 @@ interface AdvancedSettingsProps {
   volsPanel: React.ReactNode;
 }
 
-export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = (props) => {
+export const AdvancedSettings: React.FunctionComponent<
+  AdvancedSettingsProps
+> = props => {
   const [collapsed, setCollapsed] = React.useState(true);
   const theme = useTheme();
 
@@ -166,7 +171,7 @@ export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = 
   };
 
   return (
-    <CollapseContainer 
+    <CollapseContainer
       collapsed={collapsed}
       className={!collapsed ? 'jp-Collapse-open' : ''}
     >
@@ -174,12 +179,13 @@ export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = 
         className="jp-Collapse-header kale-header"
         onClick={handleToggleCollapse}
         sx={{
-          color: (theme as any).kale?.headers?.main || 'var(--jp-ui-font-color1)',
+          color:
+            (theme as any).kale?.headers?.main || 'var(--jp-ui-font-color1)'
         }}
       >
         {props.title}
       </CollapseHeader>
-      
+
       <CollapseContents
         collapsed={collapsed}
         className={`input-container lm-Panel jp-Collapse-contents ${collapsed ? 'p-mod-hidden' : ''}`}
@@ -209,7 +215,9 @@ export const AdvancedSettings: React.FunctionComponent<AdvancedSettingsProps> = 
             <KaleHeader
               className="kale-header"
               sx={{
-                color: (theme as any).kale?.headers?.main || 'var(--jp-ui-font-color1)',
+                color:
+                  (theme as any).kale?.headers?.main ||
+                  'var(--jp-ui-font-color1)'
               }}
             >
               Volumes

@@ -11,11 +11,11 @@ import {
   Typography,
   IconButton,
   CircularProgress,
-  Zoom,
+  Zoom
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import Help from '@mui/icons-material/Help';
-import DeleteIcon from '@mui/icons-material/Delete';;
+import DeleteIcon from '@mui/icons-material/Delete';
 import { IKatibMetadata, IKatibParameter } from './LeftPanel';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { executeRpc, RPC_CALL_STATUS, RPCError } from '../lib/RPCUtils';
@@ -29,13 +29,13 @@ import { LightTooltip } from '../components/LightTooltip';
 const katibTypeMapper: { [id: string]: string } = {
   int: 'int',
   float: 'double',
-  str: 'categorical',
+  str: 'categorical'
 };
 
 const algorithmOptions = [
   { value: 'random', label: 'Random Search' },
   { value: 'grid', label: 'Grid Search' },
-  { value: 'bayesianoptimization', label: 'Bayesian Optimization' },
+  { value: 'bayesianoptimization', label: 'Bayesian Optimization' }
   // Temporarely disable the following algorithms
   // due to bad configuration.
   // { value: 'hyperband', label: 'Hyperband' },
@@ -47,7 +47,7 @@ const estimatorOptions = [
   { value: 'GP', label: 'Gaussian Process Regressor (GP)' },
   { value: 'RF', label: 'Random Forest Regressor (RF)' },
   { value: 'ET', label: 'Extra Trees Regressor (ET)' },
-  { value: 'GBRT', label: 'Gradient Boosting Regressor (GBRT)' },
+  { value: 'GBRT', label: 'Gradient Boosting Regressor (GBRT)' }
 ];
 
 // https://github.com/scikit-optimize/scikit-optimize/blob/master/skopt/optimizer/optimizer.py#L84
@@ -57,7 +57,7 @@ const acqFuncOptions = [
   { value: 'PI', label: 'Negative Probability of Improvement (PI)' },
   { value: 'gp_hedge', label: 'Choose Probabilistically (gp_hedge)' },
   { value: 'EIps', label: 'EI + Function Compute Time (EIps)' },
-  { value: 'PIps', label: 'PI + Function Compute Time (PIps)' },
+  { value: 'PIps', label: 'PI + Function Compute Time (PIps)' }
 ];
 
 interface KabitDialog {
@@ -97,7 +97,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       rpcPipelineParameters = await executeRpc(
         props.kernel,
         'nb.get_pipeline_parameters',
-        args,
+        args
       );
     } catch (error) {
       if (
@@ -107,7 +107,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         console.warn(
           'InternalError while parsing the notebook for' +
             ' pipeline parameters',
-          error.error,
+          error.error
         );
         setError(error.error.err_details);
         setLoading(false);
@@ -126,7 +126,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       rpcPipelineMetrics = await executeRpc(
         props.kernel,
         'nb.get_pipeline_metrics',
-        args,
+        args
       );
     } catch (error) {
       if (
@@ -135,7 +135,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       ) {
         console.warn(
           'InternalError while parsing the notebook for' + ' pipeline metrics',
-          error.error,
+          error.error
         );
         setError(error.error.err_details);
         setLoading(false);
@@ -149,7 +149,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
     setPipelineMetrics(
       Object.keys(rpcPipelineMetrics).map((x: string) => {
         return { label: rpcPipelineMetrics[x], value: x };
-      }),
+      })
     );
 
     // now that we have new parameters from the RPC, check what are the
@@ -160,19 +160,19 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
     let newAdditionalMetricNames: string[] = [];
     if (
       Object.keys(rpcPipelineMetrics).includes(
-        props.katibMetadata.objective.objectiveMetricName,
+        props.katibMetadata.objective.objectiveMetricName
       )
     ) {
       newObjectiveMetricName =
         props.katibMetadata.objective.objectiveMetricName;
       newAdditionalMetricNames = Object.keys(rpcPipelineMetrics).filter(
-        x => x !== props.katibMetadata.objective.objectiveMetricName,
+        x => x !== props.katibMetadata.objective.objectiveMetricName
       );
     }
 
     type IParameter = [boolean, string, string, string];
     const paramsWithRequired: IParameter[] = rpcPipelineParameters.map(
-      (x: IParameter) => [false, ...x],
+      (x: IParameter) => [false, ...x]
     );
     // a pipeline parameter is in the format: [<required>, <name>, <type>, <value>]
     // merge existing notebook parameters (tagged by `pipeline-parameters`)
@@ -190,7 +190,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         // check if this parameter is already part of the notebook's
         // Katib metadata
         const existing_param = props.katibMetadata.parameters.filter(
-          x => x.name === new_param_name,
+          x => x.name === new_param_name
         );
         return (
           existing_param.length > 0 &&
@@ -207,7 +207,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       // others that we don't need)
       .map(
         param =>
-          props.katibMetadata.parameters.filter(x => x.name === param[1])[0],
+          props.katibMetadata.parameters.filter(x => x.name === param[1])[0]
       );
 
     // set the detected parameters as required, because they are already present
@@ -218,8 +218,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         // objects
         katibParameters.filter(kp => kp.name === p[1]).length > 0
           ? [true, ...p.slice(1)]
-          : p,
-      ),
+          : p
+      )
     );
     // Now, with the result, update the state to save these parameters
     // to katib metadata
@@ -229,8 +229,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       objective: {
         ...props.katibMetadata.objective,
         objectiveMetricName: newObjectiveMetricName,
-        additionalMetricNames: newAdditionalMetricNames,
-      },
+        additionalMetricNames: newAdditionalMetricNames
+      }
     });
 
     setLoading(false);
@@ -247,84 +247,79 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
   /**
    * TODO: Add docs
    */
-  const updateParameter = (parameter: string, action: Function) => (
-    value?: string,
-  ) => {
-    // update the metadata field of a specific parameter (e.g. min, max values)
-    const currentParameterIndex = props.katibMetadata.parameters.findIndex(
-      x => x.name === parameter,
-    );
-    // now get elements with shallow copies
-    let currentParameters = [...props.katibMetadata.parameters];
-    // get parameter and update field (`min`, `max`)
-    let updatedParameter = { ...currentParameters[currentParameterIndex] };
+  const updateParameter =
+    (parameter: string, action: Function) => (value?: string) => {
+      // update the metadata field of a specific parameter (e.g. min, max values)
+      const currentParameterIndex = props.katibMetadata.parameters.findIndex(
+        x => x.name === parameter
+      );
+      // now get elements with shallow copies
+      let currentParameters = [...props.katibMetadata.parameters];
+      // get parameter and update field (`min`, `max`)
+      let updatedParameter = { ...currentParameters[currentParameterIndex] };
 
-    action(updatedParameter, value);
+      action(updatedParameter, value);
 
-    // replace old parameter at position idx with the updated one.
-    // currentParameters.splice(currentParameterIndex, 1, updatedParameter);
-    currentParameters[currentParameterIndex] = updatedParameter;
-    props.updateKatibMetadata({
-      ...props.katibMetadata,
-      parameters: currentParameters,
-    });
-  };
-
-  const updateParameterFeasibleSpaceRange = (field: 'min' | 'max' | 'step') => (
-    parameter: IKatibParameter,
-    value: string,
-  ) => {
-    // either min, max or step
-    parameter.feasibleSpace = { ...parameter.feasibleSpace, [field]: value };
-  };
-
-  const updateParameterFeasibleSpaceList = (idx: number) => (
-    parameter: IKatibParameter,
-    value: string,
-  ) => {
-    // update a categorical parameter, idx is the index of the value in the list
-    // get the current parameter categorical list
-    let newParameterList = [...parameter.feasibleSpace.list];
-    newParameterList[idx] = value;
-    parameter.feasibleSpace = {
-      ...parameter.feasibleSpace,
-      list: newParameterList,
+      // replace old parameter at position idx with the updated one.
+      // currentParameters.splice(currentParameterIndex, 1, updatedParameter);
+      currentParameters[currentParameterIndex] = updatedParameter;
+      props.updateKatibMetadata({
+        ...props.katibMetadata,
+        parameters: currentParameters
+      });
     };
-  };
 
-  const updateParameterList = (operation: 'add' | 'delete', idx: number) => (
-    parameter: IKatibParameter,
-  ) => {
-    let parameterList =
-      parameter.feasibleSpace.list === undefined
-        ? []
-        : [...parameter.feasibleSpace.list];
-    operation === 'add'
-      ? // add a new category at the end of the list
-        parameterList.push('')
-      : // else operation=`delete`: remove 1 element at position idx
-        parameterList.splice(idx, 1);
-    parameter.feasibleSpace = {
-      ...parameter.feasibleSpace,
-      list: parameterList,
+  const updateParameterFeasibleSpaceRange =
+    (field: 'min' | 'max' | 'step') =>
+    (parameter: IKatibParameter, value: string) => {
+      // either min, max or step
+      parameter.feasibleSpace = { ...parameter.feasibleSpace, [field]: value };
     };
-  };
 
-  const updateNumericParameterType = (
-    parameterName: string,
-    parameterOriginalType: 'int' | 'double',
-  ) => (parameter: IKatibParameter, value: string) => {
-    if (value === 'list') {
-      parameter.parameterType = 'categorical';
-      delete parameter.feasibleSpace.max;
-      delete parameter.feasibleSpace.min;
-      delete parameter.feasibleSpace.step;
-    } else {
-      // value === "range"
-      parameter.parameterType = parameterOriginalType;
-      delete parameter.feasibleSpace.list;
-    }
-  };
+  const updateParameterFeasibleSpaceList =
+    (idx: number) => (parameter: IKatibParameter, value: string) => {
+      // update a categorical parameter, idx is the index of the value in the list
+      // get the current parameter categorical list
+      let newParameterList = [...parameter.feasibleSpace.list];
+      newParameterList[idx] = value;
+      parameter.feasibleSpace = {
+        ...parameter.feasibleSpace,
+        list: newParameterList
+      };
+    };
+
+  const updateParameterList =
+    (operation: 'add' | 'delete', idx: number) =>
+    (parameter: IKatibParameter) => {
+      let parameterList =
+        parameter.feasibleSpace.list === undefined
+          ? []
+          : [...parameter.feasibleSpace.list];
+      operation === 'add'
+        ? // add a new category at the end of the list
+          parameterList.push('')
+        : // else operation=`delete`: remove 1 element at position idx
+          parameterList.splice(idx, 1);
+      parameter.feasibleSpace = {
+        ...parameter.feasibleSpace,
+        list: parameterList
+      };
+    };
+
+  const updateNumericParameterType =
+    (parameterName: string, parameterOriginalType: 'int' | 'double') =>
+    (parameter: IKatibParameter, value: string) => {
+      if (value === 'list') {
+        parameter.parameterType = 'categorical';
+        delete parameter.feasibleSpace.max;
+        delete parameter.feasibleSpace.min;
+        delete parameter.feasibleSpace.step;
+      } else {
+        // value === "range"
+        parameter.parameterType = parameterOriginalType;
+        delete parameter.feasibleSpace.list;
+      }
+    };
 
   const updateObjectiveMetricName = (value: string) => {
     props.updateKatibMetadata({
@@ -336,46 +331,45 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
         // pipeline metrics is of type {label: string, value: string}[]
         additionalMetricNames: pipelineMetrics
           .filter(x => x.value !== value)
-          .map(x => x.value),
-      },
+          .map(x => x.value)
+      }
     });
   };
 
-  const updateParameterRequired = (
-    parameterName: string,
-    parameterType: string,
-  ) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = event.target.checked;
-    if (checked) {
-      // add a new parameter entry in the notebook metadata
-      props.updateKatibMetadata({
-        ...props.katibMetadata,
-        parameters: [
-          ...props.katibMetadata.parameters,
-          {
-            name: parameterName,
-            parameterType: parameterType,
-            feasibleSpace: {},
-          },
-        ],
-      });
-    } else {
-      // remove the parameter entry from metadata
-      const paramsWithoutUnchecked = props.katibMetadata.parameters.filter(
-        x => x.name !== parameterName,
+  const updateParameterRequired =
+    (parameterName: string, parameterType: string) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const checked = event.target.checked;
+      if (checked) {
+        // add a new parameter entry in the notebook metadata
+        props.updateKatibMetadata({
+          ...props.katibMetadata,
+          parameters: [
+            ...props.katibMetadata.parameters,
+            {
+              name: parameterName,
+              parameterType: parameterType,
+              feasibleSpace: {}
+            }
+          ]
+        });
+      } else {
+        // remove the parameter entry from metadata
+        const paramsWithoutUnchecked = props.katibMetadata.parameters.filter(
+          x => x.name !== parameterName
+        );
+        props.updateKatibMetadata({
+          ...props.katibMetadata,
+          parameters: paramsWithoutUnchecked
+        });
+      }
+      // Assign the new check parameter to the pipeline parameter
+      setPipelineParameters(
+        pipelineParameters.map(x =>
+          x[1] == parameterName ? [checked, ...x.slice(1)] : x
+        )
       );
-      props.updateKatibMetadata({
-        ...props.katibMetadata,
-        parameters: paramsWithoutUnchecked,
-      });
-    }
-    // Assign the new check parameter to the pipeline parameter
-    setPipelineParameters(
-      pipelineParameters.map(x =>
-        x[1] == parameterName ? [checked, ...x.slice(1)] : x,
-      ),
-    );
-  };
+    };
 
   const updateObjective = (field: 'type' | 'goal') => (value: string) => {
     // this callback is used by the text fields and select with katib objective
@@ -385,48 +379,50 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
       ...props.katibMetadata,
       objective: {
         ...props.katibMetadata.objective,
-        [field]: field === 'goal' ? Number(value) : value,
-      },
+        [field]: field === 'goal' ? Number(value) : value
+      }
     });
   };
 
   const updateAlgorithmName = (value: string) => {
     props.updateKatibMetadata({
       ...props.katibMetadata,
-      algorithm: { ...props.katibMetadata.algorithm, algorithmName: value },
+      algorithm: { ...props.katibMetadata.algorithm, algorithmName: value }
     });
   };
 
-  const updateAlgorithmSetting = (
-    field:
-      | 'random_state'
-      | 'base_estimator'
-      | 'n_initial_points'
-      | 'acq_func'
-      | 'acq_optimizer',
-  ) => (value: string) => {
-    let newSettings = (
-      props.katibMetadata.algorithm.algorithmSettings || []
-    ).filter(x => x.name !== field);
-    newSettings.push({ name: field, value: value });
-    props.updateKatibMetadata({
-      ...props.katibMetadata,
-      algorithm: {
-        ...props.katibMetadata.algorithm,
-        algorithmSettings: newSettings,
-      },
-    });
-    return value;
-  };
+  const updateAlgorithmSetting =
+    (
+      field:
+        | 'random_state'
+        | 'base_estimator'
+        | 'n_initial_points'
+        | 'acq_func'
+        | 'acq_optimizer'
+    ) =>
+    (value: string) => {
+      let newSettings = (
+        props.katibMetadata.algorithm.algorithmSettings || []
+      ).filter(x => x.name !== field);
+      newSettings.push({ name: field, value: value });
+      props.updateKatibMetadata({
+        ...props.katibMetadata,
+        algorithm: {
+          ...props.katibMetadata.algorithm,
+          algorithmSettings: newSettings
+        }
+      });
+      return value;
+    };
 
-  const updateCounts = (
-    field: 'maxTrialCount' | 'maxFailedTrialCount' | 'parallelTrialCount',
-  ) => (value: string) => {
-    props.updateKatibMetadata({
-      ...props.katibMetadata,
-      [field]: Number(value),
-    });
-  };
+  const updateCounts =
+    (field: 'maxTrialCount' | 'maxFailedTrialCount' | 'parallelTrialCount') =>
+    (value: string) => {
+      props.updateKatibMetadata({
+        ...props.katibMetadata,
+        [field]: Number(value)
+      });
+    };
 
   const getAlgorithmSetting = (settingName: string) => {
     const setting = (
@@ -474,7 +470,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           parameterRequired,
           parameterName,
           pyParameterType,
-          parameterValue,
+          parameterValue
         ] = parameter;
         const katibParameterType = katibTypeMapper[pyParameterType];
         // check if this pipeline parameter is required or not.
@@ -509,20 +505,20 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                       pyParameterType === 'int'
                         ? 'int'
                         : pyParameterType === 'float'
-                        ? 'double'
-                        : null
+                          ? 'double'
+                          : null
                     }
                     variant={'outlined'}
                     label={'Value'}
                     value={value}
                     updateValue={updateParameter(
                       metadataParameter.name,
-                      updateParameterFeasibleSpaceList(idx),
+                      updateParameterFeasibleSpaceList(idx)
                     )}
                     style={{
                       marginLeft: '4px',
                       marginRight: '4px',
-                      width: 'auto',
+                      width: 'auto'
                     }}
                   />
                   <IconButton
@@ -530,7 +526,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                     onClick={() => {
                       updateParameter(
                         metadataParameter.name,
-                        updateParameterList('delete', idx),
+                        updateParameterList('delete', idx)
                       )();
                     }}
                   >
@@ -555,7 +551,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   onClick={() => {
                     updateParameter(
                       metadataParameter.name,
-                      updateParameterList('add', idx),
+                      updateParameterList('add', idx)
                     )();
                   }}
                 >
@@ -582,7 +578,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 value={metadataParameter.feasibleSpace.min || ''}
                 updateValue={updateParameter(
                   metadataParameter.name,
-                  updateParameterFeasibleSpaceRange('min'),
+                  updateParameterFeasibleSpaceRange('min')
                 )}
                 style={{ marginLeft: '4px', marginRight: '4px', width: 'auto' }}
               />
@@ -596,7 +592,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 value={metadataParameter.feasibleSpace.max || ''}
                 updateValue={updateParameter(
                   metadataParameter.name,
-                  updateParameterFeasibleSpaceRange('max'),
+                  updateParameterFeasibleSpaceRange('max')
                 )}
                 style={{ marginLeft: '4px', marginRight: '4px', width: 'auto' }}
               />
@@ -609,7 +605,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                 value={metadataParameter.feasibleSpace.step || ''}
                 updateValue={updateParameter(
                   metadataParameter.name,
-                  updateParameterFeasibleSpaceRange('step'),
+                  updateParameterFeasibleSpaceRange('step')
                 )}
                 style={{ marginLeft: '4px', marginRight: '4px', width: 'auto' }}
               />
@@ -633,7 +629,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   checked={parameterRequired}
                   onChange={updateParameterRequired(
                     parameterName,
-                    katibParameterType,
+                    katibParameterType
                   )}
                   value="secondary"
                   color="primary"
@@ -643,8 +639,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                   // and results in the onChange to not work.
                   inputProps={{
                     style: {
-                      height: '100%',
-                    },
+                      height: '100%'
+                    }
                   }}
                 />
               </Grid>
@@ -671,10 +667,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                     variant={'outlined'}
                     updateValue={updateParameter(
                       parameterName,
-                      updateNumericParameterType(
-                        parameterName,
-                        pyParameterType,
-                      ),
+                      updateNumericParameterType(parameterName, pyParameterType)
                     )}
                     values={[
                       { label: 'Range', value: 'range' },
@@ -684,8 +677,8 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
                         tooltip:
                           'Depending on the implementation of your chosen' +
                           ' algorithm, a list might be treated differently' +
-                          ' from a range.',
-                      },
+                          ' from a range.'
+                      }
                     ]}
                     value={
                       metadataParameter.parameterType === 'categorical'
@@ -753,7 +746,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           href="https://www.kubeflow.org/docs/components/hyperparameter-tuning/experiment/#configuration-spec"
         >
           More Info...
-        </a>,
+        </a>
       )}
 
       {parametersControls}
@@ -765,7 +758,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           href="https://www.kubeflow.org/docs/components/hyperparameter-tuning/experiment/#search-algorithms"
         >
           More Info...
-        </a>,
+        </a>
       )}
 
       <Select
@@ -886,7 +879,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           href="https://www.kubeflow.org/docs/components/hyperparameter-tuning/experiment/#configuration-spec"
         >
           More Info...
-        </a>,
+        </a>
       )}
 
       <Grid container direction="row" justify="center" alignItems="center">
@@ -907,7 +900,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
             label={'Type'}
             values={[
               { label: 'Minimize', value: 'minimize' },
-              { label: 'Maximize', value: 'maximize' },
+              { label: 'Maximize', value: 'maximize' }
             ]}
             value={props.katibMetadata.objective.type || 'minimize'}
             index={-1}
@@ -934,7 +927,7 @@ export const KatibDialog: React.FunctionComponent<KabitDialog> = props => {
           href="https://www.kubeflow.org/docs/components/hyperparameter-tuning/experiment/#configuration-spec"
         >
           More Info...
-        </a>,
+        </a>
       )}
 
       <Grid container direction="row" justify="center" alignItems="center">
