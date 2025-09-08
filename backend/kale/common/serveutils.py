@@ -27,7 +27,7 @@ from typing import Any, Dict, Callable
 from kubernetes.client.rest import ApiException
 
 from kale import NotebookProcessor, marshal
-from kale.common import (astutils, flakeutils, podutils, k8sutils, rokutils,
+from kale.common import (astutils, flakeutils, podutils, k8sutils,
                          jputils, utils)
 
 log = logging.getLogger(__name__)
@@ -246,22 +246,9 @@ def serve(model: Any,
     model_filepath = marshal.save(model, "model")
     log.info("Model saved successfully at '%s'", model_filepath)
 
-    # Take snapshot
-    task_info = rokutils.snapshot_pvc(volume_name,
-                                      bucket=rokutils.SERVING_BUCKET,
-                                      wait=True)
-    task = rokutils.get_task(task_info["task"]["id"],
-                             bucket=rokutils.SERVING_BUCKET)
-    new_pvc_name = "%s-pvc-%s" % (name, utils.random_string(5))
-    rokutils.hydrate_pvc_from_snapshot(task["result"]["event"]["object"],
-                                       task["result"]["event"]["version"],
-                                       new_pvc_name,
-                                       bucket=rokutils.SERVING_BUCKET)
-
-    # Cleanup: remove dumped model and transformer assets from the current PVC
-    utils.rm_r(os.path.join(PREDICTOR_MODEL_DIR,
-                            os.path.basename(model_filepath)))
-    utils.rm_r(TRANSFORMER_ASSETS_DIR, silent=True)
+    # Rok-based snapshot and PVC hydration removed. Reuse the existing PVC.
+    new_pvc_name = volume_name
+    # Do not delete the dumped model if reusing the same PVC.
 
     # Need an absolute path from the *root* of the PVC. Add '/' if not exists.
     pvc_model_path = "/" + PREDICTOR_MODEL_DIR.lstrip(PVC_ROOT)

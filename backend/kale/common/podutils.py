@@ -22,8 +22,7 @@ import tabulate
 from functools import lru_cache
 from kale.common import k8sutils
 
-ROK_CSI_STORAGE_CLASS = "rok"
-ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
+# Rok-specific storage class/provisioner removed
 
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
@@ -172,26 +171,9 @@ def _list_volumes(client, namespace, pod_name, container_name):
         if not pvc_spec:
             continue
 
-        # Ensure the volume is a Rok volume, otherwise we will not be able to
-        # snapshot it.
-        # FIXME: Should we just ignore these volumes? Ignoring them would
-        #  result in an incomplete notebook snapshot.
+        # Previously restricted to Rok CSI volumes; now allow any PVC.
         pvc = client.read_namespaced_persistent_volume_claim(
             pvc_spec.claim_name, namespace)
-        if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
-            msg = ("Found PVC with storage class '%s'. Only storage class '%s'"
-                   " is supported."
-                   % (pvc.spec.storage_class_name, ROK_CSI_STORAGE_CLASS))
-            raise RuntimeError(msg)
-
-        ann = pvc.metadata.annotations
-        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
-                              None)
-        if provisioner != ROK_CSI_STORAGE_PROVISIONER:
-            msg = ("Found PVC storage provisioner '%s'. Only storage"
-                   " provisioner '%s' is supported."
-                   % (provisioner, ROK_CSI_STORAGE_PROVISIONER))
-            raise RuntimeError(msg)
 
         mount_path = _get_mount_path(container, volume)
         volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])

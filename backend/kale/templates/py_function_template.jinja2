@@ -10,15 +10,7 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
     from kale.common import mlmdutils as _kale_mlmdutils
     _kale_mlmdutils.init_metadata()
 {% endif %}
-{% if autosnapshot and step.name != 'final_auto_snapshot'  %}
-    from kale.common import rokutils as _kale_rokutils
-    _kale_mlmdutils.call("link_input_rok_artifacts")
-    _kale_rokutils.snapshot_pipeline_step(
-        "{{ pipeline_name }}",
-        "{{ step.name }}",
-        "{{ notebook_path }}",
-        before=True)
-{% endif %}
+{# Rok autosnapshot (before step) removed #}
 
 
     {% if step.config.timeout %}from kale.common.runutils import ttl as _kale_ttl{% endif %}
@@ -51,18 +43,7 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 
     _kale_link_artifacts(_kale_artifacts)
 
-{%- if autosnapshot %}
-{%- if step.name == 'final_auto_snapshot' %}
-    from kale.common import rokutils as _kale_rokutils
-    _kale_mlmdutils.call("link_input_rok_artifacts")
-{%- endif %}
-    _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
-        "{{ pipeline_name }}",
-        "{{ step.name }}",
-        "{{ notebook_path }}",
-        before=False)
-    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_snapshot_task)
-{% endif %}
+{# Rok autosnapshot (after step) and Rok MLMD artifacts removed #}
 {%- if autosnapshot or step.ins|length > 0 or step.outs|length > 0 or step.source|length > 0 %}
     _kale_mlmdutils.call("mark_execution_complete")
 {%- endif %}

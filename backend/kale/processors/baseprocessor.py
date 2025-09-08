@@ -103,10 +103,8 @@ class BaseProcessor(ABC):
                 par_name = "vol_{}".format(mount_point)
                 volume_parameters[par_name] = PipelineParam("str", v.name)
             elif v.type == 'new_pvc':
-                rok_url = v.annotations.get("rok/origin")
-                if rok_url is not None:
-                    par_name = "rok_{}_url".format(v.name.replace('-', '_'))
-                    volume_parameters[par_name] = PipelineParam("str", rok_url)
+                # Rok-specific parameter generation removed. Pass annotations through as-is.
+                pass
             else:
                 raise ValueError("Unknown volume type: {}".format(v.type))
         self.pipeline.pipeline_parameters.update(volume_parameters)

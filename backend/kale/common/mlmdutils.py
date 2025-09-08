@@ -52,15 +52,6 @@ METADATA_OUTPUT_ARTIFACT_IDS_ANNOTATION_KEY = ("pipelines.kubeflow.org/"
                                                "metadata_output_artifact_ids")
 METADATA_WRITTEN_LABEL_KEY = "pipelines.kubeflow.org/metadata_written"
 
-ROK_SNAPSHOT_ARTIFACT_TYPE_NAME = "RokSnapshot"
-ROK_SNAPSHOT_ARTIFACT_PROPERTIES = {"name": metadata_store_pb2.STRING,
-                                    "id": metadata_store_pb2.STRING,
-                                    "version": metadata_store_pb2.STRING,
-                                    "object": metadata_store_pb2.STRING,
-                                    "bucket": metadata_store_pb2.STRING,
-                                    "members": metadata_store_pb2.INT,
-                                    "URL": metadata_store_pb2.STRING,
-                                    "hash": metadata_store_pb2.STRING}
 MLMD_EXECUTION_HASH_PROPERTY_KEY = "arrikto.com/execution-hash-key"
 MLMD_EXECUTION_POD_NAME_PROPERTY_KEY = "kfp_pod_name"
 MLMD_EXECUTION_CACHE_POD_NAME_PROPERTY_KEY = "pod_name"
@@ -390,115 +381,7 @@ class MLMetadata(object):
     def _link_artifact_as_input(self, artifact):
         self._link_artifact(artifact, metadata_store_pb2.Event.INPUT)
 
-    def _create_rok_artifact_from_task(self, task):
-        result = task["task"]["result"]
-        snapshot_id = result["event"]["id"]
-        version = result["event"]["version"]
-        obj = result["event"]["object"]
-        bucket = task["task"]["bucket"]
-        artifact_name = task["task"]["action_params"]["params"]["commit_title"]
-
-        from rok_gw_client.client import RokClient  # noqa: E402
-        rok_client = RokClient()
-        task_info = rok_client.version_info(bucket, obj, version)
-        members = int(task_info["group_member_count"])
-        url = task_info["rok_url"]
-        uri = ("/rok/buckets/%s/files/%s/versions/%s?ns=%s"
-               % (utils.encode_url_component(bucket),
-                  utils.encode_url_component(obj),
-                  utils.encode_url_component(version),
-                  utils.encode_url_component(self.pod_namespace)))
-        hash_value = task_info["hash"]
-
-        property_types = ROK_SNAPSHOT_ARTIFACT_PROPERTIES
-
-        values = {"name": metadata_store_pb2.Value(string_value=artifact_name),
-                  "id": metadata_store_pb2.Value(string_value=snapshot_id),
-                  "version": metadata_store_pb2.Value(string_value=version),
-                  "object": metadata_store_pb2.Value(string_value=obj),
-                  "bucket": metadata_store_pb2.Value(string_value=bucket),
-                  "members": metadata_store_pb2.Value(int_value=members),
-                  "URL": metadata_store_pb2.Value(string_value=url),
-                  "hash": metadata_store_pb2.Value(string_value=hash_value)}
-
-        custom_properties = dict()
-        for i in range(members):
-            member_name = "member_%s" % i
-            member_obj = task_info.get("group_%s_object" % member_name)
-            member_version = task_info.get("group_%s_version" % member_name)
-            if not member_obj or not member_version:
-                continue
-            member_info = rok_client.version_info(bucket, member_obj,
-                                                  member_version)
-            member_mp = metadata_store_pb2.Value(
-                string_value=member_info.get("meta_mountpoint"))
-            member_url = metadata_store_pb2.Value(
-                string_value=member_info.get("rok_url"))
-            member_hash = metadata_store_pb2.Value(
-                string_value=member_info.get("hash"))
-            custom_properties["%s_URL" % member_name] = member_url
-            custom_properties["%s_mount_point" % member_name] = member_mp
-            custom_properties["%s_hash" % member_name] = member_hash
-
-        # KFP UI groups Artifacts by run_id/pipeline_name/workspace before
-        # switching to contexts:
-        # https://github.com/kubeflow/pipelines/pull/2852
-        # https://github.com/kubeflow/pipelines/pull/3485#issuecomment-612722767
-        custom_properties["run_id"] = metadata_store_pb2.Value(
-            string_value=kfputils.format_kfp_run_id_uri(self.run_uuid))
-
-        return self._create_artifact_with_type(uri,
-                                               ROK_SNAPSHOT_ARTIFACT_TYPE_NAME,
-                                               property_types, values,
-                                               custom_properties or None)
-
-    def submit_output_rok_artifact(self, task):
-        """Submit a RokSnapshot MLMD Artifact as output.
-
-        Args:
-            task: A Rok task as returned from version_register/version_info
-        """
-        rok_artifact = self._create_rok_artifact_from_task(task)
-        self._link_artifact_as_output(rok_artifact)
-        self._annotate_artifact_outputs([rok_artifact.id])
-
-    def link_input_rok_artifacts(self):
-        """Link previous steps output RokSnapshot artifacts to execution."""
-        def _get_output_rok_artifacts(pod_names):
-            # We return early if there are no RokSnapshot artifacts in the db
-            try:
-                rok_snapshot_type_id = self.store.get_artifact_type(
-                    type_name=ROK_SNAPSHOT_ARTIFACT_TYPE_NAME).id
-            except Exception:
-                return []
-
-            output_artifact_ids = []
-            annotation = METADATA_OUTPUT_ARTIFACT_IDS_ANNOTATION_KEY
-            k8s_client = k8sutils.get_v1_client()
-            for name in pod_names:
-                pod = k8s_client.read_namespaced_pod(name, self.pod_namespace)
-                ids = json.loads(pod.metadata.annotations.get(annotation,
-                                                              "[]"))
-                output_artifact_ids.extend(ids)
-
-            return [a for a
-                    in self.store.get_artifacts_by_id(output_artifact_ids)
-                    if a.type_id == rok_snapshot_type_id]
-
-        log.info("Searching for RokSnapshot artifacts to link as inputs...")
-        # Find all pods that are direct ancestors
-        log.info("Searching for Pod-type direct ancestors of step...")
-        parents = workflowutils.find_pod_parents(self.pod_name, self.workflow)
-        log.info("Found parent pods: %s", parents)
-
-        rok_artifacts = _get_output_rok_artifacts(parents)
-
-        # Link artifacts as inputs
-        input_ids = []
-        for artifact in rok_artifacts:
-            input_ids.append(artifact.id)
-            self._link_artifact_as_input(artifact)
-        self._annotate_artifact_inputs(input_ids)
+    # Rok snapshot MLMD artifact creation/linking has been removed.
 
     def update_execution(self):
         """Submit updated execution."""

@@ -57,7 +57,7 @@ from kale import Pipeline, NotebookConfig, PipelineParam
         'type': 'new_pvc',
         'mount_point': '/root',
         'annotations': [{"key": "rok/origin", "value": "url"}]
-    }], {'rok_test_volume_url': PipelineParam('str', 'url')}),
+    }], {}),
 ])
 def test_set_volume_pipeline_parameters(notebook_processor, dummy_nb_config,
                                         volumes, target):

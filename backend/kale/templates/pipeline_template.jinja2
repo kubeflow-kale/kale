@@ -80,9 +80,6 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_volume = _kfp_dsl.PipelineVolume(pvc=vol_{{ mountpoint.replace('/', '_').strip('_') }})
 
     {% elif vol['type'] == 'new_pvc' %}
-    {% if annotations.get('rok/origin') %}
-    _kale_annotations['rok/origin'] = rok_{{ name.replace('-', '_') }}_url
-    {% endif %}
 
     _kale_vop{{ loop.index }} = _kfp_dsl.VolumeOp(
         name='create-volume-{{ loop.index }}',
