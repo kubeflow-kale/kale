@@ -154,11 +154,11 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     {%- if step.metrics %}
     _kale_output_artifacts.update({'mlpipeline-metrics': '/tmp/mlpipeline-metrics.json'})
     {%- endif %}
-    {%- if pipeline.processor.id == "nb" and step.name != "final_auto_snapshot" and step.name != "pipeline_metrics" %}
+    {%- if pipeline.processor.id == "nb" and step.name != "pipeline_metrics" %}
     _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     _kale_output_artifacts.update({'{{ step.name }}': '/{{ step.name }}.html'})
     {%- endif %}
-    {%- if pipeline.processor.id == "py" and step.artifacts and step.name != "final_auto_snapshot" and step.name != "pipeline_metrics" %}
+    {%- if pipeline.processor.id == "py" and step.artifacts and step.name != "pipeline_metrics" %}
     _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
     {%- for artifact in step.artifacts %}
     _kale_output_artifacts.update({'{{ artifact["name"] }}': '{{ artifact["path"] }}'})

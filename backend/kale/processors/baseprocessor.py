@@ -17,7 +17,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from kale.common import kfutils
-from kale.pipeline import Pipeline, PipelineConfig, Step, PipelineParam
+from kale.pipeline import Pipeline, PipelineConfig, Step
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -57,7 +57,6 @@ class BaseProcessor(ABC):
             self.pipeline.processor = self
         self._configure_poddefaults()
         self._apply_steps_defaults()
-        # self._set_volume_pipeline_parameters()
     
 
     def _configure_poddefaults(self):
@@ -77,20 +76,4 @@ class BaseProcessor(ABC):
         for step in self.pipeline.steps:
             step.config.update(self.pipeline.config.steps_defaults)
 
-    def _set_volume_pipeline_parameters(self):
-        """Create pipeline parameters for volumes to be mounted on steps."""
-        volume_parameters = dict()
-        for v in self.pipeline.config.volumes:
-            if v.type == 'pv':
-                # FIXME: How should we handle existing PVs?
-                continue
-            if v.type == 'pvc':
-                mount_point = v.mount_point.replace('/', '_').strip('_')
-                par_name = "vol_{}".format(mount_point)
-                volume_parameters[par_name] = PipelineParam("str", v.name)
-            elif v.type == 'new_pvc':
-                # Rok-specific parameter generation removed. Pass annotations through as-is.
-                pass
-            else:
-                raise ValueError("Unknown volume type: {}".format(v.type))
-        self.pipeline.pipeline_parameters.update(volume_parameters)
+    
