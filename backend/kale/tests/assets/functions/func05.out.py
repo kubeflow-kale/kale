@@ -1,6 +1,4 @@
 def test():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
 
     _kale_block1 = '''
     v1 = "Hello"
@@ -30,5 +28,3 @@ def test():
     with open("/test.html", "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('test')
-
-    _kale_mlmdutils.call("mark_execution_complete")

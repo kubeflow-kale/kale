@@ -8,8 +8,8 @@ from kubernetes import client as k8s_client
 
 
 def loaddata():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_block1 = '''
     import numpy as np
@@ -61,12 +61,12 @@ def loaddata():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('loaddata')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def datapreprocessing():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -188,12 +188,12 @@ def datapreprocessing():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('datapreprocessing')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def featureengineering():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -352,12 +352,12 @@ def featureengineering():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('featureengineering')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def decisiontree():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -413,12 +413,12 @@ def decisiontree():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('decisiontree')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def svm():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -474,12 +474,12 @@ def svm():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('svm')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def naivebayes():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -535,12 +535,12 @@ def naivebayes():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('naivebayes')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def logisticregression():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -596,12 +596,11 @@ def logisticregression():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('logisticregression')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def randomforest():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -657,12 +656,11 @@ def randomforest():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('randomforest')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def results():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -718,7 +716,7 @@ def results():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('results')
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 _kale_loaddata_op = _kfp_components.func_to_container_op(loaddata)

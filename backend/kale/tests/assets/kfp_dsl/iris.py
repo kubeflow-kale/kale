@@ -14,8 +14,6 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
         N_ESTIMATORS = 500
         MAX_DEPTH = 2
     '''
-    # from kale.common import mlmdutils as _kale_mlmdutils
-    # _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -77,7 +75,6 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('load_transform_data_html_report')
 
-    # _kale_mlmdutils.call("mark_execution_complete")
 
 
 @kfp_dsl.component(
@@ -91,8 +88,6 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
         N_ESTIMATORS = 500
         MAX_DEPTH = 2
     '''
-    # from kale.common import mlmdutils as _kale_mlmdutils
-    # _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -153,7 +148,6 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('train_model_html_report')
 
-    # _kale_mlmdutils.call("mark_execution_complete")
 
 
 @kfp_dsl.component(
@@ -167,8 +161,6 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_artifact
         N_ESTIMATORS = 500
         MAX_DEPTH = 2
     '''
-    # from kale.common import mlmdutils as _kale_mlmdutils
-    # _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -243,7 +235,6 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_artifact
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('evaluate_model_html_report')
 
-    # _kale_mlmdutils.call("mark_execution_complete")
 
 
 @kfp_dsl.pipeline(

@@ -15,8 +15,6 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
         booltest = True
         strtest = test
     '''
-    # from kale.common import mlmdutils as _kale_mlmdutils
-    # _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -71,7 +69,6 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('create_matrix_html_report')
 
-    # _kale_mlmdutils.call("mark_execution_complete")
 
 
 @kfp_dsl.component(
@@ -86,8 +83,6 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: I
         booltest = True
         strtest = test
     '''
-    # from kale.common import mlmdutils as _kale_mlmdutils
-    # _kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -141,7 +136,6 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: I
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('sum_matrix_html_report')
 
-    # _kale_mlmdutils.call("mark_execution_complete")
 
 
 @kfp_dsl.pipeline(

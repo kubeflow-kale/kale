@@ -8,8 +8,7 @@ from kubernetes import client as k8s_client
 
 
 def step1():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
@@ -27,12 +26,11 @@ def step1():
     _kale_artifacts = {}
 
     _kale_link_artifacts(_kale_artifacts)
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def step2():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.common.runutils import ttl as _kale_ttl
     from kale.marshal.decorator import marshal as _kale_marshal
@@ -52,12 +50,11 @@ def step2():
     _kale_artifacts = {}
 
     _kale_link_artifacts(_kale_artifacts)
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def step3():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
@@ -74,7 +71,7 @@ def step3():
     _kale_artifacts = {}
 
     _kale_link_artifacts(_kale_artifacts)
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 _kale_step1_op = _kfp_components.func_to_container_op(step1)

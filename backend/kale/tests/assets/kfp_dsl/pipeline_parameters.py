@@ -8,11 +8,9 @@ from kubernetes import client as k8s_client
 
 
 def step1():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.common import rokutils as _kale_rokutils
-    _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
         "test",
         "step1",
@@ -38,17 +36,14 @@ def step1():
         "step1",
         "",
         before=False)
-    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_snapshot_task)
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def step3(b: str):
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.common import rokutils as _kale_rokutils
-    _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
         "test",
         "step3",
@@ -74,17 +69,14 @@ def step3(b: str):
         "step3",
         "",
         before=False)
-    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_snapshot_task)
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def step2(a: int, c: int):
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.common import rokutils as _kale_rokutils
-    _kale_mlmdutils.call("link_input_rok_artifacts")
     _kale_rokutils.snapshot_pipeline_step(
         "test",
         "step2",
@@ -111,14 +103,12 @@ def step2(a: int, c: int):
         "step2",
         "",
         before=False)
-    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_snapshot_task)
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 def final_auto_snapshot():
-    from kale.common import mlmdutils as _kale_mlmdutils
-    _kale_mlmdutils.init_metadata()
+    
 
     from kale.marshal.decorator import marshal as _kale_marshal
     from kale.common.runutils import link_artifacts as _kale_link_artifacts
@@ -135,15 +125,13 @@ def final_auto_snapshot():
 
     _kale_link_artifacts(_kale_artifacts)
     from kale.common import rokutils as _kale_rokutils
-    _kale_mlmdutils.call("link_input_rok_artifacts")
     _rok_snapshot_task = _kale_rokutils.snapshot_pipeline_step(
         "test",
         "final_auto_snapshot",
         "",
         before=False)
-    _kale_mlmdutils.call("submit_output_rok_artifact", _rok_snapshot_task)
 
-    _kale_mlmdutils.call("mark_execution_complete")
+    
 
 
 _kale_step1_op = _kfp_components.func_to_container_op(step1)
