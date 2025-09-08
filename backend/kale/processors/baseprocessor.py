@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import logging
 
 from abc import ABC, abstractmethod
@@ -56,23 +55,10 @@ class BaseProcessor(ABC):
         # what backend generated it.
         if self.pipeline:
             self.pipeline.processor = self
-        self._add_final_autosnapshot_step()
         self._configure_poddefaults()
         self._apply_steps_defaults()
         # self._set_volume_pipeline_parameters()
-
-    def _add_final_autosnapshot_step(self):
-        if not self.no_op_step:
-            raise RuntimeError("Processor class needs to define a no-op step.")
-        leaf_steps = self.pipeline.get_leaf_steps()
-        if self.config.autosnapshot and len(leaf_steps) > 1:
-            _step = copy.deepcopy(self.no_op_step)
-            _step.config.name = "final_auto_snapshot"
-            self.pipeline.add_step(_step)
-            # add a link from all the last steps of the pipeline to
-            # the final auto snapshot one.
-            for step in leaf_steps:
-                self.pipeline.add_edge(step.name, _step.config.name)
+    
 
     def _configure_poddefaults(self):
         # FIXME: We should reconsider the implementation of

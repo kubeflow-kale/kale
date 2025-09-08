@@ -151,9 +151,6 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
     _kale_{{ step.name }}_task.container.working_dir = "{{ abs_working_dir }}"
     _kale_{{ step.name }}_task.container.set_security_context(k8s_client.V1SecurityContext(run_as_user=0))
     _kale_output_artifacts = {}
-    {%- if autosnapshot %}
-    _kale_output_artifacts.update({'mlpipeline-ui-metadata': '/tmp/mlpipeline-ui-metadata.json'})
-    {%- endif %}
     {%- if step.metrics %}
     _kale_output_artifacts.update({'mlpipeline-metrics': '/tmp/mlpipeline-metrics.json'})
     {%- endif %}
