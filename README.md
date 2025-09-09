@@ -21,10 +21,10 @@
 KALE (Kubeflow Automated pipeLines Engine) is a project that aims at simplifying
 the Data Science experience of deploying Kubeflow Pipelines workflows.
 
-Kubeflow is a great platform for orchestrating complex workflows on top
-Kubernetes and Kubeflow Pipeline provides the mean to create reusable components
+Kubeflow is a great platform for orchestrating complex workflows on top of
+Kubernetes, and Kubeflow Pipelines provide the means to create reusable components
 that can be executed as part of workflows. The self-service nature of Kubeflow
-make it extremely appealing for Data Science use, at it provides an easy access
+makes it extremely appealing for Data Science use, at it provides an easy access
 to advanced distributed jobs orchestration, re-usability of components, Jupyter
 Notebooks, rich UIs and more. Still, developing and maintaining Kubeflow
 workflows can be hard for data scientists, who may not be experts in working
@@ -33,7 +33,7 @@ involve processes of data exploration, iterative modelling and interactive
 environments (mostly Jupyter notebook).
 
 Kale bridges this gap by providing a simple UI to define Kubeflow Pipelines
-workflows directly from you JupyterLab interface, without the need to change a
+workflows directly from your JupyterLab interface, without the need to change a
 single line of code.
 
 Read more about Kale and how it works in this Medium post:
@@ -42,9 +42,10 @@ Read more about Kale and how it works in this Medium post:
 ## Getting started
 
 ### Requirements
+- Install a Kubernetes cluster (basic Kubernetes cluster, `minikube`, `kind`)
 - Install Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
-- Kubernetes
 
+### Installation
 Install the Kale backend from PyPI and the JupyterLab extension. You can find a
 set of curated Notebooks in the
 [examples repository](https://github.com/kubeflow-kale/examples)
