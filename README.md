@@ -102,7 +102,7 @@ You should see JupyterLab with the Kale icon in the left hand panel. If you clic
 
 
 In order to see the Kale controls, you must open one of the curated example notebooks. You can find the set of curated Notebooks in the
-[examples repository](https://github.com/kubeflow-kale/examples)
+[examples repository](https://github.com/kubeflow-kale/examples)  To open it in JupyterLab, navigate to the Files tab in JupyterLab, and go to `kale/examples/base/`. Choose an `.ipynb` example file and open it as a JupyterNotebook.
 <img alt="Kale JupyterLab Extension" src="docs/imgs/Extension.png"/>
 
 
