@@ -75,16 +75,19 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-Install the Kale backend from PyPI and the JupyterLab extension. You can find a
-set of curated Notebooks in the
-[examples repository](https://github.com/kubeflow-kale/examples)
+Install JupyterLab into your virtual environment. Then install the Kale backend from PyPI and the JupyterLab extension.
 
 ```bash
-# install kale
-pip install kubeflow-kale
+# activate your virtual environment if you haven't already
+conda activate my_project_env
+# OR
+source .venv/bin/activate
 
 # install jupyter lab
 pip install "jupyterlab>=4.0.0"
+
+# install kale
+pip install kubeflow-kale
 
 # install the extension
 jupyter labextension install kubeflow-kale-labextension
@@ -94,8 +97,14 @@ jupyter labextension list
 # run
 jupyter lab
 ```
+You should see JupyterLab with the Kale icon in the left hand panel. If you click on it to open the Kale Deployment Panel, you will only see the title of the panel, and you will not see any of the controls. 
+[insert screenshot here]
 
+In order to see the Kale controls, you must open one of the curated example notebooks. You can find the set of curated Notebooks in the
+[examples repository](https://github.com/kubeflow-kale/examples)
 <img alt="Kale JupyterLab Extension" src="docs/imgs/Extension.png"/>
+
+
 
 To build images to be used as a NotebookServer in Kubeflow, refer to the
 Dockerfile in the `docker` folder.
