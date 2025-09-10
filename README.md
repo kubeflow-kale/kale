@@ -136,9 +136,13 @@ conda activate my_project_env
 source .venv/bin/activate
 
 # manually call one of the example pipelines to populate in the kfp UI
-# python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080 --run_pipeline
+python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080 --run_pipeline
+
+# (you can try running the following test, but it is in development and will fail)
+pytest -x -vv # TODO
 ```
-The final command should build and run a new pipeline called `kale-pipeline`. Refresh the `kfp` UI browser - you should now see this pipeline.
+The `run-pipeline` command should generate a DSL script in the `root/.kale` directory and create and run a new pipeline called `kale-pipeline`.
+Refresh the `kfp` UI browser - you should now see this pipeline.
 
 ### Verify frontend installation
 
@@ -164,11 +168,14 @@ Follow these steps to run the extension in developer mode, so you can see and te
 
 Make sure you have installed Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/).
 
-Checkout to the `backend` directory
-
+In a new terminal window, checkout to the `backend/` directory and install the extension in dev mode:
 ```bash
 cd backend/
+
+# install the extension in dev mode
 pip install -e .[dev]
+```
+
 
 # start kfp locally in another terminal
 kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
@@ -177,7 +184,7 @@ kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
 cd ..
 python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080 --run_pipeline
 
-# run tests
+# (you can try running the following test, but it is in development and will fail)
 pytest -x -vv # TODO
 ```
 DSL script will be generated inside .kale of root directory and pipeline would be visible in KFP UI running at 'http://127.0.0.1:8080/'.
