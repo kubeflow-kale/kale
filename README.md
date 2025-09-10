@@ -18,6 +18,17 @@
 
 ---
 
+> [!NOTE]
+> ## Project Status Update 🚀
+> 
+> After several years of inactivity, we’re excited to announce that Kale development has restarted! 🎉  
+> Kale was widely appreciated by the community back in the day, and our current goal is to re-establish a solid baseline by updating all components to the latest versions and ensuring full compatibility with the most recent Kubeflow releases.
+> 
+> See all details in the [**Road to 2.0 issue**](https://github.com/kubeflow-kale/kale/issues/457)
+
+
+
+
 KALE (Kubeflow Automated pipeLines Engine) is a project that aims at simplifying
 the Data Science experience of deploying Kubeflow Pipelines workflows.
 
