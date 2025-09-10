@@ -70,7 +70,6 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
     _kale_update_uimetadata('create_matrix_html_report')
 
 
-
 @kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['kfp>=2.0.0', 'kubeflow-kale==1.0.0.dev13', 'numpy'],
@@ -135,7 +134,6 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: I
     with open(sum_matrix_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('sum_matrix_html_report')
-
 
 
 @kfp_dsl.pipeline(

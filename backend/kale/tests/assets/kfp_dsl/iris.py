@@ -76,7 +76,6 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_update_uimetadata('load_transform_data_html_report')
 
 
-
 @kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install=['kfp>=2.0.0',
@@ -147,7 +146,6 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
     with open(train_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('train_model_html_report')
-
 
 
 @kfp_dsl.component(
@@ -234,7 +232,6 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_artifact
     with open(evaluate_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('evaluate_model_html_report')
-
 
 
 @kfp_dsl.pipeline(
