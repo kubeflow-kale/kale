@@ -22,8 +22,6 @@ import tabulate
 from functools import lru_cache
 from kale.common import k8sutils
 
- 
-
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
 K8S_SIZE_RE = re.compile(r'^([0-9]+)(E|Ei|P|Pi|T|Ti|G|Gi|M|Mi|K|Ki){0,1}$')
@@ -171,10 +169,8 @@ def _list_volumes(client, namespace, pod_name, container_name):
         if not pvc_spec:
             continue
 
-        
         pvc = client.read_namespaced_persistent_volume_claim(
             pvc_spec.claim_name, namespace)
-
         mount_path = _get_mount_path(container, volume)
         volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])
         rok_volumes.append((mount_path, volume, volume_size))

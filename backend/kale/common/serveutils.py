@@ -246,10 +246,7 @@ def serve(model: Any,
     model_filepath = marshal.save(model, "model")
     log.info("Model saved successfully at '%s'", model_filepath)
 
-    
     new_pvc_name = volume_name
-    
-
     # Need an absolute path from the *root* of the PVC. Add '/' if not exists.
     pvc_model_path = "/" + PREDICTOR_MODEL_DIR.lstrip(PVC_ROOT)
     # Tensorflow saves the model's files into a directory by itself

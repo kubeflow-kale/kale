@@ -57,7 +57,6 @@ class BaseProcessor(ABC):
             self.pipeline.processor = self
         self._configure_poddefaults()
         self._apply_steps_defaults()
-    
 
     def _configure_poddefaults(self):
         # FIXME: We should reconsider the implementation of
@@ -75,5 +74,3 @@ class BaseProcessor(ABC):
     def _apply_steps_defaults(self):
         for step in self.pipeline.steps:
             step.config.update(self.pipeline.config.steps_defaults)
-
-    

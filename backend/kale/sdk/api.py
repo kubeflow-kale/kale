@@ -76,7 +76,6 @@ def pipeline(**kwargs):
                                    " keyword arguments." % func.__name__)
 
             cli_args = _parse_cli_args()
-            
 
             config = PipelineConfig(**kwargs)
 

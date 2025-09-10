@@ -14,10 +14,7 @@
 
 import pytest
 
-from kale import Pipeline, NotebookConfig
-
-
- 
+from kale import NotebookConfig
 
 
 @pytest.mark.parametrize("args,target", [
