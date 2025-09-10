@@ -163,20 +163,29 @@ Navigate to the `kfp` UI, refresh the page, and check that your new pipeline run
 ## Contribute
 
 Follow these steps to run the extension in developer mode, so you can see and test your changes in real time.
+Please note: this functionality is still in development, and there is not a streamlined way to observe code changes as you make them.
 
 #### Backend
 
 Make sure you have installed Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/).
 
-In a new terminal window, checkout to the `backend/` directory and install the extension in dev mode:
+
+Open a new terminal window for `backend`:
 ```bash
+# checkout to the backend directory
 cd backend/
+
+# activate the virtual environment
+conda activate my_project_env
+# OR
+source .venv/bin/activate
 
 # install the extension in dev mode
 pip install -e .[dev]
 ```
 
-
+Open a new terminal window for `kfp`:
+```bash
 # start kfp locally in another terminal
 kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
 
@@ -184,32 +193,25 @@ kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
 cd ..
 python ./backend/kale/cli.py --nb ./examples/base/candies_sharing.ipynb --kfp_host http://127.0.0.1:8080 --run_pipeline
 
-# (you can try running the following test, but it is in development and will fail)
-pytest -x -vv # TODO
+# start kfp locally in another terminal
+kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
 ```
-DSL script will be generated inside .kale of root directory and pipeline would be visible in KFP UI running at 'http://127.0.0.1:8080/'.
-
-#### Notes to consider:
-1. Component names can't be same as any other variable with same name being used in the user code.
-2. Component name can't have _ and spaces, but instead have '-'
-3. Component names can't have capital letters and numbers after a '-'.
-4. Step names shouldn't have capital letters and no numbers after '-', eg. 'kid1' is fine, but not 'kid-1'.
-5. Step names with _ are replaced to '-' for component names and appended with '-step' in the DSL script.
-6. Artifact variables are appended with '-artifact' in the DSL script.
-
 
 #### Labextension
 
 The JupyterLab Python package comes with its own yarn wrapper, called `jlpm`.
-While using the previously installed venv, install JupyterLab by running:
 
+Open a new terminal window to the `kale` directory and run the following:
 ```bash
+# activate the virtual environment
+conda activate my_project_env
+# OR
+source .venv/bin/activate
+
+# make sure you have the correct version of jupyterlab
 pip install "jupyterlab>=4.0.0"
-```
 
-You can then run the following to install the Kale extension:
-
-```bash
+# check out the labextension directory
 cd labextension/
 
 # build extension
@@ -222,21 +224,24 @@ pip install -e . --force-reinstal
 jupyter labextension develop . --overwrite
 # list installed jp extensions
 jupyter labextension list
+```
 
-# move to the base directory location
+Finally, you can run Kale in developer mode (note - this is not streamlined)
+```bash
+# move to the base kale directory
 cd ..
+
 # open jupyterlab
 jupyter lab
 
-# To make changes and rebuild
-# open 2nd tab inside labextension, then
+# To make changes and rebuild, open 2nd tab inside labextension, then
 jlpm build
-
-# copy paste static directory files inside kubeflow-kale-labextension/labextension folder and refresh jupyterlab
 ```
+Each time you make changes to the code, you will have to
+copy paste static directory files inside kubeflow-kale-labextension/labextension folder and refresh jupyterlab
 Now, you can test the extension with the notebooks inside the examples directory.
 
-### FAQ
+## FAQ
 
 To build images to be used as a NotebookServer in Kubeflow, refer to the
 Dockerfile in the `docker` folder.
@@ -266,3 +271,11 @@ Currently installed git hooks:
 3. Fix weakmap warning related in InlineMetadata.tsx which gets displayed while toggling the kale icon to enable state. It can be skipped for now in UI.
 4. Fix Kale icon in LeftPanel
 5. Fix building and packaging of labextension related with package.json, pyproject.toml, and tsconfig.json
+
+#### Notes to consider
+1. Component names can't be same as any other variable with same name being used in the user code.
+2. Component name can't have _ and spaces, but instead have '-'
+3. Component names can't have capital letters and numbers after a '-'.
+4. Step names shouldn't have capital letters and no numbers after '-', eg. 'kid1' is fine, but not 'kid-1'.
+5. Step names with _ are replaced to '-' for component names and appended with '-step' in the DSL script.
+6. Artifact variables are appended with '-artifact' in the DSL script.
