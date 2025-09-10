@@ -98,7 +98,8 @@ jupyter labextension list
 jupyter lab
 ```
 You should see JupyterLab with the Kale icon in the left hand panel. If you click on it to open the Kale Deployment Panel, you will only see the title of the panel, and you will not see any of the controls. 
-[insert screenshot here]
+<img width="2560" height="1252" alt="Screenshot From 2025-09-05 10-47-27" src="https://github.com/user-attachments/assets/33eb8a12-7216-4566-b2e4-f052d6d56334" />
+
 
 In order to see the Kale controls, you must open one of the curated example notebooks. You can find the set of curated Notebooks in the
 [examples repository](https://github.com/kubeflow-kale/examples)
