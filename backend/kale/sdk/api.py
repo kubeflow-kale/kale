@@ -76,8 +76,7 @@ def pipeline(**kwargs):
                                    " keyword arguments." % func.__name__)
 
             cli_args = _parse_cli_args()
-            # Rok-based interactive snapshot and volume detection removed.
-            # If volumes are needed, pass them explicitly via PipelineConfig.
+            
 
             config = PipelineConfig(**kwargs)
 

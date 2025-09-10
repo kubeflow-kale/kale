@@ -6,7 +6,6 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 {%- if step.ins|length == 0 and step.outs|length == 0 and step.source|length == 0 %}
     pass
 {%- else %}
-{# MLMD utils removed: no init_metadata; Rok autosnapshot removed #}
 
 
     {% if step.config.timeout %}from kale.common.runutils import ttl as _kale_ttl{% endif %}
@@ -38,5 +37,4 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 {%- endif %}}
 
     _kale_link_artifacts(_kale_artifacts)
-{# Rok autosnapshot and MLMD utils removed #}
 {%- endif %}

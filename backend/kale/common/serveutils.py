@@ -246,9 +246,9 @@ def serve(model: Any,
     model_filepath = marshal.save(model, "model")
     log.info("Model saved successfully at '%s'", model_filepath)
 
-    # Rok-based snapshot and PVC hydration removed. Reuse the existing PVC.
+    
     new_pvc_name = volume_name
-    # Do not delete the dumped model if reusing the same PVC.
+    
 
     # Need an absolute path from the *root* of the PVC. Add '/' if not exists.
     pvc_model_path = "/" + PREDICTOR_MODEL_DIR.lstrip(PVC_ROOT)

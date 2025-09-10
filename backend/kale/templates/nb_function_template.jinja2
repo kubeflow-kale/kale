@@ -12,7 +12,6 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
 {%- endfor %}
     '''.format({{ step.pps_names|join(', ') }})
 {% endif %}
-{# MLMD utils removed; Rok autosnapshot removed #}
 
 {%- if step.ins|length > 0 %}
     _kale_data_loading_block = '''
@@ -59,5 +58,3 @@ def {{ step.name }}({%- for arg in step.pps_names -%}
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('{{ step.name }}')
 {% endif -%}
-
-{# Rok autosnapshot and MLMD utils removed #}

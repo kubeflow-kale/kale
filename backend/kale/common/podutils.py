@@ -22,7 +22,7 @@ import tabulate
 from functools import lru_cache
 from kale.common import k8sutils
 
-# Rok-specific storage class/provisioner removed
+ 
 
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
@@ -171,7 +171,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
         if not pvc_spec:
             continue
 
-        # Previously restricted to Rok CSI volumes; now allow any PVC.
+        
         pvc = client.read_namespaced_persistent_volume_claim(
             pvc_spec.claim_name, namespace)
 
