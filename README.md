@@ -27,7 +27,7 @@
 > See all details in the [**Road to 2.0 issue**](https://github.com/kubeflow-kale/kale/issues/457)
 
 
-
+## Introduction
 
 KALE (Kubeflow Automated pipeLines Engine) is a project that aims at simplifying
 the Data Science experience of deploying Kubeflow Pipelines workflows.
@@ -49,6 +49,19 @@ single line of code.
 
 Read more about Kale and how it works in this Medium post:
 [Automating Jupyter Notebook Deployments to Kubeflow Pipelines with Kale](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
+
+## Resources
+
+- Kale introduction [blog post](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
+- Codelabs showcasing Kale working in MiniKF with Arrikto's [Rok](https://www.arrikto.com/):
+  - [From Notebook to Kubeflow Pipelines](https://codelabs.developers.google.com/codelabs/cloud-kubeflow-minikf-kale/#0)
+  - [From Notebook to Kubeflow Pipelines with HP Tuning](https://arrik.to/demowfhp)
+- KubeCon NA Tutorial 2019: [From Notebook to Kubeflow Pipelines: An End-to-End Data Science Workflow](https://kccncna19.sched.com/event/Uaeq/tutorial-from-notebook-to-kubeflow-pipelines-an-end-to-end-data-science-workflow-michelle-casbon-google-stefano-fioravanzo-fondazione-bruno-kessler-ilias-katsakioris-arrikto?iframe=no&w=100%&sidebar=yes&bg=no)
+  / [video](http://youtube.com/watch?v=C9rJzTzVzvQ)
+- CNCF Webinar 2020: [From Notebook to Kubeflow Pipelines with MiniKF & Kale](https://www.cncf.io/webinars/from-notebook-to-kubeflow-pipelines-with-minikf-kale/)
+  / [video](https://www.youtube.com/watch?v=1fX9ZFWkvvs)
+- KubeCon EU Tutorial 2020: [From Notebook to Kubeflow Pipelines with HP Tuning: A Data Science Journey](https://kccnceu20.sched.com/event/ZerG/tutorial-from-notebook-to-kubeflow-pipelines-with-hp-tuning-a-data-science-journey-stefano-fioravanzo-ilias-katsakioris-arrikto)
+  / [video](https://www.youtube.com/watch?v=QK0NxhyADpM)
 
 ## Getting started
 
@@ -98,35 +111,23 @@ jupyter labextension list
 jupyter lab
 ```
 You should see JupyterLab with the Kale icon in the left hand panel. If you click on it to open the Kale Deployment Panel, you will only see the title of the panel, and you will not see any of the controls. 
+
 <img width="2560" height="1252" alt="Screenshot From 2025-09-05 10-47-27" src="https://github.com/user-attachments/assets/33eb8a12-7216-4566-b2e4-f052d6d56334" />
 
 
 In order to see the Kale controls, you must open one of the curated example notebooks. You can find the set of curated Notebooks in the
-[examples repository](https://github.com/kubeflow-kale/examples)  To open it in JupyterLab, navigate to the Files tab in JupyterLab, and go to `kale/examples/base/`. Choose an `.ipynb` example file and open it as a JupyterNotebook.
+[examples repository](https://github.com/kubeflow-kale/examples)  To open it in JupyterLab, navigate to the Files tab in JupyterLab, and go to `kale/examples/base/`. Choose an `.ipynb` example file and open it as a JupyterNotebook. You should now be able to toggle on the Kale panel and see the controls.
 <img alt="Kale JupyterLab Extension" src="docs/imgs/Extension.png"/>
 
 
+### FAQ
 
 To build images to be used as a NotebookServer in Kubeflow, refer to the
 Dockerfile in the `docker` folder.
 
-### FAQ
-
 Head over to [FAQ](FAQ.md) to read about some known issues and some of the
 limitations imposed by the Kale data marshalling model.
 
-## Resources
-
-- Kale introduction [blog post](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
-- Codelabs showcasing Kale working in MiniKF with Arrikto's [Rok](https://www.arrikto.com/):
-  - [From Notebook to Kubeflow Pipelines](https://codelabs.developers.google.com/codelabs/cloud-kubeflow-minikf-kale/#0)
-  - [From Notebook to Kubeflow Pipelines with HP Tuning](https://arrik.to/demowfhp)
-- KubeCon NA Tutorial 2019: [From Notebook to Kubeflow Pipelines: An End-to-End Data Science Workflow](https://kccncna19.sched.com/event/Uaeq/tutorial-from-notebook-to-kubeflow-pipelines-an-end-to-end-data-science-workflow-michelle-casbon-google-stefano-fioravanzo-fondazione-bruno-kessler-ilias-katsakioris-arrikto?iframe=no&w=100%&sidebar=yes&bg=no)
-  / [video](http://youtube.com/watch?v=C9rJzTzVzvQ)
-- CNCF Webinar 2020: [From Notebook to Kubeflow Pipelines with MiniKF & Kale](https://www.cncf.io/webinars/from-notebook-to-kubeflow-pipelines-with-minikf-kale/)
-  / [video](https://www.youtube.com/watch?v=1fX9ZFWkvvs)
-- KubeCon EU Tutorial 2020: [From Notebook to Kubeflow Pipelines with HP Tuning: A Data Science Journey](https://kccnceu20.sched.com/event/ZerG/tutorial-from-notebook-to-kubeflow-pipelines-with-hp-tuning-a-data-science-journey-stefano-fioravanzo-ilias-katsakioris-arrikto)
-  / [video](https://www.youtube.com/watch?v=QK0NxhyADpM)
 
 ## Contribute
 
@@ -215,7 +216,7 @@ Currently installed git hooks:
 - `pre-commit`: Run a prettier check on staged files, using
   [pretty-quick](https://github.com/azz/pretty-quick)
 
-#### Issues to cover
+#### Known Bugs
 1. Fix Progress bar in left panel during compile and run.
 2. Fix opening of editor after clicking edit pencil icon above cells.
 3. Fix weakmap warning related in InlineMetadata.tsx which gets displayed while toggling the kale icon to enable state. It can be skipped for now in UI.
