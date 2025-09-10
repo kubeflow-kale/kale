@@ -57,6 +57,24 @@ Read more about Kale and how it works in this Medium post:
 - Install Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
 
 ### Installation
+Clone the repository:
+```bash
+git clone https://github.com/kubeflow-kale/kale.git
+```
+To follow the best practices for coding, create a virtual environment to hold your installation. There are a couple of methods for this.
+`conda`:
+```bash
+cd kale
+conda create --name my_project_env python=3.10
+conda activate my_project_env
+```
+`venv`:
+```bash
+cd kale
+python -m venv .venv
+source .venv/bin/activate
+```
+
 Install the Kale backend from PyPI and the JupyterLab extension. You can find a
 set of curated Notebooks in the
 [examples repository](https://github.com/kubeflow-kale/examples)
@@ -106,13 +124,6 @@ limitations imposed by the Kale data marshalling model.
 
 Make sure you have installed Kubeflow Pipelines(v2.4.0) as recommended in the official documentation [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/)
 
-Clone the repository and create a conda environment:
-```bash
-git clone https://github.com/kubeflow-kale/kale.git
-cd kale
-conda create --name my_project_env python=3.10
-conda activate my_project_env
-```
 Checkout to backend directory. Then:
 
 ```bash
