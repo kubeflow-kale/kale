@@ -77,7 +77,7 @@ def auto_generated_pipeline({%- for arg in pipeline.pps_names -%}
 
     {% elif vol['type'] == 'pvc' %}
 
-    _kale_volume = _kfp_dsl.PipelineVolume(pvc=vol_{{ mountpoint.replace('/', '_').strip('_') }})
+    _kale_volume = _kfp_dsl.PipelineVolume(pvc='{{ name }}')
 
     {% elif vol['type'] == 'new_pvc' %}
 
