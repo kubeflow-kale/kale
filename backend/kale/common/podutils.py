@@ -163,7 +163,7 @@ def _list_volumes(client, namespace, pod_name, container_name):
     pod = client.read_namespaced_pod(pod_name, namespace)
     container = _get_pod_container(pod, container_name)
 
-    rok_volumes = []
+    volumes = []
     for volume in pod.spec.volumes:
         pvc_spec = volume.persistent_volume_claim
         if not pvc_spec:
@@ -173,9 +173,9 @@ def _list_volumes(client, namespace, pod_name, container_name):
             pvc_spec.claim_name, namespace)
         mount_path = _get_mount_path(container, volume)
         volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])
-        rok_volumes.append((mount_path, volume, volume_size))
+        volumes.append((mount_path, volume, volume_size))
 
-    return rok_volumes
+    return volumes
 
 
 def get_volume_containing_path(path):
