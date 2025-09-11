@@ -1,5 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Have questions or need support?
-    url: https://app.slack.com/client/T08PSQ7BQ/C08KJBVDH5H
-    about: Please ask questions on our CNCF Slack Channel \#kubeflow-ml-experience
