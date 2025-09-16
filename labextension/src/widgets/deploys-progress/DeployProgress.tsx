@@ -409,7 +409,7 @@ export const DeployProgress: React.FunctionComponent<
         </div>
       ) : null}
 
-      {/* {props.showSnapshotProgress ? (
+      {props.showSnapshotProgress ? (
         <div className="deploy-progress-row">
           <div className="deploy-progress-label">Taking snapshot...</div>
           <div className="deploy-progress-value">
@@ -420,7 +420,7 @@ export const DeployProgress: React.FunctionComponent<
             )}
           </div>
         </div>
-      ) : null} */}
+      ) : null} 
 
       {props.showCompileProgress ? (
         <div className="deploy-progress-row">

@@ -1,6 +1,6 @@
 {
   "name": "kubeflow-kale-labextension",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Convert Notebooks to Kubeflow pipelines with Kale",
   "keywords": [
     "jupyter",
@@ -35,7 +35,7 @@
     "build:prod": "jlpm clean && jlpm build:lib:prod && jlpm build:labextension",
     "clean": "jlpm clean:lib",
     "clean:all": "jlpm clean:lib && jlpm clean:labextension && jlpm clean:lintcache",
-    "clean:labextension": "rimraf kubeflow_kale_labextension/labextension kubeflow_kale_labextension/_version.py",
+    "clean:labextension": "rimraf kubeflow-kale-labextension/labextension kubeflow-kale-labextension/_version.py",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
     "clean:lintcache": "rimraf .eslintcache .stylelintcache",
     "eslint": "jlpm eslint:check --fix",
@@ -76,8 +76,8 @@
     "@types/react-dom": "^18.2.0",
     "dompurify": "^3.2.6",
     "js-yaml": "^4.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-sanitized-html": "^2.0.0",
     "use-debounce": "^10.0.5"
   },
@@ -106,6 +106,7 @@
     "stylelint-config-recommended": "^13.0.0",
     "stylelint-config-standard": "^34.0.0",
     "stylelint-csstree-validator": "^3.0.0",
+    "stylelint-prettier": "^4.0.0",
     "typescript": "~5.9.2",
     "use-debounce": "^10.0.5",
     "yjs": "^13.5.40"
@@ -120,7 +121,7 @@
   "jupyterlab": {
     "extension": true,
     "_build": {
-      "load": "static\\remoteEntry.f8f65c2a72b84c2e54c5.js",
+      "load": "static/remoteEntry.c59b773b5f78ac008878.js",
       "extension": "./extension"
     }
   },
