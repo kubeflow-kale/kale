@@ -20,7 +20,7 @@ def step3(st, st2):
 @pipeline(
     name="test",
     experiment="test",
-    autosnapshot=True)
+    )
 def mypipeline(a=1, b="Some string", c=5):
     data = step1()
     res = step2(c, a, data)

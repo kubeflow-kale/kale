@@ -121,8 +121,6 @@ class NotebookConfig(PipelineConfig):
     experiment = Field(type=dict)
     # Used in the UI to keep per-notebook state of the volumes snapshot toggle
     snapshot_volumes = Field(type=bool, default=False)
-    # override from PipelineConfig: set the default value to False
-    autosnapshot = Field(type=bool, default=False)
 
     @property
     def source_path(self):

@@ -14,78 +14,7 @@
 
 import pytest
 
-from kale import Pipeline, NotebookConfig, PipelineParam
-
-
-@pytest.mark.parametrize("volumes,target", [
-    ([], ({})),
-    # ---
-    ([{
-        "name": "test-volume",
-        'annotations': [{'key': 'a1', 'value': 'v1'}],
-        'size': 5,
-        'type': 'pv',
-        'mount_point': '/'
-    }], ({})),
-    # ---
-    ([{
-        'name': 'test-volume',
-        'type': 'pvc',
-        'mount_point': '/'
-    }], {'vol_': PipelineParam('str', 'test-volume')}),
-    # ---
-    ([{
-        'name': 'test-volume',
-        'type': 'pvc',
-        'mount_point': '/root'
-    }], {'vol_root': PipelineParam('str', 'test-volume')}),
-    # ---
-    ([{
-        'name': 'test-volume',
-        'type': 'pvc',
-        'mount_point': '/root/user/'
-    }], {'vol_root_user': PipelineParam('str', 'test-volume')}),
-    # ---
-    ([{
-        'name': 'test-volume',
-        'type': 'new_pvc',
-        'mount_point': '/',
-    }], {}),
-    # ---
-    ([{
-        'name': 'test-volume',
-        'type': 'new_pvc',
-        'mount_point': '/root',
-        'annotations': [{"key": "rok/origin", "value": "url"}]
-    }], {'rok_test_volume_url': PipelineParam('str', 'url')}),
-])
-def test_set_volume_pipeline_parameters(notebook_processor, dummy_nb_config,
-                                        volumes, target):
-    """Tests that volumes are correctly converted from list into dict."""
-    notebook_processor.pipeline = Pipeline(
-        NotebookConfig(**dummy_nb_config, volumes=volumes))
-    notebook_processor._set_volume_pipeline_parameters()
-    assert target == notebook_processor.pipeline.pipeline_parameters
-
-
-@pytest.mark.parametrize("volumes", [
-    ([{
-        "name": "test-volume",
-        "mount_point": "/",
-        'annotations': [{'key': 'a1', 'value': 'v1'}],
-        'size': 5,
-        'type': 'unknown'
-    }])
-])
-def test_get_volumes_parameters_exc(notebook_processor, dummy_nb_config,
-                                    volumes):
-    """Tests that volumes are correctly converted from list into dict."""
-    with pytest.raises(ValueError,
-                       match="VolumeTypeValidator:"
-                             " Value unknown is not allowed"):
-        notebook_processor.pipeline = Pipeline(
-            NotebookConfig(**dummy_nb_config, volumes=volumes))
-        notebook_processor._set_volume_pipeline_parameters()
+from kale import NotebookConfig
 
 
 @pytest.mark.parametrize("args,target", [

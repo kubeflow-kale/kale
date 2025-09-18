@@ -22,9 +22,6 @@ import tabulate
 from functools import lru_cache
 from kale.common import k8sutils
 
-ROK_CSI_STORAGE_CLASS = "rok"
-ROK_CSI_STORAGE_PROVISIONER = "rok.arrikto.com"
-
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
 K8S_SIZE_RE = re.compile(r'^([0-9]+)(E|Ei|P|Pi|T|Ti|G|Gi|M|Mi|K|Ki){0,1}$')
@@ -166,38 +163,19 @@ def _list_volumes(client, namespace, pod_name, container_name):
     pod = client.read_namespaced_pod(pod_name, namespace)
     container = _get_pod_container(pod, container_name)
 
-    rok_volumes = []
+    volumes = []
     for volume in pod.spec.volumes:
         pvc_spec = volume.persistent_volume_claim
         if not pvc_spec:
             continue
 
-        # Ensure the volume is a Rok volume, otherwise we will not be able to
-        # snapshot it.
-        # FIXME: Should we just ignore these volumes? Ignoring them would
-        #  result in an incomplete notebook snapshot.
         pvc = client.read_namespaced_persistent_volume_claim(
             pvc_spec.claim_name, namespace)
-        if pvc.spec.storage_class_name != ROK_CSI_STORAGE_CLASS:
-            msg = ("Found PVC with storage class '%s'. Only storage class '%s'"
-                   " is supported."
-                   % (pvc.spec.storage_class_name, ROK_CSI_STORAGE_CLASS))
-            raise RuntimeError(msg)
-
-        ann = pvc.metadata.annotations
-        provisioner = ann.get("volume.beta.kubernetes.io/storage-provisioner",
-                              None)
-        if provisioner != ROK_CSI_STORAGE_PROVISIONER:
-            msg = ("Found PVC storage provisioner '%s'. Only storage"
-                   " provisioner '%s' is supported."
-                   % (provisioner, ROK_CSI_STORAGE_PROVISIONER))
-            raise RuntimeError(msg)
-
         mount_path = _get_mount_path(container, volume)
         volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])
-        rok_volumes.append((mount_path, volume, volume_size))
+        volumes.append((mount_path, volume, volume_size))
 
-    return rok_volumes
+    return volumes
 
 
 def get_volume_containing_path(path):

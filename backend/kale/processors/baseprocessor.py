@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import logging
 
 from abc import ABC, abstractmethod
 
 from kale.common import kfutils
-from kale.pipeline import Pipeline, PipelineConfig, Step, PipelineParam
+from kale.pipeline import Pipeline, PipelineConfig, Step
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -56,23 +55,8 @@ class BaseProcessor(ABC):
         # what backend generated it.
         if self.pipeline:
             self.pipeline.processor = self
-        self._add_final_autosnapshot_step()
         self._configure_poddefaults()
         self._apply_steps_defaults()
-        # self._set_volume_pipeline_parameters()
-
-    def _add_final_autosnapshot_step(self):
-        if not self.no_op_step:
-            raise RuntimeError("Processor class needs to define a no-op step.")
-        leaf_steps = self.pipeline.get_leaf_steps()
-        if self.config.autosnapshot and len(leaf_steps) > 1:
-            _step = copy.deepcopy(self.no_op_step)
-            _step.config.name = "final_auto_snapshot"
-            self.pipeline.add_step(_step)
-            # add a link from all the last steps of the pipeline to
-            # the final auto snapshot one.
-            for step in leaf_steps:
-                self.pipeline.add_edge(step.name, _step.config.name)
 
     def _configure_poddefaults(self):
         # FIXME: We should reconsider the implementation of
@@ -90,23 +74,3 @@ class BaseProcessor(ABC):
     def _apply_steps_defaults(self):
         for step in self.pipeline.steps:
             step.config.update(self.pipeline.config.steps_defaults)
-
-    def _set_volume_pipeline_parameters(self):
-        """Create pipeline parameters for volumes to be mounted on steps."""
-        volume_parameters = dict()
-        for v in self.pipeline.config.volumes:
-            if v.type == 'pv':
-                # FIXME: How should we handle existing PVs?
-                continue
-            if v.type == 'pvc':
-                mount_point = v.mount_point.replace('/', '_').strip('_')
-                par_name = "vol_{}".format(mount_point)
-                volume_parameters[par_name] = PipelineParam("str", v.name)
-            elif v.type == 'new_pvc':
-                rok_url = v.annotations.get("rok/origin")
-                if rok_url is not None:
-                    par_name = "rok_{}_url".format(v.name.replace('-', '_'))
-                    volume_parameters[par_name] = PipelineParam("str", rok_url)
-            else:
-                raise ValueError("Unknown volume type: {}".format(v.type))
-        self.pipeline.pipeline_parameters.update(volume_parameters)

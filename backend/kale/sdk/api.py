@@ -18,7 +18,7 @@ import sys
 import logging
 import argparse
 
-from kale.common import rokutils, utils
+from kale.common import utils
 from kale import (Compiler, Step, PythonProcessor, PipelineConfig, StepConfig,
                   Artifact)
 
@@ -76,9 +76,6 @@ def pipeline(**kwargs):
                                    " keyword arguments." % func.__name__)
 
             cli_args = _parse_cli_args()
-            if cli_args.kfp and not cli_args.dry_run:
-                volumes = rokutils.interactive_snapshot_and_get_volumes()
-                kwargs["volumes"] = volumes
 
             config = PipelineConfig(**kwargs)
 

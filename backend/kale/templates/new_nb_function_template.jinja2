@@ -11,8 +11,6 @@ def {{ step.name }}_step({{ component_signature_args }}):
     {%- endfor %}
 {%- endfor %}
     '''
-    #from kale.common import mlmdutils as _kale_mlmdutils
-    #_kale_mlmdutils.init_metadata()
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -59,5 +57,3 @@ def {{ step.name }}_step({{ component_signature_args }}):
     with open({{ step.name }}_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('{{ step.name }}_html_report')
-
-    #_kale_mlmdutils.call("mark_execution_complete")
