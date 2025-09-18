@@ -27,6 +27,7 @@ jobs:
     - name: Lint the extension
       run: |
         set -eux
+        cd labextension
         jlpm
         jlpm run lint:check
 
