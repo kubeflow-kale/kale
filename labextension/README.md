@@ -1,13 +1,13 @@
-# kubeflow-kale
+# kubeflow-kale-labextension
 
-[![Github Actions Status](https://github.com/kubeflow-kale/kale/workflows/Build/badge.svg)](https://github.com/kubeflow-kale/kale/actions/workflows/build.yml)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/kubeflow-kale/kale/main?urlpath=lab)
+[![Github Actions Status](https://github.com/kubeflow-kale-labextension/kale/workflows/Build/badge.svg)](https://github.com/kubeflow-kale-labextension/kale/actions/workflows/build.yml)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/kubeflow-kale-labextension/kale/main?urlpath=lab)
 
 
 Convert Notebooks to Kubeflow pipelines with Kale
 
-This extension is composed of a Python package named `kubeflow-kale`
-for the server extension and a NPM package named `kubeflow-kale`
+This extension is composed of a Python package named `kubeflow-kale-labextension`
+for the server extension and a NPM package named `kubeflow-kale-labextension`
 for the frontend extension.
 
 ## Requirements
@@ -19,7 +19,7 @@ for the frontend extension.
 To install the extension, execute:
 
 ```bash
-pip install kubeflow-kale
+pip install kubeflow-kale-labextension
 ```
 
 ## Uninstall
@@ -27,7 +27,7 @@ pip install kubeflow-kale
 To remove the extension, execute:
 
 ```bash
-pip uninstall kubeflow-kale
+pip uninstall kubeflow-kale-labextension
 ```
 
 ## Troubleshoot
@@ -58,13 +58,13 @@ The `jlpm` command is JupyterLab's pinned version of
 
 ```bash
 # Clone the repo to your local environment
-# Change directory to the kubeflow-kale directory
+# Change directory to the kubeflow-kale-labextension directory
 # Install package in development mode
 pip install -e ".[test]"
 # Link your development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
 # Server extension must be manually installed in develop mode
-jupyter server extension enable kubeflow-kale
+jupyter server extension enable kubeflow-kale-labextension
 # Rebuild extension Typescript source after making changes
 jlpm build
 ```
@@ -90,13 +90,13 @@ jupyter lab build --minimize=False
 
 ```bash
 # Server extension must be manually disabled in develop mode
-jupyter server extension disable kubeflow-kale
-pip uninstall kubeflow-kale
+jupyter server extension disable kubeflow-kale-labextension
+pip uninstall kubeflow-kale-labextension
 ```
 
 In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
 command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
-folder is located. Then you can remove the symlink named `kubeflow-kale` within that folder.
+folder is located. Then you can remove the symlink named `kubeflow-kale-labextension` within that folder.
 
 ### Testing the extension
 
@@ -115,7 +115,7 @@ jupyter labextension develop . --overwrite
 To execute them, run:
 
 ```sh
-pytest -vv -r ap --cov kubeflow-kale
+pytest -vv -r ap --cov kubeflow-kale-labextension
 ```
 
 #### Frontend tests

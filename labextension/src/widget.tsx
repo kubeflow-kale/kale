@@ -47,14 +47,14 @@ import { PageConfig } from '@jupyterlab/coreutils';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
-  'kubeflow-kale:IKubeflowKale'
+  'kubeflow-kale-labextension:IKubeflowKale'
 );
 
 export interface IKubeflowKale {
   widget: Widget;
 }
 
-const id = 'kubeflow-kale:deploymentPanel';
+const id = 'kubeflow-kale-labextension:deploymentPanel';
 /**
  * Adds a visual Kubeflow Pipelines Deployment tool to the sidebar.
  */
@@ -174,7 +174,7 @@ async function activate(
         kernel={kernel}
       />
     );
-    widget.id = 'kubeflow-kale/kubeflowDeployment';
+    widget.id = 'kubeflow-kale-labextension/kubeflowDeployment';
     widget.title.iconClass = 'jp-kale-logo jp-SideBar-tabIcon';
     widget.title.caption = 'Kubeflow Pipelines Deployment Panel';
     widget.node.classList.add('kale-panel');

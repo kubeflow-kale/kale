@@ -11,7 +11,7 @@ class RouteHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
         self.finish(json.dumps({
-            "data": "This is /kubeflow-kale/get-example endpoint!"
+            "data": "This is /kubeflow-kale-labextension/get-example endpoint!"
         }))
 
 
@@ -19,6 +19,6 @@ def setup_handlers(web_app):
     host_pattern = ".*$"
 
     base_url = web_app.settings["base_url"]
-    route_pattern = url_path_join(base_url, "kubeflow-kale", "get-example")
+    route_pattern = url_path_join(base_url, "kubeflow-kale-labextension", "get-example")
     handlers = [(route_pattern, RouteHandler)]
     web_app.add_handlers(host_pattern, handlers)

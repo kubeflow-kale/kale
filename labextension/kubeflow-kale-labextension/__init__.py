@@ -5,7 +5,7 @@ except ImportError:
     # in editable mode with pip. It is highly recommended to install
     # the package from a stable release or in editable mode: https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs
     import warnings
-    warnings.warn("Importing 'kubeflow-kale' outside a proper installation.")
+    warnings.warn("Importing 'kubeflow-kale-labextension' outside a proper installation.")
     __version__ = "dev"
 from .handlers import setup_handlers
 
@@ -13,13 +13,13 @@ from .handlers import setup_handlers
 def _jupyter_labextension_paths():
     return [{
         "src": "labextension",
-        "dest": "kubeflow-kale"
+        "dest": "kubeflow-kale-labextension"
     }]
 
 
 def _jupyter_server_extension_points():
     return [{
-        "module": "kubeflow-kale"
+        "module": "kubeflow-kale-labextension"
     }]
 
 
@@ -32,5 +32,5 @@ def _load_jupyter_server_extension(server_app):
         JupyterLab application instance
     """
     setup_handlers(server_app.web_app)
-    name = "kubeflow-kale"
+    name = "kubeflow-kale-labextension"
     server_app.log.info(f"Registered {name} server extension")
