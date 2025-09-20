@@ -80,7 +80,8 @@ export const KatibProgress: React.FunctionComponent<
     // currentOptimalTrial is _never_ null,
     // so if there's no best trial so far we don't show the object
     return optimal && optimal.bestTrialName
-      ? [yaml.safeDump(optimal)]
+    // check for safeDump in js-yaml 3.x
+      ? [yaml.dump(optimal)]
       : [
           'There are no results yet',
           'To have a result, there must be at least one successful trial'

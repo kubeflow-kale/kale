@@ -140,8 +140,7 @@ export const executeRpc = async (
   // const argsAsStr = Object.keys(kwargs).map(key => `${key}=${kwargs[key]}`).join(', ');
   let msg = [`RPC: ${func}`];
   // Log output
-  if (output.result.status !== 'ok') {
-    const title = `Kernel failed during code execution`;
+  if (output.result.status !== 'ok') {    
     msg = msg.concat([
       `Status: ${output.result.status}`,
       `Output: ${JSON.stringify(output, null, 3)}`,
@@ -163,8 +162,7 @@ export const executeRpc = async (
   let parsedResult = undefined;
   try {
     parsedResult = JSON.parse(json_data);
-  } catch (error) {
-    const title = `Failed to parse response as JSON`;
+  } catch (error) {    
     msg = msg.concat([
       `Error: ${JSON.stringify(error, null, 3)}`,
       `Response data: ${json_data}`,
@@ -178,8 +176,7 @@ export const executeRpc = async (
     throw new JSONParseError(jsonError);
   }
 
-  if (parsedResult.code !== 0) {
-    const title = `An error has occured`;
+  if (parsedResult.code !== 0) {    
     msg = msg.concat([
       `Code: ${parsedResult.code} (${getRpcCodeName(parsedResult.code)})`,
       `Message: ${parsedResult.err_message}`,

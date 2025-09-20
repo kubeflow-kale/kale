@@ -23,7 +23,6 @@ import UnknownIcon from '@mui/icons-material/Help';
 import PendingIcon from '@mui/icons-material/Schedule';
 import SkippedIcon from '@mui/icons-material/SkipNext';
 import SuccessIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
@@ -101,8 +100,7 @@ export const DeployProgress: React.FunctionComponent<
     }
   };
 
-  const getRunComponent = (pipeline: any) => {
-    let title = 'Unknown status';
+  const getRunComponent = (pipeline: any) => {    
     let IconComponent: any = UnknownIcon;
     let iconColor = '#5f6368';
 

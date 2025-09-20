@@ -56,7 +56,7 @@ export default class TagsUtils {
    * @param current The index of the cell to start the search from
    * @returns string - Name of the `block` tag of the closest previous cell
    */
-  public static getPreviousBlock(notebook: Notebook, current: number): string {
+  public static getPreviousBlock(notebook: Notebook, current: number): string | undefined {
     for (let i = current - 1; i >= 0; i--) {
       let mt = this.getKaleCellTags(notebook, i);
       if (
@@ -68,7 +68,7 @@ export default class TagsUtils {
         return mt.blockName;
       }
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -80,7 +80,7 @@ export default class TagsUtils {
   public static getKaleCellTags(
     notebook: Notebook,
     index: number,
-  ): IKaleCellTags {
+  ): IKaleCellTags | null {
     const tags: string[] = CellUtils.getCellMetaData(notebook, index, 'tags');
     if (tags) {
       let b_name = tags.map(v => {
@@ -109,7 +109,7 @@ export default class TagsUtils {
           limits[values[1]] = values[2];
         });
       return {
-        blockName: b_name[0],
+        blockName: b_name[0] || "",
         prevBlockNames: prevs,
         limits: limits,
       };
@@ -163,7 +163,7 @@ export default class TagsUtils {
   ) {
     let i: number;
     const allPromises = [];
-    for (i = 0; i < notebookPanel.model.cells.length; i++) {
+    for (i = 0; i < notebookPanel.model!.cells.length; i++) {
       const tags: string[] = CellUtils.getCellMetaData(
         notebookPanel.content,
         i,
@@ -222,11 +222,13 @@ export default class TagsUtils {
   }
 
   public static cellsToArray(notebook: NotebookPanel) {
-    const cells = notebook.model.cells;
+    const cells = notebook.model?.cells;
     const cellsArray = [];
-    for (let index = 0; index < cells.length; index += 1) {
-      const cell = cells.get(index);
-      cellsArray.push(cell);
+    if (cells) {
+      for (let index = 0; index < cells.length; index += 1) {
+        const cell = cells.get(index);
+        cellsArray.push(cell);
+      }
     }
     return cellsArray;
   }
@@ -263,14 +265,14 @@ export default class TagsUtils {
     const removedDependency = `prev:${blockName}`;
     this.cellsToArray(notebook)
       .filter(cell => {
-        const cellTags = cell.metadata.get('tags');
+        const cellTags = cell?.metadata['tags'];
         return Array.isArray(cellTags) && cellTags.includes(removedDependency);
       })
       .forEach(cell => {
-        const cellTags = cell.metadata.get('tags');
+        const cellTags = cell?.metadata['tags'];
         if (Array.isArray(cellTags)) {
           const newTags = cellTags.filter(e => e !== removedDependency);
-          cell.metadata.set('tags', newTags);
+          cell.metadata['tags'] =  newTags;
         }
       });
     notebook.context.save();

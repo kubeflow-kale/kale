@@ -69,7 +69,7 @@ function isDOMElement(obj: any): obj is HTMLElement {
 export class InlineMetadata extends React.Component<IProps, IState> {
   static contextType = CellMetadataContext;
   context!: React.ContextType<typeof CellMetadataContext>;
-  wrapperRef: React.RefObject<HTMLDivElement> = null;
+  wrapperRef: React.RefObject<HTMLDivElement> | null = null;
   state = DefaultState;
   private retryCount = 0;
   private maxRetries = 5;
@@ -122,7 +122,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
       return;
     }
 
-    if (!this.wrapperRef.current) {
+    if (!this.wrapperRef?.current) {
       console.warn(
         'InlineMetadata: wrapperRef.current is null, cannot move component'
       );
@@ -130,11 +130,11 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     }
 
     try {
-      if (!this.wrapperRef.current.classList.contains('moved')) {
-        this.wrapperRef.current.classList.add('moved');
+      if (!this.wrapperRef!.current.classList.contains('moved')) {
+        this.wrapperRef!.current.classList.add('moved');
         this.props.cellElement.insertAdjacentElement(
           'afterbegin',
-          this.wrapperRef.current
+          this.wrapperRef!.current
         );
         console.log('InlineMetadata: Succesfully moved component to cell');
       }

@@ -21,7 +21,7 @@ import {
   _legacy_executeRpcAndShowRPCError,
   RPCError,
 } from './RPCUtils';
-import { wait } from './Utils';
+
 import {
   DefaultState,
   IExperiment,

@@ -18,8 +18,7 @@ import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import {
-  IObservableList,
-  IObservableUndoableList
+  IObservableList  
 } from '@jupyterlab/observables';
 import {
   Cell,
@@ -247,7 +246,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           prevBlockNames: []
         };
       }
-      let previousBlockName = '';
+      let previousBlockName: any = '';
 
       if (!tags.blockName) {
         previousBlockName = TagsUtils.getPreviousBlock(

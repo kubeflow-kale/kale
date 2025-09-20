@@ -3,8 +3,9 @@ requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0
 build-backend = "hatchling.build"
 
 [project]
-name = "kubeflow-kale-labextension"
+name = "kubeflow-kale"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
 classifiers = [
     "Framework :: Jupyter",
@@ -22,8 +23,18 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
+    "jupyter_server>=2.4.0,<3"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.optional-dependencies]
+test = [
+    "coverage",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-jupyter[server]>=0.6.0"
+]
 
 [tool.hatch.version]
 source = "nodejs"
@@ -32,24 +43,25 @@ source = "nodejs"
 fields = ["description", "authors", "urls", "keywords"]
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["kubeflow-kale-labextension/labextension"]
+artifacts = ["kubeflow-kale/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"kubeflow-kale-labextension/labextension" = "share/jupyter/labextensions/kubeflow-kale-labextension"
-"install.json" = "share/jupyter/labextensions/kubeflow-kale-labextension/install.json"
+"kubeflow-kale/labextension" = "share/jupyter/labextensions/kubeflow-kale"
+"install.json" = "share/jupyter/labextensions/kubeflow-kale/install.json"
+"jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 
 [tool.hatch.build.hooks.version]
-path = "kubeflow-kale-labextension/_version.py"
+path = "kubeflow-kale/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "kubeflow-kale-labextension/labextension/static/style.js",
-    "kubeflow-kale-labextension/labextension/package.json",
+    "kubeflow-kale/labextension/static/style.js",
+    "kubeflow-kale/labextension/package.json",
 ]
-skip-if-exists = ["kubeflow-kale-labextension/labextension/static/style.js"]
+skip-if-exists = ["kubeflow-kale/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
@@ -59,7 +71,7 @@ npm = ["jlpm"]
 build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
-build_dir = "kubeflow-kale-labextension/labextension"
+build_dir = "kubeflow-kale/labextension"
 
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"

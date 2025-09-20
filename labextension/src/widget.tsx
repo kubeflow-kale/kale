@@ -23,7 +23,7 @@ import {
   ILayoutRestorer
 } from '@jupyterlab/application';
 
-import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
@@ -39,11 +39,8 @@ import { KubeflowKaleLeftPanel } from './widgets/LeftPanel';
 import NotebookUtils from './lib/NotebookUtils';
 import {
   executeRpc,
-  globalUnhandledRejection,
-  BaseError,
-  IRPCError,
-  RPCError,
-  RPC_CALL_STATUS
+  globalUnhandledRejection
+ 
 } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
