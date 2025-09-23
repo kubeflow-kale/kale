@@ -3,5 +3,5 @@ node_modules
 **/lib
 **/package.json
 !/package.json
-kubeflow-kale-labextension-labextension
+kubeflow-kale-labextension
 static/

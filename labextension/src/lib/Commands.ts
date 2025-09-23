@@ -64,13 +64,6 @@ interface IRunPipelineArgs {
   version_id?: string;
 }
 
-// interface IKatibRunArgs {
-//   pipeline_id: string;
-//   version_id: string;
-//   pipeline_metadata: any;
-//   output_path: string;
-// }
-
 export default class Commands {
   private readonly _notebook: NotebookPanel;
   private readonly _kernel: Kernel.IKernelConnection;
@@ -79,107 +72,6 @@ export default class Commands {
     this._notebook = notebook;
     this._kernel = kernel;
   }
-
-  // snapshotNotebook = async () => {
-  //   return await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'rok.snapshot_notebook',
-  //   );
-  // };
-
-  // getSnapshotProgress = async (task_id: string, ms?: number) => {
-  //   const task = await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'rok.get_task',
-  //     {
-  //       task_id,
-  //     },
-  //   );
-  //   if (ms) {
-  //     await wait(ms);
-  //   }
-  //   return task;
-  // };
-
-  // runSnapshotProcedure = async (onUpdate: Function) => {
-  //   const showSnapshotProgress = true;
-  //   const snapshot = await this.snapshotNotebook();
-  //   const taskId = snapshot.task.id;
-  //   let task = await this.getSnapshotProgress(taskId);
-  //   onUpdate({ task, showSnapshotProgress });
-
-  //   while (!['success', 'error', 'canceled'].includes(task.status)) {
-  //     task = await this.getSnapshotProgress(taskId, 1000);
-  //     onUpdate({ task });
-  //   }
-
-  //   if (task.status === 'success') {
-  //     console.log('Snapshotting successful!');
-  //     return task;
-  //   } else if (task.status === 'error') {
-  //     console.error('Snapshotting failed');
-  //     console.error('Stopping the deployment...');
-  //   } else if (task.status === 'canceled') {
-  //     console.error('Snapshotting canceled');
-  //     console.error('Stopping the deployment...');
-  //   }
-
-  //   return null;
-  // };
-
-  // replaceClonedVolumes = async (
-  //   bucket: string,
-  //   obj: string,
-  //   version: string,
-  //   volumes: IVolumeMetadata[],
-  // ) => {
-  //   return await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'rok.replace_cloned_volumes',
-  //     {
-  //       bucket,
-  //       obj,
-  //       version,
-  //       volumes,
-  //     },
-  //   );
-  // };
-
-  // getMountedVolumes = async (currentNotebookVolumes: IVolumeMetadata[]) => {
-  //   let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'nb.list_volumes',
-  //   );
-  //   let availableVolumeTypes = SELECT_VOLUME_TYPES.map(t => {
-  //     return t.value === 'snap' ? { ...t, invalid: false } : t;
-  //   });
-
-  //   if (notebookVolumes) {
-  //     notebookVolumes = notebookVolumes.map(volume => {
-  //       const size = volume.size ?? 0;
-  //       const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
-  //         s => size >= s.base,
-  //       )[0];
-  //       volume.size = Math.ceil(size / sizeGroup.base);
-  //       volume.size_type = sizeGroup.value;
-  //       volume.annotations = [];
-  //       return volume;
-  //     });
-  //     availableVolumeTypes = availableVolumeTypes.map(t => {
-  //       return t.value === 'clone' ? { ...t, invalid: false } : t;
-  //     });
-  //   } else {
-  //     notebookVolumes = currentNotebookVolumes;
-  //   }
-  //   return {
-  //     notebookVolumes,
-  //     selectVolumeTypes: availableVolumeTypes,
-  //   };
-  // };
 
   unmarshalData = async (nbFileName: string) => {
     const cmd: string =
@@ -264,29 +156,6 @@ export default class Commands {
       }
     });
   }
-
-  // pollKatib(katibExperiment: IKatibExperiment, onUpdate: Function) {
-  //   const getExperimentArgs: any = {
-  //     experiment: katibExperiment.name,
-  //     namespace: katibExperiment.namespace,
-  //   };
-  //   _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'katib.get_experiment',
-  //     getExperimentArgs,
-  //   ).then(katib => {
-  //     if (!katib) {
-  //       // could not get the experiment
-  //       onUpdate({ katib: { status: 'error' } });
-  //       return;
-  //     }
-  //     onUpdate({ katib });
-  //     if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
-  //       setTimeout(() => this.pollKatib(katibExperiment, onUpdate), 5000);
-  //     }
-  //   });
-  // }
 
   validateMetadata = async (
     notebookPath: string,
@@ -419,68 +288,6 @@ export default class Commands {
     }
     return uploadPipeline;
   };
-
-  // runKatib = async (
-  //   notebookPath: string,
-  //   metadata: IKaleNotebookMetadata,
-  //   pipelineId: string,
-  //   versionId: string,
-  //   onUpdate: Function,
-  // ): Promise<IKatibExperiment> => {
-  //   onUpdate({ showKatibKFPExperiment: true });
-  //   // create a new experiment, using the base name of the currently
-  //   // selected one
-  //   const newExpName: string =
-  //     metadata.experiment.name +
-  //     '-' +
-  //     Math.random()
-  //       .toString(36)
-  //       .slice(2, 7);
-
-  //   // create new KFP experiment
-  //   let kfpExperiment: { id: string; name: string };
-  //   try {
-  //     kfpExperiment = await _legacy_executeRpc(
-  //       this._notebook,
-  //       this._kernel,
-  //       'kfp.create_experiment',
-  //       {
-  //         experiment_name: newExpName,
-  //       },
-  //     );
-  //     onUpdate({ katibKFPExperiment: kfpExperiment });
-  //   } catch (error) {
-  //     onUpdate({
-  //       showKatibProgress: false,
-  //       katibKFPExperiment: { id: 'error', name: 'error' },
-  //     });
-  //     throw error;
-  //   }
-
-  //   onUpdate({ showKatibProgress: true });
-  //   const runKatibArgs: IKatibRunArgs = {
-  //     pipeline_id: pipelineId,
-  //     version_id: versionId,
-  //     pipeline_metadata: {
-  //       ...metadata,
-  //       experiment_name: kfpExperiment.name,
-  //     },
-  //     output_path: notebookPath.substring(0, notebookPath.lastIndexOf('/')),
-  //   };
-  //   let katibExperiment: IKatibExperiment | null = null;
-  //   try {
-  //     katibExperiment = await _legacy_executeRpc(
-  //       this._notebook,
-  //       this._kernel,
-  //       'katib.create_katib_experiment',
-  //       runKatibArgs,
-  //     );
-  //   } catch (error) {
-  //     onUpdate({ katib: { status: 'error' } });
-  //     throw error;
-  //   }
-  //   return katibExperiment;
-  // };
 
   runPipeline = async (
     pipelineId: string,

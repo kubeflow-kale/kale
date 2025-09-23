@@ -28,7 +28,6 @@ import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
 import DeployUtils from './DeployUtils';
-// import { KatibProgress } from './KatibProgress';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -175,77 +174,6 @@ export const DeployProgress: React.FunctionComponent<
     }
   };
 
-  // const getKatibKfpExperimentLink = (experimentId: string) => {
-  //   // link: /_/pipeline/#/experiments/details/<ud>
-  //   if (!experimentId) {
-  //     return '#';
-  //   }
-  //   const link = `${window.location.origin}/_/pipeline/#/experiments/details/${experimentId}`;
-  //   return props.namespace
-  //     ? link.replace('#', `?ns=${props.namespace}#`)
-  //     : link;
-  // };
-
-  // const getSnapshotTpl = () => {
-  //   if (!props.task) {
-  //     return (
-  //       <React.Fragment>
-  //         Unknown status
-  //         <UnknownIcon
-  //           style={{
-  //             color: DeployUtils.color.terminated,
-  //             height: 18,
-  //             width: 18,
-  //           }}
-  //         />
-  //       </React.Fragment>
-  //     );
-  //   }
-
-  //   if (!['success', 'error', 'canceled'].includes(props.task.status)) {
-  //     const progress = props.task.progress || 0;
-  //     return (
-  //       <LinearProgress
-  //         variant="determinate"
-  //         color="primary"
-  //         value={progress}
-  //       />
-  //     );
-  //   }
-
-  //   let getLink: (task: any) => string = () => '#';
-  //   let message = props.task.message;
-  //   let IconComponent: any = UnknownIcon;
-  //   let iconColor = DeployUtils.color.blue;
-
-  //   switch (props.task.status) {
-  //     case 'success':
-  //       getLink = getSnapshotLink;
-  //       message = 'Done';
-  //       IconComponent = LaunchIcon;
-  //       break;
-  //     case 'error':
-  //       getLink = getTaskLink;
-  //       IconComponent = ErrorIcon;
-  //       iconColor = DeployUtils.color.errorText;
-  //       break;
-  //     case 'canceled':
-  //       IconComponent = CancelIcon;
-  //       getLink = getTaskLink;
-  //       iconColor = DeployUtils.color.canceled;
-  //       break;
-  //   }
-
-  //   return (
-  //     <React.Fragment>
-  //       <a href={getLink(props.task)} target="_blank" rel="noopener noreferrer">
-  //         {message}
-  //         <IconComponent style={{ color: iconColor, height: 18, width: 18 }} />
-  //       </a>
-  //     </React.Fragment>
-  //   );
-  // };
-
   let validationTpl;
   if (props.notebookValidation === true) {
     validationTpl = (
@@ -352,31 +280,6 @@ export const DeployProgress: React.FunctionComponent<
     runTpl = <LinearProgress color="primary" />;
   }
 
-  // let katibKfpExpTpl;
-  // if (!props.katibKFPExperiment) {
-  //   katibKfpExpTpl = <LinearProgress color="primary" />;
-  // } else if (props.katibKFPExperiment.id !== 'error') {
-  //   katibKfpExpTpl = (
-  //     <React.Fragment>
-  //       <a
-  //         href={getKatibKfpExperimentLink(props.katibKFPExperiment.id)}
-  //         target="_blank"
-  //         rel="noopener noreferrer"
-  //       >
-  //         Done
-  //         <LaunchIcon style={{ fontSize: '1rem' }} />
-  //       </a>
-  //     </React.Fragment>
-  //   );
-  // } else {
-  //   katibKfpExpTpl = (
-  //     <React.Fragment>
-  //       <ErrorIcon
-  //         style={{ color: DeployUtils.color.errorText, height: 18, width: 18 }}
-  //       />
-  //     </React.Fragment>
-  //   );
-  // }
 
   return (
     <div className="deploy-progress">
@@ -454,21 +357,7 @@ export const DeployProgress: React.FunctionComponent<
             {DeployUtils.getWarningBadge('Run Warnings', props.runWarnings)}
           </div>
         </div>
-      ) : null}
-
-      {/* {props.showKatibKFPExperiment ? (
-        <div className="deploy-progress-row">
-          <div className="deploy-progress-label">
-            Creating KFP experiment...
-          </div>
-          <div className="deploy-progress-value">{katibKfpExpTpl}</div>
-        </div>
-      ) : null} */}
-
-      {/* {props.showKatibProgress ? (
-        <KatibProgress experiment={props.katib} />
-      ) : null} */}
-      {/* KatibProgress disabled in this build */}
+      ) : null}      
     </div>
   );
 };

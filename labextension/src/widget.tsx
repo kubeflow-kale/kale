@@ -104,36 +104,6 @@ async function activate(
       throw error;
     }
   }
-  //   try {
-  //     await executeRpc(kernel, 'rok.check_rok_availability');
-  //   } catch (error) {
-  //     const unexpectedErrorCodes = [
-  //       RPC_CALL_STATUS.EncodingError,
-  //       RPC_CALL_STATUS.ImportError,
-  //       RPC_CALL_STATUS.UnhandledError,
-  //     ];
-  //     if (
-  //       error instanceof RPCError &&
-  //       !unexpectedErrorCodes.includes(error.error.code)
-  //     ) {
-  //       rokError = error.error;
-  //       console.warn('Rok is not available', rokError);
-  //     } else {
-  //       globalUnhandledRejection({ reason: error });
-  //       throw error;
-  //     }
-  //   }
-  // } else {
-  //   rokError = {
-  //     rpc: 'rok.check_rok_availability',
-  //     code: RPC_CALL_STATUS.ImportError,
-  //     err_message: 'Rok is not available',
-  //     err_details:
-  //       'To use this Rok feature you first need Kale running' +
-  //       ' in the backend.',
-  //     err_cls: 'importError',
-  //   };
-  //   console.warn('Rok is not available', rokError);
 
   async function loadPanel() {
     let reveal_widget = undefined;

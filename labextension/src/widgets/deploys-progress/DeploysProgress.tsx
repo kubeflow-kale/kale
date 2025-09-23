@@ -18,7 +18,6 @@ import * as React from 'react';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';
-// import { IKatibExperiment } from '../LeftPanel';
 
 export type DeployProgressState = {
   showValidationProgress?: boolean;
@@ -36,10 +35,6 @@ export type DeployProgressState = {
   showRunProgress?: boolean;
   runPipeline?: any;
   runWarnings?: any;
-  // showKatibProgress?: boolean;
-  // katib?: IKatibExperiment;
-  // showKatibKFPExperiment?: boolean;
-  // katibKFPExperiment?: { id: string; name: string };
   deleted?: boolean;
   docManager?: IDocumentManager;
   namespace?: string;
@@ -84,10 +79,6 @@ export const DeploysProgress: React.FunctionComponent<
             showRunProgress={dpState.showRunProgress}
             runPipeline={dpState.runPipeline}
             runWarnings={dpState.runWarnings}
-            // showKatibProgress={dpState.showKatibProgress}
-            // katib={dpState.katib}
-            // showKatibKFPExperiment={dpState.showKatibKFPExperiment}
-            // katibKFPExperiment={dpState.katibKFPExperiment}
             onRemove={_onPanelRemove(Number(index))}
             docManager={dpState.docManager}
             namespace={dpState.namespace}

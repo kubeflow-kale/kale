@@ -318,7 +318,8 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     this.setState({ dependencies });
   }
 
-  openEditor() {
+  openEditor = () => {
+    console.log("Clicking on edit")
     const showEditor = true;
     this.setState({ showEditor });
     this.context.onEditorVisibilityChange(showEditor);
@@ -341,7 +342,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
     return (
       <div>
-        <div ref={this.wrapperRef}>
+        <div ref={this.wrapperRef} className={'kale-inline-cell-metadata-container'}>
           <div
             className={
               'kale-inline-cell-metadata' +
@@ -362,7 +363,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
                 RESERVED_CELL_NAMES.includes(this.props.blockName)
                   ? RESERVED_CELL_NAMES_HELP_TEXT[this.props.blockName]
                   : 'This cell starts the pipeline step: ' +
-                    this.props.blockName
+                  this.props.blockName
               }
             >
               <Chip
@@ -377,8 +378,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
           </div>
 
           <div
-            style={{ position: 'relative' }}
-            className={this.state.showEditor ? ' hidden' : ''}
+            className={'kale-editor-toggle-parent' + (this.state.showEditor ? ' hidden' : '')}
           >
             <button className="kale-editor-toggle" onClick={this.openEditor}>
               <EditIcon />

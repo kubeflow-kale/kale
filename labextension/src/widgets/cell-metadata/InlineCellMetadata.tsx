@@ -18,7 +18,7 @@ import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import {
-  IObservableList  
+  IObservableList
 } from '@jupyterlab/observables';
 import {
   Cell,
@@ -79,8 +79,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   };
 
   componentDidUpdate = async (
-    prevProps: Readonly<IProps>,
-    prevState: Readonly<IState>
+    prevProps: Readonly<IProps>
   ) => {
     if (!this.props.notebook && prevProps.notebook) {
       // no notebook
@@ -188,7 +187,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         this.props.notebook.content.activeCellIndex !== undefined &&
         this.props.notebook.content.activeCellIndex >= 0
       ) {
-        const activeCell = this.props.notebook.content.activeCell;
+        const activeCell = this.props.notebook.content.activeCell;        
         if (activeCell && activeCell.node) {
           setTimeout(
             NotebookUtils.selectAndScrollToCell,
@@ -307,17 +306,17 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     // limits is always an object (never undefined)
     const editorProps: EditorProps = activeEditorData
       ? {
-          notebook: activeEditorData.notebook,
-          stepName: activeEditorData.stepName || '',
-          stepDependencies: activeEditorData.stepDependencies || [],
-          limits: activeEditorData.limits || {}
-        }
+        notebook: activeEditorData.notebook,
+        stepName: activeEditorData.stepName || '',
+        stepDependencies: activeEditorData.stepDependencies || [],
+        limits: activeEditorData.limits || {}
+      }
       : {
-          notebook: this.props.notebook,
-          stepName: '',
-          stepDependencies: [],
-          limits: {}
-        };
+        notebook: this.props.notebook,
+        stepName: '',
+        stepDependencies: [],
+        limits: {}
+      };
     return (
       <React.Fragment>
         <div className="toolbar input-container">
