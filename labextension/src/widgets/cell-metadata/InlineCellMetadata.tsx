@@ -245,7 +245,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           prevBlockNames: []
         };
       }
-      let previousBlockName: any = '';
+      let previousBlockName: string | undefined = '';
 
       if (!tags.blockName) {
         previousBlockName = TagsUtils.getPreviousBlock(

@@ -26,7 +26,7 @@ import { CellMetadataContext } from '../../lib/CellMetadataContext';
 
 interface IProps {
   blockName: string;
-  previousBlockName: string;
+  previousBlockName?: string;
   stepDependencies: string[];
   limits: { [id: string]: string };
   cellElement: any;

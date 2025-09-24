@@ -204,7 +204,7 @@ export const Select: React.FC<SelectProps> = props => {
       value={value || ''}
       variant={variant}
       helperText={helperText}
-      onChange={(evt: any) =>
+      onChange={(evt) =>
         updateValue((evt.target as HTMLInputElement).value, index)
       }
       InputLabelProps={{
