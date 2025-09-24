@@ -37,11 +37,7 @@ import '../style/index.css';
 
 import { KubeflowKaleLeftPanel } from './widgets/LeftPanel';
 import NotebookUtils from './lib/NotebookUtils';
-import {
-  executeRpc,
-  globalUnhandledRejection
- 
-} from './lib/RPCUtils';
+import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 

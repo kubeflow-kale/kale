@@ -78,7 +78,6 @@ export interface IKaleNotebookMetadata {
   storage_class_name?: string;
 }
 
-
 export const DefaultState: IState = {
   metadata: {
     experiment: { id: '', name: '' },
@@ -113,15 +112,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       this.getActiveNotebook() &&
       // absolute path to the notebook's root (--notebook-dir option, if set)
       PageConfig.getOption('serverRoot') +
-      '/' +
-      // relative path wrt to 'serverRoot'
-      this.getActiveNotebook()?.context.path
+        '/' +
+        // relative path wrt to 'serverRoot'
+        this.getActiveNotebook()?.context.path
     );
   };
 
   // update metadata state values: use destructure operator to update nested dict
   updateExperiment = (experiment: IExperiment) =>
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       metadata: {
         ...prevState.metadata,
         experiment: experiment,
@@ -129,15 +128,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       }
     }));
   updatePipelineName = (name: string) =>
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       metadata: { ...prevState.metadata, pipeline_name: name }
     }));
   updatePipelineDescription = (desc: string) =>
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       metadata: { ...prevState.metadata, pipeline_description: desc }
     }));
   updateDockerImage = (name: string) =>
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       metadata: {
         ...prevState.metadata,
         docker_image: name
@@ -152,13 +151,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   changeDeployDebugMessage = () =>
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       deployDebugMessage: !prevState.deployDebugMessage
     }));
 
   // restore state to default values
   resetState = () =>
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       ...DefaultState,
       isEnabled: prevState.isEnabled
     }));
@@ -180,7 +179,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // warning: this method does not work if keys change order.
     if (
       JSON.stringify(prevState.metadata) !==
-      JSON.stringify(this.state.metadata) &&
+        JSON.stringify(this.state.metadata) &&
       this.getActiveNotebook()
     ) {
       const activeNotebook = this.getActiveNotebook();
@@ -403,12 +402,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // UPLOAD
     const uploadPipeline =
       this.state.deploymentType === 'upload' ||
-        this.state.deploymentType === 'run'
+      this.state.deploymentType === 'run'
         ? await commands.uploadPipeline(
-          compileNotebook.pipeline_package_path,
-          compileNotebook.pipeline_metadata,
-          _updateDeployProgress
-        )
+            compileNotebook.pipeline_package_path,
+            compileNotebook.pipeline_metadata,
+            _updateDeployProgress
+          )
         : null;
 
     if (!uploadPipeline) {
@@ -550,8 +549,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               className={
                 'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
               }
-            >
-            </div>
+            ></div>
           </div>
           <div
             className={this.state.isEnabled ? '' : 'hidden'}
@@ -566,7 +564,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
               handleClick={this.activateRunDeployState}
             />
           </div>
-         
         </div>
       </ThemeProvider>
     );

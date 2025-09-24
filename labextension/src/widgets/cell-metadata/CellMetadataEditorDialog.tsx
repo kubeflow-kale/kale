@@ -68,7 +68,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
     Object.keys(props.limits).filter(x =>
       GPU_TYPES.map(t => t.value).includes(x)
     )[0] || undefined;
-  const gpuCount = gpuType && props.limits[gpuType]
+  const gpuCount = gpuType && props.limits[gpuType];
 
   return (
     <Dialog
@@ -163,7 +163,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
             <Grid size={{ xs: 6 }}>
               <Input
                 disabled={gpuType === undefined}
-                variant="outlined"                
+                variant="outlined"
                 label="GPU Count"
                 value={gpuCount || 1}
                 updateValue={(v: string) => {

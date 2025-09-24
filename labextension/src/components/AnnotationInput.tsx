@@ -63,15 +63,13 @@ export const AnnotationInput: React.FunctionComponent<
     );
   };
 
-
   <Input
     updateValue={updateValue}
     value={props.annotation.value}
     label="Value"
     inputIndex={props.volumeIdx}
     variant="standard"
-  />
-
+  />;
 
   return (
     <div className="toolbar">
@@ -92,7 +90,8 @@ export const AnnotationInput: React.FunctionComponent<
           label="Value"
           inputIndex={props.volumeIdx}
           variant="standard"
-        /></div>
+        />
+      </div>
       {!props.cannotBeDeleted ? (
         <div className="delete-button">
           <Button

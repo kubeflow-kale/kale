@@ -3,7 +3,6 @@
 [![Github Actions Status](https://github.com/kubeflow-kale-labextension/kale/workflows/Build/badge.svg)](https://github.com/kubeflow-kale-labextension/kale/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/kubeflow-kale-labextension/kale/main?urlpath=lab)
 
-
 Convert Notebooks to Kubeflow pipelines with Kale
 
 This extension is composed of a Python package named `kubeflow-kale-labextension`

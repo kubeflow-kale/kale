@@ -99,7 +99,7 @@ export const DeployProgress: React.FunctionComponent<
     }
   };
 
-  const getRunComponent = (pipeline: any) => {    
+  const getRunComponent = (pipeline: any) => {
     let IconComponent: any = UnknownIcon;
     let iconColor = '#5f6368';
 
@@ -280,7 +280,6 @@ export const DeployProgress: React.FunctionComponent<
     runTpl = <LinearProgress color="primary" />;
   }
 
-
   return (
     <div className="deploy-progress">
       <div
@@ -357,7 +356,7 @@ export const DeployProgress: React.FunctionComponent<
             {DeployUtils.getWarningBadge('Run Warnings', props.runWarnings)}
           </div>
         </div>
-      ) : null}      
+      ) : null}
     </div>
   );
 };
