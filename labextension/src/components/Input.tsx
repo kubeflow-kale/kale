@@ -203,7 +203,8 @@ const StyledTextField = styled(TextField)({
   }
 });
 
-export interface InputProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
+export interface IInputProps
+  extends Omit<TextFieldProps, 'onChange' | 'value'> {
   value: string | number;
   regex?: string;
   regexErrorMsg?: string;
@@ -216,7 +217,7 @@ export interface InputProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
   onBeforeUpdate?: (value: string) => boolean;
 }
 
-export const Input: React.FunctionComponent<InputProps> = props => {
+export const Input: React.FunctionComponent<IInputProps> = props => {
   const [value, setValue] = React.useState<string | number>('');
   const [error, updateError] = React.useState(false);
 

@@ -23,7 +23,7 @@ import {
   KernelSpecAPI,
 } from '@jupyterlab/services';
 import { CommandRegistry } from '@lumino/commands';
-// @ts-ignore
+// @ts-expect-error This module is not typed
 import SanitizedHTML from 'react-sanitized-html';
 import * as React from 'react';
 import { ReactElement } from 'react';
@@ -76,7 +76,7 @@ export default class NotebookUtilities {
   ): void {
     notebook.content.select(cell.cell as any);
     notebook.content.activeCellIndex = cell.index;
-    
+
     notebook.content.scrollToCell(cell.cell);
 
   }
@@ -259,7 +259,7 @@ export default class NotebookUtilities {
         'The notebook is null or undefined. No meta data available.',
       );
     }
-    
+
     if (notebookPanel.model?.metadata) {
       const metadata = notebookPanel.model.metadata as any;
       if (typeof metadata.has === 'function' && metadata.has(key)) {
@@ -292,7 +292,7 @@ export default class NotebookUtilities {
         'The notebook is null or undefined. No meta data available.',
       );
     }
-    
+
     if (!notebookPanel.model?.metadata) {
       throw new Error('Notebook metadata is not available.');
     }
@@ -323,7 +323,7 @@ export default class NotebookUtilities {
 
     let cell = { cell: notebook.content.widgets[0], index: 0 };
     const reservedCellsToBeIgnored = ['skip', 'pipeline-metrics'];
-    
+
     for (let i = 0; i < notebook.model.cells.length; i++) {
       const cellModel = notebook.model.cells.get(i);
       if (!isCodeCellModel(cellModel as any)) {
@@ -350,14 +350,14 @@ export default class NotebookUtilities {
           }
           cell = { cell: notebook.content.widgets[i] as any, index: i };
           this.selectAndScrollToCell(notebook, cell);
-          
+
           // Execute the cell with proper error handling
           try {
             const kernelMsg = (await CodeCell.execute(
               notebook.content.widgets[i] as unknown as CodeCell,
               notebook.sessionContext,
             )) as KernelMessage.IExecuteReplyMsg;
-            
+
             if (kernelMsg.content && kernelMsg.content.status === 'error') {
               return {
                 status: 'error',
@@ -399,7 +399,8 @@ export default class NotebookUtilities {
   //  created at startup. The only (possible) drawback is that we can not name
   //  a kernel instance with a custom id/name, so when refreshing JupyterLab we would
   //  not recognize the kernel. A solution could be to have a kernel spec dedicated to kale rpc calls.
-  public static async executeWithNewKernel(action: Function, args: any[] = []) {
+  public static async executeWithNewKernel(action: (kernel: Kernel.IKernelConnection, ...args: any[]) => any,
+    args: any[] = []) {
     // create brand new kernel
     const _k = await this.createNewKernel();
     // execute action inside kernel
@@ -474,7 +475,7 @@ export default class NotebookUtilities {
         content.traceback.forEach((line: string) =>
           console.log(
             line.replace(
-              /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+              /[\t\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
               '',
             ),
           ),

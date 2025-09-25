@@ -273,7 +273,7 @@ export default class CellUtilities {
       try {
         cell = (notebook.model as any).createCell('code');
       } catch (error) {
-        throw new Error('Unable to create new cell: ' + (error || "unknow"));
+        throw new Error('Unable to create new cell: ' + (error || 'unknow'));
       }
     }
 

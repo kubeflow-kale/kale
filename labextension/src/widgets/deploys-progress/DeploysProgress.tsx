@@ -41,13 +41,13 @@ export type DeployProgressState = {
   message?: string;
 };
 
-interface DeploysProgress {
+interface IDeploysProgress {
   deploys: { [key: number]: DeployProgressState };
   onPanelRemove: (index: number) => void;
 }
 
 export const DeploysProgress: React.FunctionComponent<
-  DeploysProgress
+  IDeploysProgress
 > = props => {
   const [items, setItems] = React.useState<React.JSX.Element[]>([]);
   const getItems = (_deploys: {

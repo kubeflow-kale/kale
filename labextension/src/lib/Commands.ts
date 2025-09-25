@@ -22,6 +22,8 @@ import {
   RPCError,
 } from './RPCUtils';
 
+type OnUpdateCallbak = (params: any) => void;
+
 import {
   DefaultState,
   IExperiment,
@@ -49,7 +51,7 @@ interface ICompileNotebookArgs {
 
 interface IUploadPipelineArgs {
   pipeline_package_path: string;
-  pipeline_metadata: Object;
+  pipeline_metadata: object;
 }
 
 interface IUploadPipelineResp {
@@ -58,7 +60,7 @@ interface IUploadPipelineResp {
 }
 
 interface IRunPipelineArgs {
-  pipeline_metadata: Object;
+  pipeline_metadata: object;
   pipeline_package_path?: string;
   pipeline_id?: string;
   version_id?: string;
@@ -75,7 +77,7 @@ export default class Commands {
 
   unmarshalData = async (nbFileName: string) => {
     const cmd: string =
-      `from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n` +
+      'from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n' +
       `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
     console.log('Executing command: ' + cmd);
     await NotebookUtils.sendKernelRequestFromNotebook(this._notebook, cmd, {});
@@ -116,7 +118,7 @@ export default class Commands {
 
     // Fix experiment metadata
     let newExperiment: IExperiment | null = null;
-    let selectedExperiments: IExperiment[] = experimentsList.filter(
+    const selectedExperiments: IExperiment[] = experimentsList.filter(
       e =>
         e.id === experiment.id ||
         e.name === experiment.name ||
@@ -141,7 +143,7 @@ export default class Commands {
     };
   };
 
-  pollRun(runPipeline: any, onUpdate: Function) {
+  pollRun(runPipeline: any, onUpdate: OnUpdateCallbak) {
     _legacy_executeRpcAndShowRPCError(
       this._notebook,
       this._kernel,
@@ -160,7 +162,7 @@ export default class Commands {
   validateMetadata = async (
     notebookPath: string,
     metadata: IKaleNotebookMetadata,
-    onUpdate: Function,
+    onUpdate: OnUpdateCallbak,
   ): Promise<boolean> => {
     onUpdate({ showValidationProgress: true });
     const validateNotebookArgs = {
@@ -187,7 +189,7 @@ export default class Commands {
    * @param metadata Notebook metadata
    */
   getCompileWarnings = (metadata: IKaleNotebookMetadata) => {
-    let warningContent = [];
+    const warningContent = [];
 
     // in case the notebook's docker base image is different than the default
     // one (e.g. the one detected in the Notebook Server), alert the user
@@ -197,18 +199,18 @@ export default class Commands {
     ) {
       warningContent.push(
         'The image you used to create the notebook server is different ' +
-          'from the image you have selected for your pipeline.',
+        'from the image you have selected for your pipeline.',
         '',
         'Your Kubeflow pipeline will use the following image: <pre><b>' +
-          metadata.docker_image +
-          '</b></pre>',
+        metadata.docker_image +
+        '</b></pre>',
         'You created the notebook server using the following image: <pre><b>' +
-          DefaultState.metadata.docker_image +
-          '</b></pre>',
+        DefaultState.metadata.docker_image +
+        '</b></pre>',
         '',
         "To use this notebook server's image as base image" +
-          ' for the pipeline steps, delete the existing docker image' +
-          ' from the Advanced Settings section.',
+        ' for the pipeline steps, delete the existing docker image' +
+        ' from the Advanced Settings section.',
       );
     }
     return warningContent;
@@ -223,7 +225,7 @@ export default class Commands {
     metadata: IKaleNotebookMetadata,
     docManager: IDocumentManager,
     deployDebugMessage: boolean,
-    onUpdate: Function,
+    onUpdate: OnUpdateCallbak,
   ) => {
     // after parsing and validating the metadata, show warnings (if necessary)
     const compileWarnings = this.getCompileWarnings(metadata);
@@ -265,20 +267,20 @@ export default class Commands {
   uploadPipeline = async (
     compiledPackagePath: string,
     compiledPipelineMetadata: IKaleNotebookMetadata,
-    onUpdate: Function,
+    onUpdate: OnUpdateCallbak,
   ): Promise<IUploadPipelineResp> => {
     onUpdate({ showUploadProgress: true });
     const uploadPipelineArgs: IUploadPipelineArgs = {
       pipeline_package_path: compiledPackagePath,
       pipeline_metadata: compiledPipelineMetadata,
     };
-    let uploadPipeline: IUploadPipelineResp = await _legacy_executeRpcAndShowRPCError(
+    const uploadPipeline: IUploadPipelineResp = await _legacy_executeRpcAndShowRPCError(
       this._notebook,
       this._kernel,
       'kfp.upload_pipeline',
       uploadPipelineArgs,
     );
-    let result = true;
+    const result = true;
     if (!uploadPipeline) {
       onUpdate({ showUploadProgress: false, pipeline: false });
       return uploadPipeline;
@@ -294,7 +296,7 @@ export default class Commands {
     versionId: string,
     compiledPipelineMetadata: IKaleNotebookMetadata,
     pipelinePackagePath: string,
-    onUpdate: Function,
+    onUpdate: (params: { showRunProgress?: boolean, runPipeline?: boolean }) => void,
   ) => {
     onUpdate({ showRunProgress: true });
     const runPipelineArgs: IRunPipelineArgs = {
@@ -330,9 +332,9 @@ export default class Commands {
     }
 
     NotebookUtils.clearCellOutputs(this._notebook);
-    let title = 'Notebook Exploration';
+    const title = 'Notebook Exploration';
     let message: string[] = [];
-    let runCellResponse = await NotebookUtils.runGlobalCells(this._notebook);
+    const runCellResponse = await NotebookUtils.runGlobalCells(this._notebook);
     if (runCellResponse.status === RUN_CELL_STATUS.OK) {
       // unmarshalData runs in the same kernel as the .ipynb, so it requires the
       // filename
@@ -342,19 +344,18 @@ export default class Commands {
         exploration.step_name,
       );
       message = [
-        `Resuming notebook ${
-          exploration.final_snapshot ? 'after' : 'before'
+        `Resuming notebook ${exploration.final_snapshot ? 'after' : 'before'
         } step: "${exploration.step_name}"`,
       ];
       if (cell) {
         NotebookUtils.selectAndScrollToCell(this._notebook, cell);
       } else {
-        message.push(`ERROR: Could not retrieve step's position.`);
+        message.push('ERROR: Could not retrieve step\'s position.');
       }
     } else {
       message = [
         `Executing "${runCellResponse.cellType}" cell failed.\n` +
-          `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
+        `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
         `Error name: ${runCellResponse.ename}`,
         `Error value: ${runCellResponse.evalue}`,
       ];
@@ -373,7 +374,7 @@ export default class Commands {
   findPodDefaultLabelsOnServer = async (): Promise<{
     [key: string]: string;
   }> => {
-    let labels: {
+    const labels: {
       [key: string]: string;
     } = {};
     try {

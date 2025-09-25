@@ -25,21 +25,25 @@ export interface IAnnotation {
   value: string;
 }
 
-interface AnnotationInputProps {
+interface IAnnotationInputProps {
   label: string;
   volumeIdx: number;
   annotationIdx: number;
   rokAvailable?: boolean;
   cannotBeDeleted?: boolean;
   annotation: { key: string; value: string };
-  deleteValue: Function;
-  updateValue: Function;
+  deleteValue: (idx: number, annotationIdx: number) => void;
+  updateValue: (
+    annotation: { key: string; value: string },
+    idx: number,
+    annotationIdx: number
+  ) => void;
 }
 
 export const AnnotationInput: React.FunctionComponent<
-  AnnotationInputProps
+  IAnnotationInputProps
 > = props => {
-  const [_, setAnnotation] = React.useState({ key: '', value: '' });
+  const [, setAnnotation] = React.useState<IAnnotation>({ key: '', value: '' });
 
   React.useEffect(() => {
     // need this to set the annotation when the notebook is loaded

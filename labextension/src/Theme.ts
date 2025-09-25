@@ -1,6 +1,7 @@
 import { createTheme } from '@mui/material/styles';
 
 declare module '@mui/material/styles/createTheme' {
+  // eslint-disable-next-line
   interface Theme {
     kale: {
       headers: {
@@ -9,6 +10,7 @@ declare module '@mui/material/styles/createTheme' {
     };
   }
   // allow configuration using `createMuiTheme`
+  // eslint-disable-next-line
   interface ThemeOptions {
     kale?: {
       headers?: {

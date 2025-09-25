@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-///<reference path="../node_modules/@types/node/index.d.ts"/>
-
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
@@ -80,9 +78,10 @@ async function activate(
    */
   async function getBackend(kernel: Kernel.IKernelConnection) {
     try {
-      await NotebookUtils.sendKernelRequest(kernel, `import kale`, {});
+      await NotebookUtils.sendKernelRequest(kernel, 'import kale', {});
     } catch (error) {
-      console.error('Kale backend is not installed.');
+      console.error(`Kale backend is not installed: ${error}`);
+
       return false;
     }
     return true;

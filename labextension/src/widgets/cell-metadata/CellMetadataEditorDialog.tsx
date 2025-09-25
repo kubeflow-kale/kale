@@ -40,8 +40,8 @@ interface ICellMetadataEditorDialog {
   open: boolean;
   stepName: string;
   limits: { [id: string]: string };
-  updateLimits: Function;
-  toggleDialog: Function;
+  updateLimits: any;
+  toggleDialog: () => void;
 }
 
 export const CellMetadataEditorDialog: React.FunctionComponent<

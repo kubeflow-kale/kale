@@ -260,7 +260,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     ) as HTMLElement;
 
     if (codeMirrorElem) {
-      codeMirrorElem.style.borderLeft = `2px solid transparent`;
+      codeMirrorElem.style.borderLeft = '2px solid transparent';
     }
     if (!name) {
       this.setState({ color: '' });

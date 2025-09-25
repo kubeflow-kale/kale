@@ -290,7 +290,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           this.resetState();
         }
 
-        let metadata: IKaleNotebookMetadata = {
+        const metadata: IKaleNotebookMetadata = {
           ...notebookMetadata,
           experiment: experiment,
           experiment_name: experiment_name,

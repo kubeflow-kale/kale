@@ -19,6 +19,7 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from './NotebookUtils';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
+
 export const globalUnhandledRejection = async (event: any) => {
   // console.error(event.reason);
   if (event.reason instanceof BaseError) {
@@ -104,7 +105,7 @@ export const executeRpc = async (
   ctx: any = {},
 ) => {
   const cmd: string =
-    `from kale.rpc.run import run as __kale_rpc_run\n` +
+    'from kale.rpc.run import run as __kale_rpc_run\n' +
     `__kale_rpc_result = __kale_rpc_run("${func}", '${serialize(
       kwargs,
     )}', '${serialize(ctx)}')`;
@@ -115,12 +116,12 @@ export const executeRpc = async (
     output =
       env instanceof NotebookPanel
         ? await NotebookUtils.sendKernelRequestFromNotebook(
-            env,
-            cmd,
-            expressions,
-          )
+          env,
+          cmd,
+          expressions,
+        )
         : await NotebookUtils.sendKernelRequest(env, cmd, expressions);
-  } catch (e)  {
+  } catch (e) {
     if (typeof e === 'object' && e !== null) {
       if ('output_type' in e && isError(e as IOutput)) {
         console.warn(e);
@@ -138,13 +139,8 @@ export const executeRpc = async (
   }
 
   // const argsAsStr = Object.keys(kwargs).map(key => `${key}=${kwargs[key]}`).join(', ');
-  let msg = [`RPC: ${func}`];
   // Log output
-  if (output.result.status !== 'ok') {    
-    msg = msg.concat([
-      `Status: ${output.result.status}`,
-      `Output: ${JSON.stringify(output, null, 3)}`,
-    ]);
+  if (output.result.status !== 'ok') {
     const error = {
       rpc: `${func}`,
       status: output.result.status,
@@ -162,11 +158,7 @@ export const executeRpc = async (
   let parsedResult = undefined;
   try {
     parsedResult = JSON.parse(json_data);
-  } catch (error) {    
-    msg = msg.concat([
-      `Error: ${JSON.stringify(error, null, 3)}`,
-      `Response data: ${json_data}`,
-    ]);
+  } catch (error) {
     const jsonError = {
       rpc: `${func}`,
       err_message: 'Failed to parse response as JSON',
@@ -176,13 +168,8 @@ export const executeRpc = async (
     throw new JSONParseError(jsonError);
   }
 
-  if (parsedResult.code !== 0) {    
-    msg = msg.concat([
-      `Code: ${parsedResult.code} (${getRpcCodeName(parsedResult.code)})`,
-      `Message: ${parsedResult.err_message}`,
-      `Details: ${parsedResult.err_details}`,
-    ]);
-    let error = {
+  if (parsedResult.code !== 0) {
+    const error = {
       rpc: `${func}`,
       code: parsedResult.code,
       err_message: parsedResult.err_message,
@@ -191,10 +178,9 @@ export const executeRpc = async (
       trans_id: parsedResult.trans_id,
     };
     throw new RPCError(error);
-  } else {
-    // console.log(msg, parsedResult);
-    return parsedResult.result;
   }
+  return parsedResult.result;
+
 };
 
 export const showError = async (
@@ -207,7 +193,7 @@ export const showError = async (
   code: number | null = null,
   trans_id: number | null = null,
 ): Promise<void> => {
-  let msg: string[] = [
+  const msg: string[] = [
     `Browser: ${navigator ? navigator.userAgent : 'other'}`,
     `Type: ${type}`,
   ];
@@ -251,7 +237,7 @@ export const _legacy_executeRpc = async (
   kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
-  nb_path: string | null= null,
+  nb_path: string | null = null,
 ) => {
   if (!nb_path && notebook) {
     nb_path = notebook.context.path;
@@ -284,7 +270,7 @@ export const _legacy_executeRpcAndShowRPCError = async (
   kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
-  nb_path: string | null= null,
+  nb_path: string | null = null,
 ) => {
   try {
     const result = await _legacy_executeRpc(
@@ -308,11 +294,8 @@ export abstract class BaseError extends Error {
   constructor(message: string, public error: any) {
     super(message);
     this.name = this.constructor.name;
-    if (typeof Error.captureStackTrace === 'function') {
-      Error.captureStackTrace(this, this.constructor);
-    } else {
-      this.stack = new Error(message).stack;
-    }
+    this.stack = new Error(message).stack;
+    
     Object.setPrototypeOf(this, BaseError.prototype);
   }
 

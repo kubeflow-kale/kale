@@ -47,7 +47,6 @@
   align-items: center;
   display: -webkit-box; /* OLD - iOS 6-, Safari 3.1-6 */
   display: -moz-box; /* OLD - Firefox 19- (buggy but mostly works) */
-  display: -ms-flexbox; /* TWEENER - IE 10 */
   display: -webkit-flex; /* NEW - Chrome */
   display: flex;
 }
@@ -81,7 +80,6 @@
   height: 100%;
   display: -webkit-box; /* OLD - iOS 6-, Safari 3.1-6 */
   display: -moz-box; /* OLD - Firefox 19- (buggy but mostly works) */
-  display: -ms-flexbox; /* TWEENER - IE 10 */
   display: -webkit-flex; /* NEW - Chrome */
   display: flex;
 }
@@ -151,6 +149,10 @@ textarea {
   font-size: var(--jp-ui-font-size1);
   color: var(--jp-ui-font-color0);
   line-height: var(--jp-private-commandpalette-search-height);
+}
+
+.material-switch input {
+  height: 100%;
 }
 
 .input-wrapper input::-webkit-input-placeholder,
@@ -323,7 +325,9 @@ a {
   margin-left: 0.25rem;
 }
 
+/* stylelint-disable */
 .deploy-progress-value .MuiLinearProgress-root {
+  /* stylelint-enable */
   margin-left: 0.25rem;
   width: 100%;
 }
@@ -398,6 +402,14 @@ a {
   background-color: var(--jp-cell-editor-background);
 }
 
+.kale-editor-toggle:hover > svg {
+  background-color: var(--jp-layout-color2);
+}
+
+.kale-metadata-editor-wrapper.opened .kale-editor-toggle > svg {
+  background-color: #fff;
+}
+
 .jp-Notebook.jp-mod-editMode
   .jp-Cell.jp-mod-selected
   .kale-editor-toggle
@@ -411,8 +423,9 @@ a {
   border: 0 solid var(--md-grey-400);
   align-items: center;
 }
-
+/* stylelint-disable */
 .kale-cell-metadata-editor > .MuiFormControl-root {
+  /* stylelint-enable */
   margin-left: 4px;
   margin-right: 4px;
 }
@@ -433,24 +446,19 @@ a {
   margin-right: -11px;
 }
 
-.kale-metadata-editor-wrapper.opened .kale-editor-toggle > svg {
-  background-color: #fff;
-}
-
-.kale-editor-toggle:hover > svg {
-  background-color: var(--jp-layout-color2);
-}
-
 .kale-reserved-cell {
   border-radius: 0 !important;
 }
-
+/* stylelint-disable */
 .kale-chip.MuiChip-root {
+  /* stylelint-enable */
   height: 19px;
   color: #fff;
 }
 
+/* stylelint-disable */
 .kale-chip-select.MuiChip-root {
+  /* stylelint-enable */
   height: 18px;
   margin-right: 1px;
   margin-bottom: 1px;
@@ -464,17 +472,21 @@ a {
   border-right: none;
 }
 
+/* stylelint-disable */
 .MuiButtonBase-root.Mui-disabled.menu-item-tooltip {
+  /* stylelint-enable */
   pointer-events: auto;
   padding: 0;
 }
 
-.MuiButtonBase-root.Mui-disabled.menu-item-tooltip .menu-item-label {
-  padding: 8px 16px;
+.menu-item-label {
   width: 100%;
 }
 
-.menu-item-label {
+/* stylelint-disable */
+.MuiButtonBase-root.Mui-disabled.menu-item-tooltip .menu-item-label {
+  /* stylelint-enable */
+  padding: 8px 16px;
   width: 100%;
 }
 
@@ -483,10 +495,6 @@ a {
 */
 .material-switch {
   color: white;
-}
-
-.material-switch input {
-  height: 100%;
 }
 
 .dialog-body {

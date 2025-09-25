@@ -42,26 +42,13 @@ enum PipelineStatus {
   UNKNOWN = 'Unknown'
 }
 
-interface DeployProgress extends DeployProgressState {
+interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
 }
 
 export const DeployProgress: React.FunctionComponent<
-  DeployProgress
+  IDeployProgressProps
 > = props => {
-  // const getSnapshotLink = (task: any) => {
-  //   if (!task.result || !task.result.event) {
-  //     return '#';
-  //   }
-  //   const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/files/${task.result.event.object}/versions/${task.result.event.version}`;
-  //   return props.namespace ? `${link}?ns=${props.namespace}` : link;
-  // };
-
-  // const getTaskLink = (task: any) => {
-  //   const link = `${window.location.origin}/_/rok/buckets/${task.bucket}/tasks/${task.id}`;
-  //   return props.namespace ? `${link}?ns=${props.namespace}` : link;
-  // };
-
   const getUploadLink = (pipeline: any) => {
     // link: /_/pipeline/#/pipelines/details/<id>
     // id = uploadPipeline.pipeline.id
