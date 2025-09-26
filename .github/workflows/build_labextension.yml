@@ -10,13 +10,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: labextension
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: labextension
 
     steps:
       - name: Checkout
@@ -77,13 +76,13 @@ jobs:
         with:
           python-version: "3.10"
           architecture: "x64"
-      - uses: actions/download-artifact@v4
-        with:
-          name: extension-artifacts
       - name: Install Kale Backend
         run: |
           set -eux
           pip install -e ../backend[test]
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-artifacts
 
       - name: Install Kale Jupyter Lab Extension and Test
         run: |
