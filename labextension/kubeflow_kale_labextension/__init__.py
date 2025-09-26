@@ -19,7 +19,7 @@ def _jupyter_labextension_paths():
 
 def _jupyter_server_extension_points():
     return [{
-        "module": "kubeflow-kale-labextension"
+        "module": "kubeflow_kale_labextension"
     }]
 
 

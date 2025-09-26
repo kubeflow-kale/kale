@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: extension-artifacts
-          path: dist/kubeflow_kale_labextension*
+          path: ./dist/*
           if-no-files-found: error
 
   test_isolated:
@@ -83,7 +83,7 @@ jobs:
           set -eux
           pip install -e ../backend[test]
 
-      - name: Install and Test
+      - name: Install Kale Jupyter Lab Extension and Test
         run: |
           set -eux
           # Remove NodeJS, twice to take care of system and locally installed node versions.
