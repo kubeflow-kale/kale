@@ -72,6 +72,15 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: extension-artifacts
+      - name: Install Kale Backend
+        run: |
+          set -eux
+          pip install -e ../backend[test]
+
+          echo 'import kale' > test_kale_import.py && \
+          python test_kale_import.py && \
+          rm test_kale_import.py
+
       - name: Install and Test
         run: |
           set -eux
@@ -85,10 +94,6 @@ jobs:
           jupyter labextension list
           jupyter labextension list 2>&1 | grep -ie "kubeflow-kale-labextension.*OK"
 
-          cd ../backend
-          pip install -e .[test]
-          cd ../labextension
-          
           python -m jupyterlab.browser_check --no-browser-test
 
   check_links:
