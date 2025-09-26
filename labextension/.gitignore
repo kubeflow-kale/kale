@@ -7,9 +7,9 @@ node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
-kubeflow-kale-labextension/labextension
+kubeflow_kale_labextension/labextension
 # Version file is handled by hatchling
-kubeflow-kale-labextension/_version.py
+kubeflow_kale_labextension/_version.py
 
 # Integration tests
 ui-tests/test-results/

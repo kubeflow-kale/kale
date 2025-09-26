@@ -3,7 +3,7 @@ requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0
 build-backend = "hatchling.build"
 
 [project]
-name = "kubeflow-kale-labextension"
+name = "kubeflow_kale_labextension"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -48,7 +48,7 @@ artifacts = ["kubeflow-kale-labextension/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"kubeflow-kale-labextension/labextension" = "share/jupyter/labextensions/kubeflow-kale-labextension"
+"kubeflow_kale_labextension/labextension" = "share/jupyter/labextensions/kubeflow-kale-labextension"
 "install.json" = "share/jupyter/labextensions/kubeflow-kale-labextension/install.json"
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 

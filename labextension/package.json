@@ -38,7 +38,7 @@
         "clean": "jlpm clean:lib",
         "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
         "clean:lintcache": "rimraf .eslintcache .stylelintcache",
-        "clean:labextension": "rimraf kubeflow-kale-labextension/labextension kubeflow-kale-labextension/_version.py",
+        "clean:labextension": "rimraf kubeflow_kale_labextension/labextension kubeflow_kale_labextension/_version.py",
         "clean:all": "jlpm clean:lib && jlpm clean:labextension && jlpm clean:lintcache",
         "eslint": "jlpm eslint:check --fix",
         "eslint:check": "eslint . --cache --ext .ts,.tsx",
@@ -112,12 +112,12 @@
                     "pip"
                 ],
                 "base": {
-                    "name": "kubeflow-kale-labextension"
+                    "name": "kubeflow_kale_labextension"
                 }
             }
         },
         "extension": true,
-        "outputDir": "kubeflow-kale-labextension/labextension"
+        "outputDir": "kubeflow_kale_labextension/labextension"
     },
     "eslintIgnore": [
         "node_modules",

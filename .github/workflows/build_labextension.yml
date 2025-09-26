@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: extension-artifacts
-          path: dist/kubeflow-kale-labextension*
+          path: dist/kubeflow_kale_labextension*
           if-no-files-found: error
 
   test_isolated:
@@ -81,7 +81,7 @@ jobs:
           sudo rm -rf $(which node)
           sudo rm -rf $(which node)
 
-          pip install "jupyterlab>=4.0.0,<5" kubeflow-kale-labextension*.whl
+          pip install "jupyterlab>=4.0.0,<5" kubeflow_kale_labextension*.whl
 
 
           jupyter labextension list
