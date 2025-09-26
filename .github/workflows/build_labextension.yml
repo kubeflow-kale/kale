@@ -84,6 +84,11 @@ jobs:
 
           jupyter labextension list
           jupyter labextension list 2>&1 | grep -ie "kubeflow-kale-labextension.*OK"
+
+          cd ../backend
+          pip install -e .[test]
+          cd ../labextension
+          
           python -m jupyterlab.browser_check --no-browser-test
 
   check_links:
