@@ -40,8 +40,8 @@ interface ICellMetadataEditorDialog {
   open: boolean;
   stepName: string;
   limits: { [id: string]: string };
-  updateLimits: Function;
-  toggleDialog: Function;
+  updateLimits: any;
+  toggleDialog: () => void;
 }
 
 export const CellMetadataEditorDialog: React.FunctionComponent<
@@ -54,7 +54,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
   const limitAction = (
     action: string,
     limitKey: string,
-    limitValue: string = null
+    limitValue: string | null = null
   ) => {
     return {
       action,
@@ -68,7 +68,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
     Object.keys(props.limits).filter(x =>
       GPU_TYPES.map(t => t.value).includes(x)
     )[0] || undefined;
-  const gpuCount = props.limits[gpuType] || undefined;
+  const gpuCount = gpuType && props.limits[gpuType];
 
   return (
     <Dialog

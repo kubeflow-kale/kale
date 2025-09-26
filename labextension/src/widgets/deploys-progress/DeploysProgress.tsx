@@ -15,11 +15,9 @@
  */
 
 import * as React from 'react';
-import { CircularProgress } from '@mui/material';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import { DeployProgress } from './DeployProgress';
-// import { IKatibExperiment } from '../LeftPanel';
 
 export type DeployProgressState = {
   showValidationProgress?: boolean;
@@ -37,23 +35,19 @@ export type DeployProgressState = {
   showRunProgress?: boolean;
   runPipeline?: any;
   runWarnings?: any;
-  // showKatibProgress?: boolean;
-  // katib?: IKatibExperiment;
-  // showKatibKFPExperiment?: boolean;
-  // katibKFPExperiment?: { id: string; name: string };
   deleted?: boolean;
   docManager?: IDocumentManager;
   namespace?: string;
   message?: string;
 };
 
-interface DeploysProgress {
+interface IDeploysProgress {
   deploys: { [key: number]: DeployProgressState };
   onPanelRemove: (index: number) => void;
 }
 
 export const DeploysProgress: React.FunctionComponent<
-  DeploysProgress
+  IDeploysProgress
 > = props => {
   const [items, setItems] = React.useState<React.JSX.Element[]>([]);
   const getItems = (_deploys: {
@@ -85,10 +79,6 @@ export const DeploysProgress: React.FunctionComponent<
             showRunProgress={dpState.showRunProgress}
             runPipeline={dpState.runPipeline}
             runWarnings={dpState.runWarnings}
-            // showKatibProgress={dpState.showKatibProgress}
-            // katib={dpState.katib}
-            // showKatibKFPExperiment={dpState.showKatibKFPExperiment}
-            // katibKFPExperiment={dpState.katibKFPExperiment}
             onRemove={_onPanelRemove(Number(index))}
             docManager={dpState.docManager}
             namespace={dpState.namespace}

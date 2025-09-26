@@ -203,7 +203,8 @@ const StyledTextField = styled(TextField)({
   }
 });
 
-export interface InputProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
+export interface IInputProps
+  extends Omit<TextFieldProps, 'onChange' | 'value'> {
   value: string | number;
   regex?: string;
   regexErrorMsg?: string;
@@ -212,11 +213,11 @@ export interface InputProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
   readOnly?: boolean;
   validation?: 'int' | 'double';
   variant?: 'standard' | 'outlined' | 'filled';
-  updateValue: (value: string, index?: number) => void;
+  updateValue: (value: string, index: number) => void;
   onBeforeUpdate?: (value: string) => boolean;
 }
 
-export const Input: React.FunctionComponent<InputProps> = props => {
+export const Input: React.FunctionComponent<IInputProps> = props => {
   const [value, setValue] = React.useState<string | number>('');
   const [error, updateError] = React.useState(false);
 
@@ -261,7 +262,7 @@ export const Input: React.FunctionComponent<InputProps> = props => {
     }
   };
 
-  const onChange = (value: string, index?: number) => {
+  const onChange = (value: string, index: number) => {
     // if the input domain is restricted by a regex
     const regexPattern = getRegex();
     if (!regexPattern) {
@@ -286,7 +287,7 @@ export const Input: React.FunctionComponent<InputProps> = props => {
 
   const debouncedCallback = useDebouncedCallback(
     // function
-    (value: string, idx?: number) => {
+    (value: string, idx: number) => {
       onChange(value, idx);
     },
     // delay in ms
@@ -298,14 +299,14 @@ export const Input: React.FunctionComponent<InputProps> = props => {
     setValue(newValue);
 
     if (!onBeforeUpdate) {
-      debouncedCallback(newValue, inputIndex);
+      debouncedCallback(newValue, inputIndex || 0);
     } else {
       const hasError = onBeforeUpdate(newValue);
       if (hasError) {
         updateError(true);
       } else {
         updateError(false);
-        debouncedCallback(newValue, inputIndex);
+        debouncedCallback(newValue, inputIndex || 0);
       }
     }
   };

@@ -167,7 +167,7 @@ const StyledChip = styled(Chip)({
   // Additional chip styling can go here if needed
 });
 
-interface SelectMultiProps {
+interface ISelectMultiProps {
   id: string;
   label: string;
   style?: React.CSSProperties;
@@ -178,7 +178,9 @@ interface SelectMultiProps {
   updateSelected: (value: string[]) => void;
 }
 
-export const SelectMulti: React.FunctionComponent<SelectMultiProps> = props => {
+export const SelectMulti: React.FunctionComponent<
+  ISelectMultiProps
+> = props => {
   const {
     id,
     label,

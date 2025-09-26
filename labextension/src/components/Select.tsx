@@ -164,14 +164,14 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   }
 }));
 
-interface SelectProps extends BaseTextFieldProps {
+interface ISelectProps extends BaseTextFieldProps {
   index: number;
   values: ISelectOption[];
   variant?: 'filled' | 'standard' | 'outlined';
   updateValue: (value: string, index: number) => void;
 }
 
-export const Select: React.FC<SelectProps> = props => {
+export const Select: React.FC<ISelectProps> = props => {
   const {
     index,
     value,

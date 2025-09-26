@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-///<reference path="../node_modules/@types/node/index.d.ts"/>
-
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
@@ -23,7 +21,7 @@ import {
   ILayoutRestorer
 } from '@jupyterlab/application';
 
-import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
@@ -37,27 +35,20 @@ import '../style/index.css';
 
 import { KubeflowKaleLeftPanel } from './widgets/LeftPanel';
 import NotebookUtils from './lib/NotebookUtils';
-import {
-  executeRpc,
-  globalUnhandledRejection,
-  BaseError,
-  IRPCError,
-  RPCError,
-  RPC_CALL_STATUS
-} from './lib/RPCUtils';
+import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
-  'kubeflow-kale:IKubeflowKale'
+  'kubeflow-kale-labextension:IKubeflowKale'
 );
 
 export interface IKubeflowKale {
   widget: Widget;
 }
 
-const id = 'kubeflow-kale:deploymentPanel';
+const id = 'kubeflow-kale-labextension:deploymentPanel';
 /**
  * Adds a visual Kubeflow Pipelines Deployment tool to the sidebar.
  */
@@ -87,9 +78,10 @@ async function activate(
    */
   async function getBackend(kernel: Kernel.IKernelConnection) {
     try {
-      await NotebookUtils.sendKernelRequest(kernel, `import kale`, {});
+      await NotebookUtils.sendKernelRequest(kernel, 'import kale', {});
     } catch (error) {
-      console.error('Kale backend is not installed.');
+      console.error(`Kale backend is not installed: ${error}`);
+
       return false;
     }
     return true;
@@ -107,36 +99,6 @@ async function activate(
       throw error;
     }
   }
-  //   try {
-  //     await executeRpc(kernel, 'rok.check_rok_availability');
-  //   } catch (error) {
-  //     const unexpectedErrorCodes = [
-  //       RPC_CALL_STATUS.EncodingError,
-  //       RPC_CALL_STATUS.ImportError,
-  //       RPC_CALL_STATUS.UnhandledError,
-  //     ];
-  //     if (
-  //       error instanceof RPCError &&
-  //       !unexpectedErrorCodes.includes(error.error.code)
-  //     ) {
-  //       rokError = error.error;
-  //       console.warn('Rok is not available', rokError);
-  //     } else {
-  //       globalUnhandledRejection({ reason: error });
-  //       throw error;
-  //     }
-  //   }
-  // } else {
-  //   rokError = {
-  //     rpc: 'rok.check_rok_availability',
-  //     code: RPC_CALL_STATUS.ImportError,
-  //     err_message: 'Rok is not available',
-  //     err_details:
-  //       'To use this Rok feature you first need Kale running' +
-  //       ' in the backend.',
-  //     err_cls: 'importError',
-  //   };
-  //   console.warn('Rok is not available', rokError);
 
   async function loadPanel() {
     let reveal_widget = undefined;
@@ -177,7 +139,7 @@ async function activate(
         kernel={kernel}
       />
     );
-    widget.id = 'kubeflow-kale/kubeflowDeployment';
+    widget.id = 'kubeflow-kale-labextension/kubeflowDeployment';
     widget.title.iconClass = 'jp-kale-logo jp-SideBar-tabIcon';
     widget.title.caption = 'Kubeflow Pipelines Deployment Panel';
     widget.node.classList.add('kale-panel');

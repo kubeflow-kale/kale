@@ -21,7 +21,9 @@ import {
   _legacy_executeRpcAndShowRPCError,
   RPCError,
 } from './RPCUtils';
-import { wait } from './Utils';
+
+type OnUpdateCallbak = (params: any) => void;
+
 import {
   DefaultState,
   IExperiment,
@@ -49,7 +51,7 @@ interface ICompileNotebookArgs {
 
 interface IUploadPipelineArgs {
   pipeline_package_path: string;
-  pipeline_metadata: Object;
+  pipeline_metadata: object;
 }
 
 interface IUploadPipelineResp {
@@ -58,18 +60,11 @@ interface IUploadPipelineResp {
 }
 
 interface IRunPipelineArgs {
-  pipeline_metadata: Object;
+  pipeline_metadata: object;
   pipeline_package_path?: string;
   pipeline_id?: string;
   version_id?: string;
 }
-
-// interface IKatibRunArgs {
-//   pipeline_id: string;
-//   version_id: string;
-//   pipeline_metadata: any;
-//   output_path: string;
-// }
 
 export default class Commands {
   private readonly _notebook: NotebookPanel;
@@ -80,110 +75,9 @@ export default class Commands {
     this._kernel = kernel;
   }
 
-  // snapshotNotebook = async () => {
-  //   return await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'rok.snapshot_notebook',
-  //   );
-  // };
-
-  // getSnapshotProgress = async (task_id: string, ms?: number) => {
-  //   const task = await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'rok.get_task',
-  //     {
-  //       task_id,
-  //     },
-  //   );
-  //   if (ms) {
-  //     await wait(ms);
-  //   }
-  //   return task;
-  // };
-
-  // runSnapshotProcedure = async (onUpdate: Function) => {
-  //   const showSnapshotProgress = true;
-  //   const snapshot = await this.snapshotNotebook();
-  //   const taskId = snapshot.task.id;
-  //   let task = await this.getSnapshotProgress(taskId);
-  //   onUpdate({ task, showSnapshotProgress });
-
-  //   while (!['success', 'error', 'canceled'].includes(task.status)) {
-  //     task = await this.getSnapshotProgress(taskId, 1000);
-  //     onUpdate({ task });
-  //   }
-
-  //   if (task.status === 'success') {
-  //     console.log('Snapshotting successful!');
-  //     return task;
-  //   } else if (task.status === 'error') {
-  //     console.error('Snapshotting failed');
-  //     console.error('Stopping the deployment...');
-  //   } else if (task.status === 'canceled') {
-  //     console.error('Snapshotting canceled');
-  //     console.error('Stopping the deployment...');
-  //   }
-
-  //   return null;
-  // };
-
-  // replaceClonedVolumes = async (
-  //   bucket: string,
-  //   obj: string,
-  //   version: string,
-  //   volumes: IVolumeMetadata[],
-  // ) => {
-  //   return await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'rok.replace_cloned_volumes',
-  //     {
-  //       bucket,
-  //       obj,
-  //       version,
-  //       volumes,
-  //     },
-  //   );
-  // };
-
-  // getMountedVolumes = async (currentNotebookVolumes: IVolumeMetadata[]) => {
-  //   let notebookVolumes: IVolumeMetadata[] = await _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'nb.list_volumes',
-  //   );
-  //   let availableVolumeTypes = SELECT_VOLUME_TYPES.map(t => {
-  //     return t.value === 'snap' ? { ...t, invalid: false } : t;
-  //   });
-
-  //   if (notebookVolumes) {
-  //     notebookVolumes = notebookVolumes.map(volume => {
-  //       const size = volume.size ?? 0;
-  //       const sizeGroup = SELECT_VOLUME_SIZE_TYPES.filter(
-  //         s => size >= s.base,
-  //       )[0];
-  //       volume.size = Math.ceil(size / sizeGroup.base);
-  //       volume.size_type = sizeGroup.value;
-  //       volume.annotations = [];
-  //       return volume;
-  //     });
-  //     availableVolumeTypes = availableVolumeTypes.map(t => {
-  //       return t.value === 'clone' ? { ...t, invalid: false } : t;
-  //     });
-  //   } else {
-  //     notebookVolumes = currentNotebookVolumes;
-  //   }
-  //   return {
-  //     notebookVolumes,
-  //     selectVolumeTypes: availableVolumeTypes,
-  //   };
-  // };
-
   unmarshalData = async (nbFileName: string) => {
     const cmd: string =
-      `from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n` +
+      'from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n' +
       `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
     console.log('Executing command: ' + cmd);
     await NotebookUtils.sendKernelRequestFromNotebook(this._notebook, cmd, {});
@@ -224,7 +118,7 @@ export default class Commands {
 
     // Fix experiment metadata
     let newExperiment: IExperiment | null = null;
-    let selectedExperiments: IExperiment[] = experimentsList.filter(
+    const selectedExperiments: IExperiment[] = experimentsList.filter(
       e =>
         e.id === experiment.id ||
         e.name === experiment.name ||
@@ -249,7 +143,7 @@ export default class Commands {
     };
   };
 
-  pollRun(runPipeline: any, onUpdate: Function) {
+  pollRun(runPipeline: any, onUpdate: OnUpdateCallbak) {
     _legacy_executeRpcAndShowRPCError(
       this._notebook,
       this._kernel,
@@ -265,33 +159,10 @@ export default class Commands {
     });
   }
 
-  // pollKatib(katibExperiment: IKatibExperiment, onUpdate: Function) {
-  //   const getExperimentArgs: any = {
-  //     experiment: katibExperiment.name,
-  //     namespace: katibExperiment.namespace,
-  //   };
-  //   _legacy_executeRpcAndShowRPCError(
-  //     this._notebook,
-  //     this._kernel,
-  //     'katib.get_experiment',
-  //     getExperimentArgs,
-  //   ).then(katib => {
-  //     if (!katib) {
-  //       // could not get the experiment
-  //       onUpdate({ katib: { status: 'error' } });
-  //       return;
-  //     }
-  //     onUpdate({ katib });
-  //     if (katib && katib.status !== 'Succeeded' && katib.status !== 'Failed') {
-  //       setTimeout(() => this.pollKatib(katibExperiment, onUpdate), 5000);
-  //     }
-  //   });
-  // }
-
   validateMetadata = async (
     notebookPath: string,
     metadata: IKaleNotebookMetadata,
-    onUpdate: Function,
+    onUpdate: OnUpdateCallbak,
   ): Promise<boolean> => {
     onUpdate({ showValidationProgress: true });
     const validateNotebookArgs = {
@@ -318,7 +189,7 @@ export default class Commands {
    * @param metadata Notebook metadata
    */
   getCompileWarnings = (metadata: IKaleNotebookMetadata) => {
-    let warningContent = [];
+    const warningContent = [];
 
     // in case the notebook's docker base image is different than the default
     // one (e.g. the one detected in the Notebook Server), alert the user
@@ -328,18 +199,18 @@ export default class Commands {
     ) {
       warningContent.push(
         'The image you used to create the notebook server is different ' +
-          'from the image you have selected for your pipeline.',
+        'from the image you have selected for your pipeline.',
         '',
         'Your Kubeflow pipeline will use the following image: <pre><b>' +
-          metadata.docker_image +
-          '</b></pre>',
+        metadata.docker_image +
+        '</b></pre>',
         'You created the notebook server using the following image: <pre><b>' +
-          DefaultState.metadata.docker_image +
-          '</b></pre>',
+        DefaultState.metadata.docker_image +
+        '</b></pre>',
         '',
         "To use this notebook server's image as base image" +
-          ' for the pipeline steps, delete the existing docker image' +
-          ' from the Advanced Settings section.',
+        ' for the pipeline steps, delete the existing docker image' +
+        ' from the Advanced Settings section.',
       );
     }
     return warningContent;
@@ -354,7 +225,7 @@ export default class Commands {
     metadata: IKaleNotebookMetadata,
     docManager: IDocumentManager,
     deployDebugMessage: boolean,
-    onUpdate: Function,
+    onUpdate: OnUpdateCallbak,
   ) => {
     // after parsing and validating the metadata, show warnings (if necessary)
     const compileWarnings = this.getCompileWarnings(metadata);
@@ -396,20 +267,20 @@ export default class Commands {
   uploadPipeline = async (
     compiledPackagePath: string,
     compiledPipelineMetadata: IKaleNotebookMetadata,
-    onUpdate: Function,
+    onUpdate: OnUpdateCallbak,
   ): Promise<IUploadPipelineResp> => {
     onUpdate({ showUploadProgress: true });
     const uploadPipelineArgs: IUploadPipelineArgs = {
       pipeline_package_path: compiledPackagePath,
       pipeline_metadata: compiledPipelineMetadata,
     };
-    let uploadPipeline: IUploadPipelineResp = await _legacy_executeRpcAndShowRPCError(
+    const uploadPipeline: IUploadPipelineResp = await _legacy_executeRpcAndShowRPCError(
       this._notebook,
       this._kernel,
       'kfp.upload_pipeline',
       uploadPipelineArgs,
     );
-    let result = true;
+    const result = true;
     if (!uploadPipeline) {
       onUpdate({ showUploadProgress: false, pipeline: false });
       return uploadPipeline;
@@ -420,74 +291,12 @@ export default class Commands {
     return uploadPipeline;
   };
 
-  // runKatib = async (
-  //   notebookPath: string,
-  //   metadata: IKaleNotebookMetadata,
-  //   pipelineId: string,
-  //   versionId: string,
-  //   onUpdate: Function,
-  // ): Promise<IKatibExperiment> => {
-  //   onUpdate({ showKatibKFPExperiment: true });
-  //   // create a new experiment, using the base name of the currently
-  //   // selected one
-  //   const newExpName: string =
-  //     metadata.experiment.name +
-  //     '-' +
-  //     Math.random()
-  //       .toString(36)
-  //       .slice(2, 7);
-
-  //   // create new KFP experiment
-  //   let kfpExperiment: { id: string; name: string };
-  //   try {
-  //     kfpExperiment = await _legacy_executeRpc(
-  //       this._notebook,
-  //       this._kernel,
-  //       'kfp.create_experiment',
-  //       {
-  //         experiment_name: newExpName,
-  //       },
-  //     );
-  //     onUpdate({ katibKFPExperiment: kfpExperiment });
-  //   } catch (error) {
-  //     onUpdate({
-  //       showKatibProgress: false,
-  //       katibKFPExperiment: { id: 'error', name: 'error' },
-  //     });
-  //     throw error;
-  //   }
-
-  //   onUpdate({ showKatibProgress: true });
-  //   const runKatibArgs: IKatibRunArgs = {
-  //     pipeline_id: pipelineId,
-  //     version_id: versionId,
-  //     pipeline_metadata: {
-  //       ...metadata,
-  //       experiment_name: kfpExperiment.name,
-  //     },
-  //     output_path: notebookPath.substring(0, notebookPath.lastIndexOf('/')),
-  //   };
-  //   let katibExperiment: IKatibExperiment | null = null;
-  //   try {
-  //     katibExperiment = await _legacy_executeRpc(
-  //       this._notebook,
-  //       this._kernel,
-  //       'katib.create_katib_experiment',
-  //       runKatibArgs,
-  //     );
-  //   } catch (error) {
-  //     onUpdate({ katib: { status: 'error' } });
-  //     throw error;
-  //   }
-  //   return katibExperiment;
-  // };
-
   runPipeline = async (
     pipelineId: string,
     versionId: string,
     compiledPipelineMetadata: IKaleNotebookMetadata,
     pipelinePackagePath: string,
-    onUpdate: Function,
+    onUpdate: (params: { showRunProgress?: boolean, runPipeline?: boolean }) => void,
   ) => {
     onUpdate({ showRunProgress: true });
     const runPipelineArgs: IRunPipelineArgs = {
@@ -523,9 +332,9 @@ export default class Commands {
     }
 
     NotebookUtils.clearCellOutputs(this._notebook);
-    let title = 'Notebook Exploration';
+    const title = 'Notebook Exploration';
     let message: string[] = [];
-    let runCellResponse = await NotebookUtils.runGlobalCells(this._notebook);
+    const runCellResponse = await NotebookUtils.runGlobalCells(this._notebook);
     if (runCellResponse.status === RUN_CELL_STATUS.OK) {
       // unmarshalData runs in the same kernel as the .ipynb, so it requires the
       // filename
@@ -535,19 +344,18 @@ export default class Commands {
         exploration.step_name,
       );
       message = [
-        `Resuming notebook ${
-          exploration.final_snapshot ? 'after' : 'before'
+        `Resuming notebook ${exploration.final_snapshot ? 'after' : 'before'
         } step: "${exploration.step_name}"`,
       ];
       if (cell) {
         NotebookUtils.selectAndScrollToCell(this._notebook, cell);
       } else {
-        message.push(`ERROR: Could not retrieve step's position.`);
+        message.push('ERROR: Could not retrieve step\'s position.');
       }
     } else {
       message = [
         `Executing "${runCellResponse.cellType}" cell failed.\n` +
-          `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
+        `Resuming notebook at cell index ${runCellResponse.cellIndex}.`,
         `Error name: ${runCellResponse.ename}`,
         `Error value: ${runCellResponse.evalue}`,
       ];
@@ -566,7 +374,7 @@ export default class Commands {
   findPodDefaultLabelsOnServer = async (): Promise<{
     [key: string]: string;
   }> => {
-    let labels: {
+    const labels: {
       [key: string]: string;
     } = {};
     try {

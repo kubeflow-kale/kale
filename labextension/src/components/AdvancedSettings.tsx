@@ -142,7 +142,7 @@ const KaleHeader = styled('p')(({ theme }) => ({
   fontSize: theme.typography.subtitle2.fontSize
 }));
 
-interface AdvancedSettingsProps {
+interface IAdvancedSettingsProps {
   title: string;
   debug: boolean;
   dockerImageValue: string;
@@ -153,7 +153,7 @@ interface AdvancedSettingsProps {
 }
 
 export const AdvancedSettings: React.FunctionComponent<
-  AdvancedSettingsProps
+  IAdvancedSettingsProps
 > = props => {
   const [collapsed, setCollapsed] = React.useState(true);
   const theme = useTheme();

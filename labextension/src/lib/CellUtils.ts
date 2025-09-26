@@ -34,13 +34,13 @@ export default class CellUtilities {
       return null;
     }
     const out = cell.outputs.toJSON().pop();
-    if (isExecuteResult(out)) {
+    if (out && isExecuteResult(out)) {
       return out.data['text/plain'];
     }
-    if (isStream(out)) {
+    if (out && isStream(out)) {
       return out.text;
     }
-    if (isError(out)) {
+    if (out && isError(out)) {
       const errData: IError = out;
 
       throw new Error(
@@ -273,7 +273,7 @@ export default class CellUtilities {
       try {
         cell = (notebook.model as any).createCell('code');
       } catch (error) {
-        throw new Error('Unable to create new cell: ' + error.message);
+        throw new Error('Unable to create new cell: ' + (error || 'unknow'));
       }
     }
 

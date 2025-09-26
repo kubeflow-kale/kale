@@ -17,10 +17,7 @@
 import * as React from 'react';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-import {
-  IObservableList,
-  IObservableUndoableList
-} from '@jupyterlab/observables';
+import { IObservableList } from '@jupyterlab/observables';
 import {
   Cell,
   CodeCellModel,
@@ -79,10 +76,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     }
   };
 
-  componentDidUpdate = async (
-    prevProps: Readonly<IProps>,
-    prevState: Readonly<IState>
-  ) => {
+  componentDidUpdate = async (prevProps: Readonly<IProps>) => {
     if (!this.props.notebook && prevProps.notebook) {
       // no notebook
       this.clearEditorsPropsAndInlineMetadata();
@@ -247,7 +241,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           prevBlockNames: []
         };
       }
-      let previousBlockName = '';
+      let previousBlockName: string | undefined = '';
 
       if (!tags.blockName) {
         previousBlockName = TagsUtils.getPreviousBlock(

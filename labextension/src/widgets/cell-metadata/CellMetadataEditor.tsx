@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
+import { NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../lib/TagsUtils';
 import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@mui/icons-material/Close';
@@ -66,7 +66,7 @@ export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
 };
 
 const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric
- characters or \'_\', and can not start with a digit.`;
+ characters or '_', and can not start with a digit.`;
 
 export interface IProps {
   notebook: NotebookPanel;
@@ -263,7 +263,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
   updateCurrentBlockName = (value: string) => {
     const oldBlockName: string = this.props.stepName || '';
-    let currentCellMetadata = {
+    const currentCellMetadata = {
       prevBlockNames: this.props.stepDependencies,
       limits: this.props.limits || {},
       blockName: value
@@ -283,7 +283,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
    * Even handler of the MultiSelect used to select the dependencies of a block
    */
   updatePrevBlocksNames = (previousBlocks: string[]) => {
-    let currentCellMetadata = {
+    const currentCellMetadata = {
       blockName: this.props.stepName || '',
       limits: this.props.limits || {},
       prevBlockNames: previousBlocks
@@ -307,7 +307,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       limitValue?: string;
     }[]
   ) => {
-    let limits = { ...this.props.limits };
+    const limits = { ...this.props.limits };
     actions.forEach(action => {
       if (action.action === 'update' && action.limitValue !== undefined) {
         limits[action.limitKey] = action.limitValue;
@@ -320,7 +320,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       }
     });
 
-    let currentCellMetadata = {
+    const currentCellMetadata = {
       blockName: this.props.stepName || '',
       prevBlockNames: this.props.stepDependencies,
       limits: limits
