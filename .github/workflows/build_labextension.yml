@@ -33,6 +33,11 @@ jobs:
           jlpm
           jlpm run lint:check
 
+      - name: Prettier the extension
+        run: |
+          set -eux
+          jlpm prettier
+
       - name: Install Kale Backend
         run: |
           set -eux
