@@ -79,7 +79,7 @@ jobs:
       - name: Install Kale Backend
         run: |
           set -eux
-          pip install -e ../backend[test]
+          pip install -e ./backend[test]
       - uses: actions/download-artifact@v4
         with:
           name: extension-artifacts
