@@ -34,14 +34,20 @@ jobs:
           jlpm
           jlpm run lint:check
 
+      - name: Install Kale Backend
+        run: |
+          set -eux
+          pip install -e ../backend[test]
+
       - name: Build the extension
         run: |
           set -eux
-          
+
           python -m pip install .[test]
 
           jupyter labextension list
           jupyter labextension list 2>&1 | grep -ie "kubeflow-kale-labextension.*OK"
+
           python -m jupyterlab.browser_check
 
       - name: Package the extension
@@ -76,10 +82,6 @@ jobs:
         run: |
           set -eux
           pip install -e ../backend[test]
-
-          echo 'import kale' > test_kale_import.py && \
-          python test_kale_import.py && \
-          rm test_kale_import.py
 
       - name: Install and Test
         run: |
