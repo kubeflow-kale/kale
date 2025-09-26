@@ -37,10 +37,8 @@ jobs:
       - name: Build the extension
         run: |
           set -eux
-          # This should be fixed next
-          # python -m pip install .[test]
-
-          jupyter labextension develop --overwrite .
+          
+          python -m pip install .[test]
 
           jupyter labextension list
           jupyter labextension list 2>&1 | grep -ie "kubeflow-kale-labextension.*OK"

@@ -44,7 +44,7 @@ source = "nodejs"
 fields = ["description", "authors", "urls", "keywords"]
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["kubeflow-kale-labextension/labextension"]
+artifacts = ["kubeflow_kale_labextension/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
@@ -53,16 +53,16 @@ exclude = [".github", "binder"]
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 
 [tool.hatch.build.hooks.version]
-path = "kubeflow-kale-labextension/_version.py"
+path = "kubeflow_kale_labextension/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "kubeflow-kale-labextension/labextension/static/style.js",
-    "kubeflow-kale-labextension/labextension/package.json",
+    "kubeflow_kale_labextension/labextension/static/style.js",
+    "kubeflow_kale_labextension/labextension/package.json",
 ]
-skip-if-exists = ["kubeflow-kale-labextension/labextension/static/style.js"]
+skip-if-exists = ["kubeflow_kale_labextension/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
@@ -72,7 +72,7 @@ npm = ["jlpm"]
 build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
-build_dir = "kubeflow-kale-labextension/labextension"
+build_dir = "kubeflow_kale_labextension/labextension"
 
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"
