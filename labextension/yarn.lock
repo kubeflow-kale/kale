@@ -1319,7 +1319,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/application@npm:^4.4.7":
+"@jupyterlab/application@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/application@npm:4.4.9"
   dependencies:
@@ -1347,7 +1347,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/apputils@npm:^4.5.7, @jupyterlab/apputils@npm:^4.5.9":
+"@jupyterlab/apputils@npm:^4.5.9":
   version: 4.5.9
   resolution: "@jupyterlab/apputils@npm:4.5.9"
   dependencies:
@@ -1431,7 +1431,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/cells@npm:^4.4.7":
+"@jupyterlab/cells@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/cells@npm:4.4.9"
   dependencies:
@@ -1467,7 +1467,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/codeeditor@npm:^4.4.7, @jupyterlab/codeeditor@npm:^4.4.9":
+"@jupyterlab/codeeditor@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/codeeditor@npm:4.4.9"
   dependencies:
@@ -1491,7 +1491,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/codemirror@npm:^4.4.7, @jupyterlab/codemirror@npm:^4.4.9":
+"@jupyterlab/codemirror@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/codemirror@npm:4.4.9"
   dependencies:
@@ -1533,7 +1533,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/coreutils@npm:^6.4.5, @jupyterlab/coreutils@npm:^6.4.7, @jupyterlab/coreutils@npm:^6.4.9":
+"@jupyterlab/coreutils@npm:^6.4.5, @jupyterlab/coreutils@npm:^6.4.9":
   version: 6.4.9
   resolution: "@jupyterlab/coreutils@npm:6.4.9"
   dependencies:
@@ -1572,7 +1572,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/docregistry@npm:^4.4.7, @jupyterlab/docregistry@npm:^4.4.9":
+"@jupyterlab/docregistry@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/docregistry@npm:4.4.9"
   dependencies:
@@ -1598,7 +1598,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/documentsearch@npm:^4.4.7, @jupyterlab/documentsearch@npm:^4.4.9":
+"@jupyterlab/documentsearch@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/documentsearch@npm:4.4.9"
   dependencies:
@@ -1646,7 +1646,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/lsp@npm:^4.4.7":
+"@jupyterlab/lsp@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/lsp@npm:4.4.9"
   dependencies:
@@ -1678,7 +1678,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/nbformat@npm:^4.4.7, @jupyterlab/nbformat@npm:^4.4.9":
+"@jupyterlab/nbformat@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/nbformat@npm:4.4.9"
   dependencies:
@@ -1687,28 +1687,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/notebook@npm:4.4.7":
-  version: 4.4.7
-  resolution: "@jupyterlab/notebook@npm:4.4.7"
+"@jupyterlab/notebook@npm:^4.4.9":
+  version: 4.4.9
+  resolution: "@jupyterlab/notebook@npm:4.4.9"
   dependencies:
     "@jupyter/ydoc": ^3.1.0
-    "@jupyterlab/apputils": ^4.5.7
-    "@jupyterlab/cells": ^4.4.7
-    "@jupyterlab/codeeditor": ^4.4.7
-    "@jupyterlab/codemirror": ^4.4.7
-    "@jupyterlab/coreutils": ^6.4.7
-    "@jupyterlab/docregistry": ^4.4.7
-    "@jupyterlab/documentsearch": ^4.4.7
-    "@jupyterlab/lsp": ^4.4.7
-    "@jupyterlab/nbformat": ^4.4.7
-    "@jupyterlab/observables": ^5.4.7
-    "@jupyterlab/rendermime": ^4.4.7
-    "@jupyterlab/services": ^7.4.7
-    "@jupyterlab/settingregistry": ^4.4.7
-    "@jupyterlab/statusbar": ^4.4.7
-    "@jupyterlab/toc": ^6.4.7
-    "@jupyterlab/translation": ^4.4.7
-    "@jupyterlab/ui-components": ^4.4.7
+    "@jupyterlab/apputils": ^4.5.9
+    "@jupyterlab/cells": ^4.4.9
+    "@jupyterlab/codeeditor": ^4.4.9
+    "@jupyterlab/codemirror": ^4.4.9
+    "@jupyterlab/coreutils": ^6.4.9
+    "@jupyterlab/docregistry": ^4.4.9
+    "@jupyterlab/documentsearch": ^4.4.9
+    "@jupyterlab/lsp": ^4.4.9
+    "@jupyterlab/nbformat": ^4.4.9
+    "@jupyterlab/observables": ^5.4.9
+    "@jupyterlab/rendermime": ^4.4.9
+    "@jupyterlab/services": ^7.4.9
+    "@jupyterlab/settingregistry": ^4.4.9
+    "@jupyterlab/statusbar": ^4.4.9
+    "@jupyterlab/toc": ^6.4.9
+    "@jupyterlab/translation": ^4.4.9
+    "@jupyterlab/ui-components": ^4.4.9
     "@lumino/algorithm": ^2.0.3
     "@lumino/coreutils": ^2.2.1
     "@lumino/disposable": ^2.1.4
@@ -1721,11 +1721,11 @@ __metadata:
     "@lumino/virtualdom": ^2.0.3
     "@lumino/widgets": ^2.7.1
     react: ^18.2.0
-  checksum: 916f5b8b15b1740f805405c6e3809ba6966c84076979bb56915fc417a6b8304224c8cf85bffb0d605456c9ec285df93f6ae2000df1020fde5643a13dcb5f4340
+  checksum: aa385be275f7268fb718b565a5e0cd713d121f8f9279ae69cbcb7f27189ac8137f2ce5ccbea568a29625daf12631b2e5d1cf14f7b80389c27acb0441103a4479
   languageName: node
   linkType: hard
 
-"@jupyterlab/observables@npm:^5.4.7, @jupyterlab/observables@npm:^5.4.9":
+"@jupyterlab/observables@npm:^5.4.9":
   version: 5.4.9
   resolution: "@jupyterlab/observables@npm:5.4.9"
   dependencies:
@@ -1770,7 +1770,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/rendermime@npm:^4.4.7, @jupyterlab/rendermime@npm:^4.4.9":
+"@jupyterlab/rendermime@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/rendermime@npm:4.4.9"
   dependencies:
@@ -1790,7 +1790,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/services@npm:^7.4.7, @jupyterlab/services@npm:^7.4.9":
+"@jupyterlab/services@npm:^7.4.9":
   version: 7.4.9
   resolution: "@jupyterlab/services@npm:7.4.9"
   dependencies:
@@ -1809,7 +1809,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/settingregistry@npm:^4.4.7, @jupyterlab/settingregistry@npm:^4.4.9":
+"@jupyterlab/settingregistry@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/settingregistry@npm:4.4.9"
   dependencies:
@@ -1841,7 +1841,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/statusbar@npm:^4.4.7, @jupyterlab/statusbar@npm:^4.4.9":
+"@jupyterlab/statusbar@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/statusbar@npm:4.4.9"
   dependencies:
@@ -1857,7 +1857,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/toc@npm:^6.4.7, @jupyterlab/toc@npm:^6.4.9":
+"@jupyterlab/toc@npm:^6.4.9":
   version: 6.4.9
   resolution: "@jupyterlab/toc@npm:6.4.9"
   dependencies:
@@ -1880,7 +1880,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/translation@npm:^4.4.7, @jupyterlab/translation@npm:^4.4.9":
+"@jupyterlab/translation@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/translation@npm:4.4.9"
   dependencies:
@@ -1893,7 +1893,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/ui-components@npm:^4.4.7, @jupyterlab/ui-components@npm:^4.4.9":
+"@jupyterlab/ui-components@npm:^4.4.9":
   version: 4.4.9
   resolution: "@jupyterlab/ui-components@npm:4.4.9"
   dependencies:
@@ -6318,12 +6318,12 @@ __metadata:
   dependencies:
     "@emotion/react": ^11.14.0
     "@emotion/styled": ^11.14.1
-    "@jupyterlab/application": ^4.4.7
+    "@jupyterlab/application": ^4.4.9
     "@jupyterlab/builder": ^4.4.6
-    "@jupyterlab/cells": ^4.4.7
+    "@jupyterlab/cells": ^4.4.9
     "@jupyterlab/coreutils": ^6.4.5
-    "@jupyterlab/nbformat": ^4.4.7
-    "@jupyterlab/notebook": 4.4.7
+    "@jupyterlab/nbformat": ^4.4.9
+    "@jupyterlab/notebook": ^4.4.9
     "@mui/icons-material": ^7.3.1
     "@mui/material": ^7.3.1
     "@types/jest": ^29.2.0
