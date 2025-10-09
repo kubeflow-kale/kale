@@ -155,24 +155,24 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     if (!notebookContent?.node?.childNodes) {
       return;
     }
-    const metadataWrapper = notebookContent.node.childNodes[
+    const metadataWrapper = this.props.notebook.content.widgets[
       this.context.activeCellIndex
-    ] as HTMLElement;
+    ].node as HTMLElement;
+
     if (!metadataWrapper) {
       return;
     }
     const editor = this.editorRef.current;
     const inlineElement = metadataWrapper.querySelector(
-      '.kale-inline-cell-metadata'
+      '.kale-inline-cell-metadata-container'
     );
-    const elem = metadataWrapper.querySelector('.moved');
-    if (
-      editor &&
-      elem &&
-      !elem.querySelector('.kale-metadata-editor-wrapper') &&
-      inlineElement
-    ) {
-      elem.insertBefore(editor, inlineElement.nextSibling);
+    const isEditorAlreadInPlace = metadataWrapper.querySelector(
+      '.kale-metadata-editor-wrapper'
+    );
+
+    if (editor && inlineElement && !isEditorAlreadInPlace) {
+      editor.remove();
+      metadataWrapper.prepend(editor);
     }
   }
 
@@ -274,7 +274,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.context.activeCellIndex,
       currentCellMetadata,
       false
-    ).then((oldValue: any) => {
+    ).then(() => {
       TagsUtils.updateKaleCellsTags(this.props.notebook, oldBlockName, value);
     });
   };

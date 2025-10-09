@@ -68,7 +68,7 @@ export default class CellUtilities {
       throw new Error('Cell index out of range.');
     }
     const cell: ICellModel = notebook.model.cells.get(index);
-    
+
     // Safe metadata access
     const metadata = cell.metadata as any;
     if (metadata && typeof metadata.get === 'function' && metadata.has && metadata.has(key)) {
@@ -107,15 +107,13 @@ export default class CellUtilities {
       const cell: ICellModel = notebookPanel.model.cells.get(index);
       const metadata = cell.metadata as any;
       let oldVal: any;
-      
+
       // Safe metadata setting
-      if (metadata && typeof metadata.set === 'function') {
-        oldVal = metadata.set(key, value);
-      } else if (metadata) {
+      if (metadata) {
         oldVal = metadata[key];
-        metadata[key] = value;
+        cell.setMetadata(key, value);
       }
-      
+
       if (save) {
         return notebookPanel.context.save();
       }
@@ -144,12 +142,12 @@ export default class CellUtilities {
     for (let idx = 0; idx < cells.length; idx += 1) {
       cell = cells.get(idx);
       const metadata = cell.metadata as any;
-      
+
       // Safe metadata checking
-      const hasKey = (metadata && typeof metadata.has === 'function') 
+      const hasKey = (metadata && typeof metadata.has === 'function')
         ? metadata.has(key)
         : metadata && metadata[key] !== undefined;
-        
+
       if (hasKey) {
         return [idx, cell];
       }
@@ -221,11 +219,11 @@ export default class CellUtilities {
     }
     // Save the old index, then set the current active cell
     let oldIndex = notebook.activeCellIndex;
-    
+
     // Use NotebookActions to delete the cell properly
     notebook.activeCellIndex = index;
     NotebookActions.deleteCells(notebook);
-    
+
     // Adjust old index to account for deleted cell.
     if (oldIndex === index) {
       if (oldIndex > 0) {
@@ -236,7 +234,7 @@ export default class CellUtilities {
     } else if (oldIndex > index) {
       oldIndex -= 1;
     }
-    
+
     // Restore the active cell index
     if (oldIndex < notebook.widgets.length) {
       notebook.activeCellIndex = oldIndex;
@@ -261,7 +259,7 @@ export default class CellUtilities {
     // Create a new cell - use different approaches based on available APIs
     let cell: ICellModel;
     const model = notebook.model as any;
-    
+
     if (model.contentFactory && typeof model.contentFactory.createCodeCell === 'function') {
       // Old API
       cell = model.contentFactory.createCodeCell({});
@@ -298,7 +296,7 @@ export default class CellUtilities {
       notebook.activeCellIndex = oldIndex;
       return 0;
     }
-    
+
     if (index >= notebook.widgets.length) {
       // Insert at end
       const insertIndex = notebook.widgets.length;
@@ -313,7 +311,7 @@ export default class CellUtilities {
       notebook.activeCellIndex = oldIndex;
       return insertIndex;
     }
-    
+
     // Insert at specific index
     if (typeof cells.insert === 'function') {
       cells.insert(index, cell);

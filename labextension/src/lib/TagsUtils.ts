@@ -90,7 +90,7 @@ export default class TagsUtils {
         if (v.startsWith('step:')) {
           return v.replace('step:', '');
         }
-      });
+      }).filter(v => v !== undefined);
 
       const prevs = tags
         .filter(v => {
@@ -134,7 +134,7 @@ export default class TagsUtils {
     let nb = metadata.blockName;
     // not a reserved name
     if (!RESERVED_CELL_NAMES.includes(metadata.blockName)) {
-      nb = 'block:' + nb;
+      nb = 'step:' + nb;
     }
     const stepDependencies = metadata.prevBlockNames || [];
     const limits = metadata.limits || {};

@@ -35,6 +35,8 @@ import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Switch } from '@mui/material';
 import NotebookUtils from '../../lib/NotebookUtils';
 
+import { createPortal } from 'react-dom';
+
 interface IProps {
   notebook: NotebookPanel;
   onMetadataEnable: (isEnabled: boolean) => void;
@@ -45,7 +47,7 @@ type Editors = { [index: string]: EditorProps };
 interface IState {
   activeCellIndex: number;
   prevBlockName?: string;
-  metadataCmp?: JSX.Element[];
+  metadataCmp?: React.ReactPortal[];
   checked?: boolean;
   editors?: Editors;
   isEditorVisible: boolean;
@@ -224,7 +226,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     if (!this.props.notebook || !this.props.notebook.model) {
       return;
     }
-    const metadata: any[] = [];
+    const metadata: React.ReactPortal[] = [];
     const editors: Editors = {};
     const cells = this.props.notebook.model.cells;
     for (let index = 0; index < cells.length; index++) {
@@ -265,7 +267,11 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         );
         continue;
       }
-      metadata.push(
+
+      const metadataParent = document.createElement('div');
+      cellElement.prepend(metadataParent);
+
+      const inlineMetadataPortal = createPortal(
         <InlineMetadata
           key={index}
           cellElement={cellElement}
@@ -274,8 +280,10 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           limits={tags.limits || {}}
           previousBlockName={previousBlockName}
           cellIndex={index}
-        />
+        />,
+        metadataParent
       );
+      metadata.push(inlineMetadataPortal);
     }
 
     this.setState({
@@ -313,6 +321,16 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           stepDependencies: [],
           limits: {}
         };
+
+    const cellMetadataEditor = createPortal(
+      <CellMetadataEditor
+        notebook={editorProps.notebook}
+        stepName={editorProps.stepName}
+        stepDependencies={editorProps.stepDependencies}
+        limits={editorProps.limits}
+      />,
+      document.body
+    );
     return (
       <React.Fragment>
         <div className="toolbar input-container">
@@ -326,7 +344,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
             classes={{ root: 'material-switch' }}
           />
         </div>
-        <div className="hidden">
+        <div>
           <CellMetadataContext.Provider
             value={{
               activeCellIndex: this.state.activeCellIndex,
@@ -334,12 +352,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
               onEditorVisibilityChange: this.onEditorVisibilityChange
             }}
           >
-            <CellMetadataEditor
-              notebook={editorProps.notebook}
-              stepName={editorProps.stepName}
-              stepDependencies={editorProps.stepDependencies}
-              limits={editorProps.limits}
-            />
+            {cellMetadataEditor}
             {this.state.metadataCmp}
           </CellMetadataContext.Provider>
         </div>

@@ -73,6 +73,7 @@
         "@types/json-schema": "^7.0.11",
         "@types/react": "^18.2.0",
         "@types/react-addons-linked-state-mixin": "^0.14.22",
+        "@types/react-dom": "^18.2.0",
         "@typescript-eslint/eslint-plugin": "^8.44.1",
         "@typescript-eslint/parser": "^6.1.0",
         "css-loader": "^6.7.1",

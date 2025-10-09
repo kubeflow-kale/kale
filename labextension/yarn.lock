@@ -2759,6 +2759,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-dom@npm:^18.2.0":
+  version: 18.3.7
+  resolution: "@types/react-dom@npm:18.3.7"
+  peerDependencies:
+    "@types/react": ^18.0.0
+  checksum: c8b63ec944d2a68992b4dba474003fe55ee1d949c4b9c8fe97eecb2290de23f76acfb670b2f7ceb46a5fc8e46808d1745369b03edda48a7a0cf730eff4c5d315
+  languageName: node
+  linkType: hard
+
 "@types/react-transition-group@npm:^4.4.12":
   version: 4.4.12
   resolution: "@types/react-transition-group@npm:4.4.12"
@@ -6331,6 +6340,7 @@ __metadata:
     "@types/json-schema": ^7.0.11
     "@types/react": ^18.2.0
     "@types/react-addons-linked-state-mixin": ^0.14.22
+    "@types/react-dom": ^18.2.0
     "@typescript-eslint/eslint-plugin": ^8.44.1
     "@typescript-eslint/parser": ^6.1.0
     css-loader: ^6.7.1

@@ -71,14 +71,9 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   context!: React.ContextType<typeof CellMetadataContext>;
   wrapperRef: React.RefObject<HTMLDivElement> | null = null;
   state = DefaultState;
-  private retryCount = 0;
-  private maxRetries = 5;
 
   constructor(props: IProps) {
     super(props);
-    // We use this element referene in order to move it inside Notebooks's cell
-    // element.
-    this.wrapperRef = React.createRef();
     this.openEditor = this.openEditor.bind(this);
   }
 
@@ -87,60 +82,6 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     this.checkIfReservedName();
     this.updateStyles();
     this.updateDependencies();
-    this.attemptToMoveComponent();
-  }
-
-  attemptToMoveComponent() {
-    if (!isDOMElement(this.props.cellElement)) {
-      console.warn(
-        `InlineMetadata: cellElement is not a valid DOM element (attempt ${this.retryCount + 1}/${this.maxRetries})`
-      );
-
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
-        const delay = 100 * Math.pow(2, this.retryCount - 1);
-        setTimeout(() => {
-          this.attemptToMoveComponent();
-        }, delay);
-      } else {
-        console.error(
-          'InlineMetadata: Failed to find valid cellElement after maximum retries'
-        );
-      }
-      return;
-    }
-
-    this.moveComponentElementInCell();
-  }
-
-  moveComponentElementInCell() {
-    if (!this.props.cellElement) {
-      console.warn(
-        'InlineMetadata: cellElement is undefined, cannot move component'
-      );
-      return;
-    }
-
-    if (!this.wrapperRef?.current) {
-      console.warn(
-        'InlineMetadata: wrapperRef.current is null, cannot move component'
-      );
-      return;
-    }
-
-    try {
-      if (!this.wrapperRef!.current.classList.contains('moved')) {
-        this.wrapperRef!.current.classList.add('moved');
-        this.props.cellElement.insertAdjacentElement(
-          'afterbegin',
-          this.wrapperRef!.current
-        );
-        console.log('InlineMetadata: Succesfully moved component to cell');
-      }
-    } catch (error) {
-      console.error('InlineMetadata: Error moving component element:', error);
-    }
   }
 
   componentWillUnmount() {
@@ -175,11 +116,6 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
     if (prevProps.stepDependencies !== this.props.stepDependencies) {
       this.updateDependencies();
-    }
-
-    if (prevProps.cellElement !== this.props.cellElement) {
-      this.retryCount = 0; // Reset retry count for new cellElement
-      this.attemptToMoveComponent();
     }
 
     this.checkIfReservedName();
@@ -319,7 +255,6 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   }
 
   openEditor = () => {
-    console.log('Clicking on edit');
     const showEditor = true;
     this.setState({ showEditor });
     this.context.onEditorVisibilityChange(showEditor);
@@ -341,55 +276,52 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     );
 
     return (
-      <div>
+      <div
+        ref={this.wrapperRef}
+        className={'kale-inline-cell-metadata-container'}
+      >
         <div
-          ref={this.wrapperRef}
-          className={'kale-inline-cell-metadata-container'}
+          className={
+            'kale-inline-cell-metadata' +
+            (this.state.isMergedCell ? ' hidden' : '')
+          }
         >
-          <div
-            className={
-              'kale-inline-cell-metadata' +
-              (this.state.isMergedCell ? ' hidden' : '')
+          {/* Add a `step: ` string before the Chip in case the chip belongs to a pipeline step*/}
+          {RESERVED_CELL_NAMES.includes(this.props.blockName) ? (
+            ''
+          ) : (
+            <p style={{ fontStyle: 'italic', marginRight: '5px' }}>step: </p>
+          )}
+
+          <Tooltip
+            placement="top"
+            key={this.props.blockName + 'tooltip'}
+            title={
+              RESERVED_CELL_NAMES.includes(this.props.blockName)
+                ? RESERVED_CELL_NAMES_HELP_TEXT[this.props.blockName]
+                : 'This cell starts the pipeline step: ' + this.props.blockName
             }
           >
-            {/* Add a `step: ` string before the Chip in case the chip belongs to a pipeline step*/}
-            {RESERVED_CELL_NAMES.includes(this.props.blockName) ? (
-              ''
-            ) : (
-              <p style={{ fontStyle: 'italic', marginRight: '5px' }}>step: </p>
-            )}
+            <Chip
+              className={`kale-chip ${this.state.cellTypeClass}`}
+              style={{ backgroundColor: `#${this.state.color}` }}
+              key={this.props.blockName}
+              label={this.props.blockName}
+            />
+          </Tooltip>
 
-            <Tooltip
-              placement="top"
-              key={this.props.blockName + 'tooltip'}
-              title={
-                RESERVED_CELL_NAMES.includes(this.props.blockName)
-                  ? RESERVED_CELL_NAMES_HELP_TEXT[this.props.blockName]
-                  : 'This cell starts the pipeline step: ' +
-                    this.props.blockName
-              }
-            >
-              <Chip
-                className={`kale-chip ${this.state.cellTypeClass}`}
-                style={{ backgroundColor: `#${this.state.color}` }}
-                key={this.props.blockName}
-                label={this.props.blockName}
-              />
-            </Tooltip>
+          {details}
+        </div>
 
-            {details}
-          </div>
-
-          <div
-            className={
-              'kale-editor-toggle-parent' +
-              (this.state.showEditor ? ' hidden' : '')
-            }
-          >
-            <button className="kale-editor-toggle" onClick={this.openEditor}>
-              <EditIcon />
-            </button>
-          </div>
+        <div
+          className={
+            'kale-editor-toggle-parent' +
+            (this.state.showEditor ? ' hidden' : '')
+          }
+        >
+          <button className="kale-editor-toggle" onClick={this.openEditor}>
+            <EditIcon />
+          </button>
         </div>
       </div>
     );
