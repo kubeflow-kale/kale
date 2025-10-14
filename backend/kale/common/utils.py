@@ -198,10 +198,10 @@ def dedent(text: str):
 
 
 def compute_pip_index_urls() -> list[str]:
-    """
-    Compute the list of pip *simple* index URLs to bake into generated KFP components.
-    Using a local PyPI index is useful when itering on local developement with an
-    unpublished version of Kale.
+    """Compute the list of pip simple index URLs for generated KFP components.
+
+    Using a local PyPI index is useful when itering on local
+    developement with an unpublished version of Kale.
 
     Precedence:
         1. If `KALE_PIP_INDEX_URLS` is set, split its comma-separated value and
@@ -214,7 +214,8 @@ def compute_pip_index_urls() -> list[str]:
 
     Environment variables:
         KALE_PIP_INDEX_URLS:
-            Comma-separated list of PEP 503 “simple” index URLs. Highest priority.
+            Comma-separated list of PEP 503 “simple” index URLs. Highest
+            priority.
         KALE_DEV_MODE:
             Boolean-like flag enabling dev mode (interprets 1/true/yes/on).
         KALE_DEVPI_SIMPLE_URL:

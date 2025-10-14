@@ -12,9 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import argparse
 import os
-# import warnings
+import argparse
 
 from argparse import RawTextHelpFormatter
 from kale.processors import NotebookProcessor
@@ -68,9 +67,10 @@ def main():
     general_group.add_argument(
         '--pip-index-urls',
         type=str,
-        help=('Comma-separated PEP 503 simple indexes to bake into components. '
+        help=('Comma-separated PEP 503 simple indexes to bake into components.'
               'Overrides --dev/KALE_DEV_MODE. Example: '
-              '"http://127.0.0.1:3141/root/dev/+simple/,https://pypi.org/simple"'),
+              '"http://127.0.0.1:3141/root/dev/+simple/,'
+              'https://pypi.org/simple"'),
     )
     general_group.add_argument(
         '--devpi-simple-url',

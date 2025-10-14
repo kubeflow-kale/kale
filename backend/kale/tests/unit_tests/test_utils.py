@@ -98,7 +98,8 @@ def test_compute_pip_index_urls_dev_mode_custom_url(monkeypatch):
     """Dev mode honors KALE_DEVPI_SIMPLE_URL before appending PyPI."""
     _clear_env(monkeypatch)
     monkeypatch.setenv("KALE_DEV_MODE", "1")
-    monkeypatch.setenv("KALE_DEVPI_SIMPLE_URL", "https://devpi.example/simple/")
+    monkeypatch.setenv("KALE_DEVPI_SIMPLE_URL",
+                       "https://devpi.example/simple/")
 
     assert utils.compute_pip_index_urls() == [
         "https://devpi.example/simple/",

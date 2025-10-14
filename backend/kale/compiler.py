@@ -217,7 +217,6 @@ class Compiler:
         )
         return autopep8.fix_code(fn_code)
 
-
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
         template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
