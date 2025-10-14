@@ -195,3 +195,63 @@ def dedent(text: str):
     if len(matches) < len(text.splitlines()):
         return text
     return re.sub(r"(?m)^.{%d}" % min(map(len, matches)), "", text)
+
+
+def compute_pip_index_urls() -> list[str]:
+    """
+    Compute the list of pip *simple* index URLs to bake into generated KFP components.
+    Using a local PyPI index is useful when itering on local developement with an
+    unpublished version of Kale.
+
+    Precedence:
+        1. If `KALE_PIP_INDEX_URLS` is set, split its comma-separated value and
+        return that list (order preserved).
+        2. Else, if `KALE_DEV_MODE` is truthy (`1`, `true`, `yes`, or `on`),
+        return a list with the devpi simple URL (`KALE_DEVPI_SIMPLE_URL`) or
+        its default value.
+        3. Otherwise, return the production default:
+        ["https://pypi.org/simple"].
+
+    Environment variables:
+        KALE_PIP_INDEX_URLS:
+            Comma-separated list of PEP 503 “simple” index URLs. Highest priority.
+        KALE_DEV_MODE:
+            Boolean-like flag enabling dev mode (interprets 1/true/yes/on).
+        KALE_DEVPI_SIMPLE_URL:
+            Devpi “simple” index URL used when dev mode is enabled.
+
+    Returns:
+        list[str]: Index URLs suitable for the `pip_index_urls` parameter in
+        `@kfp_dsl.component`.
+    """
+    pypi_prod_url = "https://pypi.org/simple"
+    urls: list[str]
+
+    # explicit override wins
+    env_override = os.getenv("KALE_PIP_INDEX_URLS")
+    if env_override:
+        urls = [u.strip() for u in env_override.split(",") if u.strip()]
+    else:
+        urls = []
+        dev_mode = os.getenv("KALE_DEV_MODE", "").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if dev_mode:
+            urls.append(
+                os.getenv(
+                    "KALE_DEVPI_SIMPLE_URL",
+                    "http://127.0.0.1:3141/root/dev/+simple/",
+                )
+            )
+
+    # important to keep the prod url at the end to preserve package
+    # resolution order.
+    urls.append(pypi_prod_url)
+
+    # remove duplicates while keeping order
+    if pypi_prod_url not in urls:
+        urls.append(pypi_prod_url)
+    return urls

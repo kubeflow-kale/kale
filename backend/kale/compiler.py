@@ -20,8 +20,9 @@ import autopep8
 from typing import NamedTuple
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
+from kale import __version__ as KALE_VERSION
 from kale.pipeline import Pipeline, Step, PipelineParam
-from kale.common import kfputils
+from kale.common import kfputils, utils
 
 log = logging.getLogger(__name__)
 
@@ -204,6 +205,7 @@ class Compiler:
         packages_list = self._get_package_list_from_imports()
 
         fn_code = template.render(
+            pip_index_urls=utils.compute_pip_index_urls(),
             step=step,
             component_signature_args=component_signature_args,
             pipeline_params=pipeline_params,
@@ -214,6 +216,7 @@ class Compiler:
             **self.pipeline.config.to_dict()
         )
         return autopep8.fix_code(fn_code)
+
 
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
@@ -269,9 +272,10 @@ class Compiler:
             A list of unique top-level package names.
         """
         package_names = set()
-        # Ensure 'kale' is always included
-        package_names.add("kubeflow-kale==1.0.0.dev13")
-        # Ensure 'kfp' is always included
+        if KALE_VERSION != "0+unknown":
+            package_names.add(f"kubeflow-kale=={KALE_VERSION}")
+        else:
+            package_names.add("kubeflow-kale")
         package_names.add("kfp>=2.0.0")
         lines = self.imports_and_functions.strip().split('\n')
 
