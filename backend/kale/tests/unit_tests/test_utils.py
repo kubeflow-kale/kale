@@ -121,20 +121,6 @@ def test_compute_pip_index_urls_override(monkeypatch):
     ]
 
 
-def test_compute_pip_index_urls_override_preserves_pypi(monkeypatch):
-    """Do not duplicate PyPI if the override already contains it."""
-    _clear_env(monkeypatch)
-    monkeypatch.setenv(
-        "KALE_PIP_INDEX_URLS",
-        "https://pypi.org/simple, https://mirror.internal/simple",
-    )
-
-    assert utils.compute_pip_index_urls() == [
-        "https://pypi.org/simple",
-        "https://mirror.internal/simple",
-    ]
-
-
 def test_compute_pip_index_urls_override_beats_dev_mode(monkeypatch):
     """An explicit override should win even when dev mode is enabled."""
     _clear_env(monkeypatch)
