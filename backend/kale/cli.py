@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import argparse
-# import os
+import os
 # import warnings
 
 from argparse import RawTextHelpFormatter
@@ -60,6 +60,25 @@ def main():
     general_group.add_argument('--run_pipeline', action='store_const',
                                const=True)
     general_group.add_argument('--debug', action='store_true')
+    general_group.add_argument(
+        '--dev',
+        action='store_true',
+        help='Bake local dev index (devpi) into generated components.',
+    )
+    general_group.add_argument(
+        '--pip-index-urls',
+        type=str,
+        help=('Comma-separated PEP 503 simple indexes to bake into components. '
+              'Overrides --dev/KALE_DEV_MODE. Example: '
+              '"http://127.0.0.1:3141/root/dev/+simple/,https://pypi.org/simple"'),
+    )
+    general_group.add_argument(
+        '--devpi-simple-url',
+        type=str,
+        default=None,
+        help=('Devpi simple URL to use when --dev is set. '
+              'Default: http://127.0.0.1:3141/root/dev/+simple/'),
+    )
 
     metadata_group = parser.add_argument_group('Notebook Metadata Overrides',
                                                METADATA_GROUP_DESC)
@@ -83,6 +102,13 @@ def main():
     metadata_group.add_argument('--volume-access-mode', type=str,
                                 help='The access mode for the created volumes')
     args = parser.parse_args()
+
+    if args.pip_index_urls:
+        os.environ["KALE_PIP_INDEX_URLS"] = args.pip_index_urls
+    elif args.dev:
+        os.environ["KALE_DEV_MODE"] = "1"
+        if args.devpi_simple_url:
+            os.environ["KALE_DEVPI_SIMPLE_URL"] = args.devpi_simple_url
 
     # get the notebook metadata args group
     mt_overrides_group = next(
