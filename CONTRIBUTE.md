@@ -84,6 +84,9 @@ source scripts/devpi-main.sh
 
 # Re-run notebook compilation so the generated component pulls from devpi.
 kale --help  # or your usual CLI invocation pointing at the notebook
+# For example you can run this quick test to validate the the generated DSL points
+# for the correct Kale version
+# kale --nb ./examples/base/candies_sharing.ipynb --dev
 ```
 
 > Note: the scripts rely on `devpi-server`, `devpi-client`, and `python -m build`.
