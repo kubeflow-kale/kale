@@ -62,3 +62,5 @@ include = ["kale*"]
 [tool.setuptools_scm]
 # Tag form: v1.0.0 -> 1.0.0 ; commit after tag -> 1.0.0.devN+gHASH
 local_scheme = "node-and-date"
+fallback_version = "0+unknown"
+root = ".."
