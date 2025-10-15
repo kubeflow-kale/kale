@@ -158,7 +158,7 @@ In order to see the Kale controls, you must open one of the curated example note
 <img alt="Kale JupyterLab Extension" src="docs/imgs/Extension.png"/>
 
 With this Kale Control Panel fully operational, you should be able to start a pipeline run from JupyterLab and see it appear in the `kfp` UI.
-Make sure to `Select experiment` (ie. `Kale-Pipeline-Experiment`) and choose a `Pipeline Name` (ie. `candies-sharing`), and then hit `Compile and Run`. You will see progress bars appear. (NOTE: If you do not specify `Select Experiment` and instead let it use the `Default`, you may see the error message `An RPC Error has occurred`.)
+Make sure to `Select experiment` and choose a `Pipeline Name`, and then hit `Compile and Run`. You will see progress bars appear.
 
 Navigate to the `kfp` UI, refresh the page, and check that your new pipeline run has appeared here.
 
