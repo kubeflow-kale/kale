@@ -194,13 +194,13 @@ Make sure you have installed Kubeflow Pipelines(v2.4.0) as recommended in the of
 Open a new terminal window for `kale`:
 
 ```bash
-# checkout to the backend/ directory
-cd backend
-
 # activate the virtual environment
 conda activate my_project_env
 # OR
 source .venv/bin/activate
+
+# checkout to the backend/ directory
+cd backend
 
 # make sure JupyterLab is installed in the venv
 pip install "jupyterlab>=4.0.0"
