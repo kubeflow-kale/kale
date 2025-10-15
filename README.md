@@ -242,8 +242,8 @@ source .venv/bin/activate
 # make sure you have the correct version of jupyterlab
 pip install "jupyterlab>=4.0.0"
 
-# check out the labextension directory
-cd labextension/
+# check out the labextension/ directory
+cd labextension
 
 # build extension
 jlpm build
