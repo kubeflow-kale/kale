@@ -89,7 +89,6 @@ export const DeployProgress: React.FunctionComponent<
   const getRunComponent = (pipeline: any) => {
     let IconComponent: any = UnknownIcon;
     let iconColor = '#5f6368';
-
     switch (pipeline.status) {
       case PipelineStatus.ERROR:
         IconComponent = ErrorIcon;
@@ -104,7 +103,7 @@ export const DeployProgress: React.FunctionComponent<
       case PipelineStatus.PENDING:
         IconComponent = PendingIcon;
         iconColor = DeployUtils.color.weak;
-        // title = 'Pendig';
+        // title = 'Pending';
         break;
       case PipelineStatus.RUNNING:
         IconComponent = StatusRunning;
