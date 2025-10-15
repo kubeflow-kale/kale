@@ -186,7 +186,6 @@ limitations imposed by the Kale data marshalling model.
 ## Contribute
 
 Follow these steps to run the extension in developer mode, so you can see and test your changes in real time.
-Please note: this functionality is still in development, and there is not a streamlined way to observe code changes as you make them.
 
 #### Backend and Labextension
 
