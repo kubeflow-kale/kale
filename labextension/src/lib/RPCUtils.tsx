@@ -19,19 +19,17 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from './NotebookUtils';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
+import { ToastUtils } from './ToastUtils';
 
 export const globalUnhandledRejection = async (event: any) => {
-  // console.error(event.reason);
+  console.error(event.reason);
   if (event.reason instanceof BaseError) {
     console.error(event.reason.message, event.reason.error);
     event.reason.showDialog().then();
   } else {
-    showError(
-      'An unexpected error has occurred',
-      'JS',
-      `${event.reason.name}: ${event.reason.message}`,
-      'Please see the console for more information',
-      true,
+    ToastUtils.showErrorToast(
+      'Unhandled Error',
+      `${event.reason.name}: ${event.reason.message}`
     ).then();
   }
 };
