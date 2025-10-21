@@ -494,7 +494,7 @@ a {
 }
 
 /* Toast notification styles */
- .toast-error {
+.toast-error {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -502,7 +502,7 @@ a {
   background-color: var(--jp-error-color0);
   color: white;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
   min-width: 300px;
   max-width: 400px;
 }
@@ -516,7 +516,7 @@ a {
 .toast-message {
   font-size: var(--jp-ui-font-size0);
   opacity: 0.9;
-} 
+}
 
 .toast-loc {
   font-size: var(--jp-ui-font-size0);
