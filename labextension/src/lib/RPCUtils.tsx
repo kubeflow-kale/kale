@@ -27,10 +27,34 @@ export const globalUnhandledRejection = async (event: any) => {
     console.error(event.reason.message, event.reason.error);
     event.reason.showDialog().then();
   } else {
-    ToastUtils.showErrorToast(
-      'Unhandled Error - please see the console',
-      `${event.reason.name}: ${event.reason.message}`,
-    ).then();
+    // pull the stacktrace for the unhandled error
+    const errorStack = event.reason.stack;
+    // isolate the url to find the root cause of the error
+    const stackLines = errorStack.split('\n');
+    const urlSplit = stackLines.slice(1,2).toString()
+
+    // call the toast pop up
+    if (urlSplit.includes('http://localhost:') && urlSplit.includes('lab/extensions/')){
+      // if the error is caused by a jupyterlab extension, isolate the extension name
+      const extensionSplit = urlSplit.split('@').slice(1,2).toString()
+      const extensionParts = extensionSplit.split('/')
+      extensionParts.pop();
+      const extensionName = extensionParts.join('/')
+      // print the jupyterlab extension name
+      ToastUtils.showErrorToast(
+        'Unhandled Labextension Error - please see the console',
+        `${event.reason.name}: ${event.reason.message}`,
+        extensionName
+      ).then();
+    } else {
+      // otherwise, print the full stacktrace to the error location
+        ToastUtils.showErrorToast(
+          'Unhandled Error - please see the console',
+          `${event.reason.name}: ${event.reason.message}`,
+          //stackLines.slice(1,2)
+          'placeholder location'
+      ).then();
+    }
   }
 };
 

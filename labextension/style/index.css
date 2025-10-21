@@ -517,3 +517,8 @@ a {
   font-size: var(--jp-ui-font-size0);
   opacity: 0.9;
 } 
+
+.toast-loc {
+  font-size: var(--jp-ui-font-size0);
+  opacity: 0.9;
+}
