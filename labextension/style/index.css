@@ -495,7 +495,10 @@ a {
 
 /* Toast notification styles */
 .toast-error {
-  padding: 12px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px;
   background-color: var(--jp-error-color0);
   color: white;
   border-radius: 4px;
@@ -513,21 +516,4 @@ a {
 .toast-message {
   font-size: var(--jp-ui-font-size0);
   opacity: 0.9;
-}
-
-/* Position toast dialogs in bottom right */
-.jp-Dialog-content.toast-positioned {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  top: auto !important;
-  left: auto !important;
-  transform: none !important;
-  margin: 0 !important;
-  max-width: 400px !important;
-  z-index: 10000 !important;
-}
-
-.jp-Dialog-content.toast-positioned .toast-error {
-  margin: 0 !important;
 }
