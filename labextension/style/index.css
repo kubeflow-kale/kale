@@ -494,7 +494,7 @@ a {
 }
 
 /* Toast notification styles */
-.toast-error {
+ .toast-error {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -516,4 +516,4 @@ a {
 .toast-message {
   font-size: var(--jp-ui-font-size0);
   opacity: 0.9;
-}
+} 

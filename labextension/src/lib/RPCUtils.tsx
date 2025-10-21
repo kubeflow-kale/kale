@@ -28,8 +28,8 @@ export const globalUnhandledRejection = async (event: any) => {
     event.reason.showDialog().then();
   } else {
     ToastUtils.showErrorToast(
-      'Unhandled Error',
-      `${event.reason.name}: ${event.reason.message}`
+      'Unhandled Error - please see the console',
+      `${event.reason.name}: ${event.reason.message}`,
     ).then();
   }
 };
