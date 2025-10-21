@@ -18,7 +18,7 @@ to iterate safely using a temporary Python package index.
 ## 2. Create a virtual environment
 
 ```bash
-python3.10 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 ```
