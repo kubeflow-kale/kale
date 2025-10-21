@@ -47,12 +47,11 @@ export const globalUnhandledRejection = async (event: any) => {
         extensionName
       ).then();
     } else {
-      // otherwise, print the full stacktrace to the error location
+      // otherwise, print the stacktrace to the error location
         ToastUtils.showErrorToast(
           'Unhandled Error - please see the console',
           `${event.reason.name}: ${event.reason.message}`,
-          //stackLines.slice(1,2)
-          'placeholder location'
+          stackLines.slice(1,2)
       ).then();
     }
   }
