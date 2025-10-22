@@ -31,11 +31,11 @@ export const globalUnhandledRejection = async (event: any) => {
     const errorStack = event.reason.stack;
     // isolate the url to find the root cause of the error
     const stackLines = errorStack.split('\n');
-    const urlSplit = stackLines.slice(1,2).toString()
 
     // call the toast pop up
-    if (urlSplit.includes('http://localhost:') && urlSplit.includes('lab/extensions/')){
+    if (errorStack.includes('lab/extensions/')){
       // if the error is caused by a jupyterlab extension, isolate the extension name
+      const urlSplit = stackLines.slice(1,2).toString()
       const extensionSplit = urlSplit.split('@').slice(1,2).toString()
       const extensionParts = extensionSplit.split('/')
       extensionParts.pop();
