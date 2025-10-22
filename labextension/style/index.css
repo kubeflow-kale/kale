@@ -492,33 +492,3 @@ a {
 .dialog-body {
   white-space: pre;
 }
-
-/* Toast notification styles */
-.toast-error {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 10px;
-  background-color: var(--jp-error-color0);
-  color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
-  min-width: 300px;
-  max-width: 400px;
-}
-
-.toast-title {
-  font-weight: bold;
-  font-size: var(--jp-ui-font-size1);
-  margin-bottom: 4px;
-}
-
-.toast-message {
-  font-size: var(--jp-ui-font-size0);
-  opacity: 0.9;
-}
-
-.toast-loc {
-  font-size: var(--jp-ui-font-size0);
-  opacity: 0.9;
-}
