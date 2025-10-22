@@ -20,6 +20,7 @@ EXAMPLES_DIR = os.path.join(THIS_DIR, "../../../../examples/")
      os.path.join(THIS_DIR, "../assets/kfp_dsl/",
                   "pipeline_parameters_and_metrics.py")),
 ])
+@mock.patch("kale.compiler.KALE_VERSION", new="0+unknown")
 @mock.patch("kale.common.utils.random_string")
 def test_notebook_to_dsl(random_string, notebook_path, dsl_path):
     """Test code generation end to end from notebook to DSL."""
