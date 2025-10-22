@@ -19,7 +19,7 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from './NotebookUtils';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
-import { ToastUtils } from './ToastUtils';
+import { Notification } from '@jupyterlab/apputils';
 
 export const globalUnhandledRejection = async (event: any) => {
   console.error(event.reason);
@@ -40,19 +40,22 @@ export const globalUnhandledRejection = async (event: any) => {
       const extensionParts = extensionSplit.split('/')
       extensionParts.pop();
       const extensionName = extensionParts.join('/')
-      // print the jupyterlab extension name
-      ToastUtils.showErrorToast(
-        'Unhandled Labextension Error - please see the console',
-        `${event.reason.name}: ${event.reason.message}`,
-        extensionName
-      ).then();
+      const alert_string = 'Unhandled Error - please see console for more details. Error originating from '
+      Notification.error(`${event.reason.name}: ${event.reason.message}`, {
+        actions: [
+          { label: 'Details', callback: () => alert(`${alert_string}${extensionName}`) }
+        ],
+        autoClose: 3000
+      });
     } else {
       // otherwise, print the stacktrace to the error location
-        ToastUtils.showErrorToast(
-          'Unhandled Error - please see the console',
-          `${event.reason.name}: ${event.reason.message}`,
-          stackLines.slice(1,2)
-      ).then();
+      const alert_string = 'Unhandled Error - please see console for more details. '
+      Notification.error(`${event.reason.name}: ${event.reason.message}`, {
+        actions: [
+          { label: 'Details', callback: () => alert(`${alert_string}${stackLines.slice(1,2)}`) }
+        ],
+        autoClose: 3000
+      });
     }
   }
 };
