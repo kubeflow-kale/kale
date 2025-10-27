@@ -29,36 +29,43 @@ export const globalUnhandledRejection = async (event: any) => {
   } else {
     // pull the stacktrace for the unhandled error
     const errorStack = event.reason.stack;
-    // isolate the url to find the root cause of the error
+    // isolate the segments
     const stackLines = errorStack.split('\n');
-
+    // create alert string
+    const alert_string = 'Unhandled Error'
     // call the toast pop up
     if (errorStack.includes('lab/extensions/')){
-      // if the error is caused by a jupyterlab extension, isolate the extension name
-      const urlSplit = stackLines.slice(1,2).toString()
-      const extensionSplit = urlSplit.split('@').slice(1,2).toString()
-      const extensionParts = extensionSplit.split('/')
-      extensionParts.pop();
-      const extensionName = extensionParts.join('/')
-      const alert_string = 'Unhandled Error - please see console for more details. Error originating from '
+      // if the error is caused by a jupyterlab extension, try to isolate the extension name
+      const extensionName = getExtensionName(stackLines)
       Notification.error(`${event.reason.name}: ${event.reason.message}`, {
         actions: [
-          { label: 'Details', callback: () => alert(`${alert_string}${extensionName}`) }
+          { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string, 
+            ["Please see console for more details.",
+              "Error originating from:", 
+              extensionName]) }
         ],
         autoClose: 3000
       });
     } else {
-      // otherwise, print the stacktrace to the error location
-      const alert_string = 'Unhandled Error - please see console for more details. '
       Notification.error(`${event.reason.name}: ${event.reason.message}`, {
         actions: [
-          { label: 'Details', callback: () => alert(`${alert_string}${stackLines.slice(1,2)}`) }
+          { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string,
+            ["Please see console for more details."]) }
         ],
         autoClose: 3000
       });
     }
   }
 };
+
+function getExtensionName(stackLines: Array<string>){
+  const urlSplit = stackLines.slice(1,2).toString();
+  const extensionSplit = urlSplit.split('@').slice(1,2).toString();
+  const extensionParts = extensionSplit.split('/');
+  extensionParts.pop();
+  const extensionName = extensionParts.join('/');
+  return extensionName || 'unkonwn Jupyterlab extension';
+}
 
 export interface IRPCError {
   rpc: string;
