@@ -37,17 +37,18 @@ export const globalUnhandledRejection = async (event: any) => {
     if (errorStack.includes('lab/extensions/')){
       // if the error is caused by a jupyterlab extension, try to isolate the extension name
       const extensionName = getExtensionName(stackLines)
-      Notification.error(`${event.reason.name}: ${event.reason.message}`, {
+      Notification.error(`An unhandled error has been thrown.`, {
         actions: [
           { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string, 
-            ["Please see console for more details.",
-              "Error originating from:", 
-              extensionName]) }
+            ["An unhandled error was thrown from:",
+              extensionName,
+              "Please see console for more details."
+            ]) }
         ],
         autoClose: 3000
       });
     } else {
-      Notification.error(`${event.reason.name}: ${event.reason.message}`, {
+      Notification.error(`An unhandled error has been thrown.`, {
         actions: [
           { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string,
             ["Please see console for more details."]) }
