@@ -65,7 +65,7 @@ function getExtensionName(stackLines: Array<string>){
   const extensionParts = extensionSplit.split('/');
   extensionParts.pop();
   const extensionName = extensionParts.join('/');
-  return extensionName || 'unkonwn Jupyterlab extension';
+  return extensionName || 'unknown Jupyterlab extension';
 }
 
 export interface IRPCError {
