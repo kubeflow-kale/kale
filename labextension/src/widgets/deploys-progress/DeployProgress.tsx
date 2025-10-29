@@ -31,15 +31,15 @@ import DeployUtils from './DeployUtils';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
-  ERROR = 'Error',
-  FAILED = 'Failed',
-  PENDING = 'Pending',
-  RUNNING = 'Running',
-  SKIPPED = 'Skipped',
-  SUCCEEDED = 'Succeeded',
-  TERMINATING = 'Terminating',
-  TERMINATED = 'Terminated',
-  UNKNOWN = 'Unknown'
+  ERROR = 'ERROR',
+  FAILED = 'FAILED',
+  PENDING = 'PENDING',
+  RUNNING = 'RUNNING',
+  SKIPPED = 'SKIPPED',
+  SUCCEEDED = 'SUCCEEDED',
+  TERMINATING = 'TERMINATING',
+  TERMINATED = 'TERMINATED',
+  UNKNOWN = 'UNKNOWN'
 }
 
 interface IDeployProgressProps extends DeployProgressState {
