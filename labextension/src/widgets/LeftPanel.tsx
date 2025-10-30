@@ -229,6 +229,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         KALE_NOTEBOOK_METADATA_KEY
       );
 
+      let fetchedExperiments: IExperiment[] = [];
       if (this.props.backend) {
         // Retrieve the notebook's namespace
         this.setState({ namespace: await commands.getNamespace() });
@@ -252,6 +253,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             this.state.metadata.experiment,
             this.state.metadata.experiment_name
           );
+        fetchedExperiments = experiments;
         this.setState((prevState, props) => ({
           experiments,
           gettingExperiments: false,
@@ -268,30 +270,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         let experiment: IExperiment = { id: '', name: '' };
         let experiment_name: string = '';
         if (notebookMetadata['experiment']) {
-          const matchingExperiments = this.state.experiments.filter(
-            e => e.name === notebookMetadata['experiment_name']
-          );
-          if (matchingExperiments.length > 0) {
-            experiment = matchingExperiments[0];
-          } else {
-            experiment = {
-              id: NEW_EXPERIMENT.id,
-              name: notebookMetadata['experiment_name']
-            };
+          experiment = {
+            id: notebookMetadata['experiment']['id'] || '',
+            name: notebookMetadata['experiment']['name'] || ''
+          };
+          experiment_name = notebookMetadata['experiment']['name'];
+          // If the experiment has empty values, use the first experiment from the list if available
+          const experimentsToUse = fetchedExperiments.length > 0 ? fetchedExperiments : this.state.experiments;
+          if (!experiment.id && !experiment.name && experimentsToUse.length > 0) {
+            experiment = experimentsToUse[0];
+            experiment_name = experimentsToUse[0].name;
           }
-          // // if the metadata is blank, fetch the experiment data
-          // if (notebookMetadata['experiment']['id'] == '' && notebookMetadata['experiment']['name'] == ''){
-          //   experiment = {
-          //     id: this.state.metadata.experiment.id,
-          //     name: this.state.metadata.experiment.name
-          //   }
-          // } else {
-          //   experiment = {
-          //     id: notebookMetadata['experiment']['id'] || '',
-          //     name: notebookMetadata['experiment']['name'] || ''
-          //   };
-          //   experiment_name = notebookMetadata['experiment']['name'];
-          // }
         } else if (notebookMetadata['experiment_name']) {
           const matchingExperiments = this.state.experiments.filter(
             e => e.name === notebookMetadata['experiment_name']
@@ -306,7 +295,20 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           }
           experiment_name = notebookMetadata['experiment_name'];
         } else {
-          this.resetState();
+          // If no experiment data exists, use the first experiment from the list if available
+          if (this.state.experiments.length > 0) {
+            experiment = this.state.experiments[0];
+            experiment_name = this.state.experiments[0].name;
+          } else {
+            // Keep existing experiment values if they exist, otherwise use defaults
+            if (this.state.metadata.experiment.id || this.state.metadata.experiment.name) {
+              experiment = this.state.metadata.experiment;
+              experiment_name = this.state.metadata.experiment_name || '';
+            } else {
+              experiment = { id: '', name: '' };
+              experiment_name = '';
+            }
+          }
         }
 
         const metadata: IKaleNotebookMetadata = {
