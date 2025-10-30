@@ -268,11 +268,30 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         let experiment: IExperiment = { id: '', name: '' };
         let experiment_name: string = '';
         if (notebookMetadata['experiment']) {
-          experiment = {
-            id: notebookMetadata['experiment']['id'] || '',
-            name: notebookMetadata['experiment']['name'] || ''
-          };
-          experiment_name = notebookMetadata['experiment']['name'];
+          const matchingExperiments = this.state.experiments.filter(
+            e => e.name === notebookMetadata['experiment_name']
+          );
+          if (matchingExperiments.length > 0) {
+            experiment = matchingExperiments[0];
+          } else {
+            experiment = {
+              id: NEW_EXPERIMENT.id,
+              name: notebookMetadata['experiment_name']
+            };
+          }
+          // // if the metadata is blank, fetch the experiment data
+          // if (notebookMetadata['experiment']['id'] == '' && notebookMetadata['experiment']['name'] == ''){
+          //   experiment = {
+          //     id: this.state.metadata.experiment.id,
+          //     name: this.state.metadata.experiment.name
+          //   }
+          // } else {
+          //   experiment = {
+          //     id: notebookMetadata['experiment']['id'] || '',
+          //     name: notebookMetadata['experiment']['name'] || ''
+          //   };
+          //   experiment_name = notebookMetadata['experiment']['name'];
+          // }
         } else if (notebookMetadata['experiment_name']) {
           const matchingExperiments = this.state.experiments.filter(
             e => e.name === notebookMetadata['experiment_name']
