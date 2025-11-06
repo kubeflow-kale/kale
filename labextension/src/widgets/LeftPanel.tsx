@@ -271,10 +271,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         let experiment_name: string = this.state.metadata.experiment_name;
         if (notebookMetadata['experiment']) {
           experiment = {
-            id: notebookMetadata['experiment']['id'] || this.state.metadata.experiment.id,
-            name: notebookMetadata['experiment']['name'] || this.state.metadata.experiment.name
+            id:
+              notebookMetadata['experiment']['id'] ||
+              this.state.metadata.experiment.id,
+            name:
+              notebookMetadata['experiment']['name'] ||
+              this.state.metadata.experiment.name
           };
-          experiment_name = experiment.name
+          experiment_name = experiment.name;
           // If the experiment has empty values, use the first experiment from the list if available
           const experimentsToUse =
             fetchedExperiments.length > 0
@@ -336,7 +340,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           metadata: metadata
         });
       } else {
-        this.setState((prevState) => ({
+        this.setState(prevState => ({
           metadata: {
             ...DefaultState.metadata,
             experiment: prevState.metadata.experiment,
