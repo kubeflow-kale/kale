@@ -1,16 +1,5 @@
-# Copyright 2020 The Kale Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019–2025 The Kale Contributors.
 
 import os
 import re
@@ -20,8 +9,9 @@ import autopep8
 from typing import NamedTuple
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
+from kale import __version__ as KALE_VERSION
 from kale.pipeline import Pipeline, Step, PipelineParam
-from kale.common import kfputils
+from kale.common import kfputils, utils
 
 log = logging.getLogger(__name__)
 
@@ -204,6 +194,7 @@ class Compiler:
         packages_list = self._get_package_list_from_imports()
 
         fn_code = template.render(
+            pip_index_urls=utils.compute_pip_index_urls(),
             step=step,
             component_signature_args=component_signature_args,
             pipeline_params=pipeline_params,
@@ -269,9 +260,10 @@ class Compiler:
             A list of unique top-level package names.
         """
         package_names = set()
-        # Ensure 'kale' is always included
-        package_names.add("kubeflow-kale==1.0.0.dev13")
-        # Ensure 'kfp' is always included
+        if KALE_VERSION != "0+unknown":
+            package_names.add(f"kubeflow-kale=={KALE_VERSION}")
+        else:
+            package_names.add("kubeflow-kale")
         package_names.add("kfp>=2.0.0")
         lines = self.imports_and_functions.strip().split('\n')
 

@@ -1,7 +1,7 @@
 @kfp_dsl.component(
     base_image='python:3.10',
     packages_to_install={{ packages_list}},
-    pip_index_urls = [ 'https://test.pypi.org/simple', 'https://pypi.org/simple' ],
+    pip_index_urls = {{ pip_index_urls }},
 )
 def {{ step.name }}_step({{ component_signature_args }}):
     _kale_pipeline_parameters_block = '''

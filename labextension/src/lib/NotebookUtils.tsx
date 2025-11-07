@@ -1,19 +1,7 @@
-/*
- * Copyright 2019-2020 The Kale Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2019–2025 The Kale Contributors.
 
+import { JSONObject, PartialJSONValue } from '@lumino/coreutils';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import {
@@ -74,7 +62,7 @@ export default class NotebookUtilities {
     notebook: NotebookPanel,
     cell: { cell: Cell; index: number },
   ): void {
-    notebook.content.select(cell.cell as any);
+    notebook.content.select(cell.cell);
     notebook.content.activeCellIndex = cell.index;
 
     notebook.content.scrollToCell(cell.cell);
@@ -240,7 +228,7 @@ export default class NotebookUtilities {
    * Convert the notebook contents to JSON
    * @param notebookPanel The notebook panel containing the notebook to serialize
    */
-  public static notebookToJSON(notebookPanel: NotebookPanel): any {
+  public static notebookToJSON(notebookPanel: NotebookPanel): PartialJSONValue | null {
     if (notebookPanel?.content?.model) {
       return notebookPanel.content.model.toJSON();
     }
@@ -266,7 +254,7 @@ export default class NotebookUtilities {
         return metadata.get(key);
       }
       // Fallback for different metadata implementations
-      return (metadata as any)[key] || null;
+      return metadata[key] || null;
     }
     return null;
   }
@@ -326,7 +314,7 @@ export default class NotebookUtilities {
 
     for (let i = 0; i < notebook.model.cells.length; i++) {
       const cellModel = notebook.model.cells.get(i);
-      if (!isCodeCellModel(cellModel as any)) {
+      if (!cellModel || !isCodeCellModel(cellModel)) {
         continue;
       }
       const blockName = CellUtilities.getStepName(notebook, i);
@@ -338,7 +326,7 @@ export default class NotebookUtilities {
       ) {
         while (i < notebook.model.cells.length) {
           const currentCellModel = notebook.model.cells.get(i);
-          if (!isCodeCellModel(currentCellModel as any)) {
+          if (!currentCellModel || !isCodeCellModel(currentCellModel as CodeCellModel)) {
             i++;
             continue;
           }
@@ -446,7 +434,7 @@ export default class NotebookUtilities {
   public static async sendKernelRequest(
     kernel: Kernel.IKernelConnection,
     runCode: string,
-    userExpressions: any,
+    userExpressions: JSONObject | undefined,
     runSilent: boolean = false,
     storeHistory: boolean = false,
     allowStdIn: boolean = false,
@@ -494,7 +482,7 @@ export default class NotebookUtilities {
   public static async sendKernelRequestFromNotebook(
     notebookPanel: NotebookPanel,
     runCode: string,
-    userExpressions: any,
+    userExpressions: JSONObject | undefined,
     runSilent: boolean = false,
     storeHistory: boolean = false,
     allowStdIn: boolean = false,

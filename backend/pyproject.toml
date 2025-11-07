@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kubeflow-kale"
+# setuptools_scm handles the version automatically
+dynamic = ["version"]
+description = "Convert JupyterNotebooks to Kubeflow Pipelines deployments"
+readme = "README.md"
+requires-python = ">=3.10.0"
+license = { text = "Apache License Version 2.0" }
+
+dependencies = [
+  "kfp>=2.0.0",
+  "autopep8>=2.0.0",
+  "astor>=0.8.1",
+  "networkx>=3.0.0",
+  "jinja2>=3.0.0",
+  "pyflakes>=3.0.0",
+  "dill>=0.3.8",
+  "IPython>=8.30.0",
+  "jupyter-client>=8.6.3",
+  "jupyter-core>=5.8.1",
+  "nbconvert>=7.16.0",
+  "nbformat>=5.10.4",
+  "ipykernel>=6.29.5",
+  "notebook>=7.4.4",
+  "packaging>=25.0",
+  "progress>=1.5",
+  "kubernetes>=30.0.0",
+]
+
+authors = [
+  { name = "Stefano Fioravanzo", email = "stefano.fioravanzo@gmail.com" }
+]
+
+[project.scripts]
+kale = "kale.cli:main"
+kale_server = "kale.cli:server"
+kale-volumes = "kale.cli:kale_volumes"
+
+[project.urls]
+Homepage = "https://github.com/kubeflow-kale/kale"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-clarity",
+  "testfixtures",
+  "pytest-cov",
+  "flake8",
+  "flake8-docstrings",
+]
+
+# autodiscover packages
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kale*"]
+
+# setuptools_scm configuration (git tags versions)
+[tool.setuptools_scm]
+# Tag form: v1.0.0 -> 1.0.0 ; commit after tag -> 1.0.0.devN+gHASH
+local_scheme = "node-and-date"
+fallback_version = "0+unknown"
+root = ".."

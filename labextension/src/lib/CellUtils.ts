@@ -3,7 +3,7 @@ import {
   IError,
   isError,
   isExecuteResult,
-  isStream,
+  isStream
 } from '@jupyterlab/nbformat';
 import { Notebook, NotebookActions, NotebookPanel } from '@jupyterlab/notebook';
 // Project Components
@@ -15,11 +15,11 @@ export default class CellUtilities {
    * @description Reads the output at a cell within the specified notebook and returns it as a string
    * @param notebook The notebook to get the cell from
    * @param index The index of the cell to read
-   * @returns any - A string value of the cell output from the specified
-   * notebook and cell index, or null if there is no output.
+   * @returns string | undefined - A string value of the cell output from the specified
+   * notebook and cell index, or undefined if there is no output.
    * @throws An error message if there are issues in getting the output
    */
-  public static readOutput(notebook: Notebook, index: number): any {
+  public static readOutput(notebook: Notebook, index: number): string | undefined {
     if (!notebook || !notebook.model) {
       throw new Error('Notebook was null!');
     }
@@ -31,14 +31,14 @@ export default class CellUtilities {
       throw new Error('cell is not a code cell.');
     }
     if (cell.outputs.length < 1) {
-      return null;
+      return undefined;
     }
     const out = cell.outputs.toJSON().pop();
     if (out && isExecuteResult(out)) {
-      return out.data['text/plain'];
+      return out.data['text/plain'] as string;
     }
     if (out && isStream(out)) {
-      return out.text;
+      return out.text as string;
     }
     if (out && isError(out)) {
       const errData: IError = out;
@@ -56,11 +56,12 @@ export default class CellUtilities {
    * @param key The key of the value.
    * @returns any - The value of the metadata. Returns null if the key doesn't exist.
    */
+  // I dont know what type to use here in this function
   public static getCellMetaData(
     notebook: Notebook,
     index: number,
     key: string,
-  ): any {
+  ): string[] | null {
     if (!notebook || !notebook.model) {
       throw new Error('Notebook was null!');
     }
@@ -90,6 +91,7 @@ export default class CellUtilities {
    * Note: This function will not wait for the save to complete, it only sends a save request.
    * @returns any - The old value for the key, or undefined if it did not exist.
    */
+  // here there has to be any type - 
   public static setCellMetaData(
     notebookPanel: NotebookPanel,
     index: number,
@@ -105,7 +107,7 @@ export default class CellUtilities {
     }
     try {
       const cell: ICellModel = notebookPanel.model.cells.get(index);
-      const metadata = cell.metadata as any;
+      const metadata = cell.metadata;
       let oldVal: any;
 
       // Safe metadata setting
@@ -141,8 +143,7 @@ export default class CellUtilities {
     let cell: ICellModel;
     for (let idx = 0; idx < cells.length; idx += 1) {
       cell = cells.get(idx);
-      const metadata = cell.metadata as any;
-
+      const metadata = cell.metadata as any; 
       // Safe metadata checking
       const hasKey = (metadata && typeof metadata.has === 'function')
         ? metadata.has(key)
@@ -196,7 +197,7 @@ export default class CellUtilities {
       // await command.execute("notebook:run-cell");
       const output = CellUtilities.readOutput(notebook, index);
       notebook.activeCellIndex = oldIndex;
-      return output;
+      return output as string;
     } finally {
       notebook.activeCellIndex = oldIndex;
     }
@@ -282,7 +283,7 @@ export default class CellUtilities {
     if (oldIndex >= index) {
       oldIndex += 1;
     }
-    const cells = notebook.model.cells as any;
+    const cells = notebook.model.cells as any; 
     if (index <= 0) {
       // Insert at beginning
       if (typeof cells.insert === 'function') {
@@ -291,7 +292,7 @@ export default class CellUtilities {
         cells.insertAll(0, [cell]);
       } else {
         // Fallback
-        (cells as any).unshift(cell);
+        cells.unshift(cell);
       }
       notebook.activeCellIndex = oldIndex;
       return 0;
@@ -306,7 +307,7 @@ export default class CellUtilities {
         cells.insertAll(insertIndex, [cell]);
       } else {
         // Fallback
-        (cells as any).push(cell);
+        cells.push(cell);
       }
       notebook.activeCellIndex = oldIndex;
       return insertIndex;
@@ -319,7 +320,7 @@ export default class CellUtilities {
       cells.insertAll(index, [cell]);
     } else {
       // Fallback
-      (cells as any).splice(index, 0, cell);
+      cells.splice(index, 0, cell);
     }
     notebook.activeCellIndex = oldIndex;
     return index;

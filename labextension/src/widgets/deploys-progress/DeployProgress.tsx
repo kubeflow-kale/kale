@@ -1,18 +1,5 @@
-/*
- * Copyright 2019-2020 The Kale Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2019–2025 The Kale Contributors.
 
 import * as React from 'react';
 import { LinearProgress } from '@mui/material';
@@ -28,6 +15,7 @@ import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
 import DeployUtils from './DeployUtils';
+import { UploadPipelineResp, RunPipeline } from './DeploysProgress';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -49,7 +37,7 @@ interface IDeployProgressProps extends DeployProgressState {
 export const DeployProgress: React.FunctionComponent<
   IDeployProgressProps
 > = props => {
-  const getUploadLink = (pipeline: any) => {
+  const getUploadLink = (pipeline: UploadPipelineResp) => {
     // link: /_/pipeline/#/pipelines/details/<id>
     // id = uploadPipeline.pipeline.id
     if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
@@ -61,7 +49,7 @@ export const DeployProgress: React.FunctionComponent<
       : link;
   };
 
-  const getRunLink = (run: any) => {
+  const getRunLink = (run: RunPipeline) => {
     // link: /_/pipeline/#/runs/details/<id>
     // id = runPipeline.id
     if (!run.id) {
@@ -73,7 +61,7 @@ export const DeployProgress: React.FunctionComponent<
       : link;
   };
 
-  const getRunText = (pipeline: any) => {
+  const getRunText = (pipeline: RunPipeline) => {
     switch (pipeline.status) {
       case null:
       case 'Running':
@@ -86,7 +74,7 @@ export const DeployProgress: React.FunctionComponent<
     }
   };
 
-  const getRunComponent = (pipeline: any) => {
+  const getRunComponent = (pipeline: RunPipeline) => {
     let IconComponent: any = UnknownIcon;
     let iconColor = '#5f6368';
     switch (pipeline.status) {
@@ -220,7 +208,7 @@ export const DeployProgress: React.FunctionComponent<
     uploadTpl = (
       <React.Fragment>
         <a
-          href={getUploadLink(props.pipeline)}
+          href={getUploadLink(props.pipeline as UploadPipelineResp)}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -246,11 +234,11 @@ export const DeployProgress: React.FunctionComponent<
     runTpl = (
       <React.Fragment>
         <a
-          href={getRunLink(props.runPipeline)}
+          href={getRunLink(props.runPipeline as RunPipeline)}
           target="_blank"
           rel="noopener noreferrer"
         >
-          {getRunComponent(props.runPipeline)}
+          {getRunComponent(props.runPipeline as RunPipeline)}
         </a>
       </React.Fragment>
     );
@@ -289,7 +277,7 @@ export const DeployProgress: React.FunctionComponent<
             {validationTpl}
             {DeployUtils.getWarningBadge(
               'Validation Warnings',
-              props.validationWarnings
+              props.validationWarnings || []
             )}
           </div>
         </div>
@@ -315,7 +303,7 @@ export const DeployProgress: React.FunctionComponent<
             {compileTpl}
             {DeployUtils.getWarningBadge(
               'Compile Warnings',
-              props.compileWarnings
+              props.compileWarnings || []
             )}
           </div>
         </div>
@@ -328,7 +316,7 @@ export const DeployProgress: React.FunctionComponent<
             {uploadTpl}
             {DeployUtils.getWarningBadge(
               'Upload Warnings',
-              props.uploadWarnings
+              props.uploadWarnings || []
             )}
           </div>
         </div>
@@ -339,7 +327,10 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Running pipeline...</div>
           <div className="deploy-progress-value">
             {runTpl}
-            {DeployUtils.getWarningBadge('Run Warnings', props.runWarnings)}
+            {DeployUtils.getWarningBadge(
+              'Run Warnings',
+              props.runWarnings || []
+            )}
           </div>
         </div>
       ) : null}
