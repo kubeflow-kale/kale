@@ -152,6 +152,7 @@ export const DeployProgress: React.FunctionComponent<
   if (props.notebookValidation === true) {
     validationTpl = (
       <React.Fragment>
+        Done
         <SuccessIcon
           style={{ color: DeployUtils.color.success, height: 18, width: 18 }}
         />
@@ -275,36 +276,17 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Validating notebook...</div>
           <div className="deploy-progress-value">
             {validationTpl}
-            {DeployUtils.getWarningBadge(
-              'Validation Warnings',
-              props.validationWarnings || []
-            )}
+            {props.validationWarnings}
           </div>
         </div>
       ) : null}
-
-      {/* {props.showSnapshotProgress ? (
-        <div className="deploy-progress-row">
-          <div className="deploy-progress-label">Taking snapshot...</div>
-          <div className="deploy-progress-value">
-            {getSnapshotTpl()}{' '}
-            {DeployUtils.getWarningBadge(
-              'Snapshot Warnings',
-              props.snapshotWarnings,
-            )}
-          </div>
-        </div>
-      ) : null} */}
 
       {props.showCompileProgress ? (
         <div className="deploy-progress-row">
           <div className="deploy-progress-label">Compiling notebook...</div>
           <div className="deploy-progress-value">
             {compileTpl}
-            {DeployUtils.getWarningBadge(
-              'Compile Warnings',
-              props.compileWarnings || []
-            )}
+            {props.compileWarnings}
           </div>
         </div>
       ) : null}
@@ -314,10 +296,7 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Uploading pipeline...</div>
           <div className="deploy-progress-value">
             {uploadTpl}
-            {DeployUtils.getWarningBadge(
-              'Upload Warnings',
-              props.uploadWarnings || []
-            )}
+            {props.uploadWarnings}
           </div>
         </div>
       ) : null}
@@ -327,10 +306,7 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Running pipeline...</div>
           <div className="deploy-progress-value">
             {runTpl}
-            {DeployUtils.getWarningBadge(
-              'Run Warnings',
-              props.runWarnings || []
-            )}
+            {props.runWarnings}
           </div>
         </div>
       ) : null}

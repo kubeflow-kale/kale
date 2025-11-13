@@ -2,7 +2,6 @@
 // Copyright (c) 2019–2025 The Kale Contributors.
 
 import * as React from 'react';
-import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 
 import NotebookUtils from '../../lib/NotebookUtils';
@@ -48,26 +47,6 @@ export default class DeployUtils {
           }}
         >
           <InfoIcon style={{ color: this.color.blue, height: 18, width: 18 }} />
-        </a>
-      )
-    );
-  }
-
-  public static getWarningBadge(title: string, content: string[]) {
-    return (
-      content && (
-        <a
-          onClick={_ => {
-            NotebookUtils.showMessage(title, content);
-          }}
-        >
-          <WarningIcon
-            style={{
-              color: this.color.alert,
-              height: 18,
-              width: 18
-            }}
-          />
         </a>
       )
     );
