@@ -239,16 +239,14 @@ class Dispatcher(object):
             utils.graceful_exit(1)
 
     def get_path(self, basename: str):
-        """Get a serialized kfp artifact abs path
+        """Get a serialized kfp artifact abs path.
 
         Args:
             basename: The name of the artifact to retrieve its abs path
 
         Returns: the marshalled artifact path
         """
-
         return os.path.join(get_data_dir(), self._unique_ls(basename))
-
 
     @staticmethod
     def _unique_ls(basename: str):
