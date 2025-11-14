@@ -74,6 +74,23 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     with open(load_transform_data_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('load_transform_data_html_report')
+    # Prepare output artifacts to be retrieved during the pipeline execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil
+
+    artifact_path = _kale_marshal.get_path("x_trn_artifact")
+    _shutil.copyfile(artifact_path, x_trn_artifact.path)
+    x_trn_artifact.metadata["marshal_path"] = artifact_path
+    artifact_path = _kale_marshal.get_path("x_tst_artifact")
+    _shutil.copyfile(artifact_path, x_tst_artifact.path)
+    x_tst_artifact.metadata["marshal_path"] = artifact_path
+    artifact_path = _kale_marshal.get_path("y_trn_artifact")
+    _shutil.copyfile(artifact_path, y_trn_artifact.path)
+    y_trn_artifact.metadata["marshal_path"] = artifact_path
+    artifact_path = _kale_marshal.get_path("y_tst_artifact")
+    _shutil.copyfile(artifact_path, y_tst_artifact.path)
+    y_tst_artifact.metadata["marshal_path"] = artifact_path
 
 
 @kfp_dsl.component(
@@ -87,6 +104,16 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
         N_ESTIMATORS = 500
         MAX_DEPTH = 2
     '''
+    # Saves the received artifacts to be retrieved during the nb execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil
+    artifact_path = x_trn_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy(x_trn_artifact.path, artifact_path)
+    artifact_path = y_trn_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy(y_trn_artifact.path, artifact_path)
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -146,6 +173,14 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
     with open(train_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('train_model_html_report')
+    # Prepare output artifacts to be retrieved during the pipeline execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil
+
+    artifact_path = _kale_marshal.get_path("model_artifact")
+    _shutil.copyfile(artifact_path, model_artifact.path)
+    model_artifact.metadata["marshal_path"] = artifact_path
 
 
 @kfp_dsl.component(
@@ -159,6 +194,19 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_artifact
         N_ESTIMATORS = 500
         MAX_DEPTH = 2
     '''
+    # Saves the received artifacts to be retrieved during the nb execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil
+    artifact_path = model_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy(model_artifact.path, artifact_path)
+    artifact_path = x_tst_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy(x_tst_artifact.path, artifact_path)
+    artifact_path = y_tst_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy(y_tst_artifact.path, artifact_path)
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------

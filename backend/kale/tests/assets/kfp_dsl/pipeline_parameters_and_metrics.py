@@ -68,6 +68,14 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
     with open(create_matrix_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('create_matrix_html_report')
+    # Prepare output artifacts to be retrieved during the pipeline execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil
+
+    artifact_path = _kale_marshal.get_path("rnd_matrix_artifact")
+    _shutil.copyfile(artifact_path, rnd_matrix_artifact.path)
+    rnd_matrix_artifact.metadata["marshal_path"] = artifact_path
 
 
 @kfp_dsl.component(
@@ -82,6 +90,13 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: I
         booltest = True
         strtest = test
     '''
+    # Saves the received artifacts to be retrieved during the nb execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil
+    artifact_path = rnd_matrix_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy(rnd_matrix_artifact.path, artifact_path)
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
