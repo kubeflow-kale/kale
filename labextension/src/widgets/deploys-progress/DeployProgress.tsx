@@ -276,7 +276,10 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Validating notebook...</div>
           <div className="deploy-progress-value">
             {validationTpl}
-            {props.validationWarnings}
+            {DeployUtils.getWarningBadge(
+              'Validation Warnings',
+              props.validationWarnings || []
+            )}
           </div>
         </div>
       ) : null}
@@ -286,7 +289,10 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Compiling notebook...</div>
           <div className="deploy-progress-value">
             {compileTpl}
-            {props.compileWarnings}
+            {DeployUtils.getWarningBadge(
+              'Compile Warnings',
+              props.compileWarnings || []
+            )}
           </div>
         </div>
       ) : null}
@@ -296,7 +302,10 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Uploading pipeline...</div>
           <div className="deploy-progress-value">
             {uploadTpl}
-            {props.uploadWarnings}
+            {DeployUtils.getWarningBadge(
+              'Upload Warnings',
+              props.uploadWarnings || []
+            )}
           </div>
         </div>
       ) : null}
@@ -306,7 +315,10 @@ export const DeployProgress: React.FunctionComponent<
           <div className="deploy-progress-label">Running pipeline...</div>
           <div className="deploy-progress-value">
             {runTpl}
-            {props.runWarnings}
+            {DeployUtils.getWarningBadge(
+              'Run Warnings',
+              props.runWarnings || []
+            )}
           </div>
         </div>
       ) : null}

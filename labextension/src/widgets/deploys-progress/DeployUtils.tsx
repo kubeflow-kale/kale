@@ -52,3 +52,24 @@ export default class DeployUtils {
     );
   }
 }
+
+  public static getWarningBadge(title: string, content: string[]) {
+    return (
+      content && content.length > 0 &&(
+        <a
+          onClick={_ => {
+            NotebookUtils.showMessage(title, content);
+          }}
+        >
+          <WarningIcon
+            style={{
+              color: this.color.alert,
+              height: 18,
+              width: 18
+            }}
+          />
+        </a>
+      )
+    );
+  }
+}
