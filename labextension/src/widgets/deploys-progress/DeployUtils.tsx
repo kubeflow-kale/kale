@@ -2,6 +2,7 @@
 // Copyright (c) 2019–2025 The Kale Contributors.
 
 import * as React from 'react';
+import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 
 import NotebookUtils from '../../lib/NotebookUtils';
