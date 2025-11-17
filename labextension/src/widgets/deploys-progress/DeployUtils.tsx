@@ -51,7 +51,7 @@ export default class DeployUtils {
       )
     );
   }
-}
+
 
   public static getWarningBadge(title: string, content: string[]) {
     return (
