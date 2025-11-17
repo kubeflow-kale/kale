@@ -53,10 +53,10 @@ export default class DeployUtils {
     );
   }
 
-
   public static getWarningBadge(title: string, content: string[]) {
     return (
-      content && content.length > 0 &&(
+      content &&
+      content.length > 0 && (
         <a
           onClick={_ => {
             NotebookUtils.showMessage(title, content);
