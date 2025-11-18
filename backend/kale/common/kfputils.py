@@ -55,7 +55,7 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
         f = next(
             filter(
                 lambda x: x.display_name == pipeline_name,
-                pipelines.pipelines
+                pipelines.pipelines or []
             ),
             None
         )
@@ -181,11 +181,19 @@ def run_pipeline(experiment_name: str, pipeline_id: str, run_name: str = None,
     client.create_experiment(experiment_name)
     pipeline = client.get_pipeline(pipeline_id)
     pipeline_name = pipeline.display_name
-    _version_id = version_id if version_id else pipeline.pipeline_id
-    version_name = client.get_pipeline_version(
-        pipeline_id=pipeline_id,
-        pipeline_version_id=_version_id
-    ).display_name
+
+    try:
+        if version_id:
+            version_name = client.get_pipeline_version(
+                pipeline_id=pipeline_id,
+                pipeline_version_id=version_id
+            ).display_name
+        else:
+            version_name = "default"
+    except Exception:
+        log.debug("Could not retrieve pipeline version with "
+                  "ID '%s'. Using 'unknown'.", version_id)
+        version_name = "unknown"
 
     if not run_name:
         run_name = ("%s-%s-%s"
