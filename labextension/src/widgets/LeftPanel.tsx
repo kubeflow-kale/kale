@@ -376,6 +376,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       });
     };
 
+    const kfpUiHost = await commands.getKfpUiHost();
+    _updateDeployProgress({ kfpUiHost });
+
     const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
 
     // assign the default docker image in case it is empty
@@ -443,7 +446,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
     _updateDeployProgress({
       message: 'Pipeline uploaded successfully',
-      pipeline: true
+      pipeline: {
+        pipeline: {
+          pipelineid: uploadPipeline.pipeline.pipelineid,
+          versionid: uploadPipeline.pipeline.versionid,
+          name: uploadPipeline.pipeline.name
+        }
+      }
     });
     // RUN
     if (this.state.deploymentType === 'run') {

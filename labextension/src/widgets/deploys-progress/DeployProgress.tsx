@@ -38,24 +38,22 @@ export const DeployProgress: React.FunctionComponent<
   IDeployProgressProps
 > = props => {
   const getUploadLink = (pipeline: UploadPipelineResp) => {
-    // link: /_/pipeline/#/pipelines/details/<id>
-    // id = uploadPipeline.pipeline.id
     if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
       return '#';
     }
-    const link = `${window.location.origin}/_/pipeline/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
+    const base = props.kfpUiHost || 'http://localhost:8080';
+    const link = `${base}/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
       : link;
   };
 
   const getRunLink = (run: RunPipeline) => {
-    // link: /_/pipeline/#/runs/details/<id>
-    // id = runPipeline.id
     if (!run.id) {
       return '#';
     }
-    const link = `${window.location.origin}/_/pipeline/#/runs/details/${run.id}`;
+    const base = props.kfpUiHost || 'http://localhost:8080';
+    const link = `${base}/#/runs/details/${run.id}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
       : link;

@@ -36,6 +36,7 @@ export type DeployProgressState = {
   docManager?: IDocumentManager;
   namespace?: string;
   message?: string;
+  kfpUiHost?: string;
 };
 
 interface IDeploysProgress {

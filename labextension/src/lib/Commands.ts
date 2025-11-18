@@ -132,6 +132,19 @@ export default class Commands {
     };
   };
 
+  getKfpUiHost = async (): Promise<string> => {
+    try {
+      return await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'kfp.get_ui_host',
+      );
+    } catch (error) {
+      console.error('Failed to retrieve KFP UI host', error);
+      return '';
+    }
+  };
+
   pollRun(runPipeline: RunPipeline, onUpdate: OnUpdateCallbak) {
     _legacy_executeRpcAndShowRPCError(
       this._notebook,
