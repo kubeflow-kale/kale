@@ -16,6 +16,7 @@ import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
 import DeployUtils from './DeployUtils';
 import { UploadPipelineResp, RunPipeline } from './DeploysProgress';
+import NotebookUtils from '../../lib/NotebookUtils';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -129,12 +130,20 @@ export const DeployProgress: React.FunctionComponent<
     );
   };
 
-  const handleCompileClick = () => {
+  const handleCompileClick = async () => {
     if (props.docManager && props.compiledPath) {
       try {
-        props.docManager.openOrReveal(props.compiledPath);
+        await props.docManager.services.contents.get(props.compiledPath);
+        await props.docManager.openOrReveal(props.compiledPath);
       } catch (error) {
         console.error('Error opening compiled path:', error);
+        const title = 'Failed to open compiled file';
+        const message = [
+          `File path: <pre><b>${props.compiledPath}</b></pre>`,
+          '',
+          'Probable cause: the file is hidden, try running jupyterlab with the --ContentsManager.allow_hidden=True flag',
+        ];
+        NotebookUtils.showMessage(title, message);
       }
     }
   };
