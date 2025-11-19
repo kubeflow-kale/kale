@@ -152,6 +152,7 @@ export const DeployProgress: React.FunctionComponent<
   if (props.notebookValidation === true) {
     validationTpl = (
       <React.Fragment>
+        Done
         <SuccessIcon
           style={{ color: DeployUtils.color.success, height: 18, width: 18 }}
         />
@@ -282,19 +283,6 @@ export const DeployProgress: React.FunctionComponent<
           </div>
         </div>
       ) : null}
-
-      {/* {props.showSnapshotProgress ? (
-        <div className="deploy-progress-row">
-          <div className="deploy-progress-label">Taking snapshot...</div>
-          <div className="deploy-progress-value">
-            {getSnapshotTpl()}{' '}
-            {DeployUtils.getWarningBadge(
-              'Snapshot Warnings',
-              props.snapshotWarnings,
-            )}
-          </div>
-        </div>
-      ) : null} */}
 
       {props.showCompileProgress ? (
         <div className="deploy-progress-row">
