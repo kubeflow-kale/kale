@@ -22,7 +22,7 @@ def list_experiments(request):
 def get_ui_host(request):
     """Return the Kubeflow Pipelines UI host the client is using. If it does not exist return None."""
     c = _get_client()
-    host = getattr(c, "ui_host", None) or getattr(c, "host", None)
+    host = getattr(c, "_uihost", None) or getattr(c, "host", None)
     return host
 
 
