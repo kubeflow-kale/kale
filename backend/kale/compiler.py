@@ -12,6 +12,7 @@ from jinja2 import Environment, PackageLoader, FileSystemLoader
 from kale import __version__ as KALE_VERSION
 from kale.pipeline import Pipeline, Step, PipelineParam
 from kale.common import kfputils, utils, graphutils
+from kale.errors import TaskMissingError
 
 log = logging.getLogger(__name__)
 
@@ -89,6 +90,12 @@ class Compiler:
 
         Returns (str): A Python executable script
         """
+        # Fail early if there are no steps in the pipeline. Raise a domain-
+        # specific exception so higher layers (RPC) can map it to an RPC
+        # error without coupling core to the RPC layer.
+        if not hasattr(self.pipeline, 'steps') or not self.pipeline.steps:
+            raise TaskMissingError('Task is missing from pipeline.')
+
         # List of lightweight components generated code
         lightweight_components = [
             self.generate_lightweight_component(step)

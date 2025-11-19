@@ -10,7 +10,8 @@ from tabulate import tabulate
 from kale import marshal
 from kale.rpc.log import create_adapter
 from kale import Compiler, NotebookProcessor
-from kale.rpc.errors import RPCInternalError
+from kale.rpc.errors import RPCInternalError, RPCTaskIsMissing
+from kale.errors import TaskMissingError
 from kale.common import podutils, kfputils, kfutils, astutils
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
@@ -80,20 +81,53 @@ def get_base_image(request):
 def compile_notebook(request, source_notebook_path,
                      notebook_metadata_overrides=None, debug=False):
     """Compile the notebook to KFP DSL."""
-    processor = NotebookProcessor(source_notebook_path,
-                                  notebook_metadata_overrides)
-    pipeline = processor.run()
-    imports_and_functions = processor.get_imports_and_functions()
-    script_path = Compiler(pipeline, imports_and_functions).compile()
-    # FIXME: Why were we tapping into the Kale logger?
-    # instance = Kale(source_notebook_path, notebook_metadata_overrides, debug)
-    # instance.logger = request.log if hasattr(request, "log") else logger
+    try:
+        processor = NotebookProcessor(source_notebook_path,
+                                      notebook_metadata_overrides)
+        pipeline = processor.run()
+        imports_and_functions = processor.get_imports_and_functions()
+        script_path = Compiler(pipeline, imports_and_functions).compile()
 
-    package_path = kfputils.compile_pipeline(script_path,
-                                             pipeline.config.pipeline_name)
+        """FIXME: Why were we tapping into the Kale logger?
+        instance = Kale(source_notebook_path,
+        notebook_metadata_overrides, debug)
+        instance.logger = request.log if
+        hasattr(request, "log") else logger"""
 
-    return {"pipeline_package_path": os.path.relpath(package_path),
-            "pipeline_metadata": pipeline.config.to_dict()}
+        package_path = kfputils.compile_pipeline(script_path,
+                                                 pipeline.config.pipeline_name)
+
+        return {"pipeline_package_path": os.path.relpath(package_path),
+                "pipeline_metadata": pipeline.config.to_dict()}
+    except TaskMissingError as e:
+        # Domain-specific exception raised by core components when no
+        # pipeline steps are present. Map it to a specific RPC error so the
+        # frontend receives a concrete error code and message. Provide a
+        # slightly more actionable `details` field so the UI can display
+        # guidance to the user about how to fix the issue (e.g., tag a
+        # cell as a step or set `steps_defaults` in metadata).
+        msg = str(e)
+        request.log.exception("TaskMissingError during notebook "
+                              "compilation: %s", msg)
+        raise RPCTaskIsMissing(details=msg, trans_id=request.trans_id)
+    except ValueError as e:
+        # kfp.compiler or graph_component may
+        # raise ValueError for other
+        # reasons; map them to an internal
+        # RPC error (unless they match the
+        # specific message — kept for backward compatibility).
+        msg = str(e)
+        request.log.exception("ValueError during notebook"
+                              " compilation: %s", msg)
+        if 'Task is missing from pipeline' in msg:
+            raise RPCTaskIsMissing(details=msg, trans_id=request.trans_id)
+        raise RPCInternalError(details=msg, trans_id=request.trans_id)
+    except Exception as e:
+        # Let the run dispatcher handle generic exceptions as unhandled,
+        # but log for debug purposes.
+        request.log.exception("Unexpected error during "
+                              "notebook compilation: %s", e)
+        raise
 
 
 def validate_notebook(request, source_notebook_path,

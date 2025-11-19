@@ -93,6 +93,41 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   // init state default values
   state = DefaultState;
 
+  // Return the notebook file name without extension (e.g. 'MyNotebook' from 'path/to/MyNotebook.ipynb')
+  getNotebookFileName = (notebook: NotebookPanel | null): string => {
+    if (!notebook || !notebook.context || !notebook.context.path) {
+      return '';
+    }
+    const path = notebook.context.path as string;
+    const base = path.split('/').pop() || '';
+    return base.replace(/\.ipynb$/i, '');
+  };
+
+  // Sanitize a name to match the pipeline name regex:
+  // '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+  // Steps:
+  // - lowercase
+  // - replace invalid chars with '-'
+  // - collapse multiple '-' into one
+  // - trim leading/trailing '-'
+  // - if result is empty, return a fallback unique name
+  sanitizePipelineName = (name: string): string => {
+    if (!name) return '';
+    let s = name.toLowerCase();
+    // replace any char that is not [a-z0-9-] with '-'
+    s = s.replace(/[^a-z0-9-]+/g, '-');
+    // collapse multiple hyphens
+    s = s.replace(/-+/g, '-');
+    // trim leading/trailing hyphens
+    s = s.replace(/^-+|-+$/g, '');
+    // ensure it starts and ends with alphanumeric; if not, fallback
+    if (!/^[a-z0-9].*[a-z0-9]$/.test(s)) {
+      // fallback: use a predictable but unique name
+      return 'pipeline-' + Date.now().toString(36);
+    }
+    return s;
+  };
+
   getActiveNotebook = (): NotebookPanel | null => {
     return this.props.tracker.currentWidget;
   };
@@ -318,11 +353,19 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           }
         }
 
+        // Use notebook filename as default pipeline name when not provided in metadata
+        const defaultPipelineName = this.getNotebookFileName(notebook);
+        const sanitizedDefaultPipelineName = this.sanitizePipelineName(
+          defaultPipelineName
+        );
         const metadata: IKaleNotebookMetadata = {
           ...notebookMetadata,
           experiment: experiment,
           experiment_name: experiment_name,
-          pipeline_name: notebookMetadata['pipeline_name'] || '',
+          pipeline_name:
+            notebookMetadata['pipeline_name'] && notebookMetadata['pipeline_name'] !== ''
+              ? notebookMetadata['pipeline_name']
+              : sanitizedDefaultPipelineName,
           pipeline_description: notebookMetadata['pipeline_description'] || '',
           docker_image:
             notebookMetadata['docker_image'] ||
@@ -333,11 +376,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           metadata: metadata
         });
       } else {
+        // If no notebook metadata exists, set pipeline_name to the sanitized notebook filename
+        const defaultPipelineName = this.getNotebookFileName(notebook);
+        const sanitizedDefaultPipelineName = this.sanitizePipelineName(
+          defaultPipelineName
+        );
         this.setState(prevState => ({
           metadata: {
             ...DefaultState.metadata,
             experiment: prevState.metadata.experiment,
-            experiment_name: prevState.metadata.experiment_name
+            experiment_name: prevState.metadata.experiment_name,
+            pipeline_name: sanitizedDefaultPipelineName
           }
         }));
       }

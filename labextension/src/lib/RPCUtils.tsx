@@ -5,8 +5,10 @@ import * as React from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import NotebookUtils from './NotebookUtils';
+// @ts-expect-error This module is not typed
+import SanitizedHTML from 'react-sanitized-html';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
-import { Notification } from '@jupyterlab/apputils';
+import { Notification, Dialog, showDialog } from '@jupyterlab/apputils';
 
 export const globalUnhandledRejection = async (event: any) => {
   console.error(event.reason);
@@ -26,7 +28,7 @@ export const globalUnhandledRejection = async (event: any) => {
       const extensionName = getExtensionName(stackLines)
       Notification.error(`An unhandled error has been thrown.`, {
         actions: [
-          { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string, 
+          { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string,
             ["An unhandled error was thrown from:",
               extensionName,
               "Please see console for more details."
@@ -72,6 +74,7 @@ export enum RPC_CALL_STATUS {
   InternalError = 4,
   ServiceUnavailable = 5,
   UnhandledError = 6,
+  TaskIsMissing = 7,
 }
 
 const getRpcCodeName = (code: number) => {
@@ -88,6 +91,8 @@ const getRpcCodeName = (code: number) => {
       return 'InternalError';
     case RPC_CALL_STATUS.ServiceUnavailable:
       return 'ServiceUnavailable';
+    case RPC_CALL_STATUS.TaskIsMissing:
+      return 'TaskIsMissing';
     default:
       return 'UnhandledError';
   }
@@ -238,6 +243,10 @@ export const showRpcError = async (
   error: IRPCError,
   refresh: boolean = false,
 ): Promise<void> => {
+  if (error && error.code === RPC_CALL_STATUS.TaskIsMissing) {
+    return await handleMissingPipelineStep(error);
+  }
+
   await showError(
     'An RPC Error has occurred',
     'RPC',
@@ -314,7 +323,7 @@ export abstract class BaseError extends Error {
     super(message);
     this.name = this.constructor.name;
     this.stack = new Error(message).stack;
-    
+
     Object.setPrototypeOf(this, BaseError.prototype);
   }
 
@@ -367,3 +376,58 @@ export class RPCError extends BaseError {
     await showRpcError(this.error, refresh);
   }
 }
+
+
+/**
+ * handleMissingPipelineStep - Async handler for missing pipeline step RPC errors.
+ *
+ * Displays a modal dialog that informs the user that a pipeline step is missing,
+ * shows the RPC-provided message and details, and suggests remediation steps:
+ * tagging a code cell as a pipeline step or setting the notebook metadata
+ * `steps_defaults` to include the step name(s). The dialog body is rendered as
+ * sanitized HTML with a restricted set of allowed tags and attributes to avoid
+ * injection issues. The dialog offers two buttons: "Open docs" and "Close".
+ * Selecting "Open docs" opens the Kale README/docs page in a new browser tab.
+ *
+ * @param error - The IRPCError instance containing `err_message` and `err_details`
+ *                to present in the dialog body.
+ * @returns A Promise that resolves once the user dismisses the dialog. If the
+ *          user clicked "Open docs", the documentation page will be opened
+ *          in a new tab as a fallback/help resource.
+ */
+async function handleMissingPipelineStep(error: IRPCError) {
+  const title = 'Pipeline step missing';
+  const bodyLines = [
+    `Message: ${error.err_message}`,
+    '',
+    `Details: ${error.err_details}`,
+    '',
+    'You can fix this by tagging a code cell as a pipeline step (e.g. using the Left Panel), or by setting the notebook metadata `steps_defaults` to a list with the step name(s).',
+  ];
+  const body = (
+    <div className="dialog-body">
+      {bodyLines.map((s: string, i: number) => (
+        <React.Fragment key={`msg-${i}`}>
+          <SanitizedHTML
+            allowedAttributes={{ a: ['href'] }}
+            allowedTags={['b', 'i', 'em', 'strong', 'a', 'pre']}
+            html={s} />
+          <br />
+        </React.Fragment>
+      ))}
+    </div>
+  );
+  const buttons: ReadonlyArray<Dialog.IButton> = [
+    Dialog.okButton({ label: 'Open docs' }),
+    Dialog.cancelButton({ label: 'Close' }),
+  ];
+  const result = await showDialog({ title, body, buttons });
+  const clicked = result.button ? (result.button.label as string) : '';
+  if (clicked === 'Open docs') {
+    // Open the documentation in a new tab (repo README as fallback)
+    const docsUrl = 'https://github.com/kubeflow-kale/kale#readme';
+    window.open(docsUrl, '_blank');
+  }
+  return;
+}
+

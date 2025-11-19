@@ -16,6 +16,7 @@ class Code(enum.Enum):
     INTERNAL_ERROR = 4
     SERVICE_UNAVAILABLE = 5
     UNHANDLED_ERROR = 6
+    TASK_IS_MISSING = 7
 
 
 class _RPCError(Exception):
@@ -74,6 +75,14 @@ class RPCServiceUnavailableError(_RPCError):
     name = "serviceUnavailableError"
     code = Code.SERVICE_UNAVAILABLE
     message = "Service is Unavailable"
+
+
+class RPCTaskIsMissing(_RPCError):
+    """Task is missing from pipeline, you must add a pipeline step."""
+
+    name = "taskIsMissing"
+    code = Code.TASK_IS_MISSING
+    message = "Task is missing from pipeline, you must add a pipeline step."
 
 
 class RPCUnhandledError(_RPCError):
