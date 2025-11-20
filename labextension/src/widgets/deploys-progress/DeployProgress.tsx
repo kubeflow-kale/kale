@@ -36,7 +36,9 @@ const DEFAULT_UI_URL = 'http://localhost:8080';
 const logLinksHint = (() => {
   let logged = false;
   return () => {
-    if (logged) {return;}
+    if (logged) {
+      return;
+    }
     logged = true;
     console.info(
       `default for upload and run links is ${DEFAULT_UI_URL} ` +
