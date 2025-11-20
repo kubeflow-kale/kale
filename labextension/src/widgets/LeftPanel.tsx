@@ -355,15 +355,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
         // Use notebook filename as default pipeline name when not provided in metadata
         const defaultPipelineName = this.getNotebookFileName(notebook);
-        const sanitizedDefaultPipelineName = this.sanitizePipelineName(
-          defaultPipelineName
-        );
+        const sanitizedDefaultPipelineName =
+          this.sanitizePipelineName(defaultPipelineName);
         const metadata: IKaleNotebookMetadata = {
           ...notebookMetadata,
           experiment: experiment,
           experiment_name: experiment_name,
           pipeline_name:
-            notebookMetadata['pipeline_name'] && notebookMetadata['pipeline_name'] !== ''
+            notebookMetadata['pipeline_name'] &&
+            notebookMetadata['pipeline_name'] !== ''
               ? notebookMetadata['pipeline_name']
               : sanitizedDefaultPipelineName,
           pipeline_description: notebookMetadata['pipeline_description'] || '',
@@ -378,9 +378,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       } else {
         // If no notebook metadata exists, set pipeline_name to the sanitized notebook filename
         const defaultPipelineName = this.getNotebookFileName(notebook);
-        const sanitizedDefaultPipelineName = this.sanitizePipelineName(
-          defaultPipelineName
-        );
+        const sanitizedDefaultPipelineName =
+          this.sanitizePipelineName(defaultPipelineName);
         this.setState(prevState => ({
           metadata: {
             ...DefaultState.metadata,

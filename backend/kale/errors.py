@@ -6,6 +6,7 @@ can raise them without depending on RPC layer.
 
 class TaskMissingError(Exception):
     """Raised when a Pipeline has no steps/tasks.
+
     This is a domain-level exception and will be mapped to an RPC error
     (RPCTaskIsMissing) by the RPC handler.
     """
