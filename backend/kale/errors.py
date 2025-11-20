@@ -1,4 +1,5 @@
 """Core domain exceptions for Kale (non-RPC).
+
 Keep domain-specific exceptions here so core modules (compiler, processor)
 can raise them without depending on RPC layer.
 """
