@@ -112,7 +112,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   // - trim leading/trailing '-'
   // - if result is empty, return a fallback unique name
   sanitizePipelineName = (name: string): string => {
-    if (!name) {return '';}
+    if (!name) {
+      return '';
+    }
     let s = name.toLowerCase();
     // replace any char that is not [a-z0-9-] with '-'
     s = s.replace(/[^a-z0-9-]+/g, '-');
