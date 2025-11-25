@@ -21,6 +21,7 @@ import Commands from '../lib/Commands';
 import { PageConfig } from '@jupyterlab/coreutils';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
+const DEFAULT_UI_URL = 'http://localhost:8080';
 
 export interface IExperiment {
   id: string;
@@ -50,6 +51,7 @@ interface IState {
   deploys: { [index: number]: DeployProgressState };
   isEnabled: boolean;
   namespace: string;
+  kfpUiHost: string;
 }
 
 // keep names with Python notation because they will be read
@@ -81,7 +83,8 @@ export const DefaultState: IState = {
   gettingExperiments: false,
   deploys: {},
   isEnabled: false,
-  namespace: ''
+  namespace: '',
+  kfpUiHost: ''
 };
 
 let deployIndex = 0;
@@ -209,6 +212,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       const commands = new Commands(notebook, this.props.kernel);
       // wait for the session to be ready before reading metadata
       await notebook.sessionContext.ready;
+
+      const kfpUiHost = (await commands.getKfpUiHost()) || DEFAULT_UI_URL;
+      this.setState({ kfpUiHost: kfpUiHost });
 
       // get notebook metadata
       const notebookMetadata = NotebookUtils.getMetaData(
@@ -443,7 +449,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
     _updateDeployProgress({
       message: 'Pipeline uploaded successfully',
-      pipeline: true
+      pipeline: {
+        pipeline: {
+          pipelineid: uploadPipeline.pipeline.pipelineid,
+          versionid: uploadPipeline.pipeline.versionid,
+          name: uploadPipeline.pipeline.name
+        }
+      }
     });
     // RUN
     if (this.state.deploymentType === 'run') {
@@ -584,6 +596,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             <DeploysProgress
               deploys={this.state.deploys}
               onPanelRemove={this.onPanelRemove}
+              kfpUiHost={this.state.kfpUiHost}
             />
             <SplitDeployButton
               running={this.state.runDeployment}

@@ -19,6 +19,13 @@ def list_experiments(request):
     return experiments
 
 
+def get_ui_host(request):
+    """Get a UI Host. If it does not exist return None."""
+    c = _get_client()
+    host = getattr(c, "_uihost", None) or getattr(c, "host", None)
+    return host
+
+
 def get_experiment(request, experiment_name):
     """Get a KFP experiment. If it does not exist return None."""
     client = _get_client()
