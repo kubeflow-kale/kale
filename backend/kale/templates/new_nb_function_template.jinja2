@@ -7,7 +7,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_pipeline_parameters_block = '''
 {%- for param_name, param_var in pipeline_params.items() %}
     {%- for value in param_var.values() %}
-        {{ param_name }} = {{ value }}
+        {{ param_name }} = {% raw %}{{% endraw %}{{param_name}}{% raw %}}{% endraw %}
     {%- endfor %}
 {%- endfor %}
     '''
