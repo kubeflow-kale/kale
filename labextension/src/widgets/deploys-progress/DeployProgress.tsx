@@ -31,21 +31,13 @@ enum PipelineStatus {
   UNKNOWN = 'UNKNOWN'
 }
 
-const DEFAULT_UI_URL = 'http://localhost:8080';
 
-const logLinksHint = (() => {
-  let logged = false;
-  return () => {
-    if (logged) {
-      return;
-    }
-    logged = true;
-    console.info(
-      `default for upload and run links is ${DEFAULT_UI_URL} ` +
-        'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.'
+const logLinksHint = (kfpUiHost: string) => {
+  console.info(
+    `default for upload and run links is ${kfpUiHost} ` +
+      'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.'
     );
   };
-})();
 
 interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
@@ -58,7 +50,7 @@ export const DeployProgress: React.FunctionComponent<
     if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
       return '#';
     }
-    const base = props.kfpUiHost || DEFAULT_UI_URL;
+    const base = props.kfpUiHost;
     const link = `${base}/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
@@ -69,7 +61,7 @@ export const DeployProgress: React.FunctionComponent<
     if (!run.id) {
       return '#';
     }
-    const base = props.kfpUiHost || DEFAULT_UI_URL;
+    const base = props.kfpUiHost;
     const link = `${base}/#/runs/details/${run.id}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
@@ -266,7 +258,7 @@ export const DeployProgress: React.FunctionComponent<
         </a>
       </React.Fragment>
     );
-    logLinksHint();
+    logLinksHint(props.kfpUiHost || '');
   } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>

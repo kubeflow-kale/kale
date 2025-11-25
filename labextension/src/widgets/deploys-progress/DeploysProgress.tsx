@@ -42,6 +42,7 @@ export type DeployProgressState = {
 interface IDeploysProgress {
   deploys: { [key: number]: DeployProgressState };
   onPanelRemove: (index: number) => void;
+  kfpUiHost: string;
 }
 
 export const DeploysProgress: React.FunctionComponent<
@@ -80,6 +81,7 @@ export const DeploysProgress: React.FunctionComponent<
             onRemove={_onPanelRemove(Number(index))}
             docManager={dpState.docManager}
             namespace={dpState.namespace}
+            kfpUiHost={props.kfpUiHost}
           />
         );
       });
