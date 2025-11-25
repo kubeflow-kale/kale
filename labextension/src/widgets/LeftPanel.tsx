@@ -213,8 +213,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       // wait for the session to be ready before reading metadata
       await notebook.sessionContext.ready;
 
-      const kfpUiHost =(await commands.getKfpUiHost()) || DEFAULT_UI_URL;
-      this.setState({ kfpUiHost: kfpUiHost});
+      const kfpUiHost = (await commands.getKfpUiHost()) || DEFAULT_UI_URL;
+      this.setState({ kfpUiHost: kfpUiHost });
 
       // get notebook metadata
       const notebookMetadata = NotebookUtils.getMetaData(
@@ -381,7 +381,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         namespace: this.state.namespace
       });
     };
-
 
     const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
 

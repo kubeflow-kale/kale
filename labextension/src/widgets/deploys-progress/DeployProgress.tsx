@@ -31,13 +31,12 @@ enum PipelineStatus {
   UNKNOWN = 'UNKNOWN'
 }
 
-
 const logLinksHint = (kfpUiHost: string) => {
   console.info(
     `default for upload and run links is ${kfpUiHost} ` +
       'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.'
-    );
-  };
+  );
+};
 
 interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
