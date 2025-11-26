@@ -13,7 +13,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
         d1 = {d1}
         d2 = {d2}
         booltest = {booltest}
-        strtest = {strtest}
+        strtest = '{strtest}'
     '''
 
     _kale_data_loading_block = '''
@@ -80,7 +80,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: I
         d1 = {d1}
         d2 = {d2}
         booltest = {booltest}
-        strtest = {strtest}
+        strtest = '{strtest}'
     '''
 
     _kale_data_loading_block = '''
