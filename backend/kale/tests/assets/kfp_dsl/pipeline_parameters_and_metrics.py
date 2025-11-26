@@ -9,7 +9,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
     pip_index_urls=['https://pypi.org/simple'],
 )
 def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
-    _kale_pipeline_parameters_block = '''
+    _kale_pipeline_parameters_block = f'''
         d1 = {d1}
         d2 = {d2}
         booltest = {booltest}
@@ -76,7 +76,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_artif
     pip_index_urls=['https://pypi.org/simple'],
 )
 def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
-    _kale_pipeline_parameters_block = '''
+    _kale_pipeline_parameters_block = f'''
         d1 = {d1}
         d2 = {d2}
         booltest = {booltest}
