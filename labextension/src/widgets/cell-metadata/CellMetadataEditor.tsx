@@ -158,6 +158,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     );
 
     if (editor && inlineElement && !isEditorAlreadInPlace) {
+      metadataWrapper.style.display = 'flex';
+      metadataWrapper.style.flexDirection = 'row';
       editor.remove();
       metadataWrapper.prepend(editor);
     }
@@ -369,100 +371,100 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
     return (
       <React.Fragment>
-        <div>
+        <div
+          className={
+            'kale-metadata-editor-wrapper' +
+            (this.context.isEditorVisible ? ' opened' : '') +
+            (cellType === 'step' ? ' kale-is-step' : '')
+          }
+          style={{ order: -1 }}
+          ref={this.editorRef}
+        >
           <div
             className={
-              'kale-metadata-editor-wrapper' +
-              (this.context.isEditorVisible ? ' opened' : '') +
-              (cellType === 'step' ? ' kale-is-step' : '')
+              'kale-cell-metadata-editor' +
+              (this.context.isEditorVisible ? '' : ' hidden')
             }
-            ref={this.editorRef}
+            style={{ borderLeft: `2px solid ${cellColor}` }}
           >
-            <div
-              className={
-                'kale-cell-metadata-editor' +
-                (this.context.isEditorVisible ? '' : ' hidden')
-              }
-              style={{ borderLeft: `2px solid ${cellColor}` }}
-            >
-              <Select
-                updateValue={this.updateCurrentCellType}
-                values={CELL_TYPES}
-                value={cellType || 'step'}
-                label={'Cell type'}
-                index={0}
+            <Select
+              updateValue={this.updateCurrentCellType}
+              values={CELL_TYPES}
+              value={cellType || 'step'}
+              label={'Cell type'}
+              index={0}
+              variant="outlined"
+              style={{ width: '30%' }}
+            />
+
+            {cellType === 'step' ? (
+              <Input
+                label={'Step name'}
+                updateValue={this.updateCurrentBlockName}
+                value={this.props.stepName || ''}
+                regex={'^([_a-z]([_a-z0-9]*)?)?$'}
+                regexErrorMsg={this.state.stepNameErrorMsg}
                 variant="outlined"
+                onBeforeUpdate={this.onBeforeUpdate}
                 style={{ width: '30%' }}
               />
+            ) : (
+              ''
+            )}
+            {cellType === 'step' ? (
+              <SelectMulti
+                id="select-previous-blocks"
+                label="Depends on"
+                disabled={
+                  !(this.props.stepName && this.props.stepName.length > 0)
+                }
+                updateSelected={this.updatePrevBlocksNames}
+                options={this.state.blockDependenciesChoices}
+                variant="outlined"
+                selected={this.props.stepDependencies || []}
+                style={{ width: '35%' }}
+              />
+            ) : (
+              ''
+            )}
 
-              {cellType === 'step' ? (
-                <Input
-                  label={'Step name'}
-                  updateValue={this.updateCurrentBlockName}
-                  value={this.props.stepName || ''}
-                  regex={'^([_a-z]([_a-z0-9]*)?)?$'}
-                  regexErrorMsg={this.state.stepNameErrorMsg}
-                  variant="outlined"
-                  onBeforeUpdate={this.onBeforeUpdate}
-                  style={{ width: '30%' }}
-                />
-              ) : (
-                ''
-              )}
-              {cellType === 'step' ? (
-                <SelectMulti
-                  id="select-previous-blocks"
-                  label="Depends on"
+            {cellType === 'step' ? (
+              <div style={{ padding: 0 }}>
+                <Button
                   disabled={
                     !(this.props.stepName && this.props.stepName.length > 0)
                   }
-                  updateSelected={this.updatePrevBlocksNames}
-                  options={this.state.blockDependenciesChoices}
-                  variant="outlined"
-                  selected={this.props.stepDependencies || []}
-                  style={{ width: '35%' }}
-                />
-              ) : (
-                ''
-              )}
+                  color="primary"
+                  variant="contained"
+                  size="small"
+                  title="GPU"
+                  onClick={() => this.toggleTagsEditorDialog()}
+                  style={{ width: '5%' }}
+                >
+                  GPU
+                </Button>
+              </div>
+            ) : (
+              ''
+            )}
 
-              {cellType === 'step' ? (
-                <div style={{ padding: 0 }}>
-                  <Button
-                    disabled={
-                      !(this.props.stepName && this.props.stepName.length > 0)
-                    }
-                    color="primary"
-                    variant="contained"
-                    size="small"
-                    title="GPU"
-                    onClick={() => this.toggleTagsEditorDialog()}
-                    style={{ width: '5%' }}
-                  >
-                    GPU
-                  </Button>
-                </div>
-              ) : (
-                ''
-              )}
-
-              <IconButton
-                aria-label="delete"
-                onClick={() => this.closeEditor()}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </div>
-            <div
-              className={
-                'kale-cell-metadata-editor-helper-text' +
-                (this.context.isEditorVisible ? '' : ' hidden')
-              }
+            <IconButton
+              aria-label="delete"
+              onClick={() => this.closeEditor()}
             >
-              <p>{prevStepNotice}</p>
-            </div>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </div>
+          <div
+            className={
+              'kale-cell-metadata-editor-helper-text' +
+              (this.context.isEditorVisible ? '' : ' hidden')
+            }
+          >
+            <p>{prevStepNotice}</p>
           </div>
         </div>
+
         <CellMetadataEditorDialog
           open={this.state.cellMetadataEditorDialog}
           toggleDialog={this.toggleTagsEditorDialog}
