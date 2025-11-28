@@ -448,10 +448,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               ''
             )}
 
-            <IconButton
-              aria-label="delete"
-              onClick={() => this.closeEditor()}
-            >
+            <IconButton aria-label="delete" onClick={() => this.closeEditor()}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </div>
