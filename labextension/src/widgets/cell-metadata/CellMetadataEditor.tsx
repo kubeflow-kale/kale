@@ -159,7 +159,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
     if (editor && inlineElement && !isEditorAlreadInPlace) {
       metadataWrapper.style.display = 'flex';
-      metadataWrapper.style.flexDirection = 'row';
+      metadataWrapper.style.flexDirection = 'column';
       editor.remove();
       metadataWrapper.prepend(editor);
     }
