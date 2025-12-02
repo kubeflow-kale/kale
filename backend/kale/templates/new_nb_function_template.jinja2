@@ -12,6 +12,18 @@ def {{ step.name }}_step({{ component_signature_args }}):
 {%- endfor %}
     '''
 
+
+{%- if step_inputs|length > 0 %}
+    # Saves the received artifacts to be retrieved during the nb execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("/marshal")
+    import shutil as _shutil{% endif %}    
+{%- for input_art in step_inputs %}
+    artifact_path = {{ input_art.name }}_artifact.metadata["marshal_path"]
+    if artifact_path is not None:
+        _shutil.copy({{ input_art.name }}_artifact.path, artifact_path)
+{%- endfor %}
+
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
@@ -57,3 +69,17 @@ def {{ step.name }}_step({{ component_signature_args }}):
     with open({{ step.name }}_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('{{ step.name }}_html_report')
+
+{%- if step.outs|length > 0 %}
+    # Prepare output artifacts to be retrieved during the pipeline execution
+    from kale import marshal as _kale_marshal
+    _kale_marshal.set_data_dir("{{ marshal_path }}")
+    import shutil as _shutil
+{% endif %}
+
+{%- for output_art in step_outputs %}
+    artifact_path = _kale_marshal.get_path("{{ output_art.name }}_artifact")
+    _shutil.copyfile(artifact_path, {{ output_art.name }}_artifact.path)
+    {{ output_art.name }}_artifact.metadata["marshal_path"] = artifact_path
+
+{%- endfor %}

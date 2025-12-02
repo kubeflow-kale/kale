@@ -16,6 +16,7 @@ import TerminatedIcon from '../../icons/statusTerminated';
 import { DeployProgressState } from './DeploysProgress';
 import DeployUtils from './DeployUtils';
 import { UploadPipelineResp, RunPipeline } from './DeploysProgress';
+import NotebookUtils from '../../lib/NotebookUtils';
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -30,6 +31,13 @@ enum PipelineStatus {
   UNKNOWN = 'UNKNOWN'
 }
 
+const logLinksHint = (kfpUiHost: string) => {
+  console.info(
+    `default for upload and run links is ${kfpUiHost} ` +
+      'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.'
+  );
+};
+
 interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
 }
@@ -38,24 +46,22 @@ export const DeployProgress: React.FunctionComponent<
   IDeployProgressProps
 > = props => {
   const getUploadLink = (pipeline: UploadPipelineResp) => {
-    // link: /_/pipeline/#/pipelines/details/<id>
-    // id = uploadPipeline.pipeline.id
     if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
       return '#';
     }
-    const link = `${window.location.origin}/_/pipeline/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
+    const base = props.kfpUiHost;
+    const link = `${base}/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
       : link;
   };
 
   const getRunLink = (run: RunPipeline) => {
-    // link: /_/pipeline/#/runs/details/<id>
-    // id = runPipeline.id
     if (!run.id) {
       return '#';
     }
-    const link = `${window.location.origin}/_/pipeline/#/runs/details/${run.id}`;
+    const base = props.kfpUiHost;
+    const link = `${base}/#/runs/details/${run.id}`;
     return props.namespace
       ? link.replace('#', `?ns=${props.namespace}#`)
       : link;
@@ -131,12 +137,20 @@ export const DeployProgress: React.FunctionComponent<
     );
   };
 
-  const handleCompileClick = () => {
+  const handleCompileClick = async () => {
     if (props.docManager && props.compiledPath) {
       try {
-        props.docManager.openOrReveal(props.compiledPath);
+        await props.docManager.services.contents.get(props.compiledPath);
+        await props.docManager.openOrReveal(props.compiledPath);
       } catch (error) {
         console.error('Error opening compiled path:', error);
+        const title = 'Failed to open compiled file';
+        const message = [
+          `File path: <pre><b>${props.compiledPath}</b></pre>`,
+          '',
+          'Probable cause: the file is hidden, try running jupyterlab with the --ContentsManager.allow_hidden=True flag'
+        ];
+        NotebookUtils.showMessage(title, message);
       }
     }
   };
@@ -243,6 +257,7 @@ export const DeployProgress: React.FunctionComponent<
         </a>
       </React.Fragment>
     );
+    logLinksHint(props.kfpUiHost || '');
   } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>

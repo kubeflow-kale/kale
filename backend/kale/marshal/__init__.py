@@ -7,6 +7,7 @@ from .backend import get_dispatcher, set_data_dir, get_data_dir
 
 save = get_dispatcher().save
 load = get_dispatcher().load
+get_path = get_dispatcher().get_path
 get_backend = get_dispatcher().get_backend
 get_backends = get_dispatcher().get_backends
 get_backend_by_name = get_dispatcher().get_backend_by_name
