@@ -262,7 +262,7 @@ class Dispatcher(object):
             log.info("Looking for unique file/folder with basename '%s' in %s",
                      basename, get_data_dir())
             raise ValueError("No file or folder found with basename '%s' in %s"
-                             % basename, get_data_dir())
+                             % (basename, get_data_dir()))
         if len(entries) > 1:
             raise ValueError("Found multiple files/folders with name %s: %s"
                              % (basename, entries))
