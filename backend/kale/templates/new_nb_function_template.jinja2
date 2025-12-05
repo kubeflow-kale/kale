@@ -2,6 +2,7 @@
     base_image='python:3.10',
     packages_to_install={{ packages_list}},
     pip_index_urls = {{ pip_index_urls }},
+    pip_trusted_hosts = {{ pip_trusted_hosts }}
 )
 def {{ step.name }}_step({{ component_signature_args }}):
     _kale_pipeline_parameters_block = f'''
