@@ -14,7 +14,6 @@ from shutil import copyfile
 from typing import Tuple, Any
 from functools import lru_cache
 
-from kfp.compiler import Compiler
 from kale.common import utils, podutils, workflowutils
 
 
@@ -107,7 +106,8 @@ def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
     # path to generated pipeline package
     pipeline_package = os.path.join(os.path.dirname(pipeline_source),
                                     pipeline_name + '.pipeline.yaml')
-    Compiler().compile(foo.auto_generated_pipeline, pipeline_package)
+    kfp.compiler.Compiler().compile(foo.auto_generated_pipeline,
+                                    pipeline_package)
     return pipeline_package
 
 
