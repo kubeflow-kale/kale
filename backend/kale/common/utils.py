@@ -245,3 +245,23 @@ def compute_pip_index_urls() -> list[str]:
     if pypi_prod_url not in urls:
         urls.append(pypi_prod_url)
     return urls
+
+
+def compute_trusted_hosts() -> list[str]:
+    """Compute the list of trusted hosts for use with pip.
+
+    If user set a comma separated list of hosts using the
+    system property KALE_PIP_TRUSTED_HOSTS, then these hosts
+    will be used as trusted hosts, otherwise the list will be
+    empty.
+
+
+    :return: The list of trusted hosts configured by the user
+    :rtype: list[str]
+    """
+    pip_trusted_hosts = os.getenv("KALE_PIP_TRUSTED_HOSTS")
+    trusted_hosts: list[str] = []
+    if pip_trusted_hosts:
+        trusted_hosts = [u.strip() for u in pip_trusted_hosts.split(",")
+                         if u.strip()]
+    return trusted_hosts

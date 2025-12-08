@@ -192,9 +192,11 @@ class Compiler:
             )
 
         packages_list = self._get_package_list_from_imports()
-
+        pip_index_urls = utils.compute_pip_index_urls()
+        pip_trusted_hosts = utils.compute_trusted_hosts()
         fn_code = template.render(
-            pip_index_urls=utils.compute_pip_index_urls(),
+            pip_index_urls=pip_index_urls,
+            pip_trusted_hosts=pip_trusted_hosts,
             step=step,
             component_signature_args=component_signature_args,
             pipeline_params=pipeline_params,
