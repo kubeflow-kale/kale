@@ -16,8 +16,8 @@ from kale.common import kfputils, utils
 log = logging.getLogger(__name__)
 
 PY_FN_TEMPLATE = "py_function_template.jinja2"
-NB_FN_TEMPLATE = "nb_function_template.jinja2"
-PIPELINE_TEMPLATE = "pipeline_template.jinja2"
+NB_FN_TEMPLATE = "new_nb_function_template.jinja2"
+PIPELINE_TEMPLATE = "new_pipeline_template.jinja2"
 PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE,
                    "py": PY_FN_TEMPLATE}
 
