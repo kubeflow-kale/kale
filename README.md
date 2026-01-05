@@ -301,5 +301,3 @@ Currently installed git hooks:
 - `pre-commit`: Run a prettier check on staged files, using
   [pretty-quick](https://github.com/azz/pretty-quick)
 
-#### Kale v2.0 Demo
-https://github.com/user-attachments/assets/c8fa63fa-cd8d-4f7b-ba54-98dad9d9c9b3
