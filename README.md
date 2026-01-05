@@ -304,5 +304,7 @@ Currently installed git hooks:
 #### Kale v2.0 Demo
 Watch the KubeFlow Kale Demo - Introduction video below.
   
-[<img width="393" height="223" alt="image" src="https://github.com/user-attachments/assets/c72725e7-7f63-4afb-b34c-e8b59844d5c3" />](https://www.youtube.com/watch?v=UGLJuqJqJYY)
+[![Demo](https://img.youtube.com/vi/UGLJuqJqJYY/hqdefault.jpg)](https://www.youtube.com/watch?v=UGLJuqJqJYY)
+
+
 
