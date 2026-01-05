@@ -301,8 +301,8 @@ Currently installed git hooks:
 - `pre-commit`: Run a prettier check on staged files, using
   [pretty-quick](https://github.com/azz/pretty-quick)
 
-  #### Kale v2.0 Demo
-  Watch the KubeFlow Kale Demo - Introduction video below.
+#### Kale v2.0 Demo
+Watch the KubeFlow Kale Demo - Introduction video below.
   
-  [<img width="393" height="223" alt="image" src="https://github.com/user-attachments/assets/c72725e7-7f63-4afb-b34c-e8b59844d5c3" />](https://www.youtube.com/watch?v=UGLJuqJqJYY)
+[<img width="393" height="223" alt="image" src="https://github.com/user-attachments/assets/c72725e7-7f63-4afb-b34c-e8b59844d5c3" />](https://www.youtube.com/watch?v=UGLJuqJqJYY)
 
