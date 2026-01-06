@@ -217,17 +217,20 @@ class Compiler:
         for step in self.pipeline.steps:
             if hasattr(step, 'ins') and step.ins:
                 step_inputs[step.name] = list(sorted(step.ins))
-                
+
                 step_inputs_sources[step.name] = {}
-                ancestors = graphutils.get_ordered_ancestors(self.pipeline, step.name)
+                ancestors = graphutils.get_ordered_ancestors(
+                    self.pipeline, step.name)
                 for input_var in step_inputs[step.name]:
                     source_step_name = 'UNKNOWN'
                     for anc_name in ancestors:
                         anc_step = self.pipeline.get_step(anc_name)
-                        if hasattr(anc_step, 'outs') and input_var in anc_step.outs:
+                        if (hasattr(anc_step, 'outs')
+                                and input_var in anc_step.outs):
                             source_step_name = anc_name
                             break
-                    step_inputs_sources[step.name][input_var] = source_step_name
+                    step_inputs_sources[step.name][
+                        input_var] = source_step_name
 
             if hasattr(step, 'outs') and step.outs:
                 step_outputs[step.name] = list(sorted(step.outs))
