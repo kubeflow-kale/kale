@@ -20,9 +20,9 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_marshal.set_data_dir("/marshal")
     import shutil as _shutil{% endif %}    
 {%- for input_art in step_inputs %}
-    artifact_path = {{ input_art.name }}_artifact.metadata["marshal_path"]
+    artifact_path = {{ input_art.name }}_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
-        _shutil.copy({{ input_art.name }}_artifact.path, artifact_path)
+        _shutil.copy({{ input_art.name }}_input_artifact.path, artifact_path)
 {%- endfor %}
 
     _kale_data_loading_block = '''
@@ -80,7 +80,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
 
 {%- for output_art in step_outputs %}
     artifact_path = _kale_marshal.get_path("{{ output_art.name }}_artifact")
-    _shutil.copyfile(artifact_path, {{ output_art.name }}_artifact.path)
-    {{ output_art.name }}_artifact.metadata["marshal_path"] = artifact_path
+    _shutil.copyfile(artifact_path, {{ output_art.name }}_output_artifact.path)
+    {{ output_art.name }}_output_artifact.metadata["marshal_path"] = artifact_path
 
 {%- endfor %}

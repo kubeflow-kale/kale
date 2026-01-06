@@ -11,7 +11,7 @@ from jinja2 import Environment, PackageLoader, FileSystemLoader
 
 from kale import __version__ as KALE_VERSION
 from kale.pipeline import Pipeline, Step, PipelineParam
-from kale.common import kfputils, utils
+from kale.common import kfputils, utils, graphutils
 
 log = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class Compiler:
                 # Determine the correct input type based on variable name
                 input_type = "Model" if "model" in var_name else "Dataset"
                 params_without_defaults.append(
-                    f"{var_name}_artifact: Input[{input_type}]"
+                    f"{var_name}_input_artifact: Input[{input_type}]"
                 )
 
         step_outputs_list = []
@@ -136,7 +136,7 @@ class Compiler:
             for var_name in step_outputs_list:
                 output_type = "Model" if "model" in var_name else "Dataset"
                 params_without_defaults.append(
-                    f"{var_name}_artifact: Output[{output_type}]"
+                    f"{var_name}_output_artifact: Output[{output_type}]"
                 )
 
         if (hasattr(self.pipeline, 'pipeline_parameters') and self.pipeline.pipeline_parameters):  # noqa: E501
@@ -213,9 +213,21 @@ class Compiler:
         template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
         step_outputs = {}
         step_inputs = {}
+        step_inputs_sources = {}
         for step in self.pipeline.steps:
             if hasattr(step, 'ins') and step.ins:
                 step_inputs[step.name] = list(sorted(step.ins))
+                
+                step_inputs_sources[step.name] = {}
+                ancestors = graphutils.get_ordered_ancestors(self.pipeline, step.name)
+                for input_var in step_inputs[step.name]:
+                    source_step_name = 'UNKNOWN'
+                    for anc_name in ancestors:
+                        anc_step = self.pipeline.get_step(anc_name)
+                        if hasattr(anc_step, 'outs') and input_var in anc_step.outs:
+                            source_step_name = anc_name
+                            break
+                    step_inputs_sources[step.name][input_var] = source_step_name
 
             if hasattr(step, 'outs') and step.outs:
                 step_outputs[step.name] = list(sorted(step.outs))
@@ -245,6 +257,7 @@ class Compiler:
             lightweight_components=lightweight_components,
             step_outputs=step_outputs,
             step_inputs=step_inputs,
+            step_inputs_sources=step_inputs_sources,
             pipeline_param_info=pipeline_param_info,
             component_names=component_names,
             **self.pipeline.config.to_dict()

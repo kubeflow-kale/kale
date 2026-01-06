@@ -16,20 +16,11 @@ def auto_generated_pipeline(
     """Auto-generated pipeline function."""
 
 {% set steps_list = pipeline.steps | list %}
-{% set output_to_step = {} %}
-{% for step in steps_list %}
-    {% if step_outputs.get(step.name) %}
-        {% for output_var in step_outputs[step.name] %}
-            {% set _ = output_to_step.update({output_var: step.name}) %}
-        {% endfor %}
-    {% endif %}
-{% endfor %}
-
 {% for step in steps_list %}
     {{ step.name }}_task = {{ step.name }}_step(
     {%- if step_inputs.get(step.name) %}
         {%- for input_var in step_inputs[step.name] %}
-        {{ input_var }}_artifact={{ output_to_step.get(input_var, 'UNKNOWN') }}_task.outputs["{{ input_var }}_artifact"]{% if not loop.last or pipeline_param_info %},{% endif %}
+        {{ input_var }}_input_artifact={{ step_inputs_sources[step.name][input_var] }}_task.outputs["{{ input_var }}_output_artifact"]{% if not loop.last or pipeline_param_info %},{% endif %}
         {%- endfor %}
     {%- endif %}
     {%- if pipeline_param_info %}
@@ -42,7 +33,7 @@ def auto_generated_pipeline(
     {% if loop.index0 > 0 %}
     {%- if step_inputs.get(step.name) %}
     {%- for input_var in step_inputs[step.name] %}
-    {{ step.name }}_task.after({{ output_to_step.get(input_var, 'UNKNOWN') }}_task)
+    {{ step.name }}_task.after({{ step_inputs_sources[step.name][input_var] }}_task)
     {%- endfor %}
     {%- else %}
     {{ step.name }}_task.after({{ steps_list[loop.index0 - 1].name }}_task)
