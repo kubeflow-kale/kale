@@ -10,7 +10,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_trn_artifact: Output[Dataset], x_tst_artifact: Output[Dataset], y_trn_artifact: Output[Dataset], y_tst_artifact: Output[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
+def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_trn_output_artifact: Output[Dataset], x_tst_output_artifact: Output[Dataset], y_trn_output_artifact: Output[Dataset], y_tst_output_artifact: Output[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = { n_estimators_param }
         MAX_DEPTH = { max_depth_param }
@@ -81,17 +81,17 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("x_trn_artifact")
-    _shutil.copyfile(artifact_path, x_trn_artifact.path)
-    x_trn_artifact.metadata["marshal_path"] = artifact_path
+    _shutil.copyfile(artifact_path, x_trn_output_artifact.path)
+    x_trn_output_artifact.metadata["marshal_path"] = artifact_path
     artifact_path = _kale_marshal.get_path("x_tst_artifact")
-    _shutil.copyfile(artifact_path, x_tst_artifact.path)
-    x_tst_artifact.metadata["marshal_path"] = artifact_path
+    _shutil.copyfile(artifact_path, x_tst_output_artifact.path)
+    x_tst_output_artifact.metadata["marshal_path"] = artifact_path
     artifact_path = _kale_marshal.get_path("y_trn_artifact")
-    _shutil.copyfile(artifact_path, y_trn_artifact.path)
-    y_trn_artifact.metadata["marshal_path"] = artifact_path
+    _shutil.copyfile(artifact_path, y_trn_output_artifact.path)
+    y_trn_output_artifact.metadata["marshal_path"] = artifact_path
     artifact_path = _kale_marshal.get_path("y_tst_artifact")
-    _shutil.copyfile(artifact_path, y_tst_artifact.path)
-    y_tst_artifact.metadata["marshal_path"] = artifact_path
+    _shutil.copyfile(artifact_path, y_tst_output_artifact.path)
+    y_tst_output_artifact.metadata["marshal_path"] = artifact_path
 
 
 @kfp_dsl.component(
@@ -101,7 +101,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Input[Dataset], y_trn_artifact: Input[Dataset], model_artifact: Output[Model], n_estimators_param: int = 500, max_depth_param: int = 2):
+def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact: Input[Dataset], y_trn_input_artifact: Input[Dataset], model_output_artifact: Output[Model], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = { n_estimators_param }
         MAX_DEPTH = { max_depth_param }
@@ -110,12 +110,12 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     import shutil as _shutil
-    artifact_path = x_trn_artifact.metadata["marshal_path"]
+    artifact_path = x_trn_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
-        _shutil.copy(x_trn_artifact.path, artifact_path)
-    artifact_path = y_trn_artifact.metadata["marshal_path"]
+        _shutil.copy(x_trn_input_artifact.path, artifact_path)
+    artifact_path = y_trn_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
-        _shutil.copy(y_trn_artifact.path, artifact_path)
+        _shutil.copy(y_trn_input_artifact.path, artifact_path)
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -181,8 +181,8 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("model_artifact")
-    _shutil.copyfile(artifact_path, model_artifact.path)
-    model_artifact.metadata["marshal_path"] = artifact_path
+    _shutil.copyfile(artifact_path, model_output_artifact.path)
+    model_output_artifact.metadata["marshal_path"] = artifact_path
 
 
 @kfp_dsl.component(
@@ -192,7 +192,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_artifact: Inpu
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_artifact: Input[Model], x_tst_artifact: Input[Dataset], y_tst_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
+def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = { n_estimators_param }
         MAX_DEPTH = { max_depth_param }
@@ -201,15 +201,15 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_artifact
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     import shutil as _shutil
-    artifact_path = model_artifact.metadata["marshal_path"]
+    artifact_path = model_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
-        _shutil.copy(model_artifact.path, artifact_path)
-    artifact_path = x_tst_artifact.metadata["marshal_path"]
+        _shutil.copy(model_input_artifact.path, artifact_path)
+    artifact_path = x_tst_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
-        _shutil.copy(x_tst_artifact.path, artifact_path)
-    artifact_path = y_tst_artifact.metadata["marshal_path"]
+        _shutil.copy(x_tst_input_artifact.path, artifact_path)
+    artifact_path = y_tst_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
-        _shutil.copy(y_tst_artifact.path, artifact_path)
+        _shutil.copy(y_tst_input_artifact.path, artifact_path)
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -303,8 +303,8 @@ def auto_generated_pipeline(
     load_transform_data_task.set_display_name("load-transform-data-step")
 
     train_model_task = train_model_step(
-        x_trn_artifact=load_transform_data_task.outputs["x_trn_artifact"],
-        y_trn_artifact=load_transform_data_task.outputs["y_trn_artifact"],
+        x_trn_input_artifact=load_transform_data_task.outputs["x_trn_output_artifact"],
+        y_trn_input_artifact=load_transform_data_task.outputs["y_trn_output_artifact"],
         n_estimators_param=n_estimators,
         max_depth_param=max_depth
     )
@@ -315,9 +315,9 @@ def auto_generated_pipeline(
     train_model_task.set_display_name("train-model-step")
 
     evaluate_model_task = evaluate_model_step(
-        model_artifact=train_model_task.outputs["model_artifact"],
-        x_tst_artifact=load_transform_data_task.outputs["x_tst_artifact"],
-        y_tst_artifact=load_transform_data_task.outputs["y_tst_artifact"],
+        model_input_artifact=train_model_task.outputs["model_output_artifact"],
+        x_tst_input_artifact=load_transform_data_task.outputs["x_tst_output_artifact"],
+        y_tst_input_artifact=load_transform_data_task.outputs["y_tst_output_artifact"],
         n_estimators_param=n_estimators,
         max_depth_param=max_depth
     )
