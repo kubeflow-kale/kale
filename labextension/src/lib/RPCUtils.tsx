@@ -21,26 +21,35 @@ export const globalUnhandledRejection = async (event: any) => {
     // isolate the segments
     const stackLines = errorStack.split('\n');
     // create alert string
-    const alert_string = 'Unhandled Error'
+    const alert_string = 'Unhandled Error';
     // call the toast pop up
-    if (errorStack.includes('lab/extensions/')){
+    if (errorStack.includes('lab/extensions/')) {
       // if the error is caused by a jupyterlab extension, try to isolate the extension name
-      const extensionName = getExtensionName(stackLines)
+      const extensionName = getExtensionName(stackLines);
       Notification.error(`An unhandled error has been thrown.`, {
         actions: [
-          { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string,
-            ["An unhandled error was thrown from:",
-              extensionName,
-              "Please see console for more details."
-            ]) }
+          {
+            label: 'Details',
+            callback: () =>
+              NotebookUtils.showMessage(alert_string, [
+                'An unhandled error was thrown from:',
+                extensionName,
+                'Please see console for more details.'
+              ])
+          }
         ],
         autoClose: 3000
       });
     } else {
       Notification.error(`An unhandled error has been thrown.`, {
         actions: [
-          { label: 'Details', callback: () => NotebookUtils.showMessage(alert_string,
-            ["Please see console for more details."]) }
+          {
+            label: 'Details',
+            callback: () =>
+              NotebookUtils.showMessage(alert_string, [
+                'Please see console for more details.'
+              ])
+          }
         ],
         autoClose: 3000
       });
@@ -48,9 +57,9 @@ export const globalUnhandledRejection = async (event: any) => {
   }
 };
 
-function getExtensionName(stackLines: Array<string>){
-  const urlSplit = stackLines.slice(1,2).toString();
-  const extensionSplit = urlSplit.split('@').slice(1,2).toString();
+function getExtensionName(stackLines: Array<string>) {
+  const urlSplit = stackLines.slice(1, 2).toString();
+  const extensionSplit = urlSplit.split('@').slice(1, 2).toString();
   const extensionParts = extensionSplit.split('/');
   extensionParts.pop();
   const extensionName = extensionParts.join('/');
@@ -74,7 +83,7 @@ export enum RPC_CALL_STATUS {
   InternalError = 4,
   ServiceUnavailable = 5,
   UnhandledError = 6,
-  TaskIsMissing = 7,
+  TaskIsMissing = 7
 }
 
 const getRpcCodeName = (code: number) => {
@@ -97,6 +106,8 @@ const getRpcCodeName = (code: number) => {
       return 'UnhandledError';
   }
 };
+
+const OPEN_DOCS_LABEL = 'Open docs';
 
 export const rokErrorTooltip = (rokError: IRPCError) => {
   return (
@@ -126,12 +137,12 @@ export const executeRpc = async (
   env: Kernel.IKernelConnection | NotebookPanel,
   func: string,
   kwargs: any = {},
-  ctx: { nb_path: string | null } = { nb_path: null },
+  ctx: { nb_path: string | null } = { nb_path: null }
 ) => {
   const cmd: string =
     'from kale.rpc.run import run as __kale_rpc_run\n' +
     `__kale_rpc_result = __kale_rpc_run("${func}", '${serialize(
-      kwargs,
+      kwargs
     )}', '${serialize(ctx)}')`;
   console.log('Executing command: ' + cmd);
   const expressions = { result: '__kale_rpc_result' };
@@ -140,10 +151,10 @@ export const executeRpc = async (
     output =
       env instanceof NotebookPanel
         ? await NotebookUtils.sendKernelRequestFromNotebook(
-          env,
-          cmd,
-          expressions,
-        )
+            env,
+            cmd,
+            expressions
+          )
         : await NotebookUtils.sendKernelRequest(env, cmd, expressions);
   } catch (e) {
     if (typeof e === 'object' && e !== null) {
@@ -152,7 +163,7 @@ export const executeRpc = async (
         const error = {
           rpc: `${func}`,
           status: `${(e as IError).ename}: ${(e as IError).evalue}`,
-          output: (e as IError).traceback,
+          output: (e as IError).traceback
         };
         throw new KernelError(error);
       }
@@ -168,7 +179,7 @@ export const executeRpc = async (
     const error = {
       rpc: `${func}`,
       status: output.result.status,
-      output: output,
+      output: output
     };
     throw new KernelError(error);
   }
@@ -187,7 +198,7 @@ export const executeRpc = async (
       rpc: `${func}`,
       err_message: 'Failed to parse response as JSON',
       error: error,
-      jsonData: json_data,
+      jsonData: json_data
     };
     throw new JSONParseError(jsonError);
   }
@@ -199,12 +210,11 @@ export const executeRpc = async (
       err_message: parsedResult.err_message,
       err_details: parsedResult.err_details,
       err_cls: parsedResult.err_cls,
-      trans_id: parsedResult.trans_id,
+      trans_id: parsedResult.trans_id
     };
     throw new RPCError(error);
   }
   return parsedResult.result;
-
 };
 
 export const showError = async (
@@ -215,11 +225,11 @@ export const showError = async (
   refresh: boolean = true,
   method: string | null = null,
   code: number | null = null,
-  trans_id: number | null = null,
+  trans_id: number | null = null
 ): Promise<void> => {
   const msg: string[] = [
     `Browser: ${navigator ? navigator.userAgent : 'other'}`,
-    `Type: ${type}`,
+    `Type: ${type}`
   ];
   if (method) {
     msg.push(`Method: ${method}()`);
@@ -241,7 +251,7 @@ export const showError = async (
 
 export const showRpcError = async (
   error: IRPCError,
-  refresh: boolean = false,
+  refresh: boolean = false
 ): Promise<void> => {
   if (error && error.code === RPC_CALL_STATUS.TaskIsMissing) {
     return await handleMissingPipelineStep(error);
@@ -255,7 +265,7 @@ export const showRpcError = async (
     refresh,
     error.rpc,
     error.code,
-    error.trans_id,
+    error.trans_id
   );
 };
 
@@ -265,7 +275,7 @@ export const _legacy_executeRpc = async (
   kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
-  nb_path: string | null = null,
+  nb_path: string | null = null
 ) => {
   if (!nb_path && notebook) {
     nb_path = notebook.context.path;
@@ -298,7 +308,7 @@ export const _legacy_executeRpcAndShowRPCError = async (
   kernel: Kernel.IKernelConnection,
   func: string,
   args: any = {},
-  nb_path: string | null = null,
+  nb_path: string | null = null
 ) => {
   try {
     const result = await _legacy_executeRpc(
@@ -306,7 +316,7 @@ export const _legacy_executeRpcAndShowRPCError = async (
       kernel,
       func,
       args,
-      nb_path,
+      nb_path
     );
     return result;
   } catch (error) {
@@ -319,7 +329,10 @@ export const _legacy_executeRpcAndShowRPCError = async (
 };
 
 export abstract class BaseError extends Error {
-  constructor(message: string, public error: any) {
+  constructor(
+    message: string,
+    public error: any
+  ) {
     super(message);
     this.name = this.constructor.name;
     this.stack = new Error(message).stack;
@@ -343,7 +356,7 @@ export class KernelError extends BaseError {
       this.error.status,
       JSON.stringify(this.error.output, null, 3),
       refresh,
-      this.error.rpc,
+      this.error.rpc
     );
   }
 }
@@ -361,7 +374,7 @@ export class JSONParseError extends BaseError {
       this.error.error.message,
       this.error.json_data,
       refresh,
-      this.error.rpc,
+      this.error.rpc
     );
   }
 }
@@ -376,7 +389,6 @@ export class RPCError extends BaseError {
     await showRpcError(this.error, refresh);
   }
 }
-
 
 /**
  * handleMissingPipelineStep - Async handler for missing pipeline step RPC errors.
@@ -402,7 +414,7 @@ async function handleMissingPipelineStep(error: IRPCError) {
     '',
     `Details: ${error.err_details}`,
     '',
-    'You can fix this by tagging a code cell as a pipeline step (e.g. using the Left Panel), or by setting the notebook metadata `steps_defaults` to a list with the step name(s).',
+    'You can fix this by tagging a code cell as a pipeline step (via the cell edit/pencil icon), or by setting the notebook metadata steps_defaults to a list with the step name(s).'
   ];
   const body = (
     <div className="dialog-body">
@@ -411,23 +423,23 @@ async function handleMissingPipelineStep(error: IRPCError) {
           <SanitizedHTML
             allowedAttributes={{ a: ['href'] }}
             allowedTags={['b', 'i', 'em', 'strong', 'a', 'pre']}
-            html={s} />
+            html={s}
+          />
           <br />
         </React.Fragment>
       ))}
     </div>
   );
   const buttons: ReadonlyArray<Dialog.IButton> = [
-    Dialog.okButton({ label: 'Open docs' }),
-    Dialog.cancelButton({ label: 'Close' }),
+    Dialog.okButton({ label: OPEN_DOCS_LABEL }),
+    Dialog.cancelButton({ label: 'Close' })
   ];
   const result = await showDialog({ title, body, buttons });
   const clicked = result.button ? (result.button.label as string) : '';
-  if (clicked === 'Open docs') {
+  if (clicked === OPEN_DOCS_LABEL) {
     // Open the documentation in a new tab (repo README as fallback)
-    const docsUrl = 'https://github.com/kubeflow-kale/kale#readme';
+    const docsUrl = 'https://github.com/kubeflow/kale#readme';
     window.open(docsUrl, '_blank');
   }
   return;
 }
-
