@@ -2,7 +2,13 @@ name: E2E Test
 description: "Installs Kale and runs example notebook on KFP to verify end-to-end workflow"
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      pipeline_version:
+        description: 'KFP version to install'
+        required: false
+        default: '2.15.0'
+        type: string
 
 jobs:
   test:
@@ -19,7 +25,7 @@ jobs:
 
       - name: Install KFP
         run: |
-          export PIPELINE_VERSION=2.15.0
+          export PIPELINE_VERSION=${{ inputs.pipeline_version }}
           kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=$PIPELINE_VERSION"
           kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
           kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic?ref=$PIPELINE_VERSION"
