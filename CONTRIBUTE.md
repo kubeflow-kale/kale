@@ -1,5 +1,7 @@
 # Contributing to Kale
 
+Welcome to the Kale project. We'd love to accept your patches and contributions to this project. For detailed information about how to contribute to Kubeflow, please refer to [Contributing to Kubeflow](https://www.kubeflow.org/docs/about/contributing/).
+
 This guide explains how to set up a development environment for Kale and contribute
 to the project.
 
