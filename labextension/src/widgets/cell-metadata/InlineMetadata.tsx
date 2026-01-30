@@ -16,6 +16,7 @@ interface IProps {
   previousBlockName?: string;
   stepDependencies: string[];
   limits: { [id: string]: string };
+  dockerImage?: string;
   cellElement: any;
   cellIndex: number;
 }
@@ -220,6 +221,16 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     );
   }
 
+  createDockerImageText() {
+    return this.props.dockerImage ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        image: {this.props.dockerImage}
+      </p>
+    ) : (
+      ''
+    );
+  }
+
   /**
    * Create a list of div dots that represent the dependencies of the current
    * block
@@ -259,6 +270,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
         {this.state.dependencies}
 
         {this.createLimitsText()}
+        {this.createDockerImageText()}
       </>
     );
 

@@ -15,62 +15,66 @@ from kale.pipeline import PipelineConfig
 from .baseprocessor import BaseProcessor
 
 # fixme: Change the name of this key to `kale_metadata`
-KALE_NB_METADATA_KEY = 'kubeflow_notebook'
+KALE_NB_METADATA_KEY = "kubeflow_notebook"
 
-SKIP_TAG = r'^skip$'
-IMPORT_TAG = r'^imports$'
-FUNCTIONS_TAG = r'^functions$'
-PREV_TAG = r'^prev:[_a-z]([_a-z0-9]*)?$'
+SKIP_TAG = r"^skip$"
+IMPORT_TAG = r"^imports$"
+FUNCTIONS_TAG = r"^functions$"
+PREV_TAG = r"^prev:[_a-z]([_a-z0-9]*)?$"
 # `step` has the same functionality as `block` and is
 # supposed to be the new name
-STEP_TAG = r'^step:([_a-z]([_a-z0-9]*)?)?$'
+STEP_TAG = r"^step:([_a-z]([_a-z0-9]*)?)?$"
 # Extension may end up with 'block:' as a tag. We handle
 # that as if it was empty.
 # TODO: Deprecate `block` tag in future release
-BLOCK_TAG = r'^block:([_a-z]([_a-z0-9]*)?)?$'
-PIPELINE_PARAMETERS_TAG = r'^pipeline-parameters$'
-PIPELINE_METRICS_TAG = r'^pipeline-metrics$'
+BLOCK_TAG = r"^block:([_a-z]([_a-z0-9]*)?)?$"
+PIPELINE_PARAMETERS_TAG = r"^pipeline-parameters$"
+PIPELINE_METRICS_TAG = r"^pipeline-metrics$"
 # Annotations map to actual pod annotations that can be set via KFP SDK
 _segment = "[a-zA-Z0-9]+([a-zA-Z0-9-_.]*[a-zA-Z0-9])?"
 K8S_ANNOTATION_KEY = "%s([/]%s)?" % (_segment, _segment)
-ANNOTATION_TAG = r'^annotation:%s:(.*)$' % K8S_ANNOTATION_KEY
-LABEL_TAG = r'^label:%s:(.*)$' % K8S_ANNOTATION_KEY
+ANNOTATION_TAG = r"^annotation:%s:(.*)$" % K8S_ANNOTATION_KEY
+LABEL_TAG = r"^label:%s:(.*)$" % K8S_ANNOTATION_KEY
 # Limits map to K8s limits, like CPU, Mem, GPU, ...
 # E.g.: limit:nvidia.com/gpu:2
-LIMITS_TAG = r'^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$'
+LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
+# Image tag for per-step docker image
+# E.g.: image:python:3.11 or image:docker.io/myimage:latest
+IMAGE_TAG = r"^image:(.+)$"
 
-_TAGS_LANGUAGE = [SKIP_TAG,
-                  IMPORT_TAG,
-                  FUNCTIONS_TAG,
-                  PREV_TAG,
-                  BLOCK_TAG,
-                  STEP_TAG,
-                  PIPELINE_PARAMETERS_TAG,
-                  PIPELINE_METRICS_TAG,
-                  ANNOTATION_TAG,
-                  LABEL_TAG,
-                  LIMITS_TAG]
+_TAGS_LANGUAGE = [
+    SKIP_TAG,
+    IMPORT_TAG,
+    FUNCTIONS_TAG,
+    PREV_TAG,
+    BLOCK_TAG,
+    STEP_TAG,
+    PIPELINE_PARAMETERS_TAG,
+    PIPELINE_METRICS_TAG,
+    ANNOTATION_TAG,
+    LABEL_TAG,
+    LIMITS_TAG,
+    IMAGE_TAG,
+]
 # These tags are applied to every step of the pipeline
-_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG,
-                            LABEL_TAG,
-                            LIMITS_TAG]
+_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG]
 
 
-METRICS_TEMPLATE = '''\
+METRICS_TEMPLATE = """\
 from kale.common import kfputils as _kale_kfputils
 _kale_kfp_metrics = {
 %s
 }
 _kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
-'''
+"""
 
 KFP_ARTIFACT_TYPE_MAP = {
-    "model": "Model",      # if "model" in var_name.lower()-> kfp.dsl.Model
+    "model": "Model",  # if "model" in var_name.lower()-> kfp.dsl.Model
     "dataset": "Dataset",  # if "dataset" in var_name.lower()-> kfp.dsl.Dataset
-    "data": "Dataset",     # if "data" in var_name.lower()-> kfp.dsl.Dataset
+    "data": "Dataset",  # if "data" in var_name.lower()-> kfp.dsl.Dataset
     "metrics": "Metrics",  # if "metrics" in var_name.lower()-> kfp.dsl.Metrics
     "classification": "ClassificationMetrics",
-    r'a-zA-Z0-9_': "Artifact",  # default for any other variable
+    r"a-zA-Z0-9_": "Artifact",  # default for any other variable
 }
 
 
@@ -103,6 +107,7 @@ class NotebookConfig(PipelineConfig):
     This config extends the base pipeline config to take into account some
     small differences in the handling of a notebook.
     """
+
     notebook_path = Field(type=str, required=True)
     # FIXME: Probably this can be removed. The labextension passes both
     #  'experiment_name' and 'experiment', but the latter is not used in the
@@ -118,7 +123,8 @@ class NotebookConfig(PipelineConfig):
 
     def _preprocess(self, kwargs):
         kwargs["steps_defaults"] = self._parse_steps_defaults(
-            kwargs.get("steps_defaults"))
+            kwargs.get("steps_defaults")
+        )
 
     def _parse_steps_defaults(self, steps_defaults):
         """Parse common step configuration defined in the metadata."""
@@ -128,10 +134,10 @@ class NotebookConfig(PipelineConfig):
             return steps_defaults
 
         for c in steps_defaults:
-            if any(re.match(_c, c)
-                   for _c in _STEPS_DEFAULTS_LANGUAGE) is False:
-                raise ValueError("Unrecognized common step configuration:"
-                                 " {}".format(c))
+            if any(re.match(_c, c) for _c in _STEPS_DEFAULTS_LANGUAGE) is False:
+                raise ValueError(
+                    "Unrecognized common step configuration:" " {}".format(c)
+                )
 
             parts = c.split(":")
 
@@ -140,8 +146,7 @@ class NotebookConfig(PipelineConfig):
                 result_key = "{}s".format(conf_type)
                 if result_key not in result:
                     result[result_key] = dict()
-                key, value = get_annotation_or_label_from_tag(
-                    parts)
+                key, value = get_annotation_or_label_from_tag(parts)
                 result[result_key][key] = value
 
             if conf_type == "limit":
@@ -149,6 +154,10 @@ class NotebookConfig(PipelineConfig):
                     result["limits"] = dict()
                 key, value = get_limit_from_tag(parts)
                 result["limits"][key] = value
+
+            if conf_type == "image":
+                # Rejoin parts in case image has colons (e.g., python:3.11)
+                result["docker_image"] = ":".join(parts)
         return result
 
 
@@ -159,10 +168,12 @@ class NotebookProcessor(BaseProcessor):
     config_cls = NotebookConfig
     no_op_step = Step(name="no_op", source=[])
 
-    def __init__(self,
-                 nb_path: str,
-                 nb_metadata_overrides: Optional[Dict[str, Any]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        nb_path: str,
+        nb_metadata_overrides: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         """Instantiate a new NotebookProcessor.
 
         Args:
@@ -185,20 +196,25 @@ class NotebookProcessor(BaseProcessor):
 
     def _read_notebook(self):
         if not os.path.exists(self.nb_path):
-            raise ValueError("NotebookProcessor could not find a notebook at"
-                             " path %s" % self.nb_path)
+            raise ValueError(
+                "NotebookProcessor could not find a notebook at"
+                " path %s" % self.nb_path
+            )
         return nb.read(self.nb_path, as_version=nb.NO_CONVERT)
 
     def to_pipeline(self):
         """Convert an annotated Notebook to a Pipeline object."""
-        (pipeline_parameters_source,
-         pipeline_metrics_source,
-         imports_and_functions) = self.parse_notebook()
+        (
+            pipeline_parameters_source,
+            pipeline_metrics_source,
+            imports_and_functions,
+        ) = self.parse_notebook()
 
         self.parse_pipeline_parameters(pipeline_parameters_source)
         # get a list of variables that need to be logged as pipeline metrics
         pipeline_metrics = astutils.parse_metrics_print_statements(
-            pipeline_metrics_source)
+            pipeline_metrics_source
+        )
 
         # run static analysis over the source code
         self.dependencies_detection(imports_and_functions)
@@ -239,35 +255,34 @@ class NotebookProcessor(BaseProcessor):
 
             tags = self.parse_cell_metadata(c.metadata)
 
-            if len(tags['step_names']) > 1:
-                raise NotImplementedError("Kale does not yet support multiple"
-                                          " step names in a single notebook"
-                                          " cell. One notebook cell was found"
-                                          " with %s  step names"
-                                          % tags['step_names'])
+            if len(tags["step_names"]) > 1:
+                raise NotImplementedError(
+                    "Kale does not yet support multiple"
+                    " step names in a single notebook"
+                    " cell. One notebook cell was found"
+                    " with %s  step names" % tags["step_names"]
+                )
 
             # get the step name from the tags
-            step_name = (tags['step_names'][0]
-                         if 0 < len(tags['step_names'])
-                         else None)
+            step_name = tags["step_names"][0] if 0 < len(tags["step_names"]) else None
 
-            if step_name == 'skip':
+            if step_name == "skip":
                 # when the cell is skipped, don't store `skip` as the previous
                 # active cell
                 continue
-            if step_name == 'pipeline-parameters':
+            if step_name == "pipeline-parameters":
                 pipeline_parameters.append(c.source)
                 prev_step_name = step_name
                 continue
-            if step_name == 'imports':
+            if step_name == "imports":
                 imports_block.append(c.source)
                 prev_step_name = step_name
                 continue
-            if step_name == 'functions':
+            if step_name == "functions":
                 functions_block.append(c.source)
                 prev_step_name = step_name
                 continue
-            if step_name == 'pipeline-metrics':
+            if step_name == "pipeline-metrics":
                 pipeline_metrics.append(c.source)
                 prev_step_name = step_name
                 continue
@@ -278,13 +293,13 @@ class NotebookProcessor(BaseProcessor):
             # if the cell was not tagged with a step name,
             # add the code to the previous cell
             if not step_name:
-                if prev_step_name == 'imports':
+                if prev_step_name == "imports":
                     imports_block.append(c.source)
-                elif prev_step_name == 'functions':
+                elif prev_step_name == "functions":
                     functions_block.append(c.source)
-                elif prev_step_name == 'pipeline-parameters':
+                elif prev_step_name == "pipeline-parameters":
                     pipeline_parameters.append(c.source)
-                elif prev_step_name == 'pipeline-metrics':
+                elif prev_step_name == "pipeline-metrics":
                     pipeline_metrics.append(c.source)
                 # current_block might be None in case the first cells of the
                 # notebooks have not been tagged.
@@ -295,27 +310,34 @@ class NotebookProcessor(BaseProcessor):
             else:
                 # in this branch we are sure that we are reading a code cell
                 # with a step tag, so we must not allow for pipeline-metrics
-                if prev_step_name == 'pipeline-metrics':
-                    raise ValueError("Tag pipeline-metrics must be placed on a"
-                                     " cell at the end of the Notebook."
-                                     " Pipeline metrics should be considered"
-                                     " as a result of the pipeline execution"
-                                     " and not of single steps.")
+                if prev_step_name == "pipeline-metrics":
+                    raise ValueError(
+                        "Tag pipeline-metrics must be placed on a"
+                        " cell at the end of the Notebook."
+                        " Pipeline metrics should be considered"
+                        " as a result of the pipeline execution"
+                        " and not of single steps."
+                    )
                 # add node to DAG, adding tags and source code of notebook cell
                 if step_name not in self.pipeline.nodes:
-                    step = Step(name=step_name, source=[c.source],
-                                ins=[], outs=[],
-                                limits=tags.get("limits", {}),
-                                labels=tags.get("labels", {}),
-                                annotations=tags.get("annotations", {}))
+                    step = Step(
+                        name=step_name,
+                        source=[c.source],
+                        ins=[],
+                        outs=[],
+                        limits=tags.get("limits", {}),
+                        labels=tags.get("labels", {}),
+                        annotations=tags.get("annotations", {}),
+                        docker_image=tags.get("docker_image", ""),
+                    )
                     self.pipeline.add_step(step)
-                    for _prev_step in tags['prev_steps']:
+                    for _prev_step in tags["prev_steps"]:
                         if _prev_step not in self.pipeline.nodes:
-                            raise ValueError("Step %s does not exist. It was "
-                                             "defined as previous step of %s"
-                                             % (
-                                                 _prev_step,
-                                                 tags['step_names']))
+                            raise ValueError(
+                                "Step %s does not exist. It was "
+                                "defined as previous step of %s"
+                                % (_prev_step, tags["step_names"])
+                            )
                         self.pipeline.add_edge(_prev_step, step_name)
                 else:
                     self.pipeline.get_step(step_name).merge_code(c.source)
@@ -327,9 +349,9 @@ class NotebookProcessor(BaseProcessor):
             step.source = imports_block + functions_block + step.source
 
         # merge together pipeline parameters
-        pipeline_parameters = '\n'.join(pipeline_parameters)
+        pipeline_parameters = "\n".join(pipeline_parameters)
         # merge together pipeline metrics
-        pipeline_metrics = '\n'.join(pipeline_metrics)
+        pipeline_metrics = "\n".join(pipeline_metrics)
 
         imports_and_functions = "\n".join(imports_block + functions_block)
         return pipeline_parameters, pipeline_metrics, imports_and_functions
@@ -350,22 +372,24 @@ class NotebookProcessor(BaseProcessor):
 
         # `step_names` is a list because a notebook cell might be assigned to
         # more than one Pipeline step.
-        parsed_tags['step_names'] = list()
-        parsed_tags['prev_steps'] = list()
+        parsed_tags["step_names"] = list()
+        parsed_tags["prev_steps"] = list()
         # define intermediate variables so that dicts are not added to a steps
         # when they are empty
         cell_annotations = dict()
         cell_labels = dict()
         cell_limits = dict()
+        cell_docker_image = None
 
         # the notebook cell was not tagged
-        if 'tags' not in metadata or len(metadata['tags']) == 0:
+        if "tags" not in metadata or len(metadata["tags"]) == 0:
             return parsed_tags
 
-        for t in metadata['tags']:
+        for t in metadata["tags"]:
             if not isinstance(t, str):
-                raise ValueError("Tags must be string. Found tag %s of type %s"
-                                 % (t, type(t)))
+                raise ValueError(
+                    "Tags must be string. Found tag %s of type %s" % (t, type(t))
+                )
             # Check that the tag is defined by the Kale tagging language
             if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
                 raise ValueError("Unrecognized tag: {}".format(t))
@@ -382,14 +406,19 @@ class NotebookProcessor(BaseProcessor):
             #       prepended to every Pipeline step
             #  - functions: same as imports, but the corresponding code is
             #       placed **after** `imports`
-            special_tags = ['skip', 'pipeline-parameters', 'pipeline-metrics',
-                            'imports', 'functions']
+            special_tags = [
+                "skip",
+                "pipeline-parameters",
+                "pipeline-metrics",
+                "imports",
+                "functions",
+            ]
             if t in special_tags:
-                parsed_tags['step_names'] = [t]
+                parsed_tags["step_names"] = [t]
                 return parsed_tags
 
             # now only `step` and `prev` tags remain to be parsed.
-            tag_parts = t.split(':')
+            tag_parts = t.split(":")
             tag_name = tag_parts.pop(0)
 
             if tag_name == "annotation":
@@ -404,33 +433,48 @@ class NotebookProcessor(BaseProcessor):
                 key, value = get_limit_from_tag(tag_parts)
                 cell_limits.update({key: value})
 
+            if tag_name == "image":
+                # Rejoin tag_parts in case image has colons (e.g., python:3.11)
+                cell_docker_image = ":".join(tag_parts)
+
             # name of the future Pipeline step
             if tag_name in ["step"]:
                 step_name = tag_parts.pop(0)
-                parsed_tags['step_names'].append(step_name)
+                parsed_tags["step_names"].append(step_name)
             # name(s) of the father Pipeline step(s)
             if tag_name == "prev":
                 prev_step_name = tag_parts.pop(0)
-                parsed_tags['prev_steps'].append(prev_step_name)
+                parsed_tags["prev_steps"].append(prev_step_name)
 
-        if not parsed_tags['step_names'] and parsed_tags['prev_steps']:
+        if not parsed_tags["step_names"] and parsed_tags["prev_steps"]:
             raise ValueError(
                 "A cell can not provide `prev` annotations without "
-                "providing a `block` or `step` annotation as well")
+                "providing a `block` or `step` annotation as well"
+            )
 
         if cell_annotations:
-            if not parsed_tags['step_names']:
+            if not parsed_tags["step_names"]:
                 raise ValueError(
                     "A cell can not provide Pod annotations in a cell"
-                    " that does not declare a step name.")
-            parsed_tags['annotations'] = cell_annotations
+                    " that does not declare a step name."
+                )
+            parsed_tags["annotations"] = cell_annotations
 
         if cell_limits:
-            if not parsed_tags['step_names']:
+            if not parsed_tags["step_names"]:
                 raise ValueError(
                     "A cell can not provide Pod resource limits in a"
-                    " cell that does not declare a step name.")
-            parsed_tags['limits'] = cell_limits
+                    " cell that does not declare a step name."
+                )
+            parsed_tags["limits"] = cell_limits
+
+        if cell_docker_image:
+            if not parsed_tags["step_names"]:
+                raise ValueError(
+                    "A cell can not provide a Docker image in a cell"
+                    " that does not declare a step name."
+                )
+            parsed_tags["docker_image"] = cell_docker_image
         return parsed_tags
 
     def get_pipeline_parameters_source(self):
@@ -457,32 +501,41 @@ class NotebookProcessor(BaseProcessor):
                 continue
 
             # if we see a pipeline-metrics tag, set the flag
-            if (('tags' in c.metadata
-                 and len(c.metadata['tags']) > 0
-                 and any(re.match(PIPELINE_METRICS_TAG, t)
-                         for t in c.metadata['tags']))):
+            if (
+                "tags" in c.metadata
+                and len(c.metadata["tags"]) > 0
+                and any(re.match(PIPELINE_METRICS_TAG, t) for t in c.metadata["tags"])
+            ):
                 detected = True
                 continue
 
             # if we have the flag set and we detect any other tag from the tags
             # language, then raise error
-            if (detected
-                and 'tags' in c.metadata
-                and len(c.metadata['tags']) > 0
-                and any([any(re.match(tag, t) for t in c.metadata['tags'])
-                         for tag in tags])):
+            if (
+                detected
+                and "tags" in c.metadata
+                and len(c.metadata["tags"]) > 0
+                and any(
+                    [any(re.match(tag, t) for t in c.metadata["tags"]) for tag in tags]
+                )
+            ):
                 raise ValueError(
                     "Tag pipeline-metrics tag must be placed on a "
                     "cell at the end of the Notebook."
                     " Pipeline metrics should be considered as a"
                     " result of the pipeline execution and not of"
-                    " single steps.")
+                    " single steps."
+                )
         return self._get_reserved_tag_source(PIPELINE_METRICS_TAG)
 
     def get_imports_and_functions(self):
         """Get the global code that runs at the beginning of every step."""
-        return "\n".join([self._get_reserved_tag_source(IMPORT_TAG),
-                          self._get_reserved_tag_source(FUNCTIONS_TAG)])
+        return "\n".join(
+            [
+                self._get_reserved_tag_source(IMPORT_TAG),
+                self._get_reserved_tag_source(FUNCTIONS_TAG),
+            ]
+        )
 
     def _get_reserved_tag_source(self, search_tag):
         """Get just the specific tag's source code.
@@ -500,7 +553,7 @@ class NotebookProcessor(BaseProcessor):
         Returns: the unified code of all the cells belonging to `search_tag`
         """
         detected = False
-        source = ''
+        source = ""
 
         language = _TAGS_LANGUAGE[:]
         language.remove(search_tag)
@@ -511,18 +564,22 @@ class NotebookProcessor(BaseProcessor):
                 continue
             # in case the previous cell was a `search_tag` cell and this
             # cell is not any other tag of the tag language:
-            if (detected
-                and (('tags' not in c.metadata
-                      or len(c.metadata['tags']) == 0)
-                     or all([not any(re.match(tag, t)
-                                     for t in c.metadata['tags'])
-                            for tag in language]))):
-                source += '\n' + c.source
-            elif (('tags' in c.metadata
-                   and len(c.metadata['tags']) > 0
-                   and any(re.match(search_tag, t)
-                           for t in c.metadata['tags']))):
-                source += '\n' + c.source
+            if detected and (
+                ("tags" not in c.metadata or len(c.metadata["tags"]) == 0)
+                or all(
+                    [
+                        not any(re.match(tag, t) for t in c.metadata["tags"])
+                        for tag in language
+                    ]
+                )
+            ):
+                source += "\n" + c.source
+            elif (
+                "tags" in c.metadata
+                and len(c.metadata["tags"]) > 0
+                and any(re.match(search_tag, t) for t in c.metadata["tags"])
+            ):
+                source += "\n" + c.source
                 detected = True
             else:
                 detected = False
@@ -548,8 +605,7 @@ class NotebookProcessor(BaseProcessor):
         leaf_steps = self.pipeline.get_leaf_steps()
         if not leaf_steps:
             return
-        [self.pipeline.add_edge(step.name, tmp_step_name)
-         for step in leaf_steps]
+        [self.pipeline.add_edge(step.name, tmp_step_name) for step in leaf_steps]
 
         # pipeline_metrics is a dict having sanitized variable names as keys
         # and the corresponding variable names as values. Here we need to refer
@@ -560,13 +616,12 @@ class NotebookProcessor(BaseProcessor):
         # XXX: Extension parsing of the RPC result
         rev_pipeline_metrics = {v: k for k, v in pipeline_metrics.items()}
         metrics_left = set(rev_pipeline_metrics.keys())
-        for anc in graphutils.get_ordered_ancestors(self.pipeline,
-                                                    tmp_step_name):
+        for anc in graphutils.get_ordered_ancestors(self.pipeline, tmp_step_name):
             if not metrics_left:
                 break
 
             anc_step = self.pipeline.get_step(anc)
-            anc_source = '\n'.join(anc_step.source)
+            anc_source = "\n".join(anc_step.source)
             # get all the marshal candidates from father's source and intersect
             # with the metrics that have not been matched yet
             marshal_candidates = astutils.get_marshal_candidates(anc_source)
@@ -575,9 +630,15 @@ class NotebookProcessor(BaseProcessor):
             metrics_left.difference_update(assigned_metrics)
             # Generate code to produce the metrics artifact in the current step
             if assigned_metrics:
-                code = METRICS_TEMPLATE % ("    " + ",\n    ".join(
-                    ['"%s": %s' % (rev_pipeline_metrics[x], x)
-                     for x in sorted(assigned_metrics)]))
+                code = METRICS_TEMPLATE % (
+                    "    "
+                    + ",\n    ".join(
+                        [
+                            '"%s": %s' % (rev_pipeline_metrics[x], x)
+                            for x in sorted(assigned_metrics)
+                        ]
+                    )
+                )
                 anc_step.source.append(code)
             # need to have a `metrics` flag set to true in order to set the
             # metrics output artifact in the pipeline template
@@ -585,18 +646,18 @@ class NotebookProcessor(BaseProcessor):
 
         self.pipeline.remove_node(tmp_step_name)
 
-    def _ensure_fns_free_variables(self, anc_step, anc_source: str,
-                                   imports_and_functions: str):
+    def _ensure_fns_free_variables(
+        self, anc_step, anc_source: str, imports_and_functions: str
+    ):
         """Lazily compute ancestor functions' free vars if missing."""
-        if not getattr(anc_step, 'fns_free_variables', None):
+        if not getattr(anc_step, "fns_free_variables", None):
             anc_step.fns_free_variables = self._detect_fns_free_variables(
-                anc_source,
-                imports_and_functions,
-                self.pipeline.pipeline_parameters
+                anc_source, imports_and_functions, self.pipeline.pipeline_parameters
             )
 
-    def _propagate_free_vars_from_function(self, step: Step, anc_step: Step,
-                                           fn_name: str):
+    def _propagate_free_vars_from_function(
+        self, step: Step, anc_step: Step, fn_name: str
+    ):
         """Helper method.
 
         Propagate free variables of a function defined in anc_step to
@@ -605,7 +666,7 @@ class NotebookProcessor(BaseProcessor):
         Additionally, propagate transitive free variables via earlier ancestors
         of anc_step.
         """
-        anc_fns_free_vars = getattr(anc_step, 'fns_free_variables', {})
+        anc_fns_free_vars = getattr(anc_step, "fns_free_variables", {})
         if fn_name not in anc_fns_free_vars:
             return
         fn_free_vars, _ = anc_fns_free_vars[fn_name]
@@ -624,15 +685,17 @@ class NotebookProcessor(BaseProcessor):
 
         # Then, expand transitively using functions defined in earlier
         # ancestors of anc_step (i.e., ancestors that lead to anc_step).
-        earlier_ancestors = graphutils.get_ordered_ancestors(self.pipeline,
-                                                             anc_step.name)
+        earlier_ancestors = graphutils.get_ordered_ancestors(
+            self.pipeline, anc_step.name
+        )
         for ea_name in earlier_ancestors:
             ea_step = self.pipeline.get_step(ea_name)
-            ea_source = '\n'.join(ea_step.source)
+            ea_source = "\n".join(ea_step.source)
             # Ensure their fns_free_variables are computed
-            self._ensure_fns_free_variables(ea_step, ea_source,
-                                            self.get_imports_and_functions())
-            ea_fns_free_vars = getattr(ea_step, 'fns_free_variables', {})
+            self._ensure_fns_free_variables(
+                ea_step, ea_source, self.get_imports_and_functions()
+            )
+            ea_fns_free_vars = getattr(ea_step, "fns_free_variables", {})
             # We iterate over a snapshot of aggregated to allow growth
             # during the loop
             to_check = list(aggregated)
@@ -664,8 +727,7 @@ class NotebookProcessor(BaseProcessor):
             if fv_name not in anc_step.outs:
                 anc_step.outs.append(fv_name)
                 if is_artifact:
-                    anc_step.add_artifact(fv_name, inferred_type,
-                                          is_input=False)
+                    anc_step.add_artifact(fv_name, inferred_type, is_input=False)
 
     def dependencies_detection(self, imports_and_functions: str = ""):
         """Detects data dependencies between pipeline steps to support KFPv2.
@@ -700,17 +762,18 @@ class NotebookProcessor(BaseProcessor):
         # graph
         for step in self.pipeline.steps:
             # detect the INS dependencies of the CURRENT node------------------
-            step_source = '\n'.join(step.source)
+            step_source = "\n".join(step.source)
             # get the variables that this step is missing and the pipeline
             # parameters that it actually needs.
             ins, parameters = self._detect_in_dependencies(
                 source_code=step_source,
-                pipeline_parameters=self.pipeline.pipeline_parameters)
+                pipeline_parameters=self.pipeline.pipeline_parameters,
+            )
             step.parameters = parameters
 
             fns_free_vars = self._detect_fns_free_variables(
-                step_source, imports_and_functions,
-                self.pipeline.pipeline_parameters)
+                step_source, imports_and_functions, self.pipeline.pipeline_parameters
+            )
 
             # Get all the function calls. This will be used below to check if
             # any of the ancestors declare any of these functions. Is that is
@@ -723,21 +786,20 @@ class NotebookProcessor(BaseProcessor):
             # The ancestors are the the nodes that have a path to `step`,
             # ordered by path length.
             ins_left = ins.copy()
-            for anc in (graphutils.get_ordered_ancestors(self.pipeline,
-                                                         step.name)):
+            for anc in graphutils.get_ordered_ancestors(self.pipeline, step.name):
                 if not ins_left:
                     # if there are no more variables that need to be
                     # marshalled, stop the graph traverse
                     break
                 anc_step = self.pipeline.get_step(anc)
-                anc_source = '\n'.join(anc_step.source)
+                anc_source = "\n".join(anc_step.source)
                 # Ensure ancestor's functions free variables are available
-                self._ensure_fns_free_variables(anc_step, anc_source,
-                                                imports_and_functions)
+                self._ensure_fns_free_variables(
+                    anc_step, anc_source, imports_and_functions
+                )
                 # get all the marshal candidates from father's source and
                 # intersect with the required names of the current node
-                marshal_candidates = astutils.get_marshal_candidates(
-                    anc_source)
+                marshal_candidates = astutils.get_marshal_candidates(anc_source)
                 outs = ins_left.intersection(marshal_candidates)
                 for out_name in outs:
                     # Heuristic for type inference:
@@ -753,17 +815,13 @@ class NotebookProcessor(BaseProcessor):
                     if out_name not in anc_step.outs:
                         anc_step.outs.append(out_name)
                     if is_artifact:
-                        anc_step.add_artifact(
-                            out_name, inferred_type, is_input=False
-                        )
+                        anc_step.add_artifact(out_name, inferred_type, is_input=False)
 
                     # Update current step's inputs for input artifacts
                     if out_name not in step.ins:
                         step.ins.append(out_name)
                     if is_artifact:
-                        step.add_artifact(
-                            out_name, inferred_type, is_input=True
-                        )
+                        step.add_artifact(out_name, inferred_type, is_input=True)
 
                     # This input is satisfied, remove from the set
                     ins_left.remove(out_name)
@@ -771,8 +829,7 @@ class NotebookProcessor(BaseProcessor):
                     # If the marshaled name is a function defined in the
                     # ancestor, propagate its free variables as additional
                     # ins/outs.
-                    self._propagate_free_vars_from_function(step, anc_step,
-                                                            out_name)
+                    self._propagate_free_vars_from_function(step, anc_step, out_name)
 
                 # Include free variables and add them as inputs/outputs
                 to_remove_fn_calls = set()
@@ -780,19 +837,17 @@ class NotebookProcessor(BaseProcessor):
                     anc_fns_free_vars = anc_step.fns_free_variables
                     if fn_call in anc_fns_free_vars.keys():
                         # Ensure free vars of the called fn are propagated
-                        self._propagate_free_vars_from_function(step, anc_step,
-                                                                fn_call)
+                        self._propagate_free_vars_from_function(step, anc_step, fn_call)
                         to_remove_fn_calls.add(fn_call)
                         fns_free_vars[fn_call] = anc_fns_free_vars[fn_call]
 
                     # Propagate pipeline parameters from the ancestor step
                     # whenever we call a function it provides (directly or via
                     # marshal candidates).
-                    if (getattr(anc_step, 'parameters', None)
-                            and (fn_call in anc_fns_free_vars or fn_call in
-                                 marshal_candidates)):
-                        if not hasattr(step, 'parameters') or \
-                                step.parameters is None:
+                    if getattr(anc_step, "parameters", None) and (
+                        fn_call in anc_fns_free_vars or fn_call in marshal_candidates
+                    ):
+                        if not hasattr(step, "parameters") or step.parameters is None:
                             step.parameters = {}
                         for _pname, _pval in anc_step.parameters.items():
                             if _pname not in step.parameters:
@@ -802,9 +857,9 @@ class NotebookProcessor(BaseProcessor):
                 # finalize bookkeeping for this step
                 step.fns_free_variables = fns_free_vars
 
-    def _detect_in_dependencies(self,
-                                source_code: str,
-                                pipeline_parameters: Optional[dict] = None):
+    def _detect_in_dependencies(
+        self, source_code: str, pipeline_parameters: Optional[dict] = None
+    ):
         """Detect missing names from one pipeline step source code.
 
         Args:
@@ -822,14 +877,19 @@ class NotebookProcessor(BaseProcessor):
             # these are the parameters that are actually needed by this step.
             relevant_parameters = ins.intersection(pipeline_parameters.keys())
             ins.difference_update(relevant_parameters)
-        step_params = {k: pipeline_parameters[k] for k in relevant_parameters}\
-            if pipeline_parameters else {}
+        step_params = (
+            {k: pipeline_parameters[k] for k in relevant_parameters}
+            if pipeline_parameters
+            else {}
+        )
         return ins, step_params
 
-    def _detect_fns_free_variables(self,
-                                   source_code: str,
-                                   imports_and_functions: str = "",
-                                   step_parameters: Optional[dict] = None):
+    def _detect_fns_free_variables(
+        self,
+        source_code: str,
+        imports_and_functions: str = "",
+        step_parameters: Optional[dict] = None,
+    ):
         """Return the function's free variables.
 
         Free variable: _If a variable is used in a code block but not defined
@@ -873,8 +933,7 @@ class NotebookProcessor(BaseProcessor):
             # the pipeline parameters that are used in the function
             consumed_params = {}
             if step_parameters:
-                consumed_params = free_vars.intersection(
-                    step_parameters.keys())
+                consumed_params = free_vars.intersection(step_parameters.keys())
                 # remove the used parameters form the free variables, as they
                 # need to be handled differently.
                 free_vars.difference_update(consumed_params)

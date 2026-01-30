@@ -61,6 +61,8 @@ export interface IProps {
   stepDependencies: string[];
   // Resource limits, like gpu limits
   limits?: { [id: string]: string };
+  // Docker image for this step
+  dockerImage?: string;
 }
 
 // this stores the name of a block and its color (form the name hash)
@@ -253,6 +255,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       prevBlockNames: this.props.stepDependencies,
       limits: this.props.limits || {},
+      dockerImage: this.props.dockerImage,
       blockName: value
     };
 
@@ -273,6 +276,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       blockName: this.props.stepName || '',
       limits: this.props.limits || {},
+      dockerImage: this.props.dockerImage,
       prevBlockNames: previousBlocks
     };
 
@@ -310,7 +314,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       blockName: this.props.stepName || '',
       prevBlockNames: this.props.stepDependencies,
-      limits: limits
+      limits: limits,
+      dockerImage: this.props.dockerImage
     };
 
     TagsUtils.setKaleCellTags(
@@ -356,6 +361,22 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog
     });
   }
+
+  updateDockerImage = (value: string) => {
+    const currentCellMetadata = {
+      blockName: this.props.stepName || '',
+      prevBlockNames: this.props.stepDependencies,
+      limits: this.props.limits || {},
+      dockerImage: value || undefined
+    };
+
+    TagsUtils.setKaleCellTags(
+      this.props.notebook,
+      this.context.activeCellIndex,
+      currentCellMetadata,
+      true
+    );
+  };
 
   render() {
     const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName || '')
@@ -442,6 +463,19 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                     GPU
                   </Button>
                 </div>
+              ) : (
+                ''
+              )}
+
+              {cellType === 'step' ? (
+                <Input
+                  label={'Docker Image'}
+                  updateValue={this.updateDockerImage}
+                  value={this.props.dockerImage || ''}
+                  placeholder="e.g., python:3.11"
+                  variant="outlined"
+                  style={{ width: '25%' }}
+                />
               ) : (
                 ''
               )}

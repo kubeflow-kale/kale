@@ -8,17 +8,20 @@ from typing import Any, Dict, List, Callable, Union, NamedTuple
 from kale.marshal import Marshaller
 from kale.common import astutils, runutils
 from kale.config import Config, Field, validators
+
 log = logging.getLogger(__name__)
 
 
 class PipelineParam(NamedTuple):
     """A pipeline parameter."""
+
     param_type: str
     param_value: Any
 
 
 class Artifact(NamedTuple):
     """A Step artifact."""
+
     name: str
     type: str
     is_input: bool = False
@@ -27,14 +30,17 @@ class Artifact(NamedTuple):
 class StepConfig(Config):
     """Config class used for the Step object."""
 
-    name = Field(type=str, required=True,
-                 validators=[validators.StepNameValidator])
-    labels = Field(type=dict, default=dict(),
-                   validators=[validators.K8sLabelsValidator])
-    annotations = Field(type=dict, default=dict(),
-                        validators=[validators.K8sAnnotationsValidator])
-    limits = Field(type=dict, default=dict(),
-                   validators=[validators.K8sLimitsValidator])
+    name = Field(type=str, required=True, validators=[validators.StepNameValidator])
+    labels = Field(
+        type=dict, default=dict(), validators=[validators.K8sLabelsValidator]
+    )
+    annotations = Field(
+        type=dict, default=dict(), validators=[validators.K8sAnnotationsValidator]
+    )
+    limits = Field(
+        type=dict, default=dict(), validators=[validators.K8sLimitsValidator]
+    )
+    docker_image = Field(type=str, default="")
     retry_count = Field(type=int, default=0)
     retry_interval = Field(type=str)
     retry_factor = Field(type=int)
@@ -45,11 +51,13 @@ class StepConfig(Config):
 class Step:
     """Class used to store information about a Step of the pipeline."""
 
-    def __init__(self,
-                 source: Union[List[str], Callable],
-                 ins: List[Any] = None,
-                 outs: List[Any] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        source: Union[List[str], Callable],
+        ins: List[Any] = None,
+        outs: List[Any] = None,
+        **kwargs,
+    ):
         self.source = source
         self.ins = ins or []
         self.outs = outs or []
@@ -92,9 +100,7 @@ class Step:
                 return
 
         new_artifact = Artifact(
-            name=artifact_name,
-            type=artifact_type,
-            is_input=is_input
+            name=artifact_name, type=artifact_type, is_input=is_input
         )
         self.artifacts.append(new_artifact)
 
@@ -103,13 +109,16 @@ class Step:
         log.info("%s Running step '%s'... %s", "-" * 10, self.name, "-" * 10)
         # select just the pipeline parameters consumed by this step
         _params = {k: pipeline_parameters_values[k] for k in self.parameters}
-        marshaller = Marshaller(func=self.source, ins=self.ins, outs=self.outs,
-                                parameters=_params, marshal_dir='.marshal/')
+        marshaller = Marshaller(
+            func=self.source,
+            ins=self.ins,
+            outs=self.outs,
+            parameters=_params,
+            marshal_dir=".marshal/",
+        )
         marshaller()
-        log.info("%s Successfully ran step '%s'... %s", "-" * 10, self.name,
-                 "-" * 10)
-        runutils.link_artifacts({a.name: a.path for a in self.artifacts},
-                                link=False)
+        log.info("%s Successfully ran step '%s'... %s", "-" * 10, self.name, "-" * 10)
+        runutils.link_artifacts({a.name: a.path for a in self.artifacts}, link=False)
 
     @property
     def name(self):
@@ -169,7 +178,7 @@ class Step:
 
         # Add Artifacts that are inputs
         for art in sorted(self.artifacts, key=lambda a: a.name):
-            if getattr(art, '_is_input', False):  # Check custom input flag
+            if getattr(art, "_is_input", False):  # Check custom input flag
                 inputs.append(art)
         return inputs
 
@@ -178,7 +187,7 @@ class Step:
         """Get Artifacts that are outputs."""
         outputs = []
         for art in sorted(self.artifacts, key=lambda a: a.name):
-            if not getattr(art, '_is_input', False):  # Check custom input flag
+            if not getattr(art, "_is_input", False):  # Check custom input flag
                 outputs.append(art)
         return outputs
 
@@ -186,10 +195,12 @@ class Step:
 def __default_execution_handler(step: Step, *args, **kwargs):
     log.info("No Pipeline registration handler is set.")
     if not callable(step.source):
-        raise RuntimeError("Kale is trying to execute a Step that does not"
-                           " define a function. Probably this Step was"
-                           " created converting a Notebook. Kale does not yet"
-                           " support executing Notebooks locally.")
+        raise RuntimeError(
+            "Kale is trying to execute a Step that does not"
+            " define a function. Probably this Step was"
+            " created converting a Notebook. Kale does not yet"
+            " support executing Notebooks locally."
+        )
     log.info("Executing plain function: '%s'" % step.source.__name__)
     return step.source(*args, **kwargs)
 
