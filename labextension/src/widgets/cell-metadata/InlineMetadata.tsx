@@ -202,13 +202,8 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   }
 
   createLimitsText() {
-    const gpuType = Object.keys(this.props.limits).includes('nvidia.com/gpu')
-      ? 'nvidia.com/gpu'
-      : Object.keys(this.props.limits).includes('amd.com/gpu')
-        ? 'amd.com/gpu'
-        : undefined;
-
-    return gpuType !== undefined ? (
+    const gpuType = Object.keys(this.props.limits)[0] || undefined;
+    return gpuType ? (
       <React.Fragment>
         <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
           GPU request: {gpuType + ' - '}
