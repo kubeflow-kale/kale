@@ -23,6 +23,7 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader
 
 from kale import __version__ as KALE_VERSION
 from kale.common import graphutils, kfputils, utils
+from kale.common.imports import get_packages_to_install
 from kale.pipeline import DEFAULT_BASE_IMAGE, Pipeline, PipelineParam, Step
 
 log = logging.getLogger(__name__)
@@ -261,42 +262,28 @@ class Compiler:
         return autopep8.fix_code(pipeline_code)
 
     def _get_package_list_from_imports(self):
-        """Extracts unique package names from the tagged imports cell.
+        """Extract pip-installable package names from imports using AST.
 
-        Args:
-            imports_str: A string containing Python import statements.
+        Uses the imports module to parse Python import statements via AST
+        and resolve them to their corresponding PyPI package names. This
+        properly handles all import forms and filters out stdlib modules.
 
         Returns:
-            A list of unique top-level package names.
+            A sorted list of unique PyPI package names to install.
         """
         package_names = set()
+
+        # Always include kale and kfp as dependencies
         if KALE_VERSION != "0+unknown":
             package_names.add(f"kubeflow-kale=={KALE_VERSION}")
         else:
             package_names.add("kubeflow-kale")
         package_names.add("kfp>=2.0.0")
-        lines = self.imports_and_functions.strip().split("\n")
 
-        for line in lines:
-            line = line.strip()
-            if line.startswith("import "):
-                # For 'import package' or 'import package as alias'
-                parts = line.split(" ")
-                if len(parts) > 1:
-                    package_name = parts[1].split(".")[0]
-                    if package_name == "random":
-                        package_name = "random2"
-                    if package_name == "sklearn":
-                        package_name = "scikit-learn"
-                    package_names.add(package_name)
-            elif line.startswith("from "):
-                parts = line.split(" ")
-                if len(parts) > 1:
-                    package_name = parts[1].split(".")[0]
-                    if package_name == "sklearn":
-                        package_name = "scikit-learn"
-                    package_names.add(package_name)
-        return sorted(package_names)
+        # Parse imports using AST and resolve to PyPI package names
+        package_names.update(get_packages_to_install(self.imports_and_functions))
+
+        return sorted(list(package_names))
 
     def _get_templating_env(self, templates_path=None):
         if self.templating_env:
