@@ -27,10 +27,8 @@ from kale.pipeline import Pipeline, PipelineParam, Step
 
 log = logging.getLogger(__name__)
 
-PY_FN_TEMPLATE = "py_function_template.jinja2"
 NB_FN_TEMPLATE = "nb_function_template.jinja2"
 PIPELINE_TEMPLATE = "pipeline_template.jinja2"
-PIPELINE_ORIGIN = {"nb": NB_FN_TEMPLATE, "py": PY_FN_TEMPLATE}
 
 KFP_DSL_ARTIFACT_IMPORTS = [
     "Dataset",
@@ -111,7 +109,7 @@ class Compiler:
         return pipeline_code
 
     def generate_lightweight_component(self, step: Step):
-        """Generate Python code using the function template."""
+        """Generate Python code using the notebook function template."""
         step_source_raw = step.source
 
         def _encode_source(s):
@@ -120,14 +118,12 @@ class Compiler:
                 [line.encode("unicode_escape").decode("utf-8") for line in s.splitlines()]
             )
 
-        if self.pipeline.processor.id == "nb":
-            # Since the code will be wrapped in triple quotes inside the
-            # template, we need to escape triple quotes as they will not be
-            # escaped by encode("unicode_escape").
-            step.source = [re.sub(r"'''", "\\'\\'\\'", _encode_source(s)) for s in step_source_raw]
+        # Since the code will be wrapped in triple quotes inside the
+        # template, we need to escape triple quotes as they will not be
+        # escaped by encode("unicode_escape").
+        step.source = [re.sub(r"'''", "\\'\\'\\'", _encode_source(s)) for s in step_source_raw]
 
-        _template_filename = PIPELINE_ORIGIN.get(self.pipeline.processor.id)
-        template = self._get_templating_env().get_template(_template_filename)
+        template = self._get_templating_env().get_template(NB_FN_TEMPLATE)
 
         # Separate parameters with and without defaults for proper ordering
         params_without_defaults = [f"{step.name}_html_report: Output[HTML]"]
