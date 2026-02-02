@@ -72,7 +72,7 @@ make dev      # Set up development environment
 make jupyter  # Start JupyterLab
 ```
 
-See [CONTRIBUTE.md](CONTRIBUTE.md) for detailed setup instructions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions.
 
 Once v2.0 is released, you'll be able to install from PyPI:
 
