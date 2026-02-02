@@ -13,4 +13,3 @@
 # limitations under the License.
 
 from .nbprocessor import NotebookConfig as NotebookConfig, NotebookProcessor as NotebookProcessor
-from .pyprocessor import PythonProcessor as PythonProcessor
