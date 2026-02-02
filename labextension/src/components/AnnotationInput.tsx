@@ -27,7 +27,6 @@ interface IAnnotationInputProps {
   label: string;
   volumeIdx: number;
   annotationIdx: number;
-  rokAvailable?: boolean;
   cannotBeDeleted?: boolean;
   annotation: { key: string; value: string };
   deleteValue: (idx: number, annotationIdx: number) => void;

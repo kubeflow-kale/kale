@@ -93,7 +93,6 @@ async function activate(
   // TODO: backend can become an Enum that indicates the type of
   //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
   const backend = await getBackend(kernel);
-  // let rokError: IRPCError = null;
   if (backend) {
     try {
       await executeRpc(kernel, 'log.setup_logging');
