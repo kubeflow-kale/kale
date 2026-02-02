@@ -52,11 +52,13 @@ See the `Kale v2.0 Demo` video at the bottom of the `README` for more details.
 Read more about Kale and how it works in this Medium post:
 [Automating Jupyter Notebook Deployments to Kubeflow Pipelines with Kale](https://medium.com/kubeflow/automating-jupyter-notebook-deployments-to-kubeflow-pipelines-with-kale-a4ede38bea1f)
 
+For a detailed technical overview, see the [Architecture Documentation](docs/ARCHITECTURE.md).
+
 ## Getting started
 
 ### Requirements
 
-- **Python 3.10+**
+- **Python 3.12+**
 - **Kubeflow Pipelines v2.4.0+** - Install as recommended in the official [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/) documentation
 - A Kubernetes cluster (`minikube`, `kind`, or any K8s cluster)
 
