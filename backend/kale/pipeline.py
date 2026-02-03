@@ -1,5 +1,16 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import copy
@@ -88,7 +99,7 @@ class PipelineConfig(Config):
                           validators=[validators.PipelineNameValidator])
     experiment_name = Field(type=str, required=True)
     pipeline_description = Field(type=str, default="")
-    docker_image = Field(type=str, default="")
+    base_image = Field(type=str, default="")
     volumes = Field(type=list, items_config_type=VolumeConfig, default=[])
     katib_run = Field(type=bool, default=False)
     katib_metadata = Field(type=KatibConfig)
@@ -111,7 +122,7 @@ class PipelineConfig(Config):
 
     def _postprocess(self):
         # self._randomize_pipeline_name()
-        self._set_docker_image()
+        self._set_base_image()
         self._set_volume_storage_class()
         self._set_volume_access_mode()
         self._sort_volumes()
@@ -122,10 +133,10 @@ class PipelineConfig(Config):
         self.pipeline_name = "%s-%s" % (self.pipeline_name,
                                         utils.random_string())
 
-    def _set_docker_image(self):
-        if not self.docker_image:
+    def _set_base_image(self):
+        if not self.base_image:
             try:
-                self.docker_image = podutils.get_docker_base_image()
+                self.base_image = podutils.get_docker_base_image()
             except (ConfigException, RuntimeError, FileNotFoundError,
                     ApiException):
                 # * ConfigException: no K8s config found
@@ -133,7 +144,7 @@ class PipelineConfig(Config):
                 #   pod
                 # * ApiException: K8s call to read pod raised exception;
                 # Use kfp default image
-                self.docker_image = ""
+                self.base_image = ""
 
     def _set_volume_storage_class(self):
         if not self.storage_class_name:

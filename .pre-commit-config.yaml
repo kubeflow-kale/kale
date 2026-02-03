@@ -1,6 +1,3 @@
-# ABOUTME: Pre-commit hook configuration for Kale development.
-# ABOUTME: Ensures lockfile sync, file hygiene, and Python linting.
-
 repos:
   # Keep uv.lock in sync with pyproject.toml changes
   - repo: https://github.com/astral-sh/uv-pre-commit

@@ -1,0 +1,97 @@
+name: E2E Test
+description: "Installs Kale and runs example notebook on KFP to verify end-to-end workflow"
+
+on:
+  workflow_dispatch:
+    inputs:
+      pipeline_version:
+        description: 'KFP version to install'
+        required: false
+        default: '2.15.0'
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Kubernetes KinD Cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          version: v0.20.0
+          cluster_name: kind-kale-test
+
+      - name: Install KFP
+        run: |
+          export PIPELINE_VERSION=${{ inputs.pipeline_version }}
+          kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=$PIPELINE_VERSION"
+          kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
+          kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic?ref=$PIPELINE_VERSION"
+          sleep 10
+      - name: Wait for KFP UI to be Ready
+        run: |
+          set -e
+
+          kubectl rollout status deployment/ml-pipeline-ui -n kubeflow --timeout=10m
+          kubectl rollout status deployment/ml-pipeline -n kubeflow --timeout=10m
+
+      - name: Port Forward KFP (background)
+        run: |
+          nohup kubectl port-forward svc/ml-pipeline-ui 8080:80 -n kubeflow > /dev/null 2>&1 &
+          sleep 5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Kale
+        run: |
+          make dev
+
+      - name: Set KFP host address for Linux
+        run: |
+          HOST_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -n1)
+          echo "KFP_HOST_ADDR=${HOST_IP}" >> $GITHUB_ENV
+      - name: Build and serve Kale wheel for KFP
+        run: |
+          make kfp-serve &
+          sleep 5
+
+      - name: Run example notebook
+        run: |
+          make kfp-run NB=examples/base/candies_sharing.ipynb KFP_HOST=http://localhost:8080
+
+      - name: Check run result
+        run: |
+          uv run python -c "
+
+          import kfp, sys
+
+          client = kfp.Client(host='http://localhost:8080')
+          runs = client.list_runs(page_size=1).runs
+
+          if not runs: sys.exit(1)
+
+          run = client.wait_for_run_completion(runs[0].run_id, timeout=600)
+
+          print(f'Pipeline run status: {run.state}')
+          if run.state == 'SUCCEEDED':
+            print('Pipeline run succeeded.')
+            sys.exit(0)
+          else:
+            print(f'Pipeline run failed: {run.state}')
+            sys.exit(1)
+          "
+      - name: Log from failed run
+        if: failure()
+        run: |
+          echo "--- LOGS FROM FAILED STEPS ---"
+          for pod in $(kubectl get pods -n kubeflow --field-selector=status.phase=Failed -o jsonpath='{.items[*].metadata.name}'); do
+            echo "LOGS FOR POD: $pod "
+            kubectl logs -n kubeflow $pod -c main || echo "Could not get logs for main container"
+
+            echo "DESCRIBE POD: $pod "
+            kubectl describe pod -n kubeflow $pod
+          done
