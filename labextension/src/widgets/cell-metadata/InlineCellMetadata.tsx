@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import * as React from 'react';
 import { CellList, Notebook, NotebookPanel } from '@jupyterlab/notebook';
@@ -242,7 +253,8 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         notebook: this.props.notebook,
         stepName: tags.blockName || '',
         stepDependencies: tags.prevBlockNames || [],
-        limits: tags.limits || {}
+        limits: tags.limits || {},
+        baseImage: tags.baseImage
       };
 
       const cellElement = this.props.notebook.content.widgets[index]
@@ -265,6 +277,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           blockName={tags.blockName}
           stepDependencies={tags.prevBlockNames}
           limits={tags.limits || {}}
+          baseImage={tags.baseImage}
           previousBlockName={previousBlockName}
           cellIndex={index}
         />,
@@ -300,13 +313,15 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           notebook: activeEditorData.notebook,
           stepName: activeEditorData.stepName || '',
           stepDependencies: activeEditorData.stepDependencies || [],
-          limits: activeEditorData.limits || {}
+          limits: activeEditorData.limits || {},
+          baseImage: activeEditorData.baseImage
         }
       : {
           notebook: this.props.notebook,
           stepName: '',
           stepDependencies: [],
-          limits: {}
+          limits: {},
+          baseImage: undefined
         };
 
     const cellMetadataEditor = createPortal(
@@ -315,6 +330,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         stepName={editorProps.stepName}
         stepDependencies={editorProps.stepDependencies}
         limits={editorProps.limits}
+        baseImage={editorProps.baseImage}
       />,
       document.body
     );

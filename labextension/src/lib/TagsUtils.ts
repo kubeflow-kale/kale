@@ -1,15 +1,29 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
 import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 
+const IMAGE_TAG = 'image:';
+
 interface IKaleCellTags {
   blockName: string;
   prevBlockNames: string[];
   limits?: { [id: string]: string };
+  baseImage?: string;
 }
 
 /** Contains utility functions for manipulating/handling Kale cell tags. */
@@ -95,10 +109,20 @@ export default class TagsUtils {
           // get the limit key and value
           limits[values[1]] = values[2];
         });
+
+      // Parse base image tag
+      let baseImage: string | undefined;
+      const imageTag = tags.find(v => v.startsWith(IMAGE_TAG));
+      if (imageTag) {
+        // Remove 'image:' prefix to get the full image string
+        baseImage = imageTag.substring(IMAGE_TAG.length);
+      }
+
       return {
         blockName: b_name[0] || '',
         prevBlockNames: prevs,
         limits: limits,
+        baseImage: baseImage,
       };
     }
     return null;
@@ -125,11 +149,17 @@ export default class TagsUtils {
     }
     const stepDependencies = metadata.prevBlockNames || [];
     const limits = metadata.limits || {};
+    const baseImage = metadata.baseImage;
     const tags = [nb]
       .concat(stepDependencies.map(v => 'prev:' + v))
       .concat(
         Object.keys(limits).map(lim => 'limit:' + lim + ':' + limits[lim]),
       );
+
+    // Add base image tag if specified
+    if (baseImage) {
+      tags.push(IMAGE_TAG + baseImage);
+    }
 
     return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags, save);
   }

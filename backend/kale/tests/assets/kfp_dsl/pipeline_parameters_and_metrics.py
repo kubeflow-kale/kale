@@ -173,6 +173,8 @@ def auto_generated_pipeline(
     )
 
     create_matrix_task.set_display_name("create-matrix-step")
+    create_matrix_task.set_accelerator_type(
+        "nvidia.com/gpu").set_accelerator_limit(2)
 
     sum_matrix_task = sum_matrix_step(
         rnd_matrix_input_artifact=create_matrix_task.outputs["rnd_matrix_output_artifact"],

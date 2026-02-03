@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import * as React from 'react';
 import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
@@ -61,7 +72,7 @@ export interface IKaleNotebookMetadata {
   experiment_name: string; // Keep this for backwards compatibility
   pipeline_name: string;
   pipeline_description: string;
-  docker_image: string;
+  base_image: string;
 
   steps_defaults?: string[];
   storage_class_name?: string;
@@ -73,7 +84,7 @@ export const DefaultState: IState = {
     experiment_name: '',
     pipeline_name: '',
     pipeline_description: '',
-    docker_image: '',
+    base_image: '',
     steps_defaults: []
   },
   runDeployment: false,
@@ -129,7 +140,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     this.setState(prevState => ({
       metadata: {
         ...prevState.metadata,
-        docker_image: name
+        base_image: name
       }
     }));
 
@@ -234,9 +245,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // Detect the base image of the current Notebook Server
         const baseImage = await commands.getBaseImage();
         if (baseImage) {
-          DefaultState.metadata.docker_image = baseImage;
+          DefaultState.metadata.base_image = baseImage;
         } else {
-          DefaultState.metadata.docker_image = '';
+          DefaultState.metadata.base_image = '';
         }
 
         // Get experiment information last because it may take more time to respond
@@ -324,9 +335,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           experiment_name: experiment_name,
           pipeline_name: notebookMetadata['pipeline_name'] || '',
           pipeline_description: notebookMetadata['pipeline_description'] || '',
-          docker_image:
-            notebookMetadata['docker_image'] ||
-            DefaultState.metadata.docker_image,
+          base_image:
+            notebookMetadata['base_image'] ||
+            DefaultState.metadata.base_image,
           steps_defaults: DefaultState.metadata.steps_defaults
         };
         this.setState({
@@ -385,8 +396,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
 
     // assign the default docker image in case it is empty
-    if (metadata.docker_image === '') {
-      metadata.docker_image = DefaultState.metadata.docker_image;
+    if (metadata.base_image === '') {
+      metadata.base_image = DefaultState.metadata.base_image;
     }
 
     const nbFilePath = this.getActiveNotebookPath();

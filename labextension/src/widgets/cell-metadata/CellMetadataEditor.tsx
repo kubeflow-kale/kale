@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import * as React from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
@@ -61,6 +72,8 @@ export interface IProps {
   stepDependencies: string[];
   // Resource limits, like gpu limits
   limits?: { [id: string]: string };
+  // Base image for this step
+  baseImage?: string;
 }
 
 // this stores the name of a block and its color (form the name hash)
@@ -253,6 +266,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       prevBlockNames: this.props.stepDependencies,
       limits: this.props.limits || {},
+      baseImage: this.props.baseImage,
       blockName: value
     };
 
@@ -273,6 +287,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       blockName: this.props.stepName || '',
       limits: this.props.limits || {},
+      baseImage: this.props.baseImage,
       prevBlockNames: previousBlocks
     };
 
@@ -310,7 +325,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       blockName: this.props.stepName || '',
       prevBlockNames: this.props.stepDependencies,
-      limits: limits
+      limits: limits,
+      baseImage: this.props.baseImage
     };
 
     TagsUtils.setKaleCellTags(
@@ -356,6 +372,22 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog
     });
   }
+
+  updateBaseImage = (value: string) => {
+    const currentCellMetadata = {
+      blockName: this.props.stepName || '',
+      prevBlockNames: this.props.stepDependencies,
+      limits: this.props.limits || {},
+      baseImage: value || undefined
+    };
+
+    TagsUtils.setKaleCellTags(
+      this.props.notebook,
+      this.context.activeCellIndex,
+      currentCellMetadata,
+      true
+    );
+  };
 
   render() {
     const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName || '')
@@ -421,6 +453,19 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                   variant="outlined"
                   selected={this.props.stepDependencies || []}
                   style={{ width: '35%' }}
+                />
+              ) : (
+                ''
+              )}
+
+              {cellType === 'step' ? (
+                <Input
+                  label={'Base Image'}
+                  updateValue={this.updateBaseImage}
+                  value={this.props.baseImage || ''}
+                  placeholder="e.g., python:3.11"
+                  variant="outlined"
+                  style={{ width: '25%' }}
                 />
               ) : (
                 ''

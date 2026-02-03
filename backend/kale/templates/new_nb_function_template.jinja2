@@ -1,5 +1,5 @@
 @kfp_dsl.component(
-    base_image='python:3.12',
+    base_image='{{ step.config.base_image or base_image or "python:3.12" }}',
     packages_to_install={{ packages_list}},
     pip_index_urls = {{ pip_index_urls }},
     pip_trusted_hosts = {{ pip_trusted_hosts }}
