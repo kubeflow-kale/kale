@@ -27,6 +27,7 @@ interface IProps {
   previousBlockName?: string;
   stepDependencies: string[];
   limits: { [id: string]: string };
+  baseImage?: string;
   cellElement: any;
   cellIndex: number;
 }
@@ -226,6 +227,16 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     );
   }
 
+  createBaseImageText() {
+    return this.props.baseImage ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        Base Image: {this.props.baseImage}
+      </p>
+    ) : (
+      ''
+    );
+  }
+
   /**
    * Create a list of div dots that represent the dependencies of the current
    * block
@@ -264,6 +275,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
         ) : null}
         {this.state.dependencies}
 
+        {this.createBaseImageText()}
         {this.createLimitsText()}
       </>
     );

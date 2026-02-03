@@ -13,8 +13,8 @@ from kubernetes import client as k8s_client
 
 {# DEFINE PIPELINE TASKS FROM FUNCTIONS #}
 {%- for name in pipeline.steps_names -%}
-{% if docker_image != '' %}
-_kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }}, base_image='{{ docker_image }}')
+{% if base_image != '' %}
+_kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }}, base_image='{{ base_image }}')
 {% else %}
 _kale_{{ name }}_op = _kfp_components.func_to_container_op({{ name }})
 {% endif %}

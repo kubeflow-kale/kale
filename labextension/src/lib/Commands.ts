@@ -207,18 +207,18 @@ export default class Commands {
     // in case the notebook's docker base image is different than the default
     // one (e.g. the one detected in the Notebook Server), alert the user
     if (
-      DefaultState.metadata.docker_image !== '' &&
-      metadata.docker_image !== DefaultState.metadata.docker_image
+      DefaultState.metadata.base_image !== '' &&
+      metadata.base_image !== DefaultState.metadata.base_image
     ) {
       warningContent.push(
         'The image you used to create the notebook server is different ' +
         'from the image you have selected for your pipeline.',
         '',
         'Your Kubeflow pipeline will use the following image: <pre><b>' +
-        metadata.docker_image +
+        metadata.base_image +
         '</b></pre>',
         'You created the notebook server using the following image: <pre><b>' +
-        DefaultState.metadata.docker_image +
+        DefaultState.metadata.base_image +
         '</b></pre>',
         '',
         "To use this notebook server's image as base image" +

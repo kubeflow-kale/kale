@@ -72,6 +72,8 @@ export interface IProps {
   stepDependencies: string[];
   // Resource limits, like gpu limits
   limits?: { [id: string]: string };
+  // Base image for this step
+  baseImage?: string;
 }
 
 // this stores the name of a block and its color (form the name hash)
@@ -264,6 +266,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       prevBlockNames: this.props.stepDependencies,
       limits: this.props.limits || {},
+      baseImage: this.props.baseImage,
       blockName: value
     };
 
@@ -284,6 +287,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       blockName: this.props.stepName || '',
       limits: this.props.limits || {},
+      baseImage: this.props.baseImage,
       prevBlockNames: previousBlocks
     };
 
@@ -321,7 +325,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     const currentCellMetadata = {
       blockName: this.props.stepName || '',
       prevBlockNames: this.props.stepDependencies,
-      limits: limits
+      limits: limits,
+      baseImage: this.props.baseImage
     };
 
     TagsUtils.setKaleCellTags(
@@ -367,6 +372,22 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog
     });
   }
+
+  updateBaseImage = (value: string) => {
+    const currentCellMetadata = {
+      blockName: this.props.stepName || '',
+      prevBlockNames: this.props.stepDependencies,
+      limits: this.props.limits || {},
+      baseImage: value || undefined
+    };
+
+    TagsUtils.setKaleCellTags(
+      this.props.notebook,
+      this.context.activeCellIndex,
+      currentCellMetadata,
+      true
+    );
+  };
 
   render() {
     const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName || '')
@@ -432,6 +453,19 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                   variant="outlined"
                   selected={this.props.stepDependencies || []}
                   style={{ width: '35%' }}
+                />
+              ) : (
+                ''
+              )}
+
+              {cellType === 'step' ? (
+                <Input
+                  label={'Base Image'}
+                  updateValue={this.updateBaseImage}
+                  value={this.props.baseImage || ''}
+                  placeholder="e.g., python:3.11"
+                  variant="outlined"
+                  style={{ width: '25%' }}
                 />
               ) : (
                 ''

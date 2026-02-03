@@ -49,6 +49,9 @@ LABEL_TAG = r'^label:%s:(.*)$' % K8S_ANNOTATION_KEY
 # Limits map to K8s limits, like CPU, Mem, GPU, ...
 # E.g.: limit:nvidia.com/gpu:2
 LIMITS_TAG = r'^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$'
+# Image tag for per-step Base image selection
+# E.g.: image:python:3.11-slim
+IMAGE_TAG = r'^image:(.+)$'
 
 _TAGS_LANGUAGE = [SKIP_TAG,
                   IMPORT_TAG,
@@ -60,11 +63,13 @@ _TAGS_LANGUAGE = [SKIP_TAG,
                   PIPELINE_METRICS_TAG,
                   ANNOTATION_TAG,
                   LABEL_TAG,
-                  LIMITS_TAG]
+                  LIMITS_TAG,
+                  IMAGE_TAG]
 # These tags are applied to every step of the pipeline
 _STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG,
                             LABEL_TAG,
-                            LIMITS_TAG]
+                            LIMITS_TAG,
+                            IMAGE_TAG]
 
 
 METRICS_TEMPLATE = '''\
@@ -160,6 +165,10 @@ class NotebookConfig(PipelineConfig):
                     result["limits"] = dict()
                 key, value = get_limit_from_tag(parts)
                 result["limits"][key] = value
+
+            if conf_type == "image":
+                # Image tag value is the rest after 'image:'
+                result["base_image"] = ":".join(parts)
         return result
 
 
@@ -318,7 +327,8 @@ class NotebookProcessor(BaseProcessor):
                                 ins=[], outs=[],
                                 limits=tags.get("limits", {}),
                                 labels=tags.get("labels", {}),
-                                annotations=tags.get("annotations", {}))
+                                annotations=tags.get("annotations", {}),
+                                base_image=tags.get("base_image", ""))
                     self.pipeline.add_step(step)
                     for _prev_step in tags['prev_steps']:
                         if _prev_step not in self.pipeline.nodes:
@@ -368,6 +378,7 @@ class NotebookProcessor(BaseProcessor):
         cell_annotations = dict()
         cell_labels = dict()
         cell_limits = dict()
+        cell_base_image = None
 
         # the notebook cell was not tagged
         if 'tags' not in metadata or len(metadata['tags']) == 0:
@@ -415,6 +426,10 @@ class NotebookProcessor(BaseProcessor):
                 key, value = get_limit_from_tag(tag_parts)
                 cell_limits.update({key: value})
 
+            if tag_name == "image":
+                # Image value is the rest after 'image:'
+                cell_base_image = ":".join(tag_parts)
+
             # name of the future Pipeline step
             if tag_name in ["step"]:
                 step_name = tag_parts.pop(0)
@@ -442,6 +457,13 @@ class NotebookProcessor(BaseProcessor):
                     "A cell can not provide Pod resource limits in a"
                     " cell that does not declare a step name.")
             parsed_tags['limits'] = cell_limits
+
+        if cell_base_image:
+            if not parsed_tags['step_names']:
+                raise ValueError(
+                    "A cell can not provide a base image in a"
+                    " cell that does not declare a step name.")
+            parsed_tags['base_image'] = cell_base_image
         return parsed_tags
 
     def get_pipeline_parameters_source(self):

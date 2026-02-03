@@ -46,6 +46,7 @@ class StepConfig(Config):
                         validators=[validators.K8sAnnotationsValidator])
     limits = Field(type=dict, default=dict(),
                    validators=[validators.K8sLimitsValidator])
+    base_image = Field(type=str, default="")
     retry_count = Field(type=int, default=0)
     retry_interval = Field(type=str)
     retry_factor = Field(type=int)

@@ -72,7 +72,7 @@ export interface IKaleNotebookMetadata {
   experiment_name: string; // Keep this for backwards compatibility
   pipeline_name: string;
   pipeline_description: string;
-  docker_image: string;
+  base_image: string;
 
   steps_defaults?: string[];
   storage_class_name?: string;
@@ -84,7 +84,7 @@ export const DefaultState: IState = {
     experiment_name: '',
     pipeline_name: '',
     pipeline_description: '',
-    docker_image: '',
+    base_image: '',
     steps_defaults: []
   },
   runDeployment: false,
@@ -140,7 +140,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     this.setState(prevState => ({
       metadata: {
         ...prevState.metadata,
-        docker_image: name
+        base_image: name
       }
     }));
 
@@ -245,9 +245,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         // Detect the base image of the current Notebook Server
         const baseImage = await commands.getBaseImage();
         if (baseImage) {
-          DefaultState.metadata.docker_image = baseImage;
+          DefaultState.metadata.base_image = baseImage;
         } else {
-          DefaultState.metadata.docker_image = '';
+          DefaultState.metadata.base_image = '';
         }
 
         // Get experiment information last because it may take more time to respond
@@ -335,9 +335,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           experiment_name: experiment_name,
           pipeline_name: notebookMetadata['pipeline_name'] || '',
           pipeline_description: notebookMetadata['pipeline_description'] || '',
-          docker_image:
-            notebookMetadata['docker_image'] ||
-            DefaultState.metadata.docker_image,
+          base_image:
+            notebookMetadata['base_image'] ||
+            DefaultState.metadata.base_image,
           steps_defaults: DefaultState.metadata.steps_defaults
         };
         this.setState({
@@ -396,8 +396,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
 
     // assign the default docker image in case it is empty
-    if (metadata.docker_image === '') {
-      metadata.docker_image = DefaultState.metadata.docker_image;
+    if (metadata.base_image === '') {
+      metadata.base_image = DefaultState.metadata.base_image;
     }
 
     const nbFilePath = this.getActiveNotebookPath();
