@@ -32,17 +32,9 @@ the decorated function.
 Just make sure to `import` all your modules *inside* the function definition,
 as the code that will run in the Kubeflow pipeline won't have the entire
 context of the current script.
-
-If you are using Rok to take snapshots (see below on how this works with the
-Kale SDK) and reproduce the current environment in the pipeline step, you
-can use relative imports to reference local scripts.
 """
 @step(name="my_step")
 def foo(a):
-    # Using a relative import to another local script will work as long as
-    # you are using rok to snapshot the current environment and mount a clone
-    # of the volume in the pipeline step:
-    # from .script import bar
     import sys
     sys.stdout.write(a)
     # return multiple values. These could be used by different subsequent
@@ -148,9 +140,8 @@ When running the above command, the following things will happen:
 
 - Kale validates the current code, to make sure that it can be converted to a
   pipeline
-- Rok takes a snapshot of your mounted volumes
-- Kale creates a new KFP pipelines, using the same docker image as your current
-  environment as base image for the step and seeding clones of your volumes.
+- Kale creates a new KFP pipeline, using the specified docker image as the
+  base image for the pipeline steps
 - Kale creates (if necessary) a new KFP experiment, based on the provided name
 - Kale uploads a new pipeline definition
 - Kale starts a new pipeline run
