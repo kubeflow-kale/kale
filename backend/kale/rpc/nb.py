@@ -1,17 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2019–2025 The Kale Contributors.
 
+import logging
 import os
 import shutil
-import logging
 
 from tabulate import tabulate
 
-from kale import marshal
-from kale.rpc.log import create_adapter
-from kale import Compiler, NotebookProcessor
+from kale import Compiler, NotebookProcessor, marshal
+from kale.common import astutils, kfputils, podutils
 from kale.rpc.errors import RPCInternalError, RPCUnhandledError
-from kale.common import podutils, kfputils, kfutils, astutils
+from kale.rpc.log import create_adapter
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
 KALE_PIPELINE_STEP_ENV = "KALE_PIPELINE_STEP"
