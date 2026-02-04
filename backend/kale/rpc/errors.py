@@ -97,8 +97,6 @@ class RPCServiceUnavailableError(_RPCError):
     message = "Service is Unavailable"
 
 
-
-
 class RPCUnhandledError(_RPCError):
     """Unhandled RPC Error."""
 

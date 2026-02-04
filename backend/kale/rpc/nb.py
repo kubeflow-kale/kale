@@ -96,8 +96,7 @@ def get_base_image(request):
 def compile_notebook(request, source_notebook_path, notebook_metadata_overrides=None, debug=False):
     """Compile the notebook to KFP DSL."""
     try:
-        processor = NotebookProcessor(source_notebook_path,
-                                      notebook_metadata_overrides)
+        processor = NotebookProcessor(source_notebook_path, notebook_metadata_overrides)
         pipeline = processor.run()
         imports_and_functions = processor.get_imports_and_functions()
         script_path = Compiler(pipeline, imports_and_functions).compile()
@@ -108,15 +107,16 @@ def compile_notebook(request, source_notebook_path, notebook_metadata_overrides=
         instance.logger = request.log if
         hasattr(request, "log") else logger"""
 
-        package_path = kfputils.compile_pipeline(script_path,
-                                                 pipeline.config.pipeline_name)
+        package_path = kfputils.compile_pipeline(script_path, pipeline.config.pipeline_name)
 
-        return {"pipeline_package_path": os.path.relpath(package_path),
-                "pipeline_metadata": pipeline.config.to_dict()}
+        return {
+            "pipeline_package_path": os.path.relpath(package_path),
+            "pipeline_metadata": pipeline.config.to_dict(),
+        }
     except ValueError as e:
         msg = str(e)
         request.log.exception("ValueError during notebook compilation: %s", msg)
-        if 'Task is missing from pipeline' in msg:
+        if "Task is missing from pipeline" in msg:
             # Provide guidance to the user about how to fix the issue.
             raise RPCUnhandledError(
                 details=(
@@ -124,14 +124,13 @@ def compile_notebook(request, source_notebook_path, notebook_metadata_overrides=
                     "Please tag a cell as a pipeline step or set "
                     "`steps_defaults` in the notebook metadata."
                 ),
-                trans_id=request.trans_id
+                trans_id=request.trans_id,
             )
         raise RPCInternalError(details=msg, trans_id=request.trans_id)
     except Exception as e:
         # Let the run dispatcher handle generic exceptions as unhandled,
         # but log for debug purposes.
-        request.log.exception("Unexpected error during "
-                              "notebook compilation: %s", e)
+        request.log.exception("Unexpected error during notebook compilation: %s", e)
         raise
 
 

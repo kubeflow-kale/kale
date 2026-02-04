@@ -104,8 +104,8 @@ class Compiler:
         Returns (str): A Python executable script
         """
         # Fail early if there are no steps in the pipeline.
-        if not hasattr(self.pipeline, 'steps') or not self.pipeline.steps:
-            raise ValueError('Task is missing from pipeline.')
+        if not hasattr(self.pipeline, "steps") or not self.pipeline.steps:
+            raise ValueError("Task is missing from pipeline.")
 
         # List of lightweight components generated code
         lightweight_components = [
