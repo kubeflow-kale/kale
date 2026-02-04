@@ -48,6 +48,7 @@ export const globalUnhandledRejection = async (event: any) => {
         autoClose: 3000
       });
     } else {
+      const extensionName = getExtensionName(stackLines);
       Notification.error(`An unhandled error has been thrown.`, {
         actions: [
           {
