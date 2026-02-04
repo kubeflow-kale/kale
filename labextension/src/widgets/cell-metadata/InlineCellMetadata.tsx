@@ -30,7 +30,6 @@ import {
   IProps as EditorProps,
 } from './CellMetadataEditor';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import { Switch } from '@mui/material';
 import NotebookUtils from '../../lib/NotebookUtils';
 
 import { createPortal } from 'react-dom';
@@ -350,17 +349,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     );
     return (
       <React.Fragment>
-        <div className="toolbar input-container">
-          <div className={'switch-label'}>Enable</div>
-          <Switch
-            checked={this.state.checked}
-            onChange={c => this.toggleGlobalKaleSwitch(c.target.checked)}
-            color="primary"
-            name="enableKale"
-            inputProps={{ 'aria-label': 'primary checkbox' }}
-            classes={{ root: 'material-switch' }}
-          />
-        </div>
         <div>
           <CellMetadataContext.Provider
             value={{
