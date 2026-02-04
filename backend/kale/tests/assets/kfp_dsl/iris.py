@@ -46,13 +46,13 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # Save x_trn to output artifact
-    _kale_marshal.save(x_trn, "x_trn_artifact")
+    _ = _kale_marshal.save(x_trn, "x_trn_artifact")
     # Save x_tst to output artifact
-    _kale_marshal.save(x_tst, "x_tst_artifact")
+    _ = _kale_marshal.save(x_tst, "x_tst_artifact")
     # Save y_trn to output artifact
-    _kale_marshal.save(y_trn, "y_trn_artifact")
+    _ = _kale_marshal.save(y_trn, "y_trn_artifact")
     # Save y_tst to output artifact
-    _kale_marshal.save(y_tst, "y_tst_artifact")
+    _ = _kale_marshal.save(y_tst, "y_tst_artifact")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
@@ -152,7 +152,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # Save model to output artifact
-    _kale_marshal.save(model, "model_artifact")
+    _ = _kale_marshal.save(model, "model_artifact")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 

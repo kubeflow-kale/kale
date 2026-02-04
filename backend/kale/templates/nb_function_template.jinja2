@@ -48,7 +48,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_marshal.set_data_dir("/marshal")
 {%- for output_art in step_outputs %}
     # Save {{ output_art.name }} to output artifact
-    _kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}_artifact")
+    _ = _kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}_artifact")
 {%- endfor %}
     # -----------------------DATA SAVING END-----------------------------------
     '''

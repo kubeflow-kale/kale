@@ -91,7 +91,7 @@ class MarshalBackend:
         saved file.
         """
         abs_path = os.path.join(get_data_dir(), name + "." + self.file_type)
-        log.info(
+        log.debug(
             "Saving %s object using %s: %s to %s", self.display_name, self.name, name, abs_path
         )
         try:
@@ -124,7 +124,7 @@ class MarshalBackend:
         directly this function instead of `load`.
         """
         abs_path = os.path.join(get_data_dir(), name + "." + self.file_type)
-        log.info("Loading %s file using %s: %s", self.display_name, self.name, name)
+        log.debug("Loading %s file using %s: %s", self.display_name, self.name, name)
         try:
             return self.load(abs_path)
         except ImportError as e:
@@ -285,9 +285,9 @@ class Dispatcher:
                 and os.path.splitext(ls)[0] == basename
             )
         ]
-        log.info("Found %d entries for basename '%s': %s", len(entries), basename, entries)
+        log.debug("Found %d entries for basename '%s': %s", len(entries), basename, entries)
         if not entries:
-            log.info(
+            log.debug(
                 "Looking for unique file/folder with basename '%s' in %s", basename, get_data_dir()
             )
             raise ValueError(

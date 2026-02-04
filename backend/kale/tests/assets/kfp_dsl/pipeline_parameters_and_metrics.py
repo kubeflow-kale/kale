@@ -46,7 +46,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
     # Save rnd_matrix to output artifact
-    _kale_marshal.save(rnd_matrix, "rnd_matrix_artifact")
+    _ = _kale_marshal.save(rnd_matrix, "rnd_matrix_artifact")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
