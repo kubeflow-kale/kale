@@ -397,8 +397,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
             ...DefaultState.metadata,
             experiment: prevState.metadata.experiment,
             experiment_name: prevState.metadata.experiment_name,
-            pipeline_name: sanitizedDefaultPipelineName
-          }
+            pipeline_name: sanitizedDefaultPipelineName,
+          },
         }));
       }
     } else {

@@ -25,7 +25,6 @@ from kale import __version__ as KALE_VERSION
 from kale.common import graphutils, kfputils, utils
 from kale.pipeline import Pipeline, PipelineParam, Step
 
-
 log = logging.getLogger(__name__)
 
 PY_FN_TEMPLATE = "py_function_template.jinja2"
