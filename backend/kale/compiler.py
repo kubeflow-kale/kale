@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2019–2025 The Kale Contributors.
 
+import argparse
+import logging
 import os
 import re
-import logging
-import argparse
-import autopep8
 from typing import NamedTuple
+
+import autopep8
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
 from kale import __version__ as KALE_VERSION

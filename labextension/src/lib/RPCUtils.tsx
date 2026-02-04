@@ -47,6 +47,8 @@ export const globalUnhandledRejection = async (event: any) => {
             label: 'Details',
             callback: () =>
               NotebookUtils.showMessage(alert_string, [
+                'An unhandled error was thrown from:',
+                extensionName,
                 'Please see console for more details.'
               ])
           }
@@ -383,22 +385,4 @@ export class RPCError extends BaseError {
     await showRpcError(this.error, refresh);
   }
 }
-
-/**
- * handleMissingPipelineStep - Async handler for missing pipeline step RPC errors.
- *
- * Displays a modal dialog that informs the user that a pipeline step is missing,
- * shows the RPC-provided message and details, and suggests remediation steps:
- * tagging a code cell as a pipeline step or setting the notebook metadata
- * `steps_defaults` to include the step name(s). The dialog body is rendered as
- * sanitized HTML with a restricted set of allowed tags and attributes to avoid
- * injection issues. The dialog offers two buttons: "Open docs" and "Close".
- * Selecting "Open docs" opens the Kale README/docs page in a new browser tab.
- *
- * @param error - The IRPCError instance containing `err_message` and `err_details`
- *                to present in the dialog body.
- * @returns A Promise that resolves once the user dismisses the dialog. If the
- *          user clicked "Open docs", the documentation page will be opened
- *          in a new tab as a fallback/help resource.
- */
 
