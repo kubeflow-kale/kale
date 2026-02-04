@@ -10,8 +10,7 @@ from tabulate import tabulate
 from kale import marshal
 from kale.rpc.log import create_adapter
 from kale import Compiler, NotebookProcessor
-from kale.rpc.errors import RPCInternalError, RPCTaskIsMissing
-from kale.errors import TaskMissingError
+from kale.rpc.errors import RPCInternalError, RPCUnhandledError
 from kale.common import podutils, kfputils, kfutils, astutils
 
 KALE_MARSHAL_DIR_POSTFIX = ".kale.marshal.dir"
@@ -99,28 +98,19 @@ def compile_notebook(request, source_notebook_path,
 
         return {"pipeline_package_path": os.path.relpath(package_path),
                 "pipeline_metadata": pipeline.config.to_dict()}
-    except TaskMissingError as e:
-        # Domain-specific exception raised by core components when no
-        # pipeline steps are present. Map it to a specific RPC error so the
-        # frontend receives a concrete error code and message. Provide a
-        # slightly more actionable `details` field so the UI can display
-        # guidance to the user about how to fix the issue (e.g., tag a
-        # cell as a step or set `steps_defaults` in metadata).
-        msg = str(e)
-        request.log.exception("TaskMissingError during notebook "
-                              "compilation: %s", msg)
-        raise RPCTaskIsMissing(details=msg, trans_id=request.trans_id)
     except ValueError as e:
-        # kfp.compiler or graph_component may
-        # raise ValueError for other
-        # reasons; map them to an internal
-        # RPC error (unless they match the
-        # specific message — kept for backward compatibility).
         msg = str(e)
-        request.log.exception("ValueError during notebook"
-                              " compilation: %s", msg)
+        request.log.exception("ValueError during notebook compilation: %s", msg)
         if 'Task is missing from pipeline' in msg:
-            raise RPCTaskIsMissing(details=msg, trans_id=request.trans_id)
+            # Provide guidance to the user about how to fix the issue.
+            raise RPCUnhandledError(
+                details=(
+                    "The pipeline does not have any steps. "
+                    "Please tag a cell as a pipeline step or set "
+                    "`steps_defaults` in the notebook metadata."
+                ),
+                trans_id=request.trans_id
+            )
         raise RPCInternalError(details=msg, trans_id=request.trans_id)
     except Exception as e:
         # Let the run dispatcher handle generic exceptions as unhandled,

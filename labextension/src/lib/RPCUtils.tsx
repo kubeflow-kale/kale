@@ -8,7 +8,7 @@ import NotebookUtils from './NotebookUtils';
 // @ts-expect-error This module is not typed
 import SanitizedHTML from 'react-sanitized-html';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
-import { Notification, Dialog, showDialog } from '@jupyterlab/apputils';
+import { Notification } from '@jupyterlab/apputils';
 
 export const globalUnhandledRejection = async (event: any) => {
   console.error(event.reason);
@@ -82,8 +82,7 @@ export enum RPC_CALL_STATUS {
   NotFound = 3,
   InternalError = 4,
   ServiceUnavailable = 5,
-  UnhandledError = 6,
-  TaskIsMissing = 7
+  UnhandledError = 6
 }
 
 const getRpcCodeName = (code: number) => {
@@ -100,14 +99,12 @@ const getRpcCodeName = (code: number) => {
       return 'InternalError';
     case RPC_CALL_STATUS.ServiceUnavailable:
       return 'ServiceUnavailable';
-    case RPC_CALL_STATUS.TaskIsMissing:
-      return 'TaskIsMissing';
     default:
       return 'UnhandledError';
   }
 };
 
-const OPEN_DOCS_LABEL = 'Open docs';
+
 
 export const rokErrorTooltip = (rokError: IRPCError) => {
   return (
@@ -151,10 +148,10 @@ export const executeRpc = async (
     output =
       env instanceof NotebookPanel
         ? await NotebookUtils.sendKernelRequestFromNotebook(
-            env,
-            cmd,
-            expressions
-          )
+          env,
+          cmd,
+          expressions
+        )
         : await NotebookUtils.sendKernelRequest(env, cmd, expressions);
   } catch (e) {
     if (typeof e === 'object' && e !== null) {
@@ -253,9 +250,6 @@ export const showRpcError = async (
   error: IRPCError,
   refresh: boolean = false
 ): Promise<void> => {
-  if (error && error.code === RPC_CALL_STATUS.TaskIsMissing) {
-    return await handleMissingPipelineStep(error);
-  }
 
   await showError(
     'An RPC Error has occurred',
@@ -407,39 +401,4 @@ export class RPCError extends BaseError {
  *          user clicked "Open docs", the documentation page will be opened
  *          in a new tab as a fallback/help resource.
  */
-async function handleMissingPipelineStep(error: IRPCError) {
-  const title = 'Pipeline step missing';
-  const bodyLines = [
-    `Message: ${error.err_message}`,
-    '',
-    `Details: ${error.err_details}`,
-    '',
-    'You can fix this by tagging a code cell as a pipeline step (via the cell edit/pencil icon), or by setting the notebook metadata steps_defaults to a list with the step name(s).'
-  ];
-  const body = (
-    <div className="dialog-body">
-      {bodyLines.map((s: string, i: number) => (
-        <React.Fragment key={`msg-${i}`}>
-          <SanitizedHTML
-            allowedAttributes={{ a: ['href'] }}
-            allowedTags={['b', 'i', 'em', 'strong', 'a', 'pre']}
-            html={s}
-          />
-          <br />
-        </React.Fragment>
-      ))}
-    </div>
-  );
-  const buttons: ReadonlyArray<Dialog.IButton> = [
-    Dialog.okButton({ label: OPEN_DOCS_LABEL }),
-    Dialog.cancelButton({ label: 'Close' })
-  ];
-  const result = await showDialog({ title, body, buttons });
-  const clicked = result.button ? (result.button.label as string) : '';
-  if (clicked === OPEN_DOCS_LABEL) {
-    // Open the documentation in a new tab (repo README as fallback)
-    const docsUrl = 'https://github.com/kubeflow/kale#readme';
-    window.open(docsUrl, '_blank');
-  }
-  return;
-}
+
