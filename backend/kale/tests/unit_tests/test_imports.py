@@ -17,12 +17,12 @@
 import pytest
 
 from kale.common.imports import (
-    ImportInfo,
-    STDLIB_MODULES,
     PACKAGE_NAME_MAP,
-    parse_imports_ast,
+    STDLIB_MODULES,
+    ImportInfo,
     get_packages_to_install,
     is_stdlib_module,
+    parse_imports_ast,
 )
 
 
