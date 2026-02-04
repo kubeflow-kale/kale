@@ -13,7 +13,7 @@ labels: kind/bug
 
 <!-- For more information, see an overview of Kale installation options in the README -->
 
-*  Kale version: 
+*  Kale version:
 <!-- Specify the output of the following shell command: $pip list | grep kale -->
 
 
@@ -43,4 +43,4 @@ This may include information such as: a description of the process, code snippet
 ---
 
 <!-- Don't delete message below to encourage users to support your issue! -->
-Impacted by this bug? Give it a 👍. 
+Impacted by this bug? Give it a 👍.

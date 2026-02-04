@@ -29,7 +29,7 @@ def auto_generated_pipeline(
         {%- endfor %}
     {%- endif %}
     )
-    
+
     {% if loop.index0 > 0 %}
     {%- if step_inputs.get(step.name) %}
     {%- for input_var in step_inputs[step.name] %}
@@ -39,8 +39,16 @@ def auto_generated_pipeline(
     {{ step.name }}_task.after({{ steps_list[loop.index0 - 1].name }}_task)
     {%- endif %}
     {% endif %}
-    
+
     {{ step.name }}_task.set_display_name("{{ component_names[step.name] }}-step")
+
+    {%- if step.config.limits %}
+    {%- for limit_key, limit_value in step.config.limits.items() %}
+    {%- if limit_key in ['nvidia.com/gpu', 'amd.com/gpu'] %}
+    {{ step.name }}_task.set_accelerator_type("{{ limit_key }}").set_accelerator_limit({{ limit_value }})
+    {%- endif %}
+    {%- endfor %}
+    {%- endif %}
 
 {% endfor %}
 

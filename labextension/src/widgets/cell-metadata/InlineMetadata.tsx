@@ -1,12 +1,23 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import * as React from 'react';
 import { Chip, Tooltip } from '@mui/material';
 import ColorUtils from '../../lib/ColorUtils';
 import {
   RESERVED_CELL_NAMES,
-  RESERVED_CELL_NAMES_HELP_TEXT
+  RESERVED_CELL_NAMES_HELP_TEXT,
 } from './CellMetadataEditor';
 import EditIcon from '@mui/icons-material/Edit';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
@@ -16,6 +27,7 @@ interface IProps {
   previousBlockName?: string;
   stepDependencies: string[];
   limits: { [id: string]: string };
+  baseImage?: string;
   cellElement: any;
   cellIndex: number;
 }
@@ -33,7 +45,7 @@ const DefaultState: IState = {
   color: '',
   dependencies: [],
   showEditor: false,
-  isMergedCell: false
+  isMergedCell: false,
 };
 // Check if an object is DOMElement
 function isDOMElement(obj: any): obj is HTMLElement {
@@ -76,7 +88,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     if (isDOMElement(cellElement)) {
       cellElement.classList.remove('kale-merged-cell');
       const codeMirrorElem = cellElement.querySelector(
-        '.CodeMirror'
+        '.CodeMirror',
       ) as HTMLElement;
       if (codeMirrorElem) {
         codeMirrorElem.style.border = '';
@@ -179,7 +191,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     }
     const name = this.props.blockName || this.props.previousBlockName;
     const codeMirrorElem = this.props.cellElement.querySelector(
-      '.CodeMirror'
+      '.CodeMirror',
     ) as HTMLElement;
 
     if (codeMirrorElem) {
@@ -202,19 +214,24 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   }
 
   createLimitsText() {
-    const gpuType = Object.keys(this.props.limits).includes('nvidia.com/gpu')
-      ? 'nvidia.com/gpu'
-      : Object.keys(this.props.limits).includes('amd.com/gpu')
-        ? 'amd.com/gpu'
-        : undefined;
-
-    return gpuType !== undefined ? (
+    const gpuType = Object.keys(this.props.limits)[0] || undefined;
+    return gpuType ? (
       <React.Fragment>
         <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
           GPU request: {gpuType + ' - '}
           {this.props.limits[gpuType]}
         </p>
       </React.Fragment>
+    ) : (
+      ''
+    );
+  }
+
+  createBaseImageText() {
+    return this.props.baseImage ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        Base Image: {this.props.baseImage}
+      </p>
     ) : (
       ''
     );
@@ -232,7 +249,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
           <div
             className="kale-inline-cell-dependency"
             style={{
-              backgroundColor: `#${rgb}`
+              backgroundColor: `#${rgb}`,
             }}
           ></div>
         </Tooltip>
@@ -249,7 +266,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
   render() {
     const details = RESERVED_CELL_NAMES.includes(
-      this.props.blockName
+      this.props.blockName,
     ) ? null : (
       <>
         {/* Add a `depends on: ` string before the deps dots in case there are some*/}
@@ -258,6 +275,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
         ) : null}
         {this.state.dependencies}
 
+        {this.createBaseImageText()}
         {this.createLimitsText()}
       </>
     );

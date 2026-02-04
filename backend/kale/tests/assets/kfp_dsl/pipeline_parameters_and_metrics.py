@@ -4,17 +4,17 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
 
 
 @kfp_dsl.component(
-    base_image='python:3.10',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0', 'kubeflow-kale', 'numpy'],
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
 def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_output_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
     _kale_pipeline_parameters_block = f'''
-        d1 = { d1 }
-        d2 = { d2 }
-        booltest = { booltest }
-        strtest = '{ strtest }'
+        d1 = {d1}
+        d2 = {d2}
+        booltest = {booltest}
+        strtest = '{strtest}'
     '''
 
     _kale_data_loading_block = '''
@@ -80,17 +80,17 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
 
 
 @kfp_dsl.component(
-    base_image='python:3.10',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0', 'kubeflow-kale', 'numpy'],
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
 def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
     _kale_pipeline_parameters_block = f'''
-        d1 = { d1 }
-        d2 = { d2 }
-        booltest = { booltest }
-        strtest = '{ strtest }'
+        d1 = {d1}
+        d2 = {d2}
+        booltest = {booltest}
+        strtest = '{strtest}'
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
@@ -173,6 +173,8 @@ def auto_generated_pipeline(
     )
 
     create_matrix_task.set_display_name("create-matrix-step")
+    create_matrix_task.set_accelerator_type(
+        "nvidia.com/gpu").set_accelerator_limit(2)
 
     sum_matrix_task = sum_matrix_step(
         rnd_matrix_input_artifact=create_matrix_task.outputs["rnd_matrix_output_artifact"],

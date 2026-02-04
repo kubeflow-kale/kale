@@ -1,5 +1,5 @@
 @kfp_dsl.component(
-    base_image='python:3.10',
+    base_image='{{ step.config.base_image or base_image or "python:3.12" }}',
     packages_to_install={{ packages_list}},
     pip_index_urls = {{ pip_index_urls }},
     pip_trusted_hosts = {{ pip_trusted_hosts }}
@@ -18,7 +18,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/marshal")
-    import shutil as _shutil{% endif %}    
+    import shutil as _shutil{% endif %}
 {%- for input_art in step_inputs %}
     artifact_path = {{ input_art.name }}_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:

@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // import { createStyles, makeStyles } from '@mui/material/styles';
 // import * as React from 'react';
@@ -137,17 +148,17 @@ const StyledFormControl = styled(FormControl)({
   '& .MuiInputLabel-root': {
     backgroundColor: 'var(--jp-layout-color1)',
     color: 'var(--jp-input-border-color)',
-    fontSize: 'var(--jp-ui-font-size2)'
+    fontSize: 'var(--jp-ui-font-size2)',
   },
   '& .MuiInputBase-input': {
-    fontSize: 'var(--jp-ui-font-size2)'
-  }
+    fontSize: 'var(--jp-ui-font-size2)',
+  },
 });
 
 const ChipsContainer = styled('div')({
   display: 'flex',
   flexWrap: 'wrap',
-  gap: '4px'
+  gap: '4px',
 });
 
 const StyledChip = styled(Chip)({
@@ -176,7 +187,7 @@ export const SelectMulti: React.FunctionComponent<
     disabled = false,
     variant = 'outlined',
     style = {},
-    updateSelected
+    updateSelected,
   } = props;
 
   const getInputComponent = () => {
@@ -203,9 +214,9 @@ export const SelectMulti: React.FunctionComponent<
           PaperProps: {
             sx: {
               color: 'var(--jp-ui-font-color1)',
-              fontSize: 'var(--jp-ui-font-size2)'
-            }
-          }
+              fontSize: 'var(--jp-ui-font-size2)',
+            },
+          },
         }}
         renderValue={selectedValues => (
           <ChipsContainer>
@@ -215,7 +226,7 @@ export const SelectMulti: React.FunctionComponent<
                 label={value}
                 className="kale-chip kale-chip-select"
                 sx={{
-                  backgroundColor: `#${ColorUtils.getColor(value)}`
+                  backgroundColor: `#${ColorUtils.getColor(value)}`,
                 }}
               />
             ))}

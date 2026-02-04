@@ -11,7 +11,7 @@ labels: kind/bug, area/backend
 
 <!-- For more information, see an overview of Kale installation options in the README -->
 
-*  Kale version: 
+*  Kale version:
 <!-- Specify the output of the following shell command: $pip list | grep kale -->
 
 
@@ -19,7 +19,7 @@ labels: kind/bug, area/backend
 ### Steps to reproduce
 
 <!--
-Specify how to reproduce the problem. 
+Specify how to reproduce the problem.
 This may include information such as: a description of the process, code snippets, log output, or screenshots.
 -->
 
@@ -35,4 +35,4 @@ This may include information such as: a description of the process, code snippet
 ---
 
 <!-- Don't delete message below to encourage users to support your issue! -->
-Impacted by this bug? Give it a 👍. 
+Impacted by this bug? Give it a 👍.

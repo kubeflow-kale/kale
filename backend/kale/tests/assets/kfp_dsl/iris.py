@@ -4,7 +4,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
 
 
 @kfp_dsl.component(
-    base_image='python:3.10',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0',
                          'kubeflow-kale', 'numpy', 'scikit-learn'],
     pip_index_urls=['https://pypi.org/simple'],
@@ -12,8 +12,8 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
 )
 def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_trn_output_artifact: Output[Dataset], x_tst_output_artifact: Output[Dataset], y_trn_output_artifact: Output[Dataset], y_tst_output_artifact: Output[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
-        N_ESTIMATORS = { n_estimators_param }
-        MAX_DEPTH = { max_depth_param }
+        N_ESTIMATORS = {n_estimators_param}
+        MAX_DEPTH = {max_depth_param}
     '''
 
     _kale_data_loading_block = '''
@@ -95,7 +95,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
 
 
 @kfp_dsl.component(
-    base_image='python:3.10',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0',
                          'kubeflow-kale', 'numpy', 'scikit-learn'],
     pip_index_urls=['https://pypi.org/simple'],
@@ -103,8 +103,8 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
 )
 def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact: Input[Dataset], y_trn_input_artifact: Input[Dataset], model_output_artifact: Output[Model], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
-        N_ESTIMATORS = { n_estimators_param }
-        MAX_DEPTH = { max_depth_param }
+        N_ESTIMATORS = {n_estimators_param}
+        MAX_DEPTH = {max_depth_param}
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
@@ -186,7 +186,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
 
 
 @kfp_dsl.component(
-    base_image='python:3.10',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0',
                          'kubeflow-kale', 'numpy', 'scikit-learn'],
     pip_index_urls=['https://pypi.org/simple'],
@@ -194,8 +194,8 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
 )
 def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
-        N_ESTIMATORS = { n_estimators_param }
-        MAX_DEPTH = { max_depth_param }
+        N_ESTIMATORS = {n_estimators_param}
+        MAX_DEPTH = {max_depth_param}
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal

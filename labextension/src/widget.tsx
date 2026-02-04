@@ -1,11 +1,22 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
   ILabShell,
-  ILayoutRestorer
+  ILayoutRestorer,
 } from '@jupyterlab/application';
 
 import { INotebookTracker } from '@jupyterlab/notebook';
@@ -30,7 +41,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
-  'kubeflow-kale-labextension:IKubeflowKale'
+  'kubeflow-kale-labextension:IKubeflowKale',
 );
 
 export interface IKubeflowKale {
@@ -49,7 +60,7 @@ export default {
   id,
   requires: [ILabShell, ILayoutRestorer, INotebookTracker, IDocumentManager],
   provides: IKubeflowKale,
-  autoStart: true
+  autoStart: true,
 } as JupyterFrontEndPlugin<IKubeflowKale>;
 
 async function activate(
@@ -57,7 +68,7 @@ async function activate(
   labShell: ILabShell,
   restorer: ILayoutRestorer,
   tracker: INotebookTracker,
-  docManager: IDocumentManager
+  docManager: IDocumentManager,
 ): Promise<IKubeflowKale> {
   let widget: ReactWidget | undefined;
   const kernel: Kernel.IKernelConnection =
@@ -98,7 +109,7 @@ async function activate(
       // Check if KALE_NOTEBOOK_PATH env variable exists and if so load
       // that Notebook
       const path = await executeRpc(kernel, 'nb.resume_notebook_path', {
-        server_root: PageConfig.getOption('serverRoot')
+        server_root: PageConfig.getOption('serverRoot'),
       });
       if (path) {
         console.log('Resuming notebook ' + path);
@@ -129,7 +140,7 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
-      />
+      />,
     );
     widget.id = 'kubeflow-kale-labextension/kubeflowDeployment';
     widget.title.icon = kaleIcon;
@@ -151,6 +162,6 @@ async function activate(
         throw new Error('Widget not initialized yet');
       }
       return widget;
-    }
+    },
   };
 }

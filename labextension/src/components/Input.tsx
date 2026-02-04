@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // import * as React from 'react';
 // import { useDebouncedCallback } from 'use-debounce';
@@ -163,18 +174,20 @@ const StyledTextField = styled(TextField)({
   width: '100%',
   '& .MuiInputLabel-root': {
     color: 'var(--jp-input-border-color)',
-    fontSize: 'var(--jp-ui-font-size2)'
+    fontSize: 'var(--jp-ui-font-size2)',
   },
   '& .MuiInputBase-input': {
-    color: 'var(--jp-ui-font-color1)'
+    color: 'var(--jp-ui-font-color1)',
   },
   '& .MuiFormHelperText-root': {
-    color: 'var(--jp-info-color0)'
-  }
+    color: 'var(--jp-info-color0)',
+  },
 });
 
-export interface IInputProps
-  extends Omit<TextFieldProps, 'onChange' | 'value'> {
+export interface IInputProps extends Omit<
+  TextFieldProps,
+  'onChange' | 'value'
+> {
   value: string | number;
   regex?: string;
   regexErrorMsg?: string;
@@ -261,7 +274,7 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
       onChange(value, idx);
     },
     // delay in ms
-    500
+    500,
   );
 
   const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,11 +308,11 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
       slotProps={{
         input: {
           readOnly: readOnly,
-          ...InputProps
+          ...InputProps,
         },
         inputLabel: {
-          shrink: !!placeholder || value !== ''
-        }
+          shrink: !!placeholder || value !== '',
+        },
       }}
       onChange={handleChange}
     />

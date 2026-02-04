@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // import * as React from 'react';
 // import { Input } from './Input';
@@ -82,8 +93,8 @@ const CollapseContainer = styled('div')<{ collapsed: boolean }>(
   ({ collapsed }) => ({
     '&.jp-Collapse-open': {
       // Add any specific styles for open state
-    }
-  })
+    },
+  }),
 );
 
 const CollapseHeader = styled('div')(({ theme }) => ({
@@ -92,41 +103,41 @@ const CollapseHeader = styled('div')(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
   fontWeight: 'bold',
   '&:hover': {
-    backgroundColor: theme.palette.action.hover
-  }
+    backgroundColor: theme.palette.action.hover,
+  },
 }));
 
 const CollapseContents = styled('div')<{ collapsed: boolean }>(
   ({ collapsed }) => ({
     padding: '16px',
-    display: collapsed ? 'none' : 'block'
-  })
+    display: collapsed ? 'none' : 'block',
+  }),
 );
 
 const ToolbarContainer = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '12px 4px 0 4px'
+  padding: '12px 4px 0 4px',
 });
 
 const SwitchLabel = styled('div')(({ theme }) => ({
   fontSize: theme.typography.body2.fontSize,
-  color: theme.palette.text.primary
+  color: theme.palette.text.primary,
 }));
 
 const KaleComponent = styled('div')({
-  marginTop: '16px'
+  marginTop: '16px',
 });
 
 const KaleHeaderSwitch = styled('div')({
-  marginBottom: '12px'
+  marginBottom: '12px',
 });
 
 const KaleHeader = styled('p')(({ theme }) => ({
   margin: 0,
   fontWeight: 'bold',
-  fontSize: theme.typography.subtitle2.fontSize
+  fontSize: theme.typography.subtitle2.fontSize,
 }));
 
 interface IAdvancedSettingsProps {
@@ -167,7 +178,7 @@ export const AdvancedSettings: React.FunctionComponent<
         onClick={handleToggleCollapse}
         sx={{
           color:
-            (theme as any).kale?.headers?.main || 'var(--jp-ui-font-color1)'
+            (theme as any).kale?.headers?.main || 'var(--jp-ui-font-color1)',
         }}
       >
         {props.title}
@@ -204,7 +215,7 @@ export const AdvancedSettings: React.FunctionComponent<
               sx={{
                 color:
                   (theme as any).kale?.headers?.main ||
-                  'var(--jp-ui-font-color1)'
+                  'var(--jp-ui-font-color1)',
               }}
             >
               Volumes

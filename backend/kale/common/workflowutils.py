@@ -1,10 +1,20 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Suite of helpers regarding workflow manipulation."""
 
 from kale.common import k8sutils
-
 
 ARGO_WORKFLOW_LABEL_KEY = "workflows.argoproj.io/workflow"
 ARGO_COMPLETED_LABEL_KEY = "workflows.argoproj.io/completed"
@@ -47,8 +57,7 @@ def get_workflow_name(pod_name, namespace):
     labels = pod.metadata.labels
     workflow_name = labels.get("workflows.argoproj.io/workflow", None)
     if workflow_name is None:
-        msg = ("Could not retrieve workflow name from pod"
-               "{}/{}".format(namespace, pod_name))
+        msg = f"Could not retrieve workflow name from pod{namespace}/{pod_name}"
         raise RuntimeError(msg)
     return workflow_name
 
@@ -56,14 +65,13 @@ def get_workflow_name(pod_name, namespace):
 def get_workflow(name, namespace):
     """Get a workflow."""
     co_client = k8sutils.get_co_client()
-    return co_client.get_namespaced_custom_object(ARGO_API_GROUP,
-                                                  ARGO_API_VERSION,
-                                                  namespace,
-                                                  ARGO_WORKFLOWS_PLURAL, name)
+    return co_client.get_namespaced_custom_object(
+        ARGO_API_GROUP, ARGO_API_VERSION, namespace, ARGO_WORKFLOWS_PLURAL, name
+    )
 
 
 def annotate_workflow(name, namespace, annotations):
     """Annotate a workflow."""
-    k8sutils.annotate_object(ARGO_API_GROUP, ARGO_API_VERSION,
-                             ARGO_WORKFLOWS_PLURAL, name, namespace,
-                             annotations)
+    k8sutils.annotate_object(
+        ARGO_API_GROUP, ARGO_API_VERSION, ARGO_WORKFLOWS_PLURAL, name, namespace, annotations
+    )

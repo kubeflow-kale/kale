@@ -1,66 +1,78 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import os
+from collections.abc import Iterable
 import copy
 import logging
+import os
+
+from kubernetes.client.rest import ApiException
+from kubernetes.config import ConfigException
 import networkx as nx
 
-from typing import Iterable, Dict
-from kubernetes.config import ConfigException
-from kubernetes.client.rest import ApiException
-
-from kale.step import Step, PipelineParam
+from kale.common import graphutils, podutils, utils
 from kale.config import Config, Field, validators
-from kale.common import graphutils, utils, podutils
+from kale.step import PipelineParam, Step
 
 log = logging.getLogger(__name__)
 
 
-VOLUME_ACCESS_MODE_MAP = {"rom": ["ReadOnlyMany"], "rwo": ["ReadWriteOnce"],
-                          "rwm": ["ReadWriteMany"]}
+VOLUME_ACCESS_MODE_MAP = {
+    "rom": ["ReadOnlyMany"],
+    "rwo": ["ReadWriteOnce"],
+    "rwm": ["ReadWriteMany"],
+}
 DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
 
 
 class VolumeConfig(Config):
     """Used for validating the `volumes` field of NotebookConfig."""
 
-    name = Field(type=str, required=True,
-                 validators=[validators.K8sNameValidator])
+    name = Field(type=str, required=True, validators=[validators.K8sNameValidator])
     mount_point = Field(type=str, required=True)
     snapshot = Field(type=bool, default=False)
     snapshot_name = Field(type=str)
     size = Field(type=int)  # fixme: validation for this field?
     size_type = Field(type=str)  # fixme: validation for this field?
-    type = Field(type=str, required=True,
-                 validators=[validators.VolumeTypeValidator])
-    annotations = Field(type=list, default=list())
-    storage_class_name = Field(type=str,
-                               validators=[validators.K8sNameValidator])
+    type = Field(type=str, required=True, validators=[validators.VolumeTypeValidator])
+    annotations = Field(type=list, default=[])
+    storage_class_name = Field(type=str, validators=[validators.K8sNameValidator])
     volume_access_mode = Field(
-        type=str, validators=[validators.IsLowerValidator,
-                              validators.VolumeAccessModeValidator])
+        type=str, validators=[validators.IsLowerValidator, validators.VolumeAccessModeValidator]
+    )
 
     def _parse_annotations(self):
         # Convert annotations to a {k: v} dictionary
         try:
             # TODO: Make JupyterLab annotate with {k: v} instead of
             #  {'key': k, 'value': v}
-            self.annotations = {a['key']: a['value']
-                                for a in self.annotations
-                                if a['key'] != '' and a['value'] != ''}
+            self.annotations = {
+                a["key"]: a["value"]
+                for a in self.annotations
+                if a["key"] != "" and a["value"] != ""
+            }
         except KeyError as e:
             if str(e) in ["'key'", "'value'"]:
-                raise ValueError("Volume spec: volume annotations must be a"
-                                 " list of {'key': k, 'value': v} dicts")
+                raise ValueError(
+                    "Volume spec: volume annotations must be a list of {'key': k, 'value': v} dicts"
+                )
             else:
                 raise e
 
     def _parse_access_mode(self):
         if self.volume_access_mode:
-            self.volume_access_mode = (
-                VOLUME_ACCESS_MODE_MAP[self.volume_access_mode]
-            )
+            self.volume_access_mode = VOLUME_ACCESS_MODE_MAP[self.volume_access_mode]
 
     def _postprocess(self):
         self._parse_annotations()
@@ -84,24 +96,22 @@ class KatibConfig(Config):
 class PipelineConfig(Config):
     """Main config class to validate the pipeline metadata."""
 
-    pipeline_name = Field(type=str, required=True,
-                          validators=[validators.PipelineNameValidator])
+    pipeline_name = Field(type=str, required=True, validators=[validators.PipelineNameValidator])
     experiment_name = Field(type=str, required=True)
     pipeline_description = Field(type=str, default="")
-    docker_image = Field(type=str, default="")
+    base_image = Field(type=str, default="")
     volumes = Field(type=list, items_config_type=VolumeConfig, default=[])
     katib_run = Field(type=bool, default=False)
     katib_metadata = Field(type=KatibConfig)
     abs_working_dir = Field(type=str, default="")
     marshal_volume = Field(type=bool, default=True)
     marshal_path = Field(type=str, default="/marshal")
-    steps_defaults = Field(type=dict, default=dict())
+    steps_defaults = Field(type=dict, default={})
     kfp_host = Field(type=str)
-    storage_class_name = Field(type=str,
-                               validators=[validators.K8sNameValidator])
+    storage_class_name = Field(type=str, validators=[validators.K8sNameValidator])
     volume_access_mode = Field(
-        type=str, validators=[validators.IsLowerValidator,
-                              validators.VolumeAccessModeValidator])
+        type=str, validators=[validators.IsLowerValidator, validators.VolumeAccessModeValidator]
+    )
     timeout = Field(type=int, validators=[validators.PositiveIntegerValidator])
 
     @property
@@ -111,7 +121,7 @@ class PipelineConfig(Config):
 
     def _postprocess(self):
         # self._randomize_pipeline_name()
-        self._set_docker_image()
+        self._set_base_image()
         self._set_volume_storage_class()
         self._set_volume_access_mode()
         self._sort_volumes()
@@ -119,21 +129,19 @@ class PipelineConfig(Config):
         self._set_marshal_path()
 
     def _randomize_pipeline_name(self):
-        self.pipeline_name = "%s-%s" % (self.pipeline_name,
-                                        utils.random_string())
+        self.pipeline_name = f"{self.pipeline_name}-{utils.random_string()}"
 
-    def _set_docker_image(self):
-        if not self.docker_image:
+    def _set_base_image(self):
+        if not self.base_image:
             try:
-                self.docker_image = podutils.get_docker_base_image()
-            except (ConfigException, RuntimeError, FileNotFoundError,
-                    ApiException):
+                self.base_image = podutils.get_docker_base_image()
+            except (ConfigException, RuntimeError, FileNotFoundError, ApiException):
                 # * ConfigException: no K8s config found
                 # * RuntimeError, FileNotFoundError: this is not running in a
                 #   pod
                 # * ApiException: K8s call to read pod raised exception;
                 # Use kfp default image
-                self.docker_image = ""
+                self.base_image = ""
 
     def _set_volume_storage_class(self):
         if not self.storage_class_name:
@@ -146,8 +154,7 @@ class PipelineConfig(Config):
         if not self.volume_access_mode:
             self.volume_access_mode = DEFAULT_VOLUME_ACCESS_MODE
         else:
-            self.volume_access_mode = VOLUME_ACCESS_MODE_MAP[
-                self.volume_access_mode]
+            self.volume_access_mode = VOLUME_ACCESS_MODE_MAP[self.volume_access_mode]
         for v in self.volumes:
             if not v.volume_access_mode:
                 v.volume_access_mode = self.volume_access_mode
@@ -156,10 +163,9 @@ class PipelineConfig(Config):
         # The Jupyter Web App assumes the first volume of the notebook is the
         # working directory, so we make sure to make it appear first in the
         # spec.
-        self.volumes = sorted(self.volumes,
-                              reverse=True,
-                              key=lambda _v: podutils.is_workspace_dir(
-                                  _v.mount_point))
+        self.volumes = sorted(
+            self.volumes, reverse=True, key=lambda _v: podutils.is_workspace_dir(_v.mount_point)
+        )
 
     def _set_abs_working_dir(self):
         if not self.abs_working_dir:
@@ -172,13 +178,11 @@ class PipelineConfig(Config):
         wd = os.path.realpath(self.abs_working_dir)
         # get the volumes for which the working directory is a sub-path of
         # the mount point
-        vols = list(
-            filter(lambda x: wd.startswith(x.mount_point), self.volumes)
-        )
+        vols = list(filter(lambda x: wd.startswith(x.mount_point), self.volumes))
         # if we found any, then set marshal directory inside working directory
         if len(vols) > 0:
             basename = os.path.basename(self.source_path)
-            marshal_dir = ".{}.kale.marshal.dir".format(basename)
+            marshal_dir = f".{basename}.kale.marshal.dir"
             self.marshal_volume = False
             self.marshal_path = os.path.join(wd, marshal_dir)
 
@@ -196,7 +200,7 @@ class Pipeline(nx.DiGraph):
     def __init__(self, config: PipelineConfig, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
-        self.pipeline_parameters: Dict[str, PipelineParam] = dict()
+        self.pipeline_parameters: dict[str, PipelineParam] = {}
         self.processor = None
         self._pps_names = None
 
@@ -210,8 +214,7 @@ class Pipeline(nx.DiGraph):
         if not isinstance(step, Step):
             raise RuntimeError("Not of type Step.")
         if step.name in self.steps_names:
-            raise RuntimeError("Step with name '%s' already exists"
-                               % step.name)
+            raise RuntimeError(f"Step with name '{step.name}' already exists")
         self.add_node(step.name, step=step)
 
     def add_dependency(self, parent: Step, child: Step):
@@ -225,7 +228,7 @@ class Pipeline(nx.DiGraph):
     @property
     def steps(self) -> Iterable[Step]:
         """Get the Steps objects sorted topologically."""
-        return map(lambda x: self.nodes()[x]["step"], self.steps_names)
+        return (self.nodes()[x]["step"] for x in self.steps_names)
 
     @property
     def steps_names(self):
@@ -235,14 +238,12 @@ class Pipeline(nx.DiGraph):
     @property
     def all_steps_parameters(self):
         """Create a dict with step names and their parameters."""
-        return {step: sorted(self.get_step(step).parameters.keys())
-                for step in self.steps_names}
+        return {step: sorted(self.get_step(step).parameters.keys()) for step in self.steps_names}
 
     @property
     def pipeline_dependencies_tasks(self):
         """Generate a dictionary of Pipeline dependencies."""
-        return {step_name: list(self.predecessors(step_name))
-                for step_name in self.steps_names}
+        return {step_name: list(self.predecessors(step_name)) for step_name in self.steps_names}
 
     @property
     def pps_names(self):
@@ -259,8 +260,7 @@ class Pipeline(nx.DiGraph):
     @property
     def pps_values(self):
         """Get the values of the pipeline parameters, sorted by name."""
-        return [self.pipeline_parameters[n].param_value
-                for n in self.pps_names]
+        return [self.pipeline_parameters[n].param_value for n in self.pps_names]
 
     def _topological_sort(self) -> Iterable[Step]:
         return self._steps_iterable(nx.topological_sort(self))
@@ -273,8 +273,7 @@ class Pipeline(nx.DiGraph):
         Returns:
             Iterable[Step]: A Steps iterable.
         """
-        return self._steps_iterable(
-            graphutils.get_ordered_ancestors(self, step_name))
+        return self._steps_iterable(graphutils.get_ordered_ancestors(self, step_name))
 
     def _steps_iterable(self, step_names: Iterable[str]) -> Iterable[Step]:
         for name in step_names:
@@ -295,10 +294,11 @@ class Pipeline(nx.DiGraph):
         _pipeline_parameters = copy.deepcopy(self.pipeline_parameters)
         for k, v in kwargs.items():
             if k not in self.pipeline_parameters:
-                raise RuntimeError("Running pipeline '%s' with"
-                                   " an input argument that is not in its"
-                                   " parameters: %s"
-                                   % (self.config.pipeline_name, k))
+                raise RuntimeError(
+                    f"Running pipeline '{self.config.pipeline_name}' with"
+                    " an input argument that is not in its"
+                    f" parameters: {k}"
+                )
             # replace default value with the provided one
             _type = _pipeline_parameters[k].param_type
             _pipeline_parameters[k] = PipelineParam(_type, v)
@@ -307,8 +307,9 @@ class Pipeline(nx.DiGraph):
     def show(self):
         """Print the pipeline nodes and dependencies in a table."""
         from tabulate import tabulate
+
         data = []
         for step in self.steps:
-            data.append([step.name, [x for x in self.predecessors(step.name)]])
+            data.append([step.name, list(self.predecessors(step.name))])
         log.info("Pipeline layout:")
         log.info("\n" + tabulate(data, headers=["Step", "Depends On"]) + "\n")

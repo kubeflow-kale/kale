@@ -1,0 +1,305 @@
+# Contributing to Kale
+
+This guide explains how to set up a development environment for Kale and contribute
+to the project.
+
+## Prerequisites
+
+- **Python 3.12+**
+- **uv** - Installed automatically by `make`, or manually: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **Node.js 18+** and **jlpm** (for frontend development only - jlpm comes with JupyterLab)
+- **Kubernetes cluster** (optional, for KFP testing only) - [minikube](https://minikube.sigs.k8s.io/) or [kind](https://kind.sigs.k8s.io/)
+
+## Quick Start
+
+```bash
+make dev          # Run once to set up (installs Python + Node dependencies, builds extension)
+make test         # Run tests
+make jupyter      # Start JupyterLab
+```
+
+**Note:** You only need to run `make dev` once. After the initial setup, just use `make test`, `make jupyter`, etc. Run `make dev` again only if:
+- You pulled changes that modified `pyproject.toml` or `package.json`
+- You ran `make clean`
+- Dependencies need to be reinstalled
+
+Run `make help` to see all available commands.
+
+## Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `make dev` | Set up development environment |
+| `make test` | Run all tests |
+| `make test-backend` | Run backend tests |
+| `make test-backend-unit` | Run backend unit tests only |
+| `make test-labextension` | Run labextension tests |
+| `make test-e2e-install` | Install Playwright browsers (run once) |
+| `make test-e2e` | Run Playwright e2e tests (experimental) |
+| `make lint` | Run all linters |
+| `make lint-backend` | Lint backend code (ruff) |
+| `make lint-labextension` | Lint labextension code (eslint + prettier) |
+| `make format-labextension` | Format labextension code |
+| `make build-backend` | Build backend wheel |
+| `make build-labextension` | Build labextension wheel |
+| `make kfp-build` | Build wheel for KFP cluster testing |
+| `make kfp-serve` | Serve local wheel for KFP testing |
+| `make kfp-compile NB=...` | Compile notebook with local wheel |
+| `make kfp-run NB=... KFP_HOST=...` | Compile and run on KFP |
+| `make jupyter` | Start JupyterLab |
+| `make jupyter-kfp` | Start JupyterLab with KFP dev env vars |
+| `make watch-labextension` | Watch labextension for changes |
+| `make lock` | Update uv.lock |
+| `make lock-upgrade` | Upgrade all dependencies |
+| `make clean` | Clean all build artifacts |
+| `make clean-venv` | Remove virtual environment only |
+
+## Managing Dependencies
+
+### Adding a Python Dependency
+
+1. Edit the appropriate `pyproject.toml`:
+   - Backend dependencies: `backend/pyproject.toml` in `[project.dependencies]`
+   - Dev dependencies: `backend/pyproject.toml` in `[project.optional-dependencies.dev]`
+   - Labextension dependencies: `labextension/pyproject.toml` in `[project.dependencies]`
+
+2. Update the lockfile:
+   ```bash
+   make lock
+   ```
+
+3. Sync your environment:
+   ```bash
+   uv sync --all-packages --all-extras
+   ```
+
+### Adding a JavaScript Dependency
+
+```bash
+cd labextension
+uv run jlpm add <package-name>      # Production dependency
+uv run jlpm add -D <package-name>   # Dev dependency
+```
+
+### Upgrading All Dependencies
+
+```bash
+make lock-upgrade
+```
+
+## Building Release Artifacts
+
+Build the production wheels for testing or distribution:
+
+```bash
+make build-backend       # Creates: dist/kubeflow_kale-2.0.0a1-py3-none-any.whl
+make build-labextension  # Creates: dist/kubeflow_kale_labextension-2.0.0a1-py3-none-any.whl
+```
+
+### Testing in a Fresh Environment
+
+To test the wheels work correctly in isolation:
+
+```bash
+# Create a fresh virtual environment
+mkdir /tmp/kale-test && cd /tmp/kale-test
+uv venv && source .venv/bin/activate
+
+# Install JupyterLab and both Kale wheels
+uv pip install "jupyterlab>=4.0.0,<5" \
+  /path/to/kale/dist/kubeflow_kale-2.0.0a1-py3-none-any.whl \
+  /path/to/kale/dist/kubeflow_kale_labextension-2.0.0a1-py3-none-any.whl
+
+# Start JupyterLab
+jupyter lab
+```
+
+**Note:** The labextension depends on the backend (`kubeflow-kale>=2.0.0a1`). Once both packages are published to PyPI, users will only need to install `kubeflow-kale-labextension` and the backend will be pulled automatically.
+
+## Testing with KFP Clusters
+
+When testing compiled pipelines on a KFP cluster (e.g., Kind or Docker Desktop),
+you need to serve your local wheel so the cluster can install it.
+
+### Docker Host Configuration
+
+For KFP pods to reach your local wheel server, they need to resolve `host.docker.internal`:
+
+| Platform | Configuration |
+|----------|---------------|
+| **macOS (Docker)** | Works automatically |
+| **Windows (Docker)** | Works automatically |
+| **Linux (Docker)** | Add `--add-host=host.docker.internal:host-gateway` to `docker run` |
+| **Kind on macOS/Windows** | Works automatically (uses Docker Desktop) |
+| **Kind on Linux** | Configure Kind to use host network or extra port mappings |
+
+**Linux Docker example:**
+```bash
+docker run --add-host=host.docker.internal:host-gateway ...
+```
+
+**Kind on Linux** - add to your Kind cluster config:
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 8765
+        hostPort: 8765
+```
+
+**Podman (experimental)** - `host.docker.internal` is not natively supported:
+```bash
+# Option 1: Add host manually
+podman run --add-host=host.docker.internal:host-gateway ...
+
+# Option 2: Use host network
+podman run --network=host ...
+```
+
+### How serve-wheel Works
+
+The `make kfp-serve` command:
+
+1. Builds the backend wheel with a fixed version (`2.0.0a1` by default)
+2. Copies the wheel to `.kfp-wheels/` directory
+3. Starts a simple HTTP server on port 8765
+4. Kind/Docker clusters can reach this server via `host.docker.internal:8765`
+
+The fixed version ensures reproducibility - you can rebuild the wheel multiple
+times and it will always have the same version, so compiled pipelines continue
+to work. Override the version with `make kfp-build KFP_DEV_VERSION=x.y.z`.
+
+When you set `KALE_PIP_INDEX_URLS`, Kale's compiler includes this URL in the
+generated KFP DSL. The pipeline components then install Kale from your local
+server instead of PyPI.
+
+### Environment Variables
+
+When using HTTP URLs for package indexes, pip requires them to be marked as trusted:
+
+| Variable | Purpose |
+|----------|---------|
+| `KALE_PIP_INDEX_URLS` | Comma-separated list of pip index URLs |
+| `KALE_PIP_TRUSTED_HOSTS` | Comma-separated list of trusted hosts (required for HTTP) |
+
+### CLI Workflow
+
+```bash
+# Terminal 1: Serve the wheel
+make kfp-serve
+
+# Terminal 2: Compile (env vars are set automatically)
+make kfp-compile NB=examples/base/candies_sharing.ipynb
+
+# The generated pipeline is at .kale/<notebook-name>.kale.py
+# Upload it to KFP UI or use kfp-run to submit directly
+```
+
+### Extension Workflow (JupyterLab UI)
+
+To use the Kale extension with your local wheel:
+
+```bash
+# Terminal 1: Serve the wheel
+make kfp-serve
+
+# Terminal 2: Start JupyterLab with KFP env vars
+make jupyter-kfp
+```
+
+The `jupyter-kfp` target sets the required environment variables automatically.
+When you click "Compile and Run" in the Kale panel, the generated pipeline
+will include your local wheel URL and trusted host configuration.
+
+> NOTE:
+>
+> If you are not using `kind` or on Linux you must set `KFP_HOST_ADDR` before running `make jupyter-kfp`.
+>
+> For example, `minikube` users should use `KFP_HOST_ADDR=host.minikube.internal`
+>
+> To let KFP access localhost you may also need to disable the firewall:
+> `sudo systemctl stop firewalld`
+
+### With KFP Host (Direct Submission)
+
+If you have a KFP instance running and want to submit directly:
+
+```bash
+# Terminal 1: Serve the wheel
+make kfp-serve
+
+# Terminal 2: Compile and submit (env vars are set automatically)
+make kfp-run NB=examples/base/candies_sharing.ipynb KFP_HOST=http://localhost:8080
+```
+
+## Versioning
+
+- **Backend**: Uses `setuptools_scm` - version derived from git tags automatically
+- **Labextension**: Version set in `labextension/package.json`
+
+During development, commits after a tag get version like `1.0.0.dev31+gHASH`.
+
+## Live Reload
+
+| Component | Live Reload? | Method |
+|-----------|--------------|--------|
+| Labextension | Yes | `make watch-labextension` + browser refresh (F5) |
+| Backend | No | Restart Jupyter kernel (`0 0` in command mode) |
+
+**Browser refresh vs Kernel restart:**
+- **Browser refresh (F5)**: Reloads JupyterLab UI to pick up labextension (TypeScript/JS) changes
+- **Kernel restart (`0 0`)**: Restarts the Python process to pick up backend (Python) changes. Press `0` twice in command mode, or use Kernel menu → "Restart Kernel"
+
+Note: Python's import caching (`sys.modules`) means backend changes require a
+kernel restart. However, `make test-backend` always runs with fresh imports.
+
+## Testing
+
+Backend tests compare generated DSL against golden files in `backend/kale/tests/assets/kfp_dsl/`.
+When modifying template output, update these fixtures.
+
+```bash
+make test-backend-unit   # Quick unit tests
+make test-backend        # All backend tests
+make test-labextension   # Labextension tests
+make test                # Everything
+```
+
+## Pre-commit Hooks
+
+Install pre-commit hooks to ensure code quality:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Hooks include:
+- `uv-lock`: Ensures `uv.lock` is up to date
+- `trailing-whitespace`: Removes trailing whitespace
+- `end-of-file-fixer`: Ensures files end with newline
+- `ruff`: Python linting and formatting
+
+## Debugging
+
+### VS Code
+
+Open the project in VS Code - debug configurations are provided in `.vscode/launch.json`:
+- Debug Current Test File
+- Debug All Unit Tests
+- Debug Kale CLI
+- Debug JupyterLab
+
+
+## Development Checklist
+
+1. Set up your environment: `make dev`
+2. Make your changes
+3. Run tests: `make test`
+4. Run linting: `make lint`
+5. Update fixtures if template output changed
+6. Commit your changes
+
+Happy hacking! If anything in this guide is unclear, open an issue or PR with improvements.

@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
@@ -18,23 +29,23 @@ import { styled } from '@mui/material/styles';
 const DeployButtonContainer = styled('div')({
   '& .deploy-button': {
     // Add any specific styling for the deploy button container
-  }
+  },
 });
 
 const StyledButtonGroup = styled(ButtonGroup)({
-  width: '100%'
+  width: '100%',
 });
 
 const MainButton = styled(Button)({
-  width: '100%'
+  width: '100%',
 });
 
 const DropdownButton = styled(Button)({
-  width: 'auto'
+  width: 'auto',
 });
 
 const StyledPopper = styled(Popper)({
-  zIndex: 2
+  zIndex: 2,
 });
 
 interface ISplitDeployButton {
@@ -53,15 +64,15 @@ export const SplitDeployButton: React.FunctionComponent<
   const options = [
     {
       label: 'Compile and Run',
-      value: 'run'
+      value: 'run',
     },
     { label: 'Compile and Upload', value: 'upload' },
-    { label: 'Compile and Save', value: 'compile' }
+    { label: 'Compile and Save', value: 'compile' },
   ];
 
   const handleMenuItemClick = (
     event: React.MouseEvent<HTMLLIElement>,
-    index: number
+    index: number,
   ) => {
     setSelectedIndex(index);
     setOpen(false);
@@ -130,7 +141,7 @@ export const SplitDeployButton: React.FunctionComponent<
                   {...TransitionProps}
                   style={{
                     transformOrigin:
-                      placement === 'bottom' ? 'center top' : 'center bottom'
+                      placement === 'bottom' ? 'center top' : 'center bottom',
                   }}
                 >
                   <Paper id="menu-list-grow">

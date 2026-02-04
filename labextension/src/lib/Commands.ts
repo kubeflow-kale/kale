@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import { Kernel } from '@jupyterlab/services';
 import { NotebookPanel } from '@jupyterlab/notebook';
@@ -196,18 +207,18 @@ export default class Commands {
     // in case the notebook's docker base image is different than the default
     // one (e.g. the one detected in the Notebook Server), alert the user
     if (
-      DefaultState.metadata.docker_image !== '' &&
-      metadata.docker_image !== DefaultState.metadata.docker_image
+      DefaultState.metadata.base_image !== '' &&
+      metadata.base_image !== DefaultState.metadata.base_image
     ) {
       warningContent.push(
         'The image you used to create the notebook server is different ' +
         'from the image you have selected for your pipeline.',
         '',
         'Your Kubeflow pipeline will use the following image: <pre><b>' +
-        metadata.docker_image +
+        metadata.base_image +
         '</b></pre>',
         'You created the notebook server using the following image: <pre><b>' +
-        DefaultState.metadata.docker_image +
+        DefaultState.metadata.base_image +
         '</b></pre>',
         '',
         "To use this notebook server's image as base image" +

@@ -1,5 +1,16 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2019–2025 The Kale Contributors.
+// Copyright 2026 The Kubeflow Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import * as React from 'react';
 import { LinearProgress } from '@mui/material';
@@ -28,13 +39,13 @@ enum PipelineStatus {
   SUCCEEDED = 'SUCCEEDED',
   TERMINATING = 'TERMINATING',
   TERMINATED = 'TERMINATED',
-  UNKNOWN = 'UNKNOWN'
+  UNKNOWN = 'UNKNOWN',
 }
 
 const logLinksHint = (kfpUiHost: string) => {
   console.info(
     `default for upload and run links is ${kfpUiHost} ` +
-      'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.'
+      'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.',
   );
 };
 
@@ -148,7 +159,7 @@ export const DeployProgress: React.FunctionComponent<
         const message = [
           `File path: <pre><b>${props.compiledPath}</b></pre>`,
           '',
-          'Probable cause: the file is hidden, try running jupyterlab with the --ContentsManager.allow_hidden=True flag'
+          'Probable cause: the file is hidden, try running jupyterlab with the --ContentsManager.allow_hidden=True flag',
         ];
         NotebookUtils.showMessage(title, message);
       }
@@ -277,7 +288,7 @@ export const DeployProgress: React.FunctionComponent<
           justifyContent: 'flex-end',
           textAlign: 'right',
           paddingRight: '4px',
-          height: '1rem'
+          height: '1rem',
         }}
       >
         <CloseIcon
@@ -293,7 +304,7 @@ export const DeployProgress: React.FunctionComponent<
             {validationTpl}
             {DeployUtils.getWarningBadge(
               'Validation Warnings',
-              props.validationWarnings || []
+              props.validationWarnings || [],
             )}
           </div>
         </div>
@@ -306,7 +317,7 @@ export const DeployProgress: React.FunctionComponent<
             {compileTpl}
             {DeployUtils.getWarningBadge(
               'Compile Warnings',
-              props.compileWarnings || []
+              props.compileWarnings || [],
             )}
           </div>
         </div>
@@ -319,7 +330,7 @@ export const DeployProgress: React.FunctionComponent<
             {uploadTpl}
             {DeployUtils.getWarningBadge(
               'Upload Warnings',
-              props.uploadWarnings || []
+              props.uploadWarnings || [],
             )}
           </div>
         </div>
@@ -332,7 +343,7 @@ export const DeployProgress: React.FunctionComponent<
             {runTpl}
             {DeployUtils.getWarningBadge(
               'Run Warnings',
-              props.runWarnings || []
+              props.runWarnings || [],
             )}
           </div>
         </div>

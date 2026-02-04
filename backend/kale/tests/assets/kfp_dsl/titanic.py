@@ -1,15 +1,14 @@
+from collections import OrderedDict
 import json
 
-import kfp.dsl as _kfp_dsl
 import kfp.components as _kfp_components
-
-from collections import OrderedDict
+import kfp.dsl as _kfp_dsl
 from kubernetes import client as k8s_client
 
 
 def loaddata():
-    
-    
+
+
 
     _kale_block1 = '''
     import numpy as np
@@ -50,8 +49,7 @@ def loaddata():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (
         _kale_block1,
         _kale_block2,
@@ -61,12 +59,12 @@ def loaddata():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('loaddata')
 
-    
+
 
 
 def datapreprocessing():
-    
-    
+
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -171,8 +169,7 @@ def datapreprocessing():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -188,12 +185,12 @@ def datapreprocessing():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('datapreprocessing')
 
-    
+
 
 
 def featureengineering():
-    
-    
+
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -332,8 +329,7 @@ def featureengineering():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -352,12 +348,12 @@ def featureengineering():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('featureengineering')
 
-    
+
 
 
 def decisiontree():
-    
-    
+
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -402,8 +398,7 @@ def decisiontree():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -413,12 +408,12 @@ def decisiontree():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('decisiontree')
 
-    
+
 
 
 def svm():
-    
-    
+
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -463,8 +458,7 @@ def svm():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -474,12 +468,12 @@ def svm():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('svm')
 
-    
+
 
 
 def naivebayes():
-    
-    
+
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -524,8 +518,7 @@ def naivebayes():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -535,12 +528,12 @@ def naivebayes():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('naivebayes')
 
-    
+
 
 
 def logisticregression():
-    
-    
+
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -585,8 +578,7 @@ def logisticregression():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -596,11 +588,11 @@ def logisticregression():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('logisticregression')
 
-    
+
 
 
 def randomforest():
-    
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -645,8 +637,7 @@ def randomforest():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -656,11 +647,11 @@ def randomforest():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('randomforest')
 
-    
+
 
 
 def results():
-    
+
 
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
@@ -705,8 +696,7 @@ def results():
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
+    from kale.common.kfputils import update_uimetadata as _kale_update_uimetadata
     _kale_blocks = (_kale_data_loading_block,
                     _kale_block1,
                     _kale_block2,
@@ -716,7 +706,7 @@ def results():
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('results')
 
-    
+
 
 
 _kale_loaddata_op = _kfp_components.func_to_container_op(loaddata)

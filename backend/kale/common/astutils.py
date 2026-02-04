@@ -1,20 +1,31 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import re
 import ast
-import astor
-import types
-import inspect
-
 from collections import deque
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Callable, Dict, List
+import inspect
+import re
+import types
+
+import astor
 
 from kale.common import utils
 
 
-def walk(node, stop_at=tuple(), ignore=tuple()):
+def walk(node, stop_at=(), ignore=()):
     """Walk through the children of an ast node.
 
     Args:
@@ -49,7 +60,7 @@ def get_list_tuple_names(node):
 
     """
     assert isinstance(node, (ast.Tuple, ast.List))
-    names = list()
+    names = []
     for _n in node.elts:
         if isinstance(_n, (ast.Tuple, ast.List)):
             # recursive call
@@ -115,7 +126,10 @@ def get_marshal_candidates(code):
     #  Exception handling?
     #  Decorators?
     #  Context manager (just the alias)
-    contexts = (ast.FunctionDef, ast.ClassDef, )
+    contexts = (
+        ast.FunctionDef,
+        ast.ClassDef,
+    )
     tree = ast.parse(commented_code)
     for block in tree.body:
         for node in walk(block, stop_at=contexts):
@@ -123,7 +137,13 @@ def get_marshal_candidates(code):
                 names.add(node.name)
             if isinstance(node, (ast.Name,)):
                 names.add(node.id)
-            if isinstance(node, (ast.Import, ast.ImportFrom,)):
+            if isinstance(
+                node,
+                (
+                    ast.Import,
+                    ast.ImportFrom,
+                ),
+            ):
                 for _n in node.names:
                     if _n.asname is None:
                         names.add(_n.name)
@@ -147,12 +167,10 @@ def parse_functions(code):
 
     Returns (dict): A dictionary [fn_name] -> function_source
     """
-    fns = dict()
+    fns = {}
     tree = ast.parse(code)
     for block in tree.body:
-        for node in walk(block,
-                         stop_at=(ast.FunctionDef,),
-                         ignore=(ast.ClassDef,)):
+        for node in walk(block, stop_at=(ast.FunctionDef,), ignore=(ast.ClassDef,)):
             if isinstance(node, (ast.FunctionDef,)):
                 fn_name = node.name
                 fns[fn_name] = astor.to_source(node)
@@ -190,8 +208,7 @@ def get_function_calls(code):
             # a function call. We check the attribute func to be ast.Name
             # because it could also be a ast.Attribute node, in case of
             # function calls like obj.foo()
-            if (isinstance(node, (ast.Call,))
-                    and isinstance(node.func, (ast.Name,))):
+            if isinstance(node, (ast.Call,)) and isinstance(node.func, (ast.Name,)):
                 fns.add(node.func.id)
     return fns
 
@@ -211,7 +228,13 @@ def get_function_and_class_names(code):
     tree = ast.parse(code)
     for block in tree.body:
         for node in walk(block):
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef,)):
+            if isinstance(
+                node,
+                (
+                    ast.FunctionDef,
+                    ast.ClassDef,
+                ),
+            ):
                 names.add(node.name)
     return names
 
@@ -224,18 +247,23 @@ def parse_assignments_expressions(code):
 
     Returns: Dict <variable_name>: <(variable_type, variable_value)>
     """
-    variables = dict()
+    variables = {}
     tree = ast.parse(code)
     for block in tree.body:
         if not isinstance(block, ast.Assign):
-            raise ValueError(
-                "Must provide just primitive types assignments "
-                "in variables block")
+            raise ValueError("Must provide just primitive types assignments in variables block")
         targets = block.targets
-        if isinstance(targets[0], (ast.Tuple, ast.List,)) or len(targets) > 1:
-            raise ValueError(
-                "Must provide single variable "
-                "assignments in variables block")
+        if (
+            isinstance(
+                targets[0],
+                (
+                    ast.Tuple,
+                    ast.List,
+                ),
+            )
+            or len(targets) > 1
+        ):
+            raise ValueError("Must provide single variable assignments in variables block")
         target = targets[0].id
         value = block.value
         # now get the type of the variable
@@ -244,18 +272,16 @@ def parse_assignments_expressions(code):
             var_type = type(value).__name__
         elif isinstance(value, ast.Str):
             value = value.s
-            var_type = 'str'
+            var_type = "str"
         elif isinstance(value, ast.NameConstant):  # [True|False|None]
             value = value.value
             if value is None:
-                raise ValueError("`None` value None is not supported in "
-                                 "pipeline parameters")
-            var_type = 'bool'
+                raise ValueError("`None` value None is not supported in pipeline parameters")
+            var_type = "bool"
         else:
             raise ValueError(
-                "Variables block must be comprised "
-                "of primitive variables "
-                "(int, float, str, bool)")
+                "Variables block must be comprised of primitive variables (int, float, str, bool)"
+            )
         variables[target] = (var_type, value)
     return variables
 
@@ -272,22 +298,23 @@ def parse_metrics_print_statements(code):
 
     Returns: a list of variable names
     """
-    err_msg = ("Must provide just print statements of variables in the metrics"
-               " cell. A variable name must be 64 chars long, have lowercase"
-               " characters, digits or '-', and must start with a lowercase"
-               " character and end with a lowercase character or digit.")
+    err_msg = (
+        "Must provide just print statements of variables in the metrics"
+        " cell. A variable name must be 64 chars long, have lowercase"
+        " characters, digits or '-', and must start with a lowercase"
+        " character and end with a lowercase character or digit."
+    )
     code = code.strip()
     # remove empty lines
     if code == "":
         return {}
-    code = '\n'.join(list(filter(str.strip, code.splitlines())))
+    code = "\n".join(list(filter(str.strip, code.splitlines())))
 
     # Note the parenthesis around the pattern, so that it becomes a group
     # The ?: will make the 2nd group not be captured when using re.find()
     # https://www.regular-expressions.info/brackets.html
     var_name_pattern = "([a-z](?:[_a-z0-9]{0,62}[a-z0-9])?)"
-    match_print = re.compile(r"^print\(%s\)$" % var_name_pattern,
-                             re.MULTILINE)
+    match_print = re.compile(rf"^print\({var_name_pattern}\)$", re.MULTILINE)
     if not all(re.match(match_print, c) for c in code.splitlines()):
         raise ValueError(err_msg)
     # remove the leading "print(" and ending ")"
@@ -296,10 +323,9 @@ def parse_metrics_print_statements(code):
         raise ValueError(err_msg)
 
     # check that every remaining statement is a Name node
-    tree = ast.parse('\n'.join(variables))
+    tree = ast.parse("\n".join(variables))
     for block in tree.body:
-        if (not isinstance(block, ast.Expr)
-                or not isinstance(block.value, ast.Name)):
+        if not isinstance(block, ast.Expr) or not isinstance(block.value, ast.Name):
             raise ValueError(err_msg)
 
     return {re.sub("_", "-", v): v for v in variables}
@@ -317,8 +343,7 @@ def get_function_source(fn: Callable, strip_signature=True) -> str:
             just the body (default True)
     """
     if not isinstance(fn, types.FunctionType):
-        raise TypeError("Input function is not of type FunctionType."
-                        " Found type: %s" % type(fn))
+        raise TypeError(f"Input function is not of type FunctionType. Found type: {type(fn)}")
     tree = ast.parse(utils.dedent(inspect.getsource(fn)))
     fn = tree.body[0]  # ast.FunctionDef
     if strip_signature:
@@ -328,13 +353,14 @@ def get_function_source(fn: Callable, strip_signature=True) -> str:
     if source[0] == "@":
         # Since the decorator code could span multiple lines (too many
         # arguments), find the line where the real function def starts.
-        idx = next((_idx for _idx, line in enumerate(source.splitlines())
-                    if line.startswith("def")))
+        idx = next(
+            (_idx for _idx, line in enumerate(source.splitlines()) if line.startswith("def"))
+        )
         source = "\n".join(source.splitlines()[idx:]) + "\n"
     return source
 
 
-def link_fns_to_inputs_vars(code: str) -> Dict[str, List[str]]:
+def link_fns_to_inputs_vars(code: str) -> dict[str, list[str]]:
     """Register the input args passed to every function in the snippet.
 
     Map function calls to their input argument names.
@@ -367,8 +393,7 @@ def link_fns_to_inputs_vars(code: str) -> Dict[str, List[str]]:
         func_node = None
         if isinstance(node, ast.Assign):
             if not isinstance(node.value, ast.Call):
-                raise RuntimeError(
-                    "ast.Assign value is not a ast.Call node")
+                raise RuntimeError("ast.Assign value is not a ast.Call node")
             func_node = node.value
         if isinstance(node, ast.Expr):
             if not isinstance(node.value, ast.Call):
@@ -377,17 +402,18 @@ def link_fns_to_inputs_vars(code: str) -> Dict[str, List[str]]:
         if isinstance(node, ast.Call):
             func_node = node
         if not func_node:
-            raise RuntimeError("Node %s cannot be parsed." % node)
+            raise RuntimeError(f"Node {node} cannot be parsed.")
 
         fn_name = func_node.func.id
-        fn_to_args[fn_name] = [name_node.id for name_node in func_node.args
-                               if isinstance(name_node, ast.Name)]
+        fn_to_args[fn_name] = [
+            name_node.id for name_node in func_node.args if isinstance(name_node, ast.Name)
+        ]
     return fn_to_args
 
 
 # FIXME: this does not take into account when a function is called
 #  multiple times.
-def link_fns_to_return_vars(code: str) -> Dict[str, List[str]]:
+def link_fns_to_return_vars(code: str) -> dict[str, list[str]]:
     """Map function calls to the name of vars assigned with return values.
 
     E.g.:
@@ -409,8 +435,7 @@ def link_fns_to_return_vars(code: str) -> Dict[str, List[str]]:
 
     fn_to_rets = {}
     for node in tree.body:
-        if (not isinstance(node, ast.Assign)
-           or not isinstance(node.value, ast.Call)):
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Call):
             continue
         function_name = node.value.func.id
         ret_vars = []
@@ -421,7 +446,6 @@ def link_fns_to_return_vars(code: str) -> Dict[str, List[str]]:
             elif isinstance(target, ast.Name):
                 ret_vars.append(target.id)
             else:
-                raise RuntimeError("Ast node '%s' not supported"
-                                   % type(target))
+                raise RuntimeError(f"Ast node '{type(target)}' not supported")
         fn_to_rets[function_name] = ret_vars
     return fn_to_rets

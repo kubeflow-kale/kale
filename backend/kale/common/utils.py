@@ -1,20 +1,30 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import errno
+import json
+import logging
+import os
+import random
+import re
+import shutil
+import string
+import sys
+from typing import Any
+import urllib
 
 import __main__
-
-import os
-import re
-import sys
-import json
-import errno
-import random
-import string
-import urllib
-import shutil
-import logging
-
-from typing import Dict, Any
 
 log = logging.getLogger(__name__)
 
@@ -49,11 +59,11 @@ def rm_r(path, ignore_missing=True, silent=False):
     OSError is raised, otherwise it is ignored.
     If silent is True, nothing is raised.
     """
+
     def onerror(function, path, excinfo):
         # Function to handle ENOENT in shutil.rmtree()
         e = excinfo[1]
-        if (ignore_missing and isinstance(e, OSError)
-                and e.errno == errno.ENOENT):
+        if ignore_missing and isinstance(e, OSError) and e.errno == errno.ENOENT:
             return
         raise e
 
@@ -65,8 +75,9 @@ def rm_r(path, ignore_missing=True, silent=False):
         elif os.path.isdir(path):
             shutil.rmtree(path, onerror=onerror)
         elif os.path.exists(path) and not silent:
-            raise RuntimeError("Failed to remove path `%s': Path exists but is"
-                               " not a file nor a directory" % path)
+            raise RuntimeError(
+                f"Failed to remove path `{path}': Path exists but is not a file nor a directory"
+            )
         else:
             # The path does not exists, raise the appropriate exception and let
             # the exception handler handle it (i.e., check ignore_missing etc.)
@@ -76,21 +87,20 @@ def rm_r(path, ignore_missing=True, silent=False):
             log.debug("Path `%s' does not exist, skipping removing it", path)
             return
         if (not ignore_missing) or (e.errno != errno.ENOENT):
-            log.error("Failed to remove path `%s' (errno: %s): %s",
-                      path, e.errno, e)
+            log.error("Failed to remove path `%s' (errno: %s): %s", path, e.errno, e)
             raise
 
 
 def remove_ansi_color_sequences(text):
     """Remove ANSI color sequences from text."""
-    ansi_color_escape = re.compile(r'\x1B\[[0-9;]*m')
-    return ansi_color_escape.sub('', text)
+    ansi_color_escape = re.compile(r"\x1B\[[0-9;]*m")
+    return ansi_color_escape.sub("", text)
 
 
 def comment_magic_commands(code):
     """Comment the magic commands in a code block."""
-    magic_pattern = re.compile(r'^(\s*%%?.*)$', re.MULTILINE)
-    return re.sub(magic_pattern, r'#\1', code.strip())
+    magic_pattern = re.compile(r"^(\s*%%?.*)$", re.MULTILINE)
+    return re.sub(magic_pattern, r"#\1", code.strip())
 
 
 def encode_url_component(component: str):
@@ -108,6 +118,7 @@ def is_ipython() -> bool:
     """Returns whether the code is running in a ipython kernel."""
     try:
         import IPython
+
         ipy = IPython.get_ipython()
         if ipy is None:
             return False
@@ -134,15 +145,16 @@ def graceful_exit(exit_code):
     """
     if is_ipython():
         from kale.common.jputils import KaleGracefulExit
+
         raise KaleGracefulExit
     else:
         sys.exit(exit_code)
 
 
-def read_json_from_file(path: str) -> Dict:
+def read_json_from_file(path: str) -> dict:
     """Read a file that contains a JSON object and return it as dictionary."""
     try:
-        return json.loads(open(path, 'r').read())
+        return json.loads(open(path).read())
     except json.JSONDecodeError:
         log.exception("Failed to parse json file %s", path)
         raise
@@ -158,7 +170,7 @@ def ensure_or_create_dir(filepath: str):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     elif not os.path.isdir(dirname):
-        raise RuntimeError("'%s' is not a directory" % dirname)
+        raise RuntimeError(f"'{dirname}' is not a directory")
 
 
 def clean_dir(path: str):
@@ -171,7 +183,7 @@ def clean_dir(path: str):
 def shorten_long_string(obj: Any, chars: int = 75):
     """Shorten the string representation of the input object."""
     str_input = str(obj)
-    return str_input[:chars] + " ..... " + str_input[len(str_input) - chars:]
+    return str_input[:chars] + " ..... " + str_input[len(str_input) - chars :]
 
 
 def dedent(text: str):
@@ -262,6 +274,5 @@ def compute_trusted_hosts() -> list[str]:
     pip_trusted_hosts = os.getenv("KALE_PIP_TRUSTED_HOSTS")
     trusted_hosts: list[str] = []
     if pip_trusted_hosts:
-        trusted_hosts = [u.strip() for u in pip_trusted_hosts.split(",")
-                         if u.strip()]
+        trusted_hosts = [u.strip() for u in pip_trusted_hosts.split(",") if u.strip()]
     return trusted_hosts

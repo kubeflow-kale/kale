@@ -1,0 +1,25 @@
+# ABOUTME: Root workspace configuration for the Kale monorepo.
+# ABOUTME: Manages both backend (Python) and labextension (JupyterLab) packages via uv.
+
+[project]
+name = "kale-workspace"
+version = "0.0.0"
+description = "Kale monorepo workspace - not published"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pre-commit"]
+
+[tool.uv]
+# This is a virtual workspace - not a buildable package itself
+package = false
+# Define workspace members - both packages are managed together
+workspace = { members = ["backend", "labextension"] }
+
+# Source overrides for workspace dependencies
+# This allows the labextension to depend on the backend during development
+[tool.uv.sources]
+kubeflow-kale = { workspace = true }
+kubeflow-kale-labextension = { workspace = true }

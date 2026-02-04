@@ -20,4 +20,4 @@ title: "chore(<component>): <Chore Name>"
 ---
 
 <!-- Don't delete the message below to encourage users to support your issue! -->
-Love this idea? Give it a 👍. 
+Love this idea? Give it a 👍.

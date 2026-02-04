@@ -29,4 +29,4 @@ labels: kind/feature
 ---
 
 <!-- Don't delete message below to encourage users to support your feature request! -->
-Love this idea? Give it a 👍. 
+Love this idea? Give it a 👍.

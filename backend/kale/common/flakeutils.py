@@ -1,16 +1,27 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import re
 
-from pyflakes import reporter as pyflakes_reporter, api as pyflakes_api
+from pyflakes import api as pyflakes_api, reporter as pyflakes_reporter
 
 
 class StreamList:
     """Simulate a file object to store Flakes' report streams."""
 
     def __init__(self):
-        self.out = list()
+        self.out = []
 
     def write(self, text):
         """Write to stream list."""
@@ -18,7 +29,7 @@ class StreamList:
 
     def reset(self):
         """Clean the stream list."""
-        self.out = list()
+        self.out = []
         return self
 
     def __call__(self):
@@ -36,16 +47,15 @@ def pyflakes_report(code):
     """
     flakes_stdout = StreamList()
     flakes_stderr = StreamList()
-    rep = pyflakes_reporter.Reporter(
-        flakes_stdout.reset(),
-        flakes_stderr.reset())
+    rep = pyflakes_reporter.Reporter(flakes_stdout.reset(), flakes_stderr.reset())
     pyflakes_api.check(code, filename="kale", reporter=rep)
 
     # the stderr stream should be used just for compilation error, so if any
     # message is found in the stderr stream, raise an exception
     if rep._stderr():
-        raise RuntimeError("Flakes reported the following error:"
-                           "\n{}".format('\t' + '\t'.join(rep._stderr())))
+        raise RuntimeError(
+            "Flakes reported the following error:\n{}".format("\t" + "\t".join(rep._stderr()))
+        )
 
     # Match names
     p = r"'(.+?)'"
@@ -56,7 +66,7 @@ def pyflakes_report(code):
     undef_vars = set()
     # iterate over all the flakes report output, keeping only lines
     # with 'undefined name' reports
-    for line in filter(lambda a: a != '\n' and 'undefined name' in a, out):
+    for line in filter(lambda a: a != "\n" and "undefined name" in a, out):
         var_search = re.search(p, line)
         undef_vars.add(var_search.group(1))
     return undef_vars

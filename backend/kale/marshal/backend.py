@@ -1,11 +1,21 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import logging
 import os
 import re
-import logging
-
-from typing import Dict, Any, Type
+from typing import Any
 
 from kale.common import utils
 
@@ -16,7 +26,7 @@ __DATA_DIR = os.path.curdir
 
 def set_data_dir(path):
     """Set the data directory where marshalling happens."""
-    global __DATA_DIR  # noqa: F824
+    global __DATA_DIR
     __DATA_DIR = path
     # create dir if not exists
     if not os.path.isdir(__DATA_DIR):
@@ -25,11 +35,11 @@ def set_data_dir(path):
 
 def get_data_dir():
     """Get the data directory where marshalling happens."""
-    global __DATA_DIR  # noqa: F824
+    global __DATA_DIR
     return __DATA_DIR
 
 
-class MarshalBackend(object):
+class MarshalBackend:
     """Base class for marshalling Python objects.
 
     This class is supposed to be subclassed by specialized backends that
@@ -47,6 +57,7 @@ class MarshalBackend(object):
     Take a look at `backend.py` for some examples on how to create custom
     marshal backends.
     """
+
     name: str = "Default backend"
     display_name: str = "generic"  # This is supposed to tbe the library name
     file_type: str = "dillpkl"
@@ -57,11 +68,13 @@ class MarshalBackend(object):
     # in case of a missing library.
     fallback_on_missing_lib = True
 
-    def __init__(self,
-                 name: str = None,
-                 display_name: str = None,
-                 obj_type_regex: str = None,
-                 file_type: str = None):
+    def __init__(
+        self,
+        name: str = None,
+        display_name: str = None,
+        obj_type_regex: str = None,
+        file_type: str = None,
+    ):
         self.name = name or self.name
         self.display_name = display_name or self.display_name
         self.obj_type_regex = obj_type_regex or self.obj_type_regex
@@ -78,15 +91,17 @@ class MarshalBackend(object):
         saved file.
         """
         abs_path = os.path.join(get_data_dir(), name + "." + self.file_type)
-        log.info("Saving %s object using %s: %s to %s",
-                 self.display_name, self.name, name, abs_path)
+        log.info(
+            "Saving %s object using %s: %s to %s", self.display_name, self.name, name, abs_path
+        )
         try:
             self.save(obj, abs_path)
         except ImportError as e:
             if not self.fallback_on_missing_lib:
                 raise e
-            log.warning("Failed to import %s (%s). Falling back to default"
-                        " backend.", self.display_name, e)
+            log.warning(
+                "Failed to import %s (%s). Falling back to default backend.", self.display_name, e
+            )
             self._default_save(obj, name)  # always try the default save
         return abs_path
 
@@ -97,6 +112,7 @@ class MarshalBackend(object):
     @staticmethod
     def _default_save(obj: Any, path: str):
         import dill
+
         with open(path, "wb") as f:
             dill.dump(obj, f)
 
@@ -108,15 +124,15 @@ class MarshalBackend(object):
         directly this function instead of `load`.
         """
         abs_path = os.path.join(get_data_dir(), name + "." + self.file_type)
-        log.info("Loading %s file using %s: %s",
-                 self.display_name, self.name, name)
+        log.info("Loading %s file using %s: %s", self.display_name, self.name, name)
         try:
             return self.load(abs_path)
         except ImportError as e:
             if not self.fallback_on_missing_lib:
                 raise e
-            log.warning("Failed to import %s (%s). Falling back to default"
-                        " backend.", self.display_name, e)
+            log.warning(
+                "Failed to import %s (%s). Falling back to default backend.", self.display_name, e
+            )
             return self._default_load(abs_path)  # always try the default load
 
     def load(self, file_path: str) -> Any:
@@ -126,6 +142,7 @@ class MarshalBackend(object):
     @staticmethod
     def _default_load(file_path: str) -> Any:
         import dill
+
         return dill.load(open(file_path, "rb"))
 
 
@@ -145,7 +162,7 @@ def get_dispatcher():
     return dispatcher
 
 
-class Dispatcher(object):
+class Dispatcher:
     """Dispatch backend classes based on obj types or file extensions.
 
     This class holds a reference to all the marshalling backends that register
@@ -170,14 +187,16 @@ class Dispatcher(object):
     ```
     """
 
-    END_USER_EXC_MSG = ("\n\nThe error was:\n%s\n\nPlease help us improve Kale"
-                        " by opening a new issue at:"
-                        "\nhttps://github.com/kubeflow-kale/kale/issues.")
+    END_USER_EXC_MSG = (
+        "\n\nThe error was:\n%s\n\nPlease help us improve Kale"
+        " by opening a new issue at:"
+        "\nhttps://github.com/kubeflow-kale/kale/issues."
+    )
 
     def __init__(self):
-        self.backends: Dict[str, MarshalBackend] = dict()
+        self.backends: dict[str, MarshalBackend] = {}
 
-    def register(self, cls: Type[MarshalBackend]) -> Type[MarshalBackend]:
+    def register(self, cls: type[MarshalBackend]) -> type[MarshalBackend]:
         """Register a new marshalling backend.
 
         Args:
@@ -193,7 +212,7 @@ class Dispatcher(object):
         """Get the backend registered for the input object type."""
         return self._dispatch_obj_type(obj)
 
-    def get_backends(self) -> Dict[str, MarshalBackend]:
+    def get_backends(self) -> dict[str, MarshalBackend]:
         """Get all registered backends."""
         # FIXME: How can we make this dict readonly? We don't want external
         # code to mess with it.
@@ -213,9 +232,10 @@ class Dispatcher(object):
         try:
             return self._dispatch_obj_type(obj).wrapped_save(obj, obj_name)
         except Exception as e:
-            error_msg = ("During data passing, Kale could not marshal the"
-                         " following object:\n\n  - path: '%s'\n  - type: '%s'"
-                         % (obj_name, type(obj)))
+            error_msg = (
+                "During data passing, Kale could not marshal the"
+                f" following object:\n\n  - path: '{obj_name}'\n  - type: '{type(obj)}'"
+            )
             log.error(error_msg + self.END_USER_EXC_MSG % e)
             log.debug("Original Traceback", exc_info=e.__traceback__)
             utils.graceful_exit(1)
@@ -232,8 +252,10 @@ class Dispatcher(object):
             entry_name = self._unique_ls(basename)
             return self._dispatch_file_type(entry_name).wrapped_load(basename)
         except Exception as e:
-            error_msg = ("During data passing, Kale could not load the"
-                         " following file:\n\n\n  - name: '%s'" % basename)
+            error_msg = (
+                "During data passing, Kale could not load the"
+                f" following file:\n\n\n  - name: '{basename}'"
+            )
             log.error(error_msg + self.END_USER_EXC_MSG % e)
             log.debug("Original Traceback", exc_info=e.__traceback__)
             utils.graceful_exit(1)
@@ -252,20 +274,27 @@ class Dispatcher(object):
     def _unique_ls(basename: str):
         # get the unique file/folder inside _DATA_DIR: there could be
         # multiple files with the same name and different extension.
-        entries = [ls for ls in os.listdir(get_data_dir())
-                   if ((os.path.isfile(os.path.join(get_data_dir(), ls))
-                        or os.path.isdir(os.path.join(get_data_dir(), ls)))
-                       and os.path.splitext(ls)[0] == basename)]
-        log.info("Found %d entries for basename '%s': %s",
-                 len(entries), basename, entries)
+        entries = [
+            ls
+            for ls in os.listdir(get_data_dir())
+            if (
+                (
+                    os.path.isfile(os.path.join(get_data_dir(), ls))
+                    or os.path.isdir(os.path.join(get_data_dir(), ls))
+                )
+                and os.path.splitext(ls)[0] == basename
+            )
+        ]
+        log.info("Found %d entries for basename '%s': %s", len(entries), basename, entries)
         if not entries:
-            log.info("Looking for unique file/folder with basename '%s' in %s",
-                     basename, get_data_dir())
-            raise ValueError("No file or folder found with basename '%s' in %s"
-                             % (basename, get_data_dir()))
+            log.info(
+                "Looking for unique file/folder with basename '%s' in %s", basename, get_data_dir()
+            )
+            raise ValueError(
+                f"No file or folder found with basename '{basename}' in {get_data_dir()}"
+            )
         if len(entries) > 1:
-            raise ValueError("Found multiple files/folders with name %s: %s"
-                             % (basename, entries))
+            raise ValueError(f"Found multiple files/folders with name {basename}: {entries}")
         return entries[0]
 
     def _dispatch_obj_type(self, obj: Any) -> MarshalBackend:
@@ -275,23 +304,25 @@ class Dispatcher(object):
             obj: any Python object
         """
         # object types are printed as <class 'obj type'>
-        _type = re.sub(r"'>$", "",
-                       re.sub(r"^<class '", "",
-                              str(type(obj))))
+        _type = re.sub(r"'>$", "", re.sub(r"^<class '", "", str(type(obj))))
         # type of base class
-        _type_base = re.sub(r"'>$", "",
-                            re.sub(r"^<class '", "",
-                                   str(obj.__class__.__bases__[0])))
-        _backends = [backend for backend in self.backends.values()
-                     if re.match(backend.obj_type_regex, _type)
-                     or re.match(backend.obj_type_regex, _type_base)]
+        _type_base = re.sub(r"'>$", "", re.sub(r"^<class '", "", str(obj.__class__.__bases__[0])))
+        _backends = [
+            backend
+            for backend in self.backends.values()
+            if re.match(backend.obj_type_regex, _type)
+            or re.match(backend.obj_type_regex, _type_base)
+        ]
         if len(_backends) > 1:
-            raise RuntimeError("Too many matching marshalling backends for"
-                               " object type %s (base type %s): %s"
-                               % (_type, _type_base, _backends))
+            raise RuntimeError(
+                "Too many matching marshalling backends for"
+                f" object type {_type} (base type {_type_base}): {_backends}"
+            )
         if not _backends:
-            log.debug("No backends found for type %s (%s). Falling back to"
-                      " default backend." % (_type, _type_base))
+            log.debug(
+                f"No backends found for type {_type} ({_type_base}). Falling back to"
+                " default backend."
+            )
             return MarshalBackend()
         else:
             return _backends[0]
@@ -307,15 +338,17 @@ class Dispatcher(object):
             filename (str): filename whose extension must be matched.
         """
         _backends = [
-            backend for backend in self.backends.values()
-            if os.path.splitext(filename)[1].lstrip(".") == backend.file_type]
+            backend
+            for backend in self.backends.values()
+            if os.path.splitext(filename)[1].lstrip(".") == backend.file_type
+        ]
         if len(_backends) > 1:
-            raise RuntimeError("Too many matching marshalling backends for"
-                               " file %s : %s" % (os.path.basename(filename),
-                                                  _backends))
+            raise RuntimeError(
+                "Too many matching marshalling backends for"
+                f" file {os.path.basename(filename)} : {_backends}"
+            )
         if not _backends:
-            log.debug("No backends found for '%s'. Falling back to default"
-                      " backend." % filename)
+            log.debug(f"No backends found for '{filename}'. Falling back to default backend.")
             return MarshalBackend()
         else:
             return _backends[0]

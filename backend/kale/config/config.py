@@ -1,11 +1,22 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
-
-import logging
-import inspect
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from abc import ABC
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+import inspect
+import logging
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -18,16 +29,18 @@ class Field:
     the Validator's documentation).
     """
 
-    def __init__(self,
-                 type: type,
-                 # XXX: items_config_type should be of type Config. However, we
-                 # don't annotate it because some IDEs don't recognize
-                 # inheritance and complain
-                 items_config_type=None,
-                 default: Any = None,
-                 validators: Optional[List[Callable]] = None,
-                 required: bool = False,
-                 dict_name: Optional[str] = None):
+    def __init__(
+        self,
+        type: type,
+        # XXX: items_config_type should be of type Config. However, we
+        # don't annotate it because some IDEs don't recognize
+        # inheritance and complain
+        items_config_type=None,
+        default: Any = None,
+        validators: list[Callable] | None = None,
+        required: bool = False,
+        dict_name: str | None = None,
+    ):
         self.type = type
         # when using items_config_type, each element of the list becomes a
         # config object.
@@ -40,8 +53,7 @@ class Field:
         self._value = None
 
         if items_config_type and type != list:
-            raise RuntimeError("items_config_type can be used only with a"
-                               " Field of type list.")
+            raise RuntimeError("items_config_type can be used only with a Field of type list.")
 
     def set_value(self, value):
         """Set the field's value."""
@@ -107,7 +119,7 @@ class Config(ABC):
     docstring for more details.
     """
 
-    _fields: Dict[str, Field]
+    _fields: dict[str, Field]
 
     @classmethod
     def _get_exception_msg_prefix(cls):
@@ -137,24 +149,25 @@ class Config(ABC):
 
     def __init__(self, *args, **kwargs):
         if args:
-            raise RuntimeError("Cannot provide positional arguments to a"
-                               " Config class.")
+            raise RuntimeError("Cannot provide positional arguments to a Config class.")
         self._preprocess(kwargs)
         self._validate_kwargs(*args, **kwargs)
 
         for name, field_obj in self._fields.items():
             if field_obj.default_value is not None and field_obj.required:
-                log.info("The 'required' flag for field '%s' is being ignored"
-                         " since a default value was provided."
-                         % name)
+                log.info(
+                    f"The 'required' flag for field '{name}' is being ignored"
+                    " since a default value was provided."
+                )
             input_value = kwargs.get(name)
             if input_value is None:
                 # We get here either if kwarg 'name' is not passed, or if it is
                 # passed with value None. This is an important design decision
                 input_value = field_obj.default_value
             if input_value is None and field_obj.required:
-                raise RuntimeError("%s: Field '%s' is required."
-                                   % (self._get_exception_msg_prefix(), name))
+                raise RuntimeError(
+                    f"{self._get_exception_msg_prefix()}: Field '{name}' is required."
+                )
             if input_value is not None and issubclass(field_obj.type, Config):
                 # In case the Field is a nested Config, we expect the values
                 # to be passed as a dictionary.
@@ -168,27 +181,24 @@ class Config(ABC):
         self._postprocess()
 
     def _validate_kwargs(self, **kwargs):
-        for input_var in kwargs.keys():
-            if input_var not in self._fields.keys():
-                raise RuntimeError("%s: '%s' was provided but the config spec"
-                                   " does not contain any field with that"
-                                   " name."
-                                   % (self._get_exception_msg_prefix(),
-                                      input_var))
+        for input_var in kwargs:
+            if input_var not in self._fields:
+                raise RuntimeError(
+                    f"{self._get_exception_msg_prefix()}: '{input_var}' was provided but the config spec"
+                    " does not contain any field with that"
+                    " name."
+                )
 
     def _init_field(self, name: str, field: Field, input_value: Any):
-        if (input_value is not None
-                and not isinstance(input_value, field.type)):
-            raise RuntimeError("%s: Field '%s' is expected of type '%s' but"
-                               " type '%s' was found."
-                               % (self._get_exception_msg_prefix(),
-                                  name, field.type.__name__,
-                                  type(input_value).__name__))
+        if input_value is not None and not isinstance(input_value, field.type):
+            raise RuntimeError(
+                f"{self._get_exception_msg_prefix()}: Field '{name}' is expected of type '{field.type.__name__}' but"
+                f" type '{type(input_value).__name__}' was found."
+            )
         if field.items_config_type:
             # if the fields requires a list of other Config objects,
             # convert the values of the list to the respective Configs.
-            input_value = [field.items_config_type(**v)
-                           for v in input_value]
+            input_value = [field.items_config_type(**v) for v in input_value]
         field.set_value(input_value)
         field.validate()
         self._set(name, input_value)
@@ -201,9 +211,9 @@ class Config(ABC):
         """Get the value of a field."""
         return self.__getattribute__(name)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return the config class as a dictionary."""
-        config_dict = dict()
+        config_dict = {}
         for field_name, field_obj in self._fields.items():
             attr_value = self.__getattribute__(field_name)
             dict_name = field_obj.dict_name
@@ -247,7 +257,7 @@ class Config(ABC):
         """
         pass
 
-    def update(self, configs: Dict[str, Any], patch=False):
+    def update(self, configs: dict[str, Any], patch=False):
         """Update the existing configurations.
 
         Args:
@@ -257,8 +267,7 @@ class Config(ABC):
         """
         for name, value in configs.items():
             if not isinstance(value, type(self._get(name))):
-                raise RuntimeError("Trying to merge two configs with different"
-                                   " types")
+                raise RuntimeError("Trying to merge two configs with different types")
             if isinstance(value, dict):
                 # the existing dict fields take precedence in case of overlap
                 if patch:
@@ -270,9 +279,8 @@ class Config(ABC):
                 # non-dict attribute. We can consider implementing this if we
                 # need it. It should perform recursive patching on mutable
                 # fields.
-                raise RuntimeError("Cannot update or patch a non-dict"
-                                   " attribute")
+                raise RuntimeError("Cannot update or patch a non-dict attribute")
 
-    def patch(self, configs: Dict[str, Any]):
+    def patch(self, configs: dict[str, Any]):
         """Equivalent to self.update(configs, patch=True)."""
         self.update(configs, patch=True)

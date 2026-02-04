@@ -1,0 +1,53 @@
+repos:
+  # Keep uv.lock in sync with pyproject.toml changes
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.12
+    hooks:
+      - id: uv-lock
+        name: Check uv.lock is up to date
+
+  # General file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(backend/kale/tests/assets/|examples/)
+      - id: end-of-file-fixer
+        exclude: ^(backend/kale/tests/assets/|examples/)
+      - id: check-yaml
+        exclude: ^backend/kale/tests/assets/
+      - id: check-added-large-files
+
+  # Python linting (ruff is faster than flake8)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.11
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^(backend/kale/tests/assets/|examples/|labextension/ui-tests/)
+      - id: ruff-format
+        exclude: ^(backend/kale/tests/assets/|examples/|labextension/ui-tests/)
+
+  # TypeScript/JavaScript linting for labextension
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (labextension)
+        entry: bash -c 'cd labextension && uv run jlpm eslint:check --fix'
+        language: system
+        files: ^labextension/src/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: prettier-ts
+        name: prettier (labextension ts/tsx)
+        entry: bash -c 'cd labextension && uv run jlpm prettier:base --write'
+        language: system
+        files: ^labextension/src/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: stylelint
+        name: stylelint (labextension)
+        entry: bash -c 'cd labextension && uv run jlpm stylelint'
+        language: system
+        files: ^labextension/style/.*\.css$
+        pass_filenames: false

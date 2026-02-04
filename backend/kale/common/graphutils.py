@@ -1,5 +1,16 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019–2025 The Kale Contributors.
+# Copyright 2026 The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import networkx as nx
 
@@ -48,14 +59,14 @@ def get_ordered_ancestors(g: nx.DiGraph, node):
     Returns (list): A list of ancestors, ordered by DAG layers.
     """
     # list of ancestors, unique and ordered by layers
-    ancs = list()
+    ancs = []
     # used as queue
     q = [node]
 
     while q:
         cur = q.pop(0)
         # sort ancestors for a deterministic result
-        preds = sorted(list(g.predecessors(cur)))
+        preds = sorted(g.predecessors(cur))
         for p in preds:
             if p not in ancs:
                 ancs.append(p)

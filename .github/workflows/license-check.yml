@@ -1,0 +1,42 @@
+name: License Header Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check-license-headers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install addlicense
+        run: |
+          go install github.com/google/addlicense@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Check license headers
+        run: |
+          ~/go/bin/addlicense -check -f .license-header.txt \
+            -ignore "**/tests/assets/**" \
+            -ignore "**/node_modules/**" \
+            -ignore "**/.venv/**" \
+            -ignore "**/dist/**" \
+            -ignore "**/*.json" \
+            -ignore "**/*.md" \
+            -ignore "**/*.css" \
+            -ignore "**/*.svg" \
+            -ignore "**/*.html" \
+            -ignore "**/*.yaml" \
+            -ignore "**/*.yml" \
+            -ignore "**/*.toml" \
+            -ignore "**/*.txt" \
+            -ignore "**/*.cfg" \
+            -ignore "**/*.ini" \
+            -ignore "**/*.lock" \
+            -ignore "**/Makefile" \
+            -ignore "**/.gitignore" \
+            -ignore "**/LICENSE" \
+            .
