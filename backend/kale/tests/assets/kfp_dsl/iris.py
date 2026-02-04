@@ -4,7 +4,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
 
 
 @kfp_dsl.component(
-    base_image='dimpo/jupyter-kale-cpu:v0.5.1-serving',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0',
                          'kubeflow-kale', 'numpy', 'scikit-learn'],
     pip_index_urls=['https://pypi.org/simple'],
@@ -95,7 +95,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
 
 
 @kfp_dsl.component(
-    base_image='dimpo/jupyter-kale-cpu:v0.5.1-serving',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0',
                          'kubeflow-kale', 'numpy', 'scikit-learn'],
     pip_index_urls=['https://pypi.org/simple'],
@@ -186,7 +186,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
 
 
 @kfp_dsl.component(
-    base_image='dimpo/jupyter-kale-cpu:v0.5.1-serving',
+    base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0',
                          'kubeflow-kale', 'numpy', 'scikit-learn'],
     pip_index_urls=['https://pypi.org/simple'],
