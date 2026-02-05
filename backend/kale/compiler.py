@@ -283,7 +283,7 @@ class Compiler:
         # Parse imports using AST and resolve to PyPI package names
         package_names.update(get_packages_to_install(self.imports_and_functions))
 
-        return sorted(list(package_names))
+        return sorted(package_names)
 
     def _get_templating_env(self, templates_path=None):
         if self.templating_env:

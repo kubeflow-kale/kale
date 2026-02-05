@@ -29,19 +29,44 @@ from kale.common.imports import (
 class TestStdlibModules:
     """Tests for STDLIB_MODULES set."""
 
-    @pytest.mark.parametrize("module", [
-        "os", "sys", "re", "json", "random", "collections",
-        "typing", "pathlib", "datetime", "functools", "itertools",
-        "math", "subprocess", "threading", "multiprocessing",
-    ])
+    @pytest.mark.parametrize(
+        "module",
+        [
+            "os",
+            "sys",
+            "re",
+            "json",
+            "random",
+            "collections",
+            "typing",
+            "pathlib",
+            "datetime",
+            "functools",
+            "itertools",
+            "math",
+            "subprocess",
+            "threading",
+            "multiprocessing",
+        ],
+    )
     def test_common_stdlib_modules_included(self, module):
         """Verify common stdlib modules are in the set."""
         assert module in STDLIB_MODULES
 
-    @pytest.mark.parametrize("module", [
-        "numpy", "pandas", "sklearn", "tensorflow", "torch",
-        "requests", "flask", "django", "pytest",
-    ])
+    @pytest.mark.parametrize(
+        "module",
+        [
+            "numpy",
+            "pandas",
+            "sklearn",
+            "tensorflow",
+            "torch",
+            "requests",
+            "flask",
+            "django",
+            "pytest",
+        ],
+    )
     def test_third_party_modules_not_included(self, module):
         """Verify third-party modules are not in stdlib set."""
         assert module not in STDLIB_MODULES
@@ -50,14 +75,17 @@ class TestStdlibModules:
 class TestPackageNameMap:
     """Tests for PACKAGE_NAME_MAP dictionary."""
 
-    @pytest.mark.parametrize("import_name,pypi_name", [
-        ("sklearn", "scikit-learn"),
-        ("cv2", "opencv-python"),
-        ("PIL", "pillow"),
-        ("yaml", "pyyaml"),
-        ("bs4", "beautifulsoup4"),
-        ("skimage", "scikit-image"),
-    ])
+    @pytest.mark.parametrize(
+        "import_name,pypi_name",
+        [
+            ("sklearn", "scikit-learn"),
+            ("cv2", "opencv-python"),
+            ("PIL", "pillow"),
+            ("yaml", "pyyaml"),
+            ("bs4", "beautifulsoup4"),
+            ("skimage", "scikit-image"),
+        ],
+    )
     def test_common_mappings_exist(self, import_name, pypi_name):
         """Verify common import-to-PyPI mappings are correct."""
         assert PACKAGE_NAME_MAP.get(import_name) == pypi_name
@@ -68,13 +96,7 @@ class TestImportInfo:
 
     def test_top_level_package_simple(self):
         """Test top_level_package with simple module."""
-        info = ImportInfo(
-            module="numpy",
-            names=["array"],
-            alias=None,
-            is_from=True,
-            line_number=1
-        )
+        info = ImportInfo(module="numpy", names=["array"], alias=None, is_from=True, line_number=1)
         assert info.top_level_package == "numpy"
 
     def test_top_level_package_nested(self):
@@ -84,18 +106,14 @@ class TestImportInfo:
             names=["RandomForestClassifier"],
             alias=None,
             is_from=True,
-            line_number=1
+            line_number=1,
         )
         assert info.top_level_package == "sklearn"
 
     def test_get_pypi_package_direct_mapping(self):
         """Test get_pypi_package with direct mapping."""
         info = ImportInfo(
-            module="sklearn",
-            names=["sklearn"],
-            alias=None,
-            is_from=False,
-            line_number=1
+            module="sklearn", names=["sklearn"], alias=None, is_from=False, line_number=1
         )
         assert info.get_pypi_package() == "scikit-learn"
 
@@ -106,30 +124,18 @@ class TestImportInfo:
             names=["RandomForestClassifier"],
             alias=None,
             is_from=True,
-            line_number=1
+            line_number=1,
         )
         assert info.get_pypi_package() == "scikit-learn"
 
     def test_get_pypi_package_stdlib_returns_none(self):
         """Test get_pypi_package returns None for stdlib."""
-        info = ImportInfo(
-            module="os",
-            names=["path"],
-            alias=None,
-            is_from=True,
-            line_number=1
-        )
+        info = ImportInfo(module="os", names=["path"], alias=None, is_from=True, line_number=1)
         assert info.get_pypi_package() is None
 
     def test_get_pypi_package_no_mapping(self):
         """Test get_pypi_package with no mapping (uses import name)."""
-        info = ImportInfo(
-            module="numpy",
-            names=["array"],
-            alias=None,
-            is_from=True,
-            line_number=1
-        )
+        info = ImportInfo(module="numpy", names=["array"], alias=None, is_from=True, line_number=1)
         assert info.get_pypi_package() == "numpy"
 
 
@@ -212,8 +218,7 @@ from sklearn.ensemble import RandomForestClassifier
         result = parse_imports_ast(code)
         assert len(result) == 1
         assert result[0].module == "collections"
-        assert sorted(result[0].names) == sorted(
-            ["OrderedDict", "defaultdict", "Counter"])
+        assert sorted(result[0].names) == sorted(["OrderedDict", "defaultdict", "Counter"])
 
     def test_dotted_import(self):
         """Test parsing dotted import."""
@@ -343,28 +348,41 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 """
         result = get_packages_to_install(code)
-        expected = {
-            "numpy", "pandas", "scikit-learn",
-            "matplotlib", "seaborn"
-        }
+        expected = {"numpy", "pandas", "scikit-learn", "matplotlib", "seaborn"}
         assert result == expected
 
 
 class TestIsStdlibModule:
     """Tests for is_stdlib_module function."""
 
-    @pytest.mark.parametrize("module", [
-        "os", "sys", "re", "json", "random",
-        "os.path", "collections.abc", "urllib.parse",
-    ])
+    @pytest.mark.parametrize(
+        "module",
+        [
+            "os",
+            "sys",
+            "re",
+            "json",
+            "random",
+            "os.path",
+            "collections.abc",
+            "urllib.parse",
+        ],
+    )
     def test_stdlib_modules(self, module):
         """Test that stdlib modules are correctly identified."""
         assert is_stdlib_module(module) is True
 
-    @pytest.mark.parametrize("module", [
-        "numpy", "pandas", "sklearn", "tensorflow",
-        "numpy.random", "pandas.core",
-    ])
+    @pytest.mark.parametrize(
+        "module",
+        [
+            "numpy",
+            "pandas",
+            "sklearn",
+            "tensorflow",
+            "numpy.random",
+            "pandas.core",
+        ],
+    )
     def test_non_stdlib_modules(self, module):
         """Test that non-stdlib modules are correctly identified."""
         assert is_stdlib_module(module) is False

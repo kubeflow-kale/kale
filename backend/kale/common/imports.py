@@ -25,61 +25,220 @@ The key components are:
 """
 
 import ast
-import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set
-
 
 # Python standard library modules (should not be pip installed)
 # This is a comprehensive list for Python 3.10+
-STDLIB_MODULES: Set[str] = {
+STDLIB_MODULES: set[str] = {
     # Built-in modules
-    "abc", "aifc", "argparse", "array", "ast", "asynchat", "asyncio",
-    "asyncore", "atexit", "audioop", "base64", "bdb", "binascii",
-    "binhex", "bisect", "builtins", "bz2",
-    "calendar", "cgi", "cgitb", "chunk", "cmath", "cmd", "code",
-    "codecs", "codeop", "collections", "colorsys", "compileall",
-    "concurrent", "configparser", "contextlib", "contextvars", "copy",
-    "copyreg", "cProfile", "crypt", "csv", "ctypes", "curses",
-    "dataclasses", "datetime", "dbm", "decimal", "difflib", "dis",
-    "distutils", "doctest",
-    "email", "encodings", "enum", "errno",
-    "faulthandler", "fcntl", "filecmp", "fileinput", "fnmatch",
-    "fractions", "ftplib", "functools",
-    "gc", "getopt", "getpass", "gettext", "glob", "graphlib", "grp", "gzip",
-    "hashlib", "heapq", "hmac", "html", "http",
-    "idlelib", "imaplib", "imghdr", "imp", "importlib", "inspect", "io",
-    "ipaddress", "itertools",
+    "abc",
+    "aifc",
+    "argparse",
+    "array",
+    "ast",
+    "asynchat",
+    "asyncio",
+    "asyncore",
+    "atexit",
+    "audioop",
+    "base64",
+    "bdb",
+    "binascii",
+    "binhex",
+    "bisect",
+    "builtins",
+    "bz2",
+    "calendar",
+    "cgi",
+    "cgitb",
+    "chunk",
+    "cmath",
+    "cmd",
+    "code",
+    "codecs",
+    "codeop",
+    "collections",
+    "colorsys",
+    "compileall",
+    "concurrent",
+    "configparser",
+    "contextlib",
+    "contextvars",
+    "copy",
+    "copyreg",
+    "cProfile",
+    "crypt",
+    "csv",
+    "ctypes",
+    "curses",
+    "dataclasses",
+    "datetime",
+    "dbm",
+    "decimal",
+    "difflib",
+    "dis",
+    "distutils",
+    "doctest",
+    "email",
+    "encodings",
+    "enum",
+    "errno",
+    "faulthandler",
+    "fcntl",
+    "filecmp",
+    "fileinput",
+    "fnmatch",
+    "fractions",
+    "ftplib",
+    "functools",
+    "gc",
+    "getopt",
+    "getpass",
+    "gettext",
+    "glob",
+    "graphlib",
+    "grp",
+    "gzip",
+    "hashlib",
+    "heapq",
+    "hmac",
+    "html",
+    "http",
+    "idlelib",
+    "imaplib",
+    "imghdr",
+    "imp",
+    "importlib",
+    "inspect",
+    "io",
+    "ipaddress",
+    "itertools",
     "json",
     "keyword",
-    "lib2to3", "linecache", "locale", "logging", "lzma",
-    "mailbox", "mailcap", "marshal", "math", "mimetypes", "mmap",
-    "modulefinder", "multiprocessing",
-    "netrc", "nis", "nntplib", "numbers",
-    "operator", "optparse", "os", "ossaudiodev",
-    "pathlib", "pdb", "pickle", "pickletools", "pipes", "pkgutil",
-    "platform", "plistlib", "poplib", "posix", "posixpath", "pprint",
-    "profile", "pstats", "pty", "pwd", "py_compile", "pyclbr", "pydoc",
-    "queue", "quopri",
-    "random", "re", "readline", "reprlib", "resource", "rlcompleter",
+    "lib2to3",
+    "linecache",
+    "locale",
+    "logging",
+    "lzma",
+    "mailbox",
+    "mailcap",
+    "marshal",
+    "math",
+    "mimetypes",
+    "mmap",
+    "modulefinder",
+    "multiprocessing",
+    "netrc",
+    "nis",
+    "nntplib",
+    "numbers",
+    "operator",
+    "optparse",
+    "os",
+    "ossaudiodev",
+    "pathlib",
+    "pdb",
+    "pickle",
+    "pickletools",
+    "pipes",
+    "pkgutil",
+    "platform",
+    "plistlib",
+    "poplib",
+    "posix",
+    "posixpath",
+    "pprint",
+    "profile",
+    "pstats",
+    "pty",
+    "pwd",
+    "py_compile",
+    "pyclbr",
+    "pydoc",
+    "queue",
+    "quopri",
+    "random",
+    "re",
+    "readline",
+    "reprlib",
+    "resource",
+    "rlcompleter",
     "runpy",
-    "sched", "secrets", "select", "selectors", "shelve", "shlex",
-    "shutil", "signal", "site", "smtpd", "smtplib", "sndhdr", "socket",
-    "socketserver", "spwd", "sqlite3", "ssl", "stat", "statistics",
-    "string", "stringprep", "struct", "subprocess", "sunau", "symtable",
-    "sys", "sysconfig", "syslog",
-    "tabnanny", "tarfile", "telnetlib", "tempfile", "termios", "test",
-    "textwrap", "threading", "time", "timeit", "tkinter", "token",
-    "tokenize", "trace", "traceback", "tracemalloc", "tty", "turtle",
-    "turtledemo", "types", "typing",
-    "unicodedata", "unittest", "urllib", "uu", "uuid",
+    "sched",
+    "secrets",
+    "select",
+    "selectors",
+    "shelve",
+    "shlex",
+    "shutil",
+    "signal",
+    "site",
+    "smtpd",
+    "smtplib",
+    "sndhdr",
+    "socket",
+    "socketserver",
+    "spwd",
+    "sqlite3",
+    "ssl",
+    "stat",
+    "statistics",
+    "string",
+    "stringprep",
+    "struct",
+    "subprocess",
+    "sunau",
+    "symtable",
+    "sys",
+    "sysconfig",
+    "syslog",
+    "tabnanny",
+    "tarfile",
+    "telnetlib",
+    "tempfile",
+    "termios",
+    "test",
+    "textwrap",
+    "threading",
+    "time",
+    "timeit",
+    "tkinter",
+    "token",
+    "tokenize",
+    "trace",
+    "traceback",
+    "tracemalloc",
+    "tty",
+    "turtle",
+    "turtledemo",
+    "types",
+    "typing",
+    "unicodedata",
+    "unittest",
+    "urllib",
+    "uu",
+    "uuid",
     "venv",
-    "warnings", "wave", "weakref", "webbrowser", "winreg", "winsound",
+    "warnings",
+    "wave",
+    "weakref",
+    "webbrowser",
+    "winreg",
+    "winsound",
     "wsgiref",
-    "xdrlib", "xml", "xmlrpc",
-    "zipapp", "zipfile", "zipimport", "zlib", "zoneinfo",
+    "xdrlib",
+    "xml",
+    "xmlrpc",
+    "zipapp",
+    "zipfile",
+    "zipimport",
+    "zlib",
+    "zoneinfo",
     # Common submodules that might be imported directly
-    "os.path", "urllib.parse", "urllib.request", "collections.abc",
+    "os.path",
+    "urllib.parse",
+    "urllib.request",
+    "collections.abc",
     "typing_extensions",  # Not stdlib but often bundled
 }
 
@@ -88,7 +247,7 @@ STDLIB_MODULES: Set[str] = {
 # - If the import name matches the PyPI name, it doesn't need to be here
 # - If the value is None, the package should be skipped (e.g., stdlib)
 # - Add new mappings here as needed
-PACKAGE_NAME_MAP: Dict[str, Optional[str]] = {
+PACKAGE_NAME_MAP: dict[str, str | None] = {
     # Common packages where import name differs from PyPI name
     "sklearn": "scikit-learn",
     "cv2": "opencv-python",
@@ -122,18 +281,19 @@ class ImportInfo:
         is_from: True if this is a "from X import Y" statement
         line_number: Source line number for error reporting
     """
+
     module: str
-    names: List[str]
-    alias: Optional[str]
+    names: list[str]
+    alias: str | None
     is_from: bool
     line_number: int
 
     @property
     def top_level_package(self) -> str:
         """Get the top-level package name (before the first dot)."""
-        return self.module.split('.')[0]
+        return self.module.split(".")[0]
 
-    def get_pypi_package(self) -> Optional[str]:
+    def get_pypi_package(self) -> str | None:
         """Get the PyPI package name for this import.
 
         Returns:
@@ -155,7 +315,7 @@ class ImportInfo:
         return top_level
 
 
-def parse_imports_ast(code: str) -> List[ImportInfo]:
+def parse_imports_ast(code: str) -> list[ImportInfo]:
     """Parse all import statements from Python code using AST.
 
     This function properly handles all Python import forms:
@@ -177,7 +337,7 @@ def parse_imports_ast(code: str) -> List[ImportInfo]:
     Raises:
         SyntaxError: If the code cannot be parsed
     """
-    imports: List[ImportInfo] = []
+    imports: list[ImportInfo] = []
 
     try:
         tree = ast.parse(code)
@@ -190,31 +350,32 @@ def parse_imports_ast(code: str) -> List[ImportInfo]:
         if isinstance(node, ast.Import):
             # Handle: import foo, import foo.bar, import foo as f
             for alias in node.names:
-                imports.append(ImportInfo(
-                    module=alias.name,
-                    names=[alias.name.split('.')[-1]],
-                    alias=alias.asname,
-                    is_from=False,
-                    line_number=node.lineno
-                ))
-        elif isinstance(node, ast.ImportFrom):
+                imports.append(
+                    ImportInfo(
+                        module=alias.name,
+                        names=[alias.name.split(".")[-1]],
+                        alias=alias.asname,
+                        is_from=False,
+                        line_number=node.lineno,
+                    )
+                )
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
             # Handle: from foo import bar, from foo import bar as b
-            if node.module is not None:
-                # Regular from import
-                imports.append(ImportInfo(
+            # Skip relative imports like "from . import x" as they won't need pip install
+            imports.append(
+                ImportInfo(
                     module=node.module,
                     names=[a.name for a in node.names],
                     alias=node.names[0].asname if len(node.names) == 1 else None,
                     is_from=True,
-                    line_number=node.lineno
-                ))
-            # else: relative import like "from . import x" - skip these
-            # as they won't need to be pip installed
+                    line_number=node.lineno,
+                )
+            )
 
     return imports
 
 
-def get_packages_to_install(code: str) -> Set[str]:
+def get_packages_to_install(code: str) -> set[str]:
     """Extract pip-installable package names from Python code.
 
     This function parses the import statements in the code and returns
@@ -228,7 +389,7 @@ def get_packages_to_install(code: str) -> Set[str]:
     Returns:
         Set of PyPI package names to install
     """
-    packages: Set[str] = set()
+    packages: set[str] = set()
 
     for imp in parse_imports_ast(code):
         pkg = imp.get_pypi_package()
@@ -247,5 +408,5 @@ def is_stdlib_module(module_name: str) -> bool:
     Returns:
         True if the module is part of stdlib, False otherwise
     """
-    top_level = module_name.split('.')[0]
+    top_level = module_name.split(".")[0]
     return top_level in STDLIB_MODULES or module_name in STDLIB_MODULES
