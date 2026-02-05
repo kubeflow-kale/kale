@@ -228,14 +228,15 @@ class NotebookProcessor:
 
     def _configure_poddefaults(self):
         """Detect and configure PodDefaults labels."""
-        _pod_defaults_labels = dict()
+        _pod_defaults_labels = {}
         try:
             _pod_defaults_labels = kfutils.find_poddefault_labels()
         except Exception as e:
             log.warning("Could not retrieve PodDefaults. Reason: %s", e)
         self.pipeline.config.steps_defaults["labels"] = {
-            **self.pipeline.config.steps_defaults.get("labels", dict()),
-            **_pod_defaults_labels}
+            **self.pipeline.config.steps_defaults.get("labels", {}),
+            **_pod_defaults_labels,
+        }
 
     def _apply_steps_defaults(self):
         """Apply default configuration to all pipeline steps."""

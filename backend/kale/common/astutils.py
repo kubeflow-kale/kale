@@ -59,13 +59,13 @@ def get_list_tuple_names(node):
     Returns: a list of all names of the tuple
 
     """
-    assert isinstance(node, (ast.Tuple, ast.List))
+    assert isinstance(node, ast.Tuple | ast.List)
     names = []
     for _n in node.elts:
-        if isinstance(_n, (ast.Tuple, ast.List)):
+        if isinstance(_n, ast.Tuple | ast.List):
             # recursive call
             names.extend(get_list_tuple_names(_n))
-        elif isinstance(_n, (ast.Name,)):
+        elif isinstance(_n, ast.Name):
             names.append(_n.id)
     return names
 
@@ -135,21 +135,18 @@ def get_marshal_candidates(code):
         for node in walk(block, stop_at=contexts):
             if isinstance(node, contexts):
                 names.add(node.name)
-            if isinstance(node, (ast.Name,)):
+            if isinstance(node, ast.Name):
                 names.add(node.id)
             if isinstance(
                 node,
-                (
-                    ast.Import,
-                    ast.ImportFrom,
-                ),
+                ast.Import | ast.ImportFrom,
             ):
                 for _n in node.names:
                     if _n.asname is None:
                         names.add(_n.name)
                     else:
                         names.add(_n.asname)
-            if isinstance(node, (ast.Tuple, ast.List)):
+            if isinstance(node, ast.Tuple | ast.List):
                 names.update(get_list_tuple_names(node))
     return names
 
@@ -171,7 +168,7 @@ def parse_functions(code):
     tree = ast.parse(code)
     for block in tree.body:
         for node in walk(block, stop_at=(ast.FunctionDef,), ignore=(ast.ClassDef,)):
-            if isinstance(node, (ast.FunctionDef,)):
+            if isinstance(node, ast.FunctionDef):
                 fn_name = node.name
                 fns[fn_name] = astor.to_source(node)
     return fns
@@ -208,7 +205,7 @@ def get_function_calls(code):
             # a function call. We check the attribute func to be ast.Name
             # because it could also be a ast.Attribute node, in case of
             # function calls like obj.foo()
-            if isinstance(node, (ast.Call,)) and isinstance(node.func, (ast.Name,)):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 fns.add(node.func.id)
     return fns
 
@@ -230,10 +227,7 @@ def get_function_and_class_names(code):
         for node in walk(block):
             if isinstance(
                 node,
-                (
-                    ast.FunctionDef,
-                    ast.ClassDef,
-                ),
+                ast.FunctionDef | ast.ClassDef,
             ):
                 names.add(node.name)
     return names
@@ -256,10 +250,7 @@ def parse_assignments_expressions(code):
         if (
             isinstance(
                 targets[0],
-                (
-                    ast.Tuple,
-                    ast.List,
-                ),
+                ast.Tuple | ast.List,
             )
             or len(targets) > 1
         ):
