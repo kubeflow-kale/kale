@@ -65,7 +65,7 @@ from kale.common import logutils
 
 from .compiler import Compiler
 from .pipeline import Pipeline, PipelineConfig, VolumeConfig
-from .processors import NotebookConfig, NotebookProcessor, PythonProcessor
+from .processors import NotebookConfig, NotebookProcessor
 from .step import Step, StepConfig
 
 __all__ = [
@@ -73,7 +73,6 @@ __all__ = [
     "Artifact",
     "NotebookConfig",
     "NotebookProcessor",
-    "PythonProcessor",
     "Step",
     "StepConfig",
     "Pipeline",

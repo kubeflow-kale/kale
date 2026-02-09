@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import re
 from typing import Any
 
 import nbformat as nb
 
-from kale.common import astutils, flakeutils, graphutils, utils
+from kale.common import astutils, flakeutils, graphutils, kfutils, utils
 from kale.config import Field
-from kale.pipeline import PipelineConfig
+from kale.pipeline import Pipeline, PipelineConfig
 from kale.step import PipelineParam, Step
 
-from .baseprocessor import BaseProcessor
+log = logging.getLogger(__name__)
 
 # fixme: Change the name of this key to `kale_metadata`
 KALE_NB_METADATA_KEY = "kubeflow_notebook"
@@ -168,19 +169,25 @@ class NotebookConfig(PipelineConfig):
         return result
 
 
-class NotebookProcessor(BaseProcessor):
+class NotebookProcessor:
     """Convert a Notebook to a Pipeline object."""
 
-    id = "nb"
-    config_cls = NotebookConfig
     no_op_step = Step(name="no_op", source=[])
 
-    def __init__(self, nb_path: str, nb_metadata_overrides: dict[str, Any] | None = None, **kwargs):
+    def __init__(
+        self,
+        nb_path: str,
+        nb_metadata_overrides: dict[str, Any] | None = None,
+        config: NotebookConfig | None = None,
+        skip_validation: bool = False,
+        **kwargs,
+    ):
         """Instantiate a new NotebookProcessor.
 
         Args:
             nb_path: Path to source notebook
             nb_metadata_overrides: Override notebook config settings
+            config: Optional pre-built NotebookConfig
             skip_validation: Set to True in order to skip the notebook's
                 metadata validation. This is useful in case the
                 NotebookProcessor is used to parse a part of the notebook
@@ -194,12 +201,47 @@ class NotebookProcessor(BaseProcessor):
         nb_metadata.update({"notebook_path": nb_path})
         if nb_metadata_overrides:
             nb_metadata.update(nb_metadata_overrides)
-        super().__init__(**{**kwargs, **nb_metadata})
+
+        # Initialize config and pipeline (previously in BaseProcessor)
+        self.config = config
+        if not config and not skip_validation:
+            self.config = NotebookConfig(**{**kwargs, **nb_metadata})
+        self.pipeline = Pipeline(self.config) if self.config else None
 
     def _read_notebook(self):
         if not os.path.exists(self.nb_path):
             raise ValueError(f"NotebookProcessor could not find a notebook at path {self.nb_path}")
         return nb.read(self.nb_path, as_version=nb.NO_CONVERT)
+
+    def run(self) -> Pipeline:
+        """Process the notebook into a Pipeline object."""
+        self.to_pipeline()
+        self._post_pipeline()
+        return self.pipeline
+
+    def _post_pipeline(self):
+        """Post-process the pipeline after conversion."""
+        if self.pipeline:
+            self.pipeline.processor = self
+        self._configure_poddefaults()
+        self._apply_steps_defaults()
+
+    def _configure_poddefaults(self):
+        """Detect and configure PodDefaults labels."""
+        _pod_defaults_labels = {}
+        try:
+            _pod_defaults_labels = kfutils.find_poddefault_labels()
+        except Exception as e:
+            log.warning("Could not retrieve PodDefaults. Reason: %s", e)
+        self.pipeline.config.steps_defaults["labels"] = {
+            **self.pipeline.config.steps_defaults.get("labels", {}),
+            **_pod_defaults_labels,
+        }
+
+    def _apply_steps_defaults(self):
+        """Apply default configuration to all pipeline steps."""
+        for step in self.pipeline.steps:
+            step.config.update(self.pipeline.config.steps_defaults)
 
     def to_pipeline(self):
         """Convert an annotated Notebook to a Pipeline object."""

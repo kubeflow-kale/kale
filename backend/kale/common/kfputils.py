@@ -298,7 +298,7 @@ def generate_mlpipeline_metrics(metrics):
     """
     metadata = []
     for name, value in metrics.items():
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, int | float):
             try:
                 value = float(value)
             except ValueError:
