@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
 import { Input } from '../../components/Input';
@@ -462,18 +463,38 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                 ''
               )}
               {cellType === 'step' ? (
-                <SelectMulti
-                  id="select-previous-blocks"
-                  label="Depends on"
-                  disabled={
-                    !(this.props.stepName && this.props.stepName.length > 0)
+                <Tooltip
+                  title={
+                    !this.props.stepName || this.props.stepName.length === 0
+                      ? 'Please enter a step name first'
+                      : this.state.blockDependenciesChoices.length === 0
+                        ? 'No other steps available. Add more pipeline steps to create dependencies.'
+                        : 'Select which steps this step depends on'
                   }
-                  updateSelected={this.updatePrevBlocksNames}
-                  options={this.state.blockDependenciesChoices}
-                  variant="outlined"
-                  selected={this.props.stepDependencies || []}
-                  style={{ width: '30%' }}
-                />
+                  placement="top"
+                  arrow
+                >
+                  <div
+                    style={{
+                      width: '30%',
+                      marginRight: '4px',
+                    }}
+                  >
+                    <SelectMulti
+                      id="select-previous-blocks"
+                      label="Depends on"
+                      disabled={
+                        !(
+                          this.props.stepName && this.props.stepName.length > 0
+                        ) || this.state.blockDependenciesChoices.length === 0
+                      }
+                      updateSelected={this.updatePrevBlocksNames}
+                      options={this.state.blockDependenciesChoices}
+                      variant="outlined"
+                      selected={this.props.stepDependencies || []}
+                    />
+                  </div>
+                </Tooltip>
               ) : (
                 ''
               )}
