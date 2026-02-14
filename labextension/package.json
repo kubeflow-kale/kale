@@ -119,7 +119,8 @@
       }
     },
     "extension": true,
-    "outputDir": "kubeflow_kale_labextension/labextension"
+    "outputDir": "kubeflow_kale_labextension/labextension",
+    "webpackConfig": "webpack.config.js"
   },
   "stylelint": {
     "extends": [
