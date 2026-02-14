@@ -29,7 +29,7 @@
 
 module.exports = {
   ignoreWarnings: [
-    (warning) => {
+    warning => {
       // Ignore source map warnings from packages with known broken source maps
       if (warning.module?.resource) {
         const resource = warning.module.resource;

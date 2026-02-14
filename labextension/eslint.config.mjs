@@ -31,7 +31,7 @@ export default [
       '**/labextension/**',
       '.prettierrc.js',
       '.ipynb_checkpoints/**',
-
+      'webpack.config.js',
     ],
   },
   js.configs.recommended,
