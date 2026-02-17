@@ -38,6 +38,11 @@ import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { LabIcon } from '@jupyterlab/ui-components';
+import { ToolbarButton } from '@jupyterlab/apputils';
+import { NotebookPanel } from '@jupyterlab/notebook';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
+import { INotebookModel } from '@jupyterlab/notebook';
+let leftPanelRef: KubeflowKaleLeftPanel | null = null;
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
@@ -134,6 +139,7 @@ async function activate(
     // console.log(lab.commands.listCommands());
     widget = ReactWidget.create(
       <KubeflowKaleLeftPanel
+        ref={(ref) => (leftPanelRef = ref)}
         lab={lab}
         tracker={tracker}
         docManager={docManager}
@@ -154,6 +160,44 @@ async function activate(
   lab.restored.then(() => {
     loadPanel();
   });
+  // =======================
+  // Kale native Jupyter commands
+  // =======================
+
+  lab.commands.addCommand('kale:compile', {
+    label: 'Compile Notebook',
+    execute: () => leftPanelRef?.triggerCompile(),
+  });
+
+  lab.commands.addCommand('kale:run', {
+    label: 'Run Pipeline',
+    execute: () => leftPanelRef?.triggerRun(),
+  });
+
+  class KaleToolbarExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  createNew(panel: NotebookPanel) {
+    panel.toolbar.addItem(
+      'kaleCompile',
+      new ToolbarButton({
+        label: 'Compile',
+        icon: kaleIcon,
+        onClick: () => lab.commands.execute('kale:compile'),
+      }),
+    );
+
+    panel.toolbar.addItem(
+      'kaleRun',
+      new ToolbarButton({
+        label: 'Run',
+        icon: kaleIcon,
+        onClick: () => lab.commands.execute('kale:run'),
+      }),
+    );
+  }
+}
+lab.docRegistry.addWidgetExtension('Notebook', new KaleToolbarExtension());
 
   return {
     get widget() {

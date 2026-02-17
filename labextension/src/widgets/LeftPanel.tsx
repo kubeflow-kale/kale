@@ -200,6 +200,14 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     }
   };
 
+  public triggerCompile = () => {
+  this.activateRunDeployState('compile');
+};
+
+public triggerRun = () => {
+  this.activateRunDeployState('run');
+};
+
   changeDeployDebugMessage = () =>
     this.setState(prevState => ({
       deployDebugMessage: !prevState.deployDebugMessage,
