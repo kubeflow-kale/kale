@@ -316,6 +316,45 @@ def run_code(source: tuple, kernel_name="python3"):
     time.sleep(1)
     km.shutdown_kernel()
 
+    has_errors = False
+    for _, cell in enumerate(notebook.cells):
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "error":
+                has_errors = True
+
+                cell_source = cell.get("source", "")
+                source_lines = cell_source.split("\n")
+                if len(source_lines) > 5:
+                    code_preview = "\n".join(source_lines[:5]) + "\n... (truncated)"
+                else:
+                    code_preview = cell_source
+
+                error_name = output.get("ename", "Unknown")
+                error_value = output.get("evalue", "Unknown error")
+                traceback = output.get("traceback", [])
+
+                sys.stdout.flush()
+                log.newline(lines=2)
+                log.error("%s Cell Execution Error %s", "=" * 10, "=" * 10)
+                log.error(f"Error: {error_name}: {error_value}")
+                log.error("Failed code block:")
+                log.error("-" * 40)
+                for line in code_preview.split("\n"):
+                    log.error(f"  {line}")
+                log.error("-" * 40)
+                if traceback:
+                    log.error("Traceback:")
+                    for tb_line in traceback:
+                        clean_line = remove_ansi_color_sequences(tb_line)
+                        log.error(clean_line)
+                log.error("=" * 50)
+
+    if has_errors:
+        sys.stdout.flush()
+        log.newline(lines=2)
+        log.error("%s Failed to run user code %s", "-" * 10, "-" * 10)
+        sys.exit(-1)
+
     result = process_outputs(notebook.cells)
     sys.stdout.flush()
     log.newline(lines=3)
