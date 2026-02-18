@@ -270,8 +270,16 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       }
 
       const metadataParent = document.createElement('div');
-      cellElement.prepend(metadataParent);
-
+      // When the cell was newly added Jupyter still didn't add elements to it
+      // so we wait for the first child to be added and then we prepend the metadata element.
+      if (cellElement.childNodes.length === 0) {
+        new MutationObserver((_, obs) => {
+          cellElement.prepend(metadataParent);
+          obs.disconnect();
+        }).observe(cellElement, { childList: true });
+      } else {
+        cellElement.prepend(metadataParent);
+      }
       const inlineMetadataPortal = createPortal(
         <InlineMetadata
           key={index}
