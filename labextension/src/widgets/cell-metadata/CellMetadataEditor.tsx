@@ -222,7 +222,11 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       const cellModel = this.props.notebook.model.cells.get(
         this.context.activeCellIndex,
       );
-      if (!isCodeCellModel(cellModel) && this.context.isEditorVisible) {
+      if (
+        cellModel &&
+        !isCodeCellModel(cellModel) &&
+        this.context.isEditorVisible
+      ) {
         this.closeEditor();
       }
     }
