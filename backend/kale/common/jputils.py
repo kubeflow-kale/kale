@@ -306,9 +306,9 @@ def run_code(source: tuple, kernel_name="python3"):
         # start preprocessor: run each code cell and capture the output
         ep.preprocess(notebook, resources, km=km)
     except KaleKernelException:
-        sys.stdout.flush()
         log.newline(lines=3)
         log.error("%s Failed to run user code %s", "-" * 10, "-" * 10)
+        sys.stdout.flush()
         # exit gracefully with error
         sys.exit(-1)
     # Give some time to the stream watcher thread to receive all messages from
@@ -317,7 +317,7 @@ def run_code(source: tuple, kernel_name="python3"):
     km.shutdown_kernel()
 
     has_errors = False
-    for _, cell in enumerate(notebook.cells):
+    for cell in notebook.cells:
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 has_errors = True
@@ -333,7 +333,6 @@ def run_code(source: tuple, kernel_name="python3"):
                 error_value = output.get("evalue", "Unknown error")
                 traceback = output.get("traceback", [])
 
-                sys.stdout.flush()
                 log.newline(lines=2)
                 log.error("%s Cell Execution Error %s", "=" * 10, "=" * 10)
                 log.error(f"Error: {error_name}: {error_value}")
@@ -348,17 +347,18 @@ def run_code(source: tuple, kernel_name="python3"):
                         clean_line = remove_ansi_color_sequences(tb_line)
                         log.error(clean_line)
                 log.error("=" * 50)
+                sys.stdout.flush()
 
     if has_errors:
-        sys.stdout.flush()
         log.newline(lines=2)
         log.error("%s Failed to run user code %s", "-" * 10, "-" * 10)
+        sys.stdout.flush()
         sys.exit(-1)
 
     result = process_outputs(notebook.cells)
-    sys.stdout.flush()
     log.newline(lines=3)
     log.info("%s Successfully ran user code %s", "-" * 10, "-" * 10)
+    sys.stdout.flush()
     return result
 
 
