@@ -25,6 +25,7 @@ import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import CircularProgress from '@mui/material/CircularProgress';
 import { styled } from '@mui/material/styles';
+import type { DeployType } from '../widgets/LeftPanel';
 
 const DeployButtonContainer = styled('div')({
   '& .deploy-button': {
@@ -51,7 +52,7 @@ const StyledPopper = styled(Popper)({
 
 interface ISplitDeployButton {
   running: boolean;
-  handleClick: (value: string) => void;
+  handleClick: (value: DeployType) => void;
   // katibRun: boolean;
 }
 
@@ -62,7 +63,7 @@ export const SplitDeployButton: React.FunctionComponent<
   const anchorRef = React.useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
-  const options = [
+  const options: { label: string; value: DeployType }[] = [
     {
       label: 'Compile and Run',
       value: 'run',

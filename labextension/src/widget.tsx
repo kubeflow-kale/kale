@@ -38,11 +38,7 @@ import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { LabIcon } from '@jupyterlab/ui-components';
-import { ToolbarButton } from '@jupyterlab/apputils';
-import { NotebookPanel } from '@jupyterlab/notebook';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { INotebookModel } from '@jupyterlab/notebook';
-let leftPanelRef: KubeflowKaleLeftPanel | null = null;
+import { registerKaleCommands, setLeftPanelRef } from './commands/kaleToolbar';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
@@ -56,6 +52,7 @@ export interface IKubeflowKale {
 const id = 'kubeflow-kale-labextension:deploymentPanel';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
+let kalePanelWidget: ReactWidget | undefined;
 
 /**
  * Adds a visual Kubeflow Pipelines Deployment tool to the sidebar.
@@ -75,7 +72,6 @@ async function activate(
   tracker: INotebookTracker,
   docManager: IDocumentManager,
 ): Promise<IKubeflowKale> {
-  let widget: ReactWidget | undefined;
   const kernel: Kernel.IKernelConnection =
     await NotebookUtils.createNewKernel();
   window.addEventListener('beforeunload', () => kernel.shutdown());
@@ -123,13 +119,13 @@ async function activate(
     }
 
     // add widget
-    if (widget && !widget.isAttached) {
-      labShell.add(widget, 'left');
+    if (kalePanelWidget && !kalePanelWidget.isAttached) {
+      labShell.add(kalePanelWidget, 'left');
     }
     // open widget if resuming from a notebook
-    if (reveal_widget && widget) {
+    if (reveal_widget && kalePanelWidget) {
       // open kale panel
-      widget.activate();
+      kalePanelWidget.activate();
     }
   }
 
@@ -137,9 +133,9 @@ async function activate(
   lab.started.then(() => {
     // show list of commands in the commandRegistry
     // console.log(lab.commands.listCommands());
-    widget = ReactWidget.create(
+    kalePanelWidget = ReactWidget.create(
       <KubeflowKaleLeftPanel
-        ref={(ref) => (leftPanelRef = ref)}
+        ref={(ref) => setLeftPanelRef(ref)}
         lab={lab}
         tracker={tracker}
         docManager={docManager}
@@ -147,12 +143,12 @@ async function activate(
         kernel={kernel}
       />,
     );
-    widget.id = 'kubeflow-kale-labextension/kubeflowDeployment';
-    widget.title.icon = kaleIcon;
-    widget.title.caption = 'Kubeflow Pipelines Deployment Panel';
-    widget.node.classList.add('kale-panel');
+    kalePanelWidget!.id = 'kubeflow-kale-labextension/kubeflowDeployment';
+    kalePanelWidget!.title.icon = kaleIcon;
+    kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
+    kalePanelWidget!.node.classList.add('kale-panel');
 
-    restorer.add(widget, widget.id);
+    restorer.add(kalePanelWidget, kalePanelWidget.id);
   });
 
   // Initialize once the application shell has been restored
@@ -160,51 +156,19 @@ async function activate(
   lab.restored.then(() => {
     loadPanel();
   });
-  // =======================
-  // Kale native Jupyter commands
-  // =======================
-
-  lab.commands.addCommand('kale:compile', {
-    label: 'Compile Notebook',
-    execute: () => leftPanelRef?.triggerCompile(),
-  });
-
-  lab.commands.addCommand('kale:run', {
-    label: 'Run Pipeline',
-    execute: () => leftPanelRef?.triggerRun(),
-  });
-
-  class KaleToolbarExtension
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  createNew(panel: NotebookPanel) {
-    panel.toolbar.addItem(
-      'kaleCompile',
-      new ToolbarButton({
-        label: 'Compile',
-        icon: kaleIcon,
-        onClick: () => lab.commands.execute('kale:compile'),
-      }),
-    );
-
-    panel.toolbar.addItem(
-      'kaleRun',
-      new ToolbarButton({
-        label: 'Run',
-        icon: kaleIcon,
-        onClick: () => lab.commands.execute('kale:run'),
-      }),
-    );
-  }
-}
-lab.docRegistry.addWidgetExtension('Notebook', new KaleToolbarExtension());
+  registerKaleCommands(lab, kaleIcon);
 
   return {
     get widget() {
-      if (!widget) {
+      if (!kalePanelWidget) {
         throw new Error('Widget not initialized yet');
       }
-      return widget;
+      return kalePanelWidget;
     },
   };
 }
+export const activateKalePanel = () => {
+  if (kalePanelWidget) {
+    kalePanelWidget.activate();
+  }
+};

@@ -31,8 +31,12 @@ import { theme } from '../Theme';
 import { Input } from '../components/Input';
 import Commands from '../lib/Commands';
 import { PageConfig } from '@jupyterlab/coreutils';
+<<<<<<< HEAD
 import { KaleEmptyState } from './KaleEmptyState';
 import kaleLogo from '../../style/icons/kale.svg';
+=======
+export type DeployType = 'compile' | 'run' | 'upload';
+>>>>>>> 48c55f2 (fix(labextension): disable toolbar buttons when Kale is OFF and add DeployType typing)
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const DEFAULT_UI_URL = 'http://localhost:8080';
@@ -58,7 +62,7 @@ interface IProps {
 interface IState {
   metadata: IKaleNotebookMetadata;
   runDeployment: boolean;
-  deploymentType: string;
+  deploymentType: DeployType;
   deployDebugMessage: boolean;
   experiments: IExperiment[];
   gettingExperiments: boolean;
@@ -192,7 +196,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata: { ...prevState.metadata, enable_caching: enabled },
     }));
 
-  activateRunDeployState = (type: string) => {
+  activateRunDeployState = (type: DeployType) => {
     if (!this.state.runDeployment) {
       // Clear all previous deploys when starting a new one, so only the latest panel is shown
       this.setState({ runDeployment: true, deploymentType: type, deploys: {} });
@@ -204,6 +208,9 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   this.activateRunDeployState('compile');
 };
 
+public isKaleEnabled = (): boolean => {
+  return this.state.isEnabled;
+};
 public triggerRun = () => {
   this.activateRunDeployState('run');
 };
