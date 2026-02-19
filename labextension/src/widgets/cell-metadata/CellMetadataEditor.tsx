@@ -567,7 +567,12 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                       updateSelected={this.updatePrevBlocksNames}
                       options={this.state.blockDependenciesChoices}
                       variant="outlined"
-                      selected={this.props.stepDependencies || []}
+                      selected={(this.props.stepDependencies || []).filter(
+                        dep =>
+                          this.state.blockDependenciesChoices.some(
+                            choice => choice.value === dep,
+                          ),
+                      )}
                     />
                   </div>
                 </Tooltip>

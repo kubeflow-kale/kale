@@ -34,6 +34,7 @@ interface IProps {
   cellIndex: number;
   pipelineBaseImage?: string;
   defaultBaseImage?: string;
+  allBlocks: string[];
 }
 
 interface IState {
@@ -117,7 +118,10 @@ export class InlineMetadata extends React.Component<IProps, IState> {
       this.updateStyles();
     }
 
-    if (prevProps.stepDependencies !== this.props.stepDependencies) {
+    if (
+      prevProps.stepDependencies !== this.props.stepDependencies ||
+      prevProps.allBlocks !== this.props.allBlocks
+    ) {
       this.updateDependencies();
     }
 
@@ -267,7 +271,11 @@ export class InlineMetadata extends React.Component<IProps, IState> {
    * block
    */
   updateDependencies() {
-    const dependencies = this.props.stepDependencies.map((name, i) => {
+    const validDependencies = this.props.stepDependencies.filter(dep =>
+      this.props.allBlocks.includes(dep),
+    );
+
+    const dependencies = validDependencies.map((name, i) => {
       const rgb = this.getColorFromName(name);
       return (
         <Tooltip placement="top" key={i} title={name}>

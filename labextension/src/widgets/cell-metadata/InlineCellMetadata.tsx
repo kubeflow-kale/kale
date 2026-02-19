@@ -142,8 +142,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     cells: CellList,
     args: IObservableList.IChangedArgs<ICellModel>,
   ) => {
-    this.refreshEditorsPropsAndInlineMetadata();
-
     const prevValue = args.oldValues[0];
     // Change type 'set' is when a cell changes its type. Even if a user changes
     // multiple cells using Shift + click the args.oldValues has only one cell
@@ -160,8 +158,10 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
 
     // Change type 'remove' is when a cell is removed from the notebook.
     if (args.type === 'remove') {
-      TagsUtils.removeOldDependencies(this.props.notebook, prevValue);
+      TagsUtils.removeOldDependencies(this.props.notebook);
     }
+
+    this.refreshEditorsPropsAndInlineMetadata();
   };
 
   /**
@@ -229,6 +229,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     const metadata: React.ReactPortal[] = [];
     const editors: Editors = {};
     const cells = this.props.notebook.model.cells;
+    const allBlocks = TagsUtils.getAllBlocks(this.props.notebook.content);
     for (let index = 0; index < cells.length; index++) {
       const cellModel = this.props.notebook.model.cells.get(index);
       const isCodeCell = isCodeCellModel(cellModel);
@@ -294,6 +295,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           cellIndex={index}
           pipelineBaseImage={this.props.pipelineBaseImage}
           defaultBaseImage={this.props.defaultBaseImage}
+          allBlocks={allBlocks}
         />,
         metadataParent,
       );

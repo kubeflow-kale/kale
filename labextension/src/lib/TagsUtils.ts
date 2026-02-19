@@ -15,7 +15,7 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
-import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
+import { ICellModel } from '@jupyterlab/cells';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
@@ -268,47 +268,36 @@ export default class TagsUtils {
   }
 
   public static removeOldDependencies(
-    notebook: NotebookPanel,
-    removedCell: ICellModel,
+    notebook: NotebookPanel
   ) {
-    if (!(removedCell instanceof CodeCellModel)) {
+    const cells = notebook.model?.cells;
+    if (!cells) {
       return;
     }
-    const metadata = removedCell.metadata as any;
-    let tagsValue;
-    if (metadata && typeof metadata.get === 'function') {
-      tagsValue = metadata.get('tags');
-    } else if (metadata && metadata.tags) {
-      tagsValue = metadata.tags;
-    } else {
-      return; // No tags found
-    }
-    if (!Array.isArray(tagsValue)) {
-      return;
-    }
-    const tags = tagsValue.filter((tag): tag is string => typeof tag === 'string');
-    if (!tags) {
-      return;
-    }
-    const blockName = tags
-      .filter(t => t.startsWith('step:'))
-      .map(t => t.replace('step:', ''))[0];
-    if (!blockName) {
-      return;
-    }
-    const removedDependency = `prev:${blockName}`;
-    this.cellsToArray(notebook)
-      .filter(cell => {
-        const cellTags = cell?.metadata['tags'];
-        return Array.isArray(cellTags) && cellTags.includes(removedDependency);
-      })
-      .forEach(cell => {
-        const cellTags = cell?.metadata['tags'];
-        if (Array.isArray(cellTags)) {
-          const newTags = cellTags.filter(e => e !== removedDependency);
-          cell.metadata['tags'] =  newTags;
+
+    const allBlocks = this.getAllBlocks(notebook.content);
+    const allBlocksSet = new Set(allBlocks);
+
+    for (let index = 0; index < cells.length; index++) {
+      const cell = cells.get(index);
+      const cellTags = cell?.metadata['tags'];
+
+      if (Array.isArray(cellTags)) {
+        const orphanedDeps = cellTags.filter(tag => {
+          if (typeof tag === 'string' && tag.startsWith('prev:')) {
+            const depName = tag.replace('prev:', '');
+            return !allBlocksSet.has(depName);
+          }
+          return false;
+        });
+
+        if (orphanedDeps.length > 0) {
+          const newTags = cellTags.filter(tag => !orphanedDeps.includes(tag));
+          CellUtils.setCellMetaData(notebook, index, 'tags', newTags, false);
         }
-      });
+      }
+    }
+
     notebook.context.save();
   }
 }
