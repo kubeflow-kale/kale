@@ -154,7 +154,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         args.newIndex,
         'tags',
         [],
-        true,
+        false,
       );
     }
 
@@ -212,6 +212,18 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       this.setState({ isEditorVisible: false });
     }
   }
+
+  /**
+   * Re-read notebook model and refresh editor props (e.g. after tag edits).
+   * Does not hide the editor, so dependency/step name updates stay visible.
+   */
+  refreshEditorsPropsFromModel = () => {
+    if (this.state.checked) {
+      this.clearEditorsPropsAndInlineMetadata(() => {
+        this.generateEditorsPropsAndInlineMetadata();
+      });
+    }
+  };
 
   clearEditorsPropsAndInlineMetadata = (callback?: () => void) => {
     // triggers cleanup in InlineMetadata
@@ -345,6 +357,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         baseImage={editorProps.baseImage}
         pipelineBaseImage={this.props.pipelineBaseImage}
         defaultBaseImage={this.props.defaultBaseImage}
+        onMetadataChanged={this.refreshEditorsPropsFromModel}
       />,
       document.body,
     );

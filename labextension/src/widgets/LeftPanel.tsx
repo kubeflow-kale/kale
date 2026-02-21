@@ -228,12 +228,12 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     ) {
       const activeNotebook = this.getActiveNotebook();
       if (activeNotebook) {
-        // Write new metadata to the notebook and save
+        // Write new metadata to the notebook (do not save; keep dirty so user is prompted on close)
         NotebookUtils.setMetaData(
           activeNotebook,
           KALE_NOTEBOOK_METADATA_KEY,
           this.state.metadata,
-          true,
+          false,
         );
       }
     }
