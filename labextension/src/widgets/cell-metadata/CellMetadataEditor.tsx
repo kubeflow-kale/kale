@@ -86,6 +86,8 @@ export interface IProps {
   baseImage?: string;
   pipelineBaseImage?: string;
   defaultBaseImage?: string;
+  /** Called after cell tags are updated so the UI can refresh from the model (without saving). */
+  onMetadataChanged?: () => void;
 }
 
 // this stores the name of a block and its color (form the name hash)
@@ -149,7 +151,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
         this.props.notebook,
         this.context.activeCellIndex,
         this.props.stepName || '',
-      );
+      ).then(() => {
+        this.props.onMetadataChanged?.();
+      });
     }
   };
 
@@ -296,6 +300,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       false,
     ).then(() => {
       TagsUtils.updateKaleCellsTags(this.props.notebook, oldBlockName, value);
+      this.props.onMetadataChanged?.();
     });
   };
 
@@ -314,8 +319,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
+      false,
     );
+    this.props.onMetadataChanged?.();
   };
 
   /**
@@ -352,8 +358,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
+      false,
     );
+    this.props.onMetadataChanged?.();
   };
 
   /**

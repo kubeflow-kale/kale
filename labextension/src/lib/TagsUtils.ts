@@ -203,9 +203,8 @@ export default class TagsUtils {
         CellUtils.setCellMetaData(notebookPanel, i, 'tags', newTags, false),
       );
     }
-    Promise.all(allPromises).then(() => {
-      notebookPanel.context.save();
-    });
+    Promise.all(allPromises);
+    // Do not save: keep notebook dirty so user is prompted to save on close
   }
 
   /**
@@ -214,12 +213,13 @@ export default class TagsUtils {
    * @param notebook NotebookPanel object
    * @param activeCellIndex The active cell index
    * @param stepName The old name of the active cell to be cleaned.
+   * @returns Promise that resolves when the cell and dependency tags are updated (caller can chain to refresh UI).
    */
   public static resetCell(
     notebook: NotebookPanel,
     activeCellIndex: number,
     stepName: string,
-  ) {
+  ): Promise<void> {
     const value = '';
     const previousBlocks: string[] = [];
 
@@ -228,12 +228,12 @@ export default class TagsUtils {
       prevBlockNames: previousBlocks,
       blockName: value,
     };
-    TagsUtils.setKaleCellTags(
+    return TagsUtils.setKaleCellTags(
       notebook,
       activeCellIndex,
       cellMetadata,
       false,
-    ).then(oldValue => {
+    ).then(() => {
       TagsUtils.updateKaleCellsTags(notebook, oldBlockName, value);
     });
   }
@@ -280,18 +280,22 @@ export default class TagsUtils {
       return;
     }
     const removedDependency = `prev:${blockName}`;
-    this.cellsToArray(notebook)
-      .filter(cell => {
-        const cellTags = cell?.metadata['tags'];
-        return Array.isArray(cellTags) && cellTags.includes(removedDependency);
-      })
-      .forEach(cell => {
-        const cellTags = cell?.metadata['tags'];
-        if (Array.isArray(cellTags)) {
-          const newTags = cellTags.filter(e => e !== removedDependency);
-          cell.metadata['tags'] =  newTags;
-        }
-      });
-    notebook.context.save();
+    const model = notebook.model!;
+    for (let i = 0; i < model.cells.length; i++) {
+      const cell = model.cells.get(i);
+      const cellMeta = cell?.metadata as any;
+      let cellTags: string[] | undefined;
+      if (cellMeta && typeof cellMeta.get === 'function') {
+        cellTags = cellMeta.get('tags');
+      } else if (cellMeta?.tags) {
+        cellTags = cellMeta.tags;
+      }
+      if (!Array.isArray(cellTags) || !cellTags.includes(removedDependency)) {
+        continue;
+      }
+      const newTags = cellTags.filter((e: string) => e !== removedDependency);
+      CellUtils.setCellMetaData(notebook, i, 'tags', newTags, false);
+    }
+    // Do not save: keep notebook dirty so user is prompted to save on close
   }
 }
