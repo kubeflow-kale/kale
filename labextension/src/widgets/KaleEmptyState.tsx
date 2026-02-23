@@ -13,128 +13,73 @@
 // limitations under the License.
 
 import * as React from 'react';
-import {
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
+import { Box } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { theme } from '../Theme';
-import { NotebookPanel } from '@jupyterlab/notebook';
 
-interface IKaleEmptyStateProps {
-  activeNotebook: NotebookPanel | null;
-}
-
-export class KaleEmptyState extends React.Component<IKaleEmptyStateProps> {
-  render() {
-    return (
+export const KaleEmptyState = () => {
+  return (
+    <Box className="kale-empty-state-container">
       <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px 20px',
-          textAlign: 'center',
-          maxWidth: '500px',
-          margin: '0 auto',
-        }}
+        className="kale-empty-state-icons"
+        sx={{ color: theme.kale.headers.main }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '32px',
-            color: theme.kale.headers.main,
-          }}
-        >
-          <MenuBookIcon sx={{ fontSize: 60 }} />
-          <TrendingFlatIcon sx={{ mx: 1.5, fontSize: 32 }} />
-          <AccountTreeIcon sx={{ fontSize: 60 }} />
-          <TrendingFlatIcon sx={{ mx: 1.5, fontSize: 32 }} />
-          <CloudQueueIcon sx={{ fontSize: 60 }} />
-        </Box>
-
-        <Typography
-          variant="h5"
-          component="h1"
-          sx={{
-            fontWeight: 700,
-            color: 'var(--jp-ui-font-color1)',
-            marginBottom: '12px',
-            fontSize: '22px',
-          }}
-        >
-          Transform your Notebooks into Pipelines
-        </Typography>
-        <Typography
-          sx={{
-            color: 'var(--jp-ui-font-color1)',
-            marginBottom: '32px',
-            fontSize: 'var(--jp-ui-font-size1)',
-            lineHeight: 1.6,
-            paddingX: '20px',
-          }}
-        >
-          Deploy to Kubeflow Pipelines with one click and manage dependencies
-          without leaving the environment.
-        </Typography>
-
-        <List sx={{ marginBottom: '24px', width: '100%', maxWidth: '400px' }}>
-          {[
-            {
-              label: 'Automate',
-              desc: 'Convert cells to pipeline steps instantly.',
-            },
-            {
-              label: 'Simplify',
-              desc: 'Manage metadata and dependencies visually.',
-            },
-            {
-              label: 'Deploy',
-              desc: 'One-click deployment to Kubeflow Pipelines.',
-            },
-          ].map(item => (
-            <ListItem
-              key={item.label}
-              disableGutters
-              sx={{ alignItems: 'flex-start', paddingY: '4px' }}
-            >
-              <ListItemIcon sx={{ minWidth: 32, marginTop: '2px' }}>
-                <CheckCircleIcon
-                  sx={{
-                    color: theme.kale.headers.main,
-                    fontSize: 20,
-                  }}
-                />
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <Typography
-                    component="span"
-                    sx={{
-                      fontSize: 'var(--jp-ui-font-size1)',
-                      color: 'var(--jp-ui-font-color1)',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <strong>{item.label}:</strong> {item.desc}
-                  </Typography>
-                }
-                sx={{ margin: 0 }}
-              />
-            </ListItem>
-          ))}
-        </List>
+        <MenuBookIcon sx={{ fontSize: 48 }} />
+        <TrendingFlatIcon sx={{ mx: 1, fontSize: 24 }} />
+        <AccountTreeIcon sx={{ fontSize: 48 }} />
+        <TrendingFlatIcon sx={{ mx: 1, fontSize: 24 }} />
+        <CloudQueueIcon sx={{ fontSize: 48 }} />
       </Box>
-    );
-  }
-}
+
+      <h1 className="kale-empty-state-title">
+        Transform your Notebooks into Pipelines
+      </h1>
+      <p className="kale-empty-state-description">
+        Deploy to Kubeflow Pipelines with one click and manage dependencies
+        without leaving the environment.
+      </p>
+
+      <ul className="kale-empty-state-list">
+        {[
+          {
+            label: 'Automate',
+            desc: 'Convert cells to pipeline steps instantly.',
+          },
+          {
+            label: 'Simplify',
+            desc: 'Manage metadata and dependencies visually.',
+          },
+          {
+            label: 'Deploy',
+            desc: 'One-click deployment to Kubeflow Pipelines.',
+          },
+        ].map(item => (
+          <li key={item.label} className="kale-empty-state-list-item">
+            <CheckCircleIcon
+              className="kale-empty-state-check-icon"
+              sx={{ color: theme.kale.headers.main }}
+            />
+            <span className="kale-empty-state-text">
+              <strong>{item.label}:</strong> {item.desc}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="kale-empty-state-footer">
+        Learn more about Kale{' '}
+        <a
+          href="https://github.com/kubeflow/kale"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          here
+        </a>
+      </p>
+    </Box>
+  );
+};

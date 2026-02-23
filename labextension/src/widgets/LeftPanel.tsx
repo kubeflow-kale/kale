@@ -26,13 +26,13 @@ import {
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@mui/material/styles';
-import { Button, Typography } from '@mui/material';
+import { Switch } from '@mui/material';
 import { theme } from '../Theme';
 import { Input } from '../components/Input';
 import Commands from '../lib/Commands';
 import { PageConfig } from '@jupyterlab/coreutils';
-import kaleIconSvg from '../../style/icons/kale.svg';
 import { KaleEmptyState } from './KaleEmptyState';
+import kaleLogo from '../../style/icons/kale.svg';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const DEFAULT_UI_URL = 'http://localhost:8080';
@@ -610,43 +610,48 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           <div className={'kubeflow-widget-content'}>
             <div>
               <p
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: theme.kale.headers.main,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  marginTop: '16px',
-                  marginBottom: '16px',
-                }}
-                className="kale-header"
+                className="kale-header kale-main-header"
+                style={{ color: theme.kale.headers.main }}
               >
                 Kale
-                <span
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    display: 'inline-flex',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: kaleIconSvg }}
+                <img
+                  // encode the SVG string into a data URI
+                  src={`data:image/svg+xml,${encodeURIComponent(kaleLogo)}`}
+                  className="kale-logo-img"
+                  alt="Kale Logo"
                 />
               </p>
             </div>
 
             <div className="kale-component">
-              {!this.state.isEnabled && (
-                <KaleEmptyState activeNotebook={activeNotebook} />
-              )}
-              {activeNotebook && (
+              {activeNotebook ? (
                 <InlineCellsMetadata
                   onMetadataEnable={this.onMetadataEnable}
                   notebook={activeNotebook}
                   pipelineBaseImage={this.state.metadata.base_image}
                   defaultBaseImage={this.state.defaultBaseImage}
                 />
+              ) : (
+                <>
+                  <div className="toolbar input-container kale-disabled-toggle">
+                    <div className={'switch-label'}>Enable</div>
+                    <Switch
+                      disabled
+                      checked={false}
+                      color="primary"
+                      name="enableKale"
+                      slotProps={{ input: { 'aria-label': 'Enable Kale' } }}
+                      classes={{ root: 'material-switch' }}
+                    />
+                  </div>
+                  <div className="kale-no-notebook-message">
+                    <p className="kale-no-notebook-text">
+                      Open a notebook to start working with Kale
+                    </p>
+                  </div>
+                </>
               )}
+              {!this.state.isEnabled && <KaleEmptyState />}
             </div>
 
             <div
@@ -676,107 +681,13 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 'kale-component ' +
                 (this.state.isEnabled && activeNotebook ? '' : 'hidden')
               }
-            ></div>
-          </div>
-          <div style={{ marginTop: 'auto' }}></div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              padding: '16px',
-            }}
-          >
-            {activeNotebook ? (
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => this.onMetadataEnable(!this.state.isEnabled)}
-                sx={{
-                  backgroundColor: this.state.isEnabled ? '#7e57c2' : '#7e57c2',
-                  color: 'white',
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  '&:hover': {
-                    backgroundColor: this.state.isEnabled
-                      ? '#6a4ba8'
-                      : '#6a4ba8',
-                  },
-                }}
-              >
-                {this.state.isEnabled ? 'Disable Kale' : 'Enable Kale'}
-              </Button>
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: 'var(--jp-ui-font-size1)',
-                    color: 'var(--jp-ui-font-color1)',
-                    textAlign: 'center',
-                    padding: '0 16px 16px 16px',
-                  }}
-                >
-                  Please open a notebook to enable Kale
-                </Typography>
-                <Button
-                  variant="contained"
-                  size="small"
-                  disabled={true}
-                  sx={{
-                    backgroundColor: '#9e9e9e',
-                    color: 'white',
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    borderRadius: '8px',
-                    boxShadow: 'none',
-                    '&.Mui-disabled': {
-                      backgroundColor: '#e0e0e0',
-                      color: '#9e9e9e',
-                    },
-                  }}
-                >
-                  Enable Kale
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <Typography
-            sx={{
-              fontSize: 'var(--jp-ui-font-size1)',
-              color: 'var(--jp-ui-font-color1)',
-              textAlign: 'center',
-              padding: '0 16px 16px 16px',
-            }}
-          >
-            Learn more about Kale{' '}
-            <a
-              href="https://github.com/kubeflow/kale"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: theme.kale.headers.main,
-                textDecoration: 'underline',
-                fontWeight: 500,
-              }}
             >
-              here
-            </a>
-          </Typography>
-
+              {' '}
+            </div>
+          </div>
           <div
             className={this.state.isEnabled && activeNotebook ? '' : 'hidden'}
+            style={{ marginTop: 'auto' }}
           >
             <DeploysProgress
               deploys={this.state.deploys}
