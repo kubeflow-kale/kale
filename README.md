@@ -111,8 +111,8 @@ Kale uses special cell types (tags) to organize your notebook into pipeline comp
 
 | Cell Type | Status | Description |
 |-----------|--------|-------------|
-| **Imports** | ✅ Works | Use for all import statements. **All imports must be placed in cells tagged as `imports`.** Importing libraries (pandas, tensorflow, etc.) in other cell types will cause pipeline execution errors. |
-| **Functions** | ✅ Works | Use for function and class definitions only. **Do not include** logic, print statements, or import statements in these cells. Only pure definitions should be here. |
+| **Imports** | ✅ Works | The code in this cell will be pre-pended to every step of the pipeline. Used for all import statements. **All imports must be placed in cells tagged as `imports`.** Importing libraries (pandas, tensorflow, etc.) in other cell types will cause pipeline execution errors. |
+| **Functions** | ✅ Works |The code in this cell will be pre-pended to every step of the pipeline, after **imports**. Used for function and class definitions only.  **Do not include** top-level executable statements |
 | **Pipeline Parameters** | ✅ Works | Define variables that will become pipeline parameters. |
 | **Pipeline Metrics** | ⚠️ Known Issue | Intended for defining pipeline metrics, but currently not working. |
 | **Step** | ✅ Works | Regular pipeline steps with custom names. This is the default cell type for your data processing and ML logic. Each step can have dependencies on other steps. Steps can also define their own image and GPU requirements. |
@@ -121,9 +121,8 @@ Kale uses special cell types (tags) to organize your notebook into pipeline comp
 ### Important Guidelines
 
 > [!WARNING]
-> **Import statements must be in `imports` cells only!**
->
-> Placing import statements in other cell types (functions, steps, etc.) will cause the pipeline to fail during execution. Always use cells tagged as `imports` for all your import statements.
+> **Imports outside imports cells won't be detected for automatic dependency installation, which causes ImportError at runtime if the package isn't pre-installed in the container image.**
+
 
 **Best Practices:**
 - Place all imports at the beginning of your notebook in cells tagged as `imports`
