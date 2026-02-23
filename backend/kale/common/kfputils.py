@@ -178,12 +178,9 @@ def run_pipeline(
     pipeline_name = pipeline.display_name
 
     try:
-        if version_id:
-            version_name = client.get_pipeline_version(
-                pipeline_id=pipeline_id, pipeline_version_id=version_id
-            ).display_name
-        else:
-            version_name = "default"
+        version_name = client.get_pipeline_version(
+            pipeline_id=pipeline_id, pipeline_version_id=version_id
+        ).display_name
     except Exception:
         log.debug("Could not retrieve pipeline version with ID '%s'. Using 'unknown'.", version_id)
         version_name = "unknown"
