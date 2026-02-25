@@ -106,6 +106,26 @@
   text-transform: uppercase;
 }
 
+/* Keep dropdown (split) button fixed size when panel is resized */
+/* stylelint-disable selector-class-pattern */
+.deploy-button .MuiButtonGroup-root {
+  display: flex;
+  width: 100%;
+}
+
+.deploy-button .MuiButtonGroup-grouped:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.deploy-button .MuiButtonGroup-grouped:last-child {
+  flex: 0 0 auto;
+  min-width: 40px;
+  width: 40px;
+}
+/* stylelint-enable selector-class-pattern */
+
 /* -----------------------------------------------------------------------------
 | Inputs
 |---------------------------------------------------------------------------- */
