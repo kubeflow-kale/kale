@@ -15,7 +15,6 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
-import { ICellModel } from '@jupyterlab/cells';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
