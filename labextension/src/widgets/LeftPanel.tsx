@@ -31,6 +31,8 @@ import { theme } from '../Theme';
 import { Input } from '../components/Input';
 import Commands from '../lib/Commands';
 import { PageConfig } from '@jupyterlab/coreutils';
+import { KaleEmptyState } from './KaleEmptyState';
+import kaleLogo from '../../style/icons/kale.svg';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const DEFAULT_UI_URL = 'http://localhost:8080';
@@ -255,8 +257,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     if (notebook) {
       await this.setNotebookPanel(notebook);
     } else {
-      // Handle null case - reset to default state
-      this.resetState();
+      // Handle null case - reset to default state and disable
+      this.setState(DefaultState);
     }
   };
 
@@ -629,30 +631,54 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           <div className={'kubeflow-widget-content'}>
             <div>
               <p
-                style={{
-                  fontSize: 'var(--jp-ui-font-size3)',
-                  color: theme.kale.headers.main,
-                }}
-                className="kale-header"
+                className="kale-header kale-main-header"
+                style={{ color: theme.kale.headers.main }}
               >
-                Kale Deployment Panel {this.state.isEnabled}
+                Kale
+                <img
+                  // encode the SVG string into a data URI
+                  src={`data:image/svg+xml,${encodeURIComponent(kaleLogo)}`}
+                  className="kale-logo-img"
+                  alt="Kale Logo"
+                />
               </p>
             </div>
 
             <div className="kale-component">
-              {activeNotebook && (
+              {activeNotebook ? (
                 <InlineCellsMetadata
                   onMetadataEnable={this.onMetadataEnable}
                   notebook={activeNotebook}
                   pipelineBaseImage={this.state.metadata.base_image}
                   defaultBaseImage={this.state.defaultBaseImage}
                 />
+              ) : (
+                <>
+                  <div className="toolbar input-container kale-disabled-toggle">
+                    <div className={'switch-label'}>Enable</div>
+                    <Switch
+                      disabled
+                      checked={false}
+                      color="primary"
+                      name="enableKale"
+                      slotProps={{ input: { 'aria-label': 'Enable Kale' } }}
+                      classes={{ root: 'material-switch' }}
+                    />
+                  </div>
+                  <div className="kale-no-notebook-message">
+                    <p className="kale-no-notebook-text">
+                      Open a notebook to start working with Kale
+                    </p>
+                  </div>
+                </>
               )}
+              {!this.state.isEnabled && <KaleEmptyState />}
             </div>
 
             <div
               className={
-                'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
+                'kale-component ' +
+                (this.state.isEnabled && activeNotebook ? '' : 'hidden')
               }
             >
               <div>
@@ -674,12 +700,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
             <div
               className={
-                'kale-component ' + (this.state.isEnabled ? '' : 'hidden')
+                'kale-component ' +
+                (this.state.isEnabled && activeNotebook ? '' : 'hidden')
               }
-            ></div>
+            >
+              {' '}
+            </div>
           </div>
           <div
-            className={this.state.isEnabled ? '' : 'hidden'}
+            className={this.state.isEnabled && activeNotebook ? '' : 'hidden'}
             style={{ marginTop: 'auto' }}
           >
             <DeploysProgress
