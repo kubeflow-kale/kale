@@ -57,7 +57,7 @@ const DefaultState: IState = {
   activeCellIndex: 0,
   prevBlockName: undefined,
   metadataCmp: [],
-  checked: false,
+  checked: true,
   editors: {},
   isEditorVisible: false,
 };
