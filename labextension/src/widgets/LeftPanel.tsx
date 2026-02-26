@@ -106,7 +106,7 @@ export const DefaultState: IState = {
   experiments: [],
   gettingExperiments: false,
   deploys: {},
-  isEnabled: true,
+  isEnabled: false,
   namespace: '',
   kfpUiHost: '',
   defaultBaseImage: '',
@@ -301,6 +301,8 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // Set the current notebook and wait for the session to be ready
     if (notebook) {
       await this.setNotebookPanel(notebook);
+      // Enable Kale by default when a notebook is opened
+      this.setState({ isEnabled: true });
     } else {
       // Handle null case - reset to default state and disable
       this.setState(DefaultState);
