@@ -97,7 +97,7 @@ export const DefaultState: IState = {
   experiments: [],
   gettingExperiments: false,
   deploys: {},
-  isEnabled: false,
+  isEnabled: true,
   namespace: '',
   kfpUiHost: '',
   defaultBaseImage: '',
