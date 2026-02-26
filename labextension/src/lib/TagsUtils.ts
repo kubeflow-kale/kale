@@ -204,7 +204,6 @@ export default class TagsUtils {
       );
     }
     Promise.all(allPromises);
-    // Do not save: keep notebook dirty so user is prompted to save on close
   }
 
   /**
@@ -280,22 +279,17 @@ export default class TagsUtils {
       return;
     }
     const removedDependency = `prev:${blockName}`;
-    const model = notebook.model!;
-    for (let i = 0; i < model.cells.length; i++) {
-      const cell = model.cells.get(i);
-      const cellMeta = cell?.metadata as any;
-      let cellTags: string[] | undefined;
-      if (cellMeta && typeof cellMeta.get === 'function') {
-        cellTags = cellMeta.get('tags');
-      } else if (cellMeta?.tags) {
-        cellTags = cellMeta.tags;
-      }
-      if (!Array.isArray(cellTags) || !cellTags.includes(removedDependency)) {
-        continue;
-      }
-      const newTags = cellTags.filter((e: string) => e !== removedDependency);
-      CellUtils.setCellMetaData(notebook, i, 'tags', newTags, false);
-    }
-    // Do not save: keep notebook dirty so user is prompted to save on close
+    this.cellsToArray(notebook)
+      .filter(cell => {
+        const cellTags = cell?.metadata['tags'];
+        return Array.isArray(cellTags) && cellTags.includes(removedDependency);
+      })
+      .forEach(cell => {
+        const cellTags = cell?.metadata['tags'];
+        if (Array.isArray(cellTags)) {
+          const newTags = cellTags.filter(e => e !== removedDependency);
+          cell.metadata['tags'] =  newTags;
+        }
+      });
   }
 }
