@@ -127,7 +127,7 @@ make test     # Run all tests
 make jupyter  # Start JupyterLab
 ```
 
-See [CONTRIBUTE.md](CONTRIBUTE.md) for detailed development instructions, including:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development instructions, including:
 - Available make commands
 - Testing with KFP clusters
 - Building release artifacts

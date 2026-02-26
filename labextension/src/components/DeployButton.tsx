@@ -38,6 +38,7 @@ const StyledButtonGroup = styled(ButtonGroup)({
 
 const MainButton = styled(Button)({
   width: '100%',
+  whiteSpace: 'nowrap',
 });
 
 const DropdownButton = styled(Button)({
@@ -102,7 +103,7 @@ export const SplitDeployButton: React.FunctionComponent<
     <DeployButtonContainer>
       <div className="deploy-button">
         <Grid container>
-          <Grid size={12} sx={{ padding: '4px 10px' }}>
+          <Grid size={12} sx={{ padding: '4px 6px' }}>
             <StyledButtonGroup
               variant="contained"
               color="primary"
