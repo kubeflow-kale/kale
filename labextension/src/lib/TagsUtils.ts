@@ -278,21 +278,25 @@ export default class TagsUtils {
     const allBlocksSet = new Set(allBlocks);
 
     for (let index = 0; index < cells.length; index++) {
-      const cell = cells.get(index);
-      const cellTags = cell?.metadata['tags'];
+      const kaleTags = this.getKaleCellTags(notebook.content, index);
+      if (kaleTags && kaleTags.prevBlockNames.length > 0) {
+        const deletedDeps = kaleTags.prevBlockNames.filter(
+          dep => !allBlocksSet.has(dep)
+        );
 
-      if (Array.isArray(cellTags)) {
-        const orphanedDeps = cellTags.filter(tag => {
-          if (typeof tag === 'string' && tag.startsWith('prev:')) {
-            const depName = tag.replace('prev:', '');
-            return !allBlocksSet.has(depName);
-          }
-          return false;
-        });
+        if (deletedDeps.length > 0) {
+          const newPrevBlockNames = kaleTags.prevBlockNames.filter(
+            dep => !deletedDeps.includes(dep)
+          );
 
-        if (orphanedDeps.length > 0) {
-          const newTags = cellTags.filter(tag => !orphanedDeps.includes(tag));
-          CellUtils.setCellMetaData(notebook, index, 'tags', newTags, false);
+          const updatedMetadata = {
+            blockName: kaleTags.blockName,
+            prevBlockNames: newPrevBlockNames,
+            limits: kaleTags.limits || {},
+            baseImage: kaleTags.baseImage,
+          };
+
+          this.setKaleCellTags(notebook, index, updatedMetadata, false);
         }
       }
     }

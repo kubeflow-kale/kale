@@ -229,7 +229,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     const metadata: React.ReactPortal[] = [];
     const editors: Editors = {};
     const cells = this.props.notebook.model.cells;
-    const allBlocks = TagsUtils.getAllBlocks(this.props.notebook.content);
     for (let index = 0; index < cells.length; index++) {
       const cellModel = this.props.notebook.model.cells.get(index);
       const isCodeCell = isCodeCellModel(cellModel);
@@ -295,7 +294,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           cellIndex={index}
           pipelineBaseImage={this.props.pipelineBaseImage}
           defaultBaseImage={this.props.defaultBaseImage}
-          allBlocks={allBlocks}
         />,
         metadataParent,
       );
