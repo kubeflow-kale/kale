@@ -145,9 +145,9 @@ test('should tag a cell and persist to notebook JSON', async ({ page }) => {
   }
 
   // Wait for the dialog to close
-  await expect(
-    page.locator('.kale-metadata-editor'),
-  ).not.toBeVisible({ timeout: 3000 });
+  await expect(page.locator('.kale-metadata-editor')).not.toBeVisible({
+    timeout: 3000,
+  });
 
   // Verify the inline metadata shows the step name
   const stepChip = page.locator('.kale-inline-cell-metadata', {
