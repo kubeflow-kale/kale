@@ -259,13 +259,17 @@ export default class NotebookUtilities {
       );
     }
 
-    if (notebookPanel.model?.metadata) {
-      const metadata = notebookPanel.model.metadata as any;
-      if (typeof metadata.has === 'function' && metadata.has(key)) {
-        return metadata.get(key);
+    if (notebookPanel.model) {
+      // JupyterLab 4+: use model.getMetadata() which is the proper API.
+      // model.metadata returns a read-only copy that won't reflect changes.
+      if (typeof notebookPanel.model.getMetadata === 'function') {
+        return notebookPanel.model.getMetadata(key) || null;
       }
-      // Fallback for different metadata implementations
-      return metadata[key] || null;
+      // Fallback for older JupyterLab versions
+      if (notebookPanel.model.metadata) {
+        const metadata = notebookPanel.model.metadata as any;
+        return metadata[key] || null;
+      }
     }
     return null;
   }
@@ -292,19 +296,23 @@ export default class NotebookUtilities {
       );
     }
 
-    if (!notebookPanel.model?.metadata) {
-      throw new Error('Notebook metadata is not available.');
+    if (!notebookPanel.model) {
+      throw new Error('Notebook model is not available.');
     }
 
-    const metadata = notebookPanel.model.metadata as any;
+    // JupyterLab 4+: use model.setMetadata() which is the proper API.
+    // model.metadata returns a read-only copy, so direct assignment
+    // on it has no effect.
     let oldVal: any;
-
-    if (typeof metadata.set === 'function') {
-      oldVal = metadata.set(key, value);
+    if (typeof notebookPanel.model.setMetadata === 'function') {
+      oldVal = notebookPanel.model.getMetadata(key);
+      notebookPanel.model.setMetadata(key, value);
     } else {
-      // Fallback for different metadata implementations
-      oldVal = (metadata as any)[key];
-      (metadata as any)[key] = value;
+      // Fallback for older JupyterLab versions
+      const metadata = notebookPanel.model.metadata as any;
+      oldVal = metadata[key];
+      metadata[key] = value;
+      notebookPanel.model.dirty = true;
     }
 
     if (save) {
