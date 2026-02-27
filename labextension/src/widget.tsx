@@ -49,6 +49,9 @@ export interface IKubeflowKale {
   widget: Widget;
 }
 
+export const KALE_PANEL_ID =
+  'kubeflow-kale-labextension/kubeflowDeployment';
+
 const id = 'kubeflow-kale-labextension:deploymentPanel';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
@@ -143,7 +146,7 @@ async function activate(
         kernel={kernel}
       />,
     );
-    kalePanelWidget!.id = 'kubeflow-kale-labextension/kubeflowDeployment';
+    kalePanelWidget.id = KALE_PANEL_ID;
     kalePanelWidget!.title.icon = kaleIcon;
     kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
     kalePanelWidget!.node.classList.add('kale-panel');
@@ -167,8 +170,3 @@ async function activate(
     },
   };
 }
-export const activateKalePanel = () => {
-  if (kalePanelWidget) {
-    kalePanelWidget.activate();
-  }
-};
