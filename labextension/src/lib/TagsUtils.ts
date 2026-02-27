@@ -19,6 +19,7 @@ import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
+const CACHE_ENABLED_VALUE = 'enabled';
 
 interface IKaleCellTags {
   blockName: string;
@@ -125,7 +126,7 @@ export default class TagsUtils {
       const cacheTag = tags.find(v => v.startsWith(CACHE_TAG));
       if (cacheTag) {
         const cacheValue = cacheTag.substring(CACHE_TAG.length);
-        enableCaching = cacheValue === 'enabled' ? true : false;
+        enableCaching = cacheValue === CACHE_ENABLED_VALUE ? true : false;
       }
 
       return {

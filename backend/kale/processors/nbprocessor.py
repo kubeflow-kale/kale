@@ -55,7 +55,9 @@ LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
 IMAGE_TAG = r"^image:(.+)$"
 # Cache tag for per-step caching control
 # E.g.: cache:enabled or cache:disabled
-CACHE_TAG = r"^cache:(enabled|disabled)$"
+CACHE_ENABLED = "enabled"
+CACHE_DISABLED = "disabled"
+CACHE_TAG = rf"^cache:({CACHE_ENABLED}|{CACHE_DISABLED})$"
 
 _TAGS_LANGUAGE = [
     SKIP_TAG,
@@ -174,7 +176,7 @@ class NotebookConfig(PipelineConfig):
             if conf_type == "cache":
                 # Cache value is 'enabled' or 'disabled'
                 cache_value = parts.pop(0)
-                result["enable_caching"] = cache_value == "enabled"
+                result["enable_caching"] = cache_value == CACHE_ENABLED
         return result
 
 
@@ -487,7 +489,7 @@ class NotebookProcessor:
             if tag_name == "cache":
                 # Cache value is 'enabled' or 'disabled'
                 cache_value = tag_parts.pop(0)
-                cell_enable_caching = cache_value == "enabled"
+                cell_enable_caching = cache_value == CACHE_ENABLED
 
             # name of the future Pipeline step
             if tag_name in ["step"]:
