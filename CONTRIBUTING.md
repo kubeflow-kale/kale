@@ -7,7 +7,7 @@ to the project.
 
 - **Python 3.12+**
 - **uv** - Installed automatically by `make`, or manually: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- **Node.js 18+** and **jlpm** (for frontend development only - jlpm comes with JupyterLab)
+- **Node.js 22+** and **jlpm** (for frontend development only - jlpm comes with JupyterLab)
 - **Kubernetes cluster** (optional, for KFP testing only) - [minikube](https://minikube.sigs.k8s.io/) or [kind](https://kind.sigs.k8s.io/)
 
 ## Quick Start
