@@ -25,16 +25,18 @@ export const setLeftPanelRef = (ref: KubeflowKaleLeftPanel | null) => {
   leftPanelRef = ref;
 };
 
+function activateKalePanel(app: JupyterFrontEnd) {
+  app.commands.execute('tabsmenu:activate-by-id', {
+    id: KALE_PANEL_ID
+  });
+}
 export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:compile', {
     label: 'Compile Notebook',
     execute: () => {
       if (!leftPanelRef?.isKaleEnabled()) return;
 
-      app.commands.execute('tabsmenu:activate-by-id', {
-        id: KALE_PANEL_ID
-      });
-
+      activateKalePanel(app);
       leftPanelRef.triggerCompile();
     },
   });
@@ -44,10 +46,7 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
     execute: () => {
       if (!leftPanelRef?.isKaleEnabled()) return;
 
-      app.commands.execute('tabsmenu:activate-by-id', {
-        id: KALE_PANEL_ID
-      });
-
+      activateKalePanel(app);
       leftPanelRef.triggerRun();
     },
   });
