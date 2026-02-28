@@ -260,16 +260,9 @@ export default class NotebookUtilities {
     }
 
     if (notebookPanel.model) {
-      // JupyterLab 4+: use model.getMetadata() which is the proper API.
-      // model.metadata returns a read-only copy that won't reflect changes.
-      if (typeof notebookPanel.model.getMetadata === 'function') {
-        return notebookPanel.model.getMetadata(key) || null;
-      }
-      // Fallback for older JupyterLab versions
-      if (notebookPanel.model.metadata) {
-        const metadata = notebookPanel.model.metadata as any;
-        return metadata[key] || null;
-      }
+      // model.metadata returns a read-only copy in JupyterLab 4,
+      // so we must use model.getMetadata() to read the actual values.
+      return notebookPanel.model.getMetadata(key) || null;
     }
     return null;
   }
@@ -300,20 +293,12 @@ export default class NotebookUtilities {
       throw new Error('Notebook model is not available.');
     }
 
-    // JupyterLab 4+: use model.setMetadata() which is the proper API.
-    // model.metadata returns a read-only copy, so direct assignment
-    // on it has no effect.
-    let oldVal: any;
-    if (typeof notebookPanel.model.setMetadata === 'function') {
-      oldVal = notebookPanel.model.getMetadata(key);
-      notebookPanel.model.setMetadata(key, value);
-    } else {
-      // Fallback for older JupyterLab versions
-      const metadata = notebookPanel.model.metadata as any;
-      oldVal = metadata[key];
-      metadata[key] = value;
-      notebookPanel.model.dirty = true;
-    }
+    // model.metadata returns a read-only copy in JupyterLab 4,
+    // so we must use model.setMetadata() to persist changes.
+    // setMetadata() automatically marks the model as dirty via
+    // the YJS shared model change event chain.
+    const oldVal = notebookPanel.model.getMetadata(key);
+    notebookPanel.model.setMetadata(key, value);
 
     if (save) {
       this.saveNotebook(notebookPanel);
