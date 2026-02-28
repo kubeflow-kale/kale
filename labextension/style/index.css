@@ -106,6 +106,26 @@
   text-transform: uppercase;
 }
 
+/* Keep dropdown (split) button fixed size when panel is resized */
+/* stylelint-disable selector-class-pattern */
+.deploy-button .MuiButtonGroup-root {
+  display: flex;
+  width: 100%;
+}
+
+.deploy-button .MuiButtonGroup-grouped:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.deploy-button .MuiButtonGroup-grouped:last-child {
+  flex: 0 0 auto;
+  min-width: 40px;
+  width: 40px;
+}
+/* stylelint-enable selector-class-pattern */
+
 /* -----------------------------------------------------------------------------
 | Inputs
 |---------------------------------------------------------------------------- */
@@ -491,4 +511,140 @@ a {
 
 .dialog-body {
   white-space: pre;
+}
+
+/* -----------------------------------------------------------------------------
+|| Kale Empty State and Header Styles
+||---------------------------------------------------------------------------- */
+
+.kale-main-header {
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.kale-logo-img {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.kale-disabled-toggle {
+  margin-bottom: 8px;
+}
+
+.kale-disabled-toggle .switch-label {
+  color: var(--jp-ui-font-color2);
+  opacity: 0.6;
+}
+
+.kale-no-notebook-message {
+  margin-top: 0;
+  padding: 12px 16px;
+  background-color: var(--jp-layout-color2);
+  border-radius: 6px;
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.kale-no-notebook-text {
+  font-size: 13px;
+  color: var(--jp-ui-font-color2);
+  font-weight: 400;
+  text-align: center;
+  margin: 0;
+}
+
+.kale-pipeline-metadata-header {
+  color: inherit;
+}
+
+.kale-deploy-container {
+  margin-top: auto;
+}
+
+/* Empty State Styles */
+.kale-empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.kale-empty-state-icons {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.kale-empty-state-title {
+  font-weight: 700;
+  color: var(--jp-ui-font-color1);
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.kale-empty-state-description {
+  color: var(--jp-ui-font-color1);
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.kale-empty-state-list {
+  margin-bottom: 20px;
+  list-style: none;
+  padding: 0;
+  display: inline-block;
+  text-align: left;
+  max-width: 100%;
+}
+
+.kale-empty-state-list-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.kale-empty-state-check-icon {
+  font-size: 18px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.kale-empty-state-text {
+  font-size: 14px;
+  color: var(--jp-ui-font-color1);
+  font-weight: 400;
+  line-height: 1.4;
+  flex: 1;
+  text-align: left;
+}
+
+.kale-empty-state-footer {
+  font-size: 13px;
+  color: var(--jp-ui-font-color1);
+  font-weight: 400;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.kale-empty-state-footer a {
+  color: #477ef0;
+  text-decoration: underline;
+  font-weight: 400;
 }

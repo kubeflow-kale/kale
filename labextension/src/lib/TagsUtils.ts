@@ -18,12 +18,15 @@ import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor
 import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 
 const IMAGE_TAG = 'image:';
+const CACHE_TAG = 'cache:';
+const CACHE_ENABLED_VALUE = 'enabled';
 
 interface IKaleCellTags {
   blockName: string;
   prevBlockNames: string[];
   limits?: { [id: string]: string };
   baseImage?: string;
+  enableCaching?: boolean;
 }
 
 /** Contains utility functions for manipulating/handling Kale cell tags. */
@@ -118,11 +121,20 @@ export default class TagsUtils {
         baseImage = imageTag.substring(IMAGE_TAG.length);
       }
 
+      // Parse cache tag
+      let enableCaching: boolean | undefined;
+      const cacheTag = tags.find(v => v.startsWith(CACHE_TAG));
+      if (cacheTag) {
+        const cacheValue = cacheTag.substring(CACHE_TAG.length);
+        enableCaching = cacheValue === CACHE_ENABLED_VALUE ? true : false;
+      }
+
       return {
         blockName: b_name[0] || '',
         prevBlockNames: prevs,
         limits: limits,
         baseImage: baseImage,
+        enableCaching: enableCaching,
       };
     }
     return null;
@@ -159,6 +171,11 @@ export default class TagsUtils {
     // Add base image tag if specified
     if (baseImage) {
       tags.push(IMAGE_TAG + baseImage);
+    }
+
+    // Add cache tag if specified
+    if (metadata.enableCaching !== undefined) {
+      tags.push(CACHE_TAG + (metadata.enableCaching ? 'enabled' : 'disabled'));
     }
 
     return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags, save);

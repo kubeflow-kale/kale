@@ -301,6 +301,7 @@ def auto_generated_pipeline(
     )
 
     load_transform_data_task.set_display_name("load-transform-data-step")
+    load_transform_data_task.set_caching_options(enable_caching=False)
 
     train_model_task = train_model_step(
         x_trn_input_artifact=load_transform_data_task.outputs["x_trn_output_artifact"],
@@ -313,6 +314,7 @@ def auto_generated_pipeline(
     train_model_task.after(load_transform_data_task)
 
     train_model_task.set_display_name("train-model-step")
+    train_model_task.set_caching_options(enable_caching=False)
 
     evaluate_model_task = evaluate_model_step(
         model_input_artifact=train_model_task.outputs["model_output_artifact"],
@@ -327,6 +329,7 @@ def auto_generated_pipeline(
     evaluate_model_task.after(load_transform_data_task)
 
     evaluate_model_task.set_display_name("evaluate-model-step")
+    evaluate_model_task.set_caching_options(enable_caching=False)
 
 
 if __name__ == "__main__":
