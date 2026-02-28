@@ -42,6 +42,12 @@ def auto_generated_pipeline(
 
     {{ step.name }}_task.set_display_name("{{ component_names[step.name] }}-step")
 
+    {%- if step.config.enable_caching is not none %}
+    {{ step.name }}_task.set_caching_options(enable_caching={{ step.config.enable_caching }})
+    {%- elif enable_caching is not none and not enable_caching %}
+    {{ step.name }}_task.set_caching_options(enable_caching={{ enable_caching }})
+    {%- endif %}
+
     {%- if step.config.limits %}
     {%- for limit_key, limit_value in step.config.limits.items() %}
     {%- if limit_key in ['nvidia.com/gpu', 'amd.com/gpu'] %}

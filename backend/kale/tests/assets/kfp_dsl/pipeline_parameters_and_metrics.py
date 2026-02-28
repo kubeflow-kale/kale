@@ -173,6 +173,7 @@ def auto_generated_pipeline(
     )
 
     create_matrix_task.set_display_name("create-matrix-step")
+    create_matrix_task.set_caching_options(enable_caching=True)
     create_matrix_task.set_accelerator_type(
         "nvidia.com/gpu").set_accelerator_limit(2)
 
@@ -187,6 +188,7 @@ def auto_generated_pipeline(
     sum_matrix_task.after(create_matrix_task)
 
     sum_matrix_task.set_display_name("sum-matrix-step")
+    sum_matrix_task.set_caching_options(enable_caching=False)
 
 
 if __name__ == "__main__":

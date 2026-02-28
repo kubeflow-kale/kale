@@ -257,6 +257,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         stepDependencies: tags.prevBlockNames || [],
         limits: tags.limits || {},
         baseImage: tags.baseImage,
+        enableCaching: tags.enableCaching,
       };
 
       const cellElement = this.props.notebook.content.widgets[index]
@@ -288,6 +289,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           stepDependencies={tags.prevBlockNames}
           limits={tags.limits || {}}
           baseImage={tags.baseImage}
+          enableCaching={tags.enableCaching}
           previousBlockName={previousBlockName}
           cellIndex={index}
           pipelineBaseImage={this.props.pipelineBaseImage}
@@ -343,6 +345,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         stepDependencies={editorProps.stepDependencies}
         limits={editorProps.limits}
         baseImage={editorProps.baseImage}
+        enableCaching={editorProps.enableCaching}
         pipelineBaseImage={this.props.pipelineBaseImage}
         defaultBaseImage={this.props.defaultBaseImage}
       />,

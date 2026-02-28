@@ -26,7 +26,7 @@ import {
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@mui/material/styles';
-import { Switch } from '@mui/material';
+import { FormControlLabel, Switch } from '@mui/material';
 import { theme } from '../Theme';
 import { Input } from '../components/Input';
 import Commands from '../lib/Commands';
@@ -77,6 +77,7 @@ export interface IKaleNotebookMetadata {
   pipeline_name: string;
   pipeline_description: string;
   base_image: string;
+  enable_caching?: boolean;
 
   steps_defaults?: string[];
   storage_class_name?: string;
@@ -89,6 +90,7 @@ export const DefaultState: IState = {
     pipeline_name: '',
     pipeline_description: '',
     base_image: '',
+    enable_caching: true, // Default value in KFP is true
     steps_defaults: [],
   },
   runDeployment: false,
@@ -184,6 +186,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         ...prevState.metadata,
         base_image: name,
       },
+    }));
+  updateEnableCaching = (enabled: boolean) =>
+    this.setState(prevState => ({
+      metadata: { ...prevState.metadata, enable_caching: enabled },
     }));
 
   activateRunDeployState = (type: string) => {
@@ -603,6 +609,21 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       />
     );
 
+    const enable_caching_toggle = (
+      <FormControlLabel
+        control={
+          <Switch
+            checked={this.state.metadata.enable_caching ?? true}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              this.updateEnableCaching(e.target.checked)
+            }
+            color="primary"
+          />
+        }
+        label="Enable Pipeline Caching"
+      />
+    );
+
     const activeNotebook = this.getActiveNotebook();
     return (
       <ThemeProvider theme={theme}>
@@ -673,6 +694,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 {experiment_name_input}
                 {pipeline_name_input}
                 {pipeline_desc_input}
+                {enable_caching_toggle}
               </div>
             </div>
 
