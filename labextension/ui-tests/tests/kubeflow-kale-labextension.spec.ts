@@ -39,7 +39,9 @@ test('should emit an activation console message', async ({ page }) => {
   ).toHaveLength(1);
 });
 
-test('should show Kale panel in left sidebar', async ({ page }) => {
+test('should show different states in Kale panel based on context', async ({
+  page,
+}) => {
   await page.goto();
 
   // Wait for the sidebar to be ready
@@ -55,12 +57,54 @@ test('should show Kale panel in left sidebar', async ({ page }) => {
   // Click the Kale tab to open the panel
   await kaleTab.click();
 
-  // Verify the Kale panel content is visible
-  const kalePanel = page.locator('.jp-SideBar-content', {
-    has: page.locator('text=/enable/i'),
+  // STATE 1: No notebook open - should show empty state
+  // Look for message asking user to open a notebook
+  const emptyStateMessage = page.locator('.jp-SideBar-content', {
+    has: page.locator('text=/open.*notebook/i'),
   });
+  await expect(emptyStateMessage).toBeVisible({ timeout: 5000 });
 
-  await expect(kalePanel).toBeVisible();
+  // STATE 2: Notebook open, Kale disabled - should show toggle message
+  // Create a new notebook
+  await page.notebook.createNew();
+
+  // Wait a moment for the panel to update
+  await page.waitForTimeout(1000);
+
+  // Look for message asking user to toggle on the extension
+  const toggleMessage = page.locator('.jp-SideBar-content', {
+    has: page.locator('text=/toggle.*extension/i, text=/enable.*kale/i'),
+  });
+  await expect(toggleMessage).toBeVisible({ timeout: 5000 });
+
+  // Verify that full functionality is NOT visible yet
+  const deployButton = page.locator('button', { hasText: /deploy/i });
+  await expect(deployButton).not.toBeVisible();
+
+  // STATE 3: Kale enabled - should show full KFP functionality
+  // Find and click the Enable switch
+  const enableSwitch = page.locator('input[type="checkbox"]').first();
+  await expect(enableSwitch).toBeVisible();
+  await enableSwitch.click();
+
+  // Wait for the panel to update
+  await page.waitForTimeout(1000);
+
+  // Verify full Kale/KFP functionality is now visible
+  // Look for pipeline configuration inputs
+  const pipelineNameInput = page.locator(
+    'input[placeholder*="pipeline" i], label:has-text("Pipeline Name") + input',
+  );
+  await expect(pipelineNameInput.first()).toBeVisible({ timeout: 5000 });
+
+  // Verify Deploy button is now visible
+  await expect(deployButton).toBeVisible({ timeout: 5000 });
+
+  // Verify experiment selector is visible
+  const experimentInput = page.locator(
+    'text=/experiment/i, label:has-text("Experiment")',
+  );
+  await expect(experimentInput.first()).toBeVisible();
 });
 
 test('should toggle Kale enable switch and show inline metadata', async ({

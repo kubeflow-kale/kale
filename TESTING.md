@@ -4,7 +4,7 @@ This guide explains how to run the UI tests and verify they're working correctly
 
 There are currently five UI tests:
 1. **Activation Message:** Extension console log on startup
-2. **Panel Visibility:** Kale tab and panel appear in sidebar
+2. **Panel States:** Kale panel shows different states (empty state, toggle message, full functionality)
 3. **Enable/Disable Toggle:** Inline metadata shows/hides on cells
 4. **Cell Tagging:** Tag a cell → see it in UI → verify in JSON file
 5. **Cell Dependencies:** Tag two cells with dependency relationship
