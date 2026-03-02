@@ -53,6 +53,11 @@ LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
 # Image tag for per-step Base image selection
 # E.g.: image:python:3.11-slim
 IMAGE_TAG = r"^image:(.+)$"
+# Cache tag for per-step caching control
+# E.g.: cache:enabled or cache:disabled
+CACHE_ENABLED = "enabled"
+CACHE_DISABLED = "disabled"
+CACHE_TAG = rf"^cache:({CACHE_ENABLED}|{CACHE_DISABLED})$"
 
 _TAGS_LANGUAGE = [
     SKIP_TAG,
@@ -67,9 +72,10 @@ _TAGS_LANGUAGE = [
     LABEL_TAG,
     LIMITS_TAG,
     IMAGE_TAG,
+    CACHE_TAG,
 ]
 # These tags are applied to every step of the pipeline
-_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG]
+_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG, CACHE_TAG]
 
 
 METRICS_TEMPLATE = """\
@@ -166,6 +172,11 @@ class NotebookConfig(PipelineConfig):
             if conf_type == "image":
                 # Image tag value is the rest after 'image:'
                 result["base_image"] = ":".join(parts)
+
+            if conf_type == "cache":
+                # Cache value is 'enabled' or 'disabled'
+                cache_value = parts.pop(0)
+                result["enable_caching"] = cache_value == CACHE_ENABLED
         return result
 
 
@@ -366,6 +377,7 @@ class NotebookProcessor:
                         labels=tags.get("labels", {}),
                         annotations=tags.get("annotations", {}),
                         base_image=tags.get("base_image", ""),
+                        enable_caching=tags.get("enable_caching"),
                     )
                     self.pipeline.add_step(step)
                     for _prev_step in tags["prev_steps"]:
@@ -418,6 +430,7 @@ class NotebookProcessor:
         cell_labels = {}
         cell_limits = {}
         cell_base_image = None
+        cell_enable_caching = None
 
         # the notebook cell was not tagged
         if "tags" not in metadata or len(metadata["tags"]) == 0:
@@ -473,6 +486,11 @@ class NotebookProcessor:
                 # Image value is the rest after 'image:'
                 cell_base_image = ":".join(tag_parts)
 
+            if tag_name == "cache":
+                # Cache value is 'enabled' or 'disabled'
+                cache_value = tag_parts.pop(0)
+                cell_enable_caching = cache_value == CACHE_ENABLED
+
             # name of the future Pipeline step
             if tag_name in ["step"]:
                 step_name = tag_parts.pop(0)
@@ -487,9 +505,9 @@ class NotebookProcessor:
                 "A cell can not provide `prev` annotations without "
                 "providing a `block` or `step` annotation as well"
             )
-
+        missing_step_names = not parsed_tags["step_names"]
         if cell_annotations:
-            if not parsed_tags["step_names"]:
+            if missing_step_names:
                 raise ValueError(
                     "A cell can not provide Pod annotations in a cell"
                     " that does not declare a step name."
@@ -497,7 +515,7 @@ class NotebookProcessor:
             parsed_tags["annotations"] = cell_annotations
 
         if cell_limits:
-            if not parsed_tags["step_names"]:
+            if missing_step_names:
                 raise ValueError(
                     "A cell can not provide Pod resource limits in a"
                     " cell that does not declare a step name."
@@ -505,12 +523,20 @@ class NotebookProcessor:
             parsed_tags["limits"] = cell_limits
 
         if cell_base_image:
-            if not parsed_tags["step_names"]:
+            if missing_step_names:
                 raise ValueError(
                     "A cell can not provide a base image in a"
                     " cell that does not declare a step name."
                 )
             parsed_tags["base_image"] = cell_base_image
+
+        if cell_enable_caching is not None:
+            if missing_step_names:
+                raise ValueError(
+                    "A cell can not provide caching control in a"
+                    " cell that does not declare a step name."
+                )
+            parsed_tags["enable_caching"] = cell_enable_caching
         return parsed_tags
 
     def get_pipeline_parameters_source(self):

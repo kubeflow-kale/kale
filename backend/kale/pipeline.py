@@ -101,6 +101,7 @@ class PipelineConfig(Config):
     experiment_name = Field(type=str, required=True)
     pipeline_description = Field(type=str, default="")
     base_image = Field(type=str, default="")
+    enable_caching = Field(type=bool, default=True)
     volumes = Field(type=list, items_config_type=VolumeConfig, default=[])
     katib_run = Field(type=bool, default=False)
     katib_metadata = Field(type=KatibConfig)

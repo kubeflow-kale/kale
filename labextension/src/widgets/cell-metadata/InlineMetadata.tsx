@@ -29,6 +29,7 @@ interface IProps {
   stepDependencies: string[];
   limits: { [id: string]: string };
   baseImage?: string;
+  enableCaching?: boolean;
   cellElement: any;
   cellIndex: number;
   pipelineBaseImage?: string;
@@ -239,9 +240,24 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     const isDefault = !this.props.baseImage;
 
     return (
+      !isDefault && (
+        <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+          Base Image: {effectiveImage}
+        </p>
+      )
+    );
+  }
+
+  createCacheText() {
+    // Only show if caching is explicitly set (not using pipeline default)
+    if (this.props.enableCaching === undefined) {
+      return null;
+    }
+
+    const cacheStatus = this.props.enableCaching ? 'enabled' : 'disabled';
+    return (
       <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-        Base Image: {effectiveImage}
-        {isDefault ? ' (default)' : ''}
+        Cache: {cacheStatus}
       </p>
     );
   }
@@ -286,6 +302,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
         {this.createLimitsText()}
         {this.createBaseImageText()}
+        {this.createCacheText()}
       </>
     );
 

@@ -46,6 +46,7 @@ class StepConfig(Config):
     annotations = Field(type=dict, default={}, validators=[validators.K8sAnnotationsValidator])
     limits = Field(type=dict, default={}, validators=[validators.K8sLimitsValidator])
     base_image = Field(type=str, default="")
+    enable_caching = Field(type=bool)
     retry_count = Field(type=int, default=0)
     retry_interval = Field(type=str)
     retry_factor = Field(type=int)
