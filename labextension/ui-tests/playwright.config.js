@@ -28,6 +28,11 @@ if (fs.existsSync(galataRoot)) {
 }
 fs.mkdirSync(galataRoot, { recursive: true });
 
+// Create required Jupyter subdirectories
+const jupyterDir = path.join(galataRoot, 'jupyter');
+const runtimeDir = path.join(jupyterDir, 'runtime');
+fs.mkdirSync(runtimeDir, { recursive: true });
+
 // Set XDG_DATA_HOME for consistent data directories
 process.env.XDG_DATA_HOME = galataRoot;
 
@@ -37,7 +42,7 @@ module.exports = {
   globalTeardown: require.resolve('./global-teardown.js'),
   webServer: {
     command: 'jlpm start',
-    url: 'http://localhost:8889/lab',
+    url: 'http://localhost:8888/lab',
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
     env: {

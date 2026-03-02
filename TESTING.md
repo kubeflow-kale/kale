@@ -87,10 +87,10 @@ cd labextension/ui-tests
 jlpm playwright install
 ```
 
-**Port 8889 in use**
+**Port 8888 in use**
 Kill existing JupyterLab instance:
 ```bash
-lsof -ti:8889 | xargs kill -9
+lsof -ti:8888 | xargs kill -9
 ```
 
 **Tests timeout**

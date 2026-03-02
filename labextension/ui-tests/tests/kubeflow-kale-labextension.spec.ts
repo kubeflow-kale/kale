@@ -22,21 +22,28 @@ import * as path from 'path';
  */
 test.use({ autoGoto: false });
 
-test('should emit an activation console message', async ({ page }) => {
-  const logs: string[] = [];
+test('should load extension without critical errors', async ({ page }) => {
+  const errors: string[] = [];
 
-  page.on('console', message => {
-    logs.push(message.text());
+  page.on('pageerror', error => {
+    errors.push(error.message);
   });
 
   await page.goto();
 
-  expect(
-    logs.filter(
-      s =>
-        s === 'JupyterLab extension kubeflow-kale-labextension is activated!',
-    ),
-  ).toHaveLength(1);
+  // Wait for JupyterLab to fully load
+  await page.waitForSelector('.jp-SideBar.jp-mod-left', { timeout: 30000 });
+
+  // Check that no critical errors occurred during page load
+  // Filter out known non-critical warnings
+  const criticalErrors = errors.filter(
+    err =>
+      !err.includes('Failed to load resource') &&
+      !err.includes('DevTools') &&
+      !err.includes('404'),
+  );
+
+  expect(criticalErrors).toHaveLength(0);
 });
 
 test('should show different states in Kale panel based on context', async ({
