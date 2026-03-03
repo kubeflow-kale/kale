@@ -49,8 +49,7 @@ export interface IKubeflowKale {
   widget: Widget;
 }
 
-export const KALE_PANEL_ID =
-  'kubeflow-kale-labextension/kubeflowDeployment';
+export const KALE_PANEL_ID = 'kubeflow-kale-labextension/kubeflowDeployment';
 
 const id = 'kubeflow-kale-labextension:deploymentPanel';
 
@@ -138,7 +137,7 @@ async function activate(
     // console.log(lab.commands.listCommands());
     kalePanelWidget = ReactWidget.create(
       <KubeflowKaleLeftPanel
-        ref={(ref) => setLeftPanelRef(ref)}
+        ref={ref => setLeftPanelRef(ref)}
         lab={lab}
         tracker={tracker}
         docManager={docManager}

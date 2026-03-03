@@ -27,14 +27,14 @@ export const setLeftPanelRef = (ref: KubeflowKaleLeftPanel | null) => {
 
 function activateKalePanel(app: JupyterFrontEnd) {
   app.commands.execute('tabsmenu:activate-by-id', {
-    id: KALE_PANEL_ID
+    id: KALE_PANEL_ID,
   });
 }
 export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:compile', {
     label: 'Compile Notebook',
     execute: () => {
-      if (!leftPanelRef?.isKaleEnabled()) return;
+      if (!leftPanelRef?.isKaleEnabled()) {return;}
 
       activateKalePanel(app);
       leftPanelRef.triggerCompile();
@@ -44,16 +44,17 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:run', {
     label: 'Run Pipeline',
     execute: () => {
-      if (!leftPanelRef?.isKaleEnabled()) return;
+      if (!leftPanelRef?.isKaleEnabled()) {return;}
 
       activateKalePanel(app);
       leftPanelRef.triggerRun();
     },
   });
 
-  class KaleToolbarExtension
-    implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-  {
+  class KaleToolbarExtension implements DocumentRegistry.IWidgetExtension<
+    NotebookPanel,
+    INotebookModel
+  > {
     createNew(panel: NotebookPanel) {
       const compileBtn = new ToolbarButton({
         label: 'Compile',
