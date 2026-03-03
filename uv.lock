@@ -1139,7 +1139,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "kfp"
-version = "2.15.2"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -1157,26 +1157,26 @@ dependencies = [
     { name = "tabulate" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/4b/2dd0352eb21aa8166ec0effe48c08e64f4eb05dc82cf7586e39dfd35f828/kfp-2.15.2.tar.gz", hash = "sha256:389933cbebdead61dd1eef538ff09d467048dc97edee2a70c80ca264506501cd", size = 297293, upload-time = "2025-12-03T21:35:30.168Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/0b/10d75f52c8281a683efa110affd154c407d967336cc5bf9c5fa16520a35c/kfp-2.16.0.tar.gz", hash = "sha256:08b0cdf3c34ac89e73995ba647d1815d09dfe527c59092ff44e136e18213270e", size = 313979, upload-time = "2026-02-25T14:30:30.866Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/db/5ee012dafdaaf5981e2dfe9c990d78e4218d62c128ea743f5c2340d73329/kfp-2.15.2-py3-none-any.whl", hash = "sha256:5d522b522707d10fe1c2b42884f003a778794bb8d858e7a4e30545ab9dd7be97", size = 397542, upload-time = "2025-12-03T21:35:28.728Z" },
+    { url = "https://files.pythonhosted.org/packages/84/71/8cc07a616412cc78b57481bf49248c74584881078c22c16d6c465a73f528/kfp-2.16.0-py3-none-any.whl", hash = "sha256:c06e5b24c5d4ddc9a65eb1f4ab120437d97a10c483d87fb41ce2f91a30f5aedb", size = 418401, upload-time = "2026-02-25T14:30:29.334Z" },
 ]
 
 [[package]]
 name = "kfp-pipeline-spec"
-version = "2.15.2"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/73/84/510f88de64ef4f0c2ff173f553fa4b038715617139a1cd41bed3ef677e09/kfp_pipeline_spec-2.15.2.tar.gz", hash = "sha256:a5979dd74d9bd02c7614bc372d58ab26929aa6677cd460b61f73a316cf7e04b4", size = 10527, upload-time = "2025-12-03T21:35:40.71Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/bb/cb8a8d84fecfb0be421dacd93e63c3499e416a31f8fad2466cbdbd13d23e/kfp_pipeline_spec-2.16.0.tar.gz", hash = "sha256:96b6fe189978aac8e3c928611d467788914c7e5ff2c6ca313279116734e2e26c", size = 10555, upload-time = "2026-02-25T14:30:25.218Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/71/30886a62d9ffa7b5a4709e1d66e394eecbe0376877a313b31ab9cef46322/kfp_pipeline_spec-2.15.2-py3-none-any.whl", hash = "sha256:b906cca1400ca097967a6e66a10799dcf17703052264e4b0093bcb0e7f4ed380", size = 9848, upload-time = "2025-12-03T21:35:39.304Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/4a/3cf478682cbcf72bb5808ca375d8f1deb829c9564563924d4c9d887721d6/kfp_pipeline_spec-2.16.0-py3-none-any.whl", hash = "sha256:02dc0feff42b1bca14f798fbd2264a537e697411527c6ee6343ed5546f1ea172", size = 9865, upload-time = "2026-02-25T14:30:24.231Z" },
 ]
 
 [[package]]
 name = "kfp-server-api"
-version = "2.15.2"
+version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -1184,7 +1184,7 @@ dependencies = [
     { name = "six" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/b6/130028135dc5a59fe7bca33d589f9ba55f86449edc32a3906d7cd8fd635d/kfp_server_api-2.15.2.tar.gz", hash = "sha256:e24493de35f56712bf0c9cdd3ce8df9b0c4f472a6f3b7111ee387b9f467c5c0e", size = 63454, upload-time = "2025-12-03T21:35:08.532Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/39/d7/13c537014f637288297ee9af5684b18b3823acb89e1f588b469196eba83c/kfp_server_api-2.16.0.tar.gz", hash = "sha256:32243e9eed9a386110e0363cbdc88b026f177bd5a1a53b63684bc0a47eb665a3", size = 63821, upload-time = "2026-02-25T14:29:56.678Z" }
 
 [[package]]
 name = "kubeflow-kale"
@@ -1228,7 +1228,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.0.0" },
     { name = "jupyter-client", specifier = ">=8.6.3" },
     { name = "jupyter-core", specifier = ">=5.8.1" },
-    { name = "kfp", specifier = ">=2.0.0" },
+    { name = "kfp", specifier = "==2.16.0" },
     { name = "kubernetes", specifier = ">=30.0.0" },
     { name = "nbconvert", specifier = ">=7.16.0" },
     { name = "nbformat", specifier = ">=5.10.4" },
