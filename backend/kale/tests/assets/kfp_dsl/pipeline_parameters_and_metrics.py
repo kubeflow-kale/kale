@@ -173,7 +173,7 @@ def auto_generated_pipeline(
     )
 
     security_context.set_security_context(
-        task=load_transform_data_task,
+        task=create_matrix_task,
         run_as_user=65534,
         run_as_group=0,
         run_as_non_root=True
@@ -193,7 +193,7 @@ def auto_generated_pipeline(
     )
 
     security_context.set_security_context(
-        task=load_transform_data_task,
+        task=sum_matrix_task,
         run_as_user=65534,
         run_as_group=0,
         run_as_non_root=True
