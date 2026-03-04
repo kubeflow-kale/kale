@@ -1,7 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
-
+from kfp.kubernetes import security_context
 
 @kfp_dsl.component(
     base_image='python:3.12',
@@ -172,6 +172,13 @@ def auto_generated_pipeline(
         strtest=strtest
     )
 
+    security_context.set_security_context(
+        task=load_transform_data_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+
     create_matrix_task.set_display_name("create-matrix-step")
     create_matrix_task.set_caching_options(enable_caching=True)
     create_matrix_task.set_accelerator_type(
@@ -183,6 +190,13 @@ def auto_generated_pipeline(
         d2=d2,
         booltest=booltest,
         strtest=strtest
+    )
+
+    security_context.set_security_context(
+        task=load_transform_data_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
     )
 
     sum_matrix_task.after(create_matrix_task)
