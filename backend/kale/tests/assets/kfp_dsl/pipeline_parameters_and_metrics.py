@@ -3,6 +3,7 @@ import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
 from kfp.kubernetes import security_context
 
+
 @kfp_dsl.component(
     base_image='python:3.12',
     packages_to_install=['kfp>=2.0.0', 'kubeflow-kale', 'numpy'],
