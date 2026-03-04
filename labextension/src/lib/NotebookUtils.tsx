@@ -260,8 +260,6 @@ export default class NotebookUtilities {
     }
 
     if (notebookPanel.model) {
-      // model.metadata returns a read-only copy in JupyterLab 4,
-      // so we must use model.getMetadata() to read the actual values.
       return notebookPanel.model.getMetadata(key) || null;
     }
     return null;
@@ -293,10 +291,6 @@ export default class NotebookUtilities {
       throw new Error('Notebook model is not available.');
     }
 
-    // model.metadata returns a read-only copy in JupyterLab 4,
-    // so we must use model.setMetadata() to persist changes.
-    // setMetadata() automatically marks the model as dirty via
-    // the YJS shared model change event chain.
     const oldVal = notebookPanel.model.getMetadata(key);
     notebookPanel.model.setMetadata(key, value);
 
