@@ -1,6 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.kubernetes import security_context
 
 
 @kfp_dsl.component(
@@ -300,6 +301,13 @@ def auto_generated_pipeline(
         max_depth_param=max_depth
     )
 
+    security_context.set_security_context(
+        task=load_transform_data_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+
     load_transform_data_task.set_display_name("load-transform-data-step")
     load_transform_data_task.set_caching_options(enable_caching=False)
 
@@ -308,6 +316,13 @@ def auto_generated_pipeline(
         y_trn_input_artifact=load_transform_data_task.outputs["y_trn_output_artifact"],
         n_estimators_param=n_estimators,
         max_depth_param=max_depth
+    )
+
+    security_context.set_security_context(
+        task=train_model_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
     )
 
     train_model_task.after(load_transform_data_task)
@@ -322,6 +337,13 @@ def auto_generated_pipeline(
         y_tst_input_artifact=load_transform_data_task.outputs["y_tst_output_artifact"],
         n_estimators_param=n_estimators,
         max_depth_param=max_depth
+    )
+
+    security_context.set_security_context(
+        task=evaluate_model_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
     )
 
     evaluate_model_task.after(train_model_task)
