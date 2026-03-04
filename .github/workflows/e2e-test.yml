@@ -7,7 +7,7 @@ on:
       pipeline_version:
         description: 'KFP version to install'
         required: false
-        default: '2.15.0'
+        default: '2.16.0'
         type: string
 
 jobs:

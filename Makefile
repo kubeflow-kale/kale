@@ -7,7 +7,8 @@
         build-backend build-labextension \
         kfp-build kfp-serve kfp-compile kfp-run \
         clean clean-venv lock lock-upgrade check-uv \
-        jupyter jupyter-kfp watch-labextension
+        jupyter jupyter-kfp watch-labextension \
+        docker-build docker-run
 
 UV := uv
 # jlpm is a yarn wrapper provided by JupyterLab - use it for extension development
@@ -201,3 +202,38 @@ jupyter-kfp: ## Start JupyterLab with KFP dev environment (run kfp-serve first!)
 
 watch-labextension: ## Watch labextension for changes (run in separate terminal)
 	cd labextension && $(JLPM) watch
+
+##@ Docker
+
+DOCKER_IMAGE ?= kubeflow-kale
+DOCKER_TAG ?= dev
+KFP_HOST ?= http://host.docker.internal:8080
+
+docker-build: build-backend build-labextension ## Build Docker image with Kale pre-installed
+	@printf "$(BLUE)Building Docker image $(DOCKER_IMAGE):$(DOCKER_TAG)...\n$(NC)"
+	docker build -f docker/Dockerfile -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@printf "$(GREEN)Image built: $(DOCKER_IMAGE):$(DOCKER_TAG)\n$(NC)"
+
+docker-run: ## Run Kale in Docker (JupyterLab on http://localhost:8888)
+	@printf "$(YELLOW)Requires: kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:8080\n$(NC)"
+	@printf "$(YELLOW)Requires: make kfp-serve (in another terminal)\n$(NC)"
+	@printf "$(BLUE)Starting $(DOCKER_IMAGE):$(DOCKER_TAG) on http://localhost:8888\n$(NC)"
+	docker run --rm -p 8888:8888 \
+		--add-host=host.docker.internal:host-gateway \
+		-e KF_PIPELINES_ENDPOINT=$(KFP_HOST) \
+		-e KF_PIPELINES_UI_ENDPOINT=http://localhost:8080 \
+		-e KALE_PIP_INDEX_URLS=http://$(KFP_HOST_ADDR):$(KFP_PORT) \
+		-e KALE_PIP_TRUSTED_HOSTS=$(KFP_HOST_ADDR) \
+		$(DOCKER_IMAGE):$(DOCKER_TAG)
+
+podman-run: ## Run Kale with Podman (JupyterLab on http://localhost:8888)
+	@printf "$(YELLOW)Requires: kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:8080\n$(NC)"
+	@printf "$(YELLOW)Requires: make kfp-serve (in another terminal)\n$(NC)"
+	@printf "$(BLUE)Starting $(DOCKER_IMAGE):$(DOCKER_TAG) on http://localhost:8888\n$(NC)"
+	podman run --rm \
+		--network=host \
+		-e KF_PIPELINES_ENDPOINT=$(KFP_HOST) \
+		-e KF_PIPELINES_UI_ENDPOINT=http://localhost:8080 \
+		-e KALE_PIP_INDEX_URLS=http://$(KFP_HOST_ADDR):$(KFP_PORT) \
+		-e KALE_PIP_TRUSTED_HOSTS=$(KFP_HOST_ADDR) \
+		$(DOCKER_IMAGE):$(DOCKER_TAG)
