@@ -325,7 +325,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
-    load_transform_data_task.set_env_variable(name="HOME", value="/tmp")
+    train_model_task.set_env_variable(name="HOME", value="/tmp")
 
     train_model_task.after(load_transform_data_task)
     train_model_task.after(load_transform_data_task)
@@ -347,7 +347,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
-    load_transform_data_task.set_env_variable(name="HOME", value="/tmp")
+    evaluate_model_task.set_env_variable(name="HOME", value="/tmp")
 
     evaluate_model_task.after(train_model_task)
     evaluate_model_task.after(load_transform_data_task)
