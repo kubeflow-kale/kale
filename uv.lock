@@ -1174,6 +1174,24 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/84/71/8cc07a616412cc78b57481bf49248c74584881078c22c16d6c465a73f528/kfp-2.16.0-py3-none-any.whl", hash = "sha256:c06e5b24c5d4ddc9a65eb1f4ab120437d97a10c483d87fb41ce2f91a30f5aedb", size = 418401, upload-time = "2026-02-25T14:30:29.334Z" },
 ]
 
+[package.optional-dependencies]
+kubernetes = [
+    { name = "kfp-kubernetes" },
+]
+
+[[package]]
+name = "kfp-kubernetes"
+version = "2.16.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "kfp" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/10/3d/953a9553ef097425a8e050037edab73794d6fb7ec94010ba30bebb860e5c/kfp_kubernetes-2.16.0.tar.gz", hash = "sha256:39c0ae960f3cbd349b1fb823071bc687b626d14cb759746b5b98700a7d6956a8", size = 19714, upload-time = "2026-02-25T14:32:30.879Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/53/ee/3f36c14ddc007e9c0a542d4dbd25409c3dab49c4423446365c493c1525a4/kfp_kubernetes-2.16.0-py3-none-any.whl", hash = "sha256:d2a5ef0edfbfdf3a60dbb72f8cbde766636d06cd30d90cbd23c8167538fcdb4d", size = 27274, upload-time = "2026-02-25T14:32:29.745Z" },
+]
+
 [[package]]
 name = "kfp-pipeline-spec"
 version = "2.16.0"
@@ -1210,7 +1228,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "jupyter-client" },
     { name = "jupyter-core" },
-    { name = "kfp" },
+    { name = "kfp", extra = ["kubernetes"] },
     { name = "kubernetes" },
     { name = "nbconvert" },
     { name = "nbformat" },
@@ -1241,6 +1259,7 @@ requires-dist = [
     { name = "jupyter-client", specifier = ">=8.6.3" },
     { name = "jupyter-core", specifier = ">=5.8.1" },
     { name = "kfp", specifier = ">=2.0.0" },
+    { name = "kfp", extras = ["kubernetes"], specifier = ">=2.16.0" },
     { name = "kubernetes", specifier = ">=30.0.0" },
     { name = "nbconvert", specifier = ">=7.16.0" },
     { name = "nbformat", specifier = ">=5.10.4" },
