@@ -40,7 +40,7 @@ def loaddata():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(PREDICTION_LABEL, "PREDICTION_LABEL")
     _kale_marshal.save(test_df, "test_df")
     _kale_marshal.save(train_df, "train_df")
@@ -69,7 +69,7 @@ def datapreprocessing():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     test_df = _kale_marshal.load("test_df")
     train_df = _kale_marshal.load("train_df")
     # -----------------------DATA LOADING END----------------------------------
@@ -161,7 +161,7 @@ def datapreprocessing():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(test_df, "test_df")
     _kale_marshal.save(train_df, "train_df")
     # -----------------------DATA SAVING END-----------------------------------
@@ -195,7 +195,7 @@ def featureengineering():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     PREDICTION_LABEL = _kale_marshal.load("PREDICTION_LABEL")
     test_df = _kale_marshal.load("test_df")
     train_df = _kale_marshal.load("train_df")
@@ -321,7 +321,7 @@ def featureengineering():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(train_df, "train_df")
     _kale_marshal.save(train_labels, "train_labels")
     # -----------------------DATA SAVING END-----------------------------------
@@ -358,7 +358,7 @@ def decisiontree():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     train_df = _kale_marshal.load("train_df")
     train_labels = _kale_marshal.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -391,7 +391,7 @@ def decisiontree():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(acc_decision_tree, "acc_decision_tree")
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -418,7 +418,7 @@ def svm():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     train_df = _kale_marshal.load("train_df")
     train_labels = _kale_marshal.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -451,7 +451,7 @@ def svm():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(acc_linear_svc, "acc_linear_svc")
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -478,7 +478,7 @@ def naivebayes():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     train_df = _kale_marshal.load("train_df")
     train_labels = _kale_marshal.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -511,7 +511,7 @@ def naivebayes():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(acc_gaussian, "acc_gaussian")
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -538,7 +538,7 @@ def logisticregression():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     train_df = _kale_marshal.load("train_df")
     train_labels = _kale_marshal.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -571,7 +571,7 @@ def logisticregression():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(acc_log, "acc_log")
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -597,7 +597,7 @@ def randomforest():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     train_df = _kale_marshal.load("train_df")
     train_labels = _kale_marshal.load("train_labels")
     # -----------------------DATA LOADING END----------------------------------
@@ -630,7 +630,7 @@ def randomforest():
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     _kale_marshal.save(acc_random_forest, "acc_random_forest")
     # -----------------------DATA SAVING END-----------------------------------
     '''
@@ -656,7 +656,7 @@ def results():
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     acc_decision_tree = _kale_marshal.load("acc_decision_tree")
     acc_gaussian = _kale_marshal.load("acc_gaussian")
     acc_linear_svc = _kale_marshal.load("acc_linear_svc")

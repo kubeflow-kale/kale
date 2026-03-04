@@ -19,7 +19,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -44,7 +44,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Save x_trn to output artifact
     _ = _kale_marshal.save(x_trn, "x_trn_artifact")
     # Save x_tst to output artifact
@@ -77,7 +77,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_update_uimetadata('load_transform_data_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("x_trn_artifact")
@@ -108,7 +108,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
     artifact_path = x_trn_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
@@ -120,7 +120,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Load x_trn_artifact from input artifact
     x_trn = _kale_marshal.load("x_trn_artifact")
     # Load y_trn_artifact from input artifact
@@ -150,7 +150,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Save model to output artifact
     _ = _kale_marshal.save(model, "model_artifact")
     # -----------------------DATA SAVING END-----------------------------------
@@ -177,7 +177,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_update_uimetadata('train_model_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("model_artifact")
@@ -199,7 +199,7 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
     artifact_path = model_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
@@ -214,7 +214,7 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Load model_artifact from input artifact
     model = _kale_marshal.load("model_artifact")
     # Load x_tst_artifact from input artifact
@@ -259,7 +259,7 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 

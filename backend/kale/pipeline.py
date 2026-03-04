@@ -176,7 +176,7 @@ class PipelineConfig(Config):
     def _set_marshal_path(self):
         # Check if the workspace directory is under a mounted volume.
         # If so, marshal data into a folder in that volume,
-        # otherwise create a new volume and mount it at /marshal
+        # otherwise create a new volume and mount it at /tmp/marshal
         wd = os.path.realpath(self.abs_working_dir)
         # get the volumes for which the working directory is a sub-path of
         # the mount point
