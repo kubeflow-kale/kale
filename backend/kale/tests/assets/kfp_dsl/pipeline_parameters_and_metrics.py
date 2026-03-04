@@ -20,7 +20,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -44,7 +44,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Save rnd_matrix to output artifact
     _ = _kale_marshal.save(rnd_matrix, "rnd_matrix_artifact")
     # -----------------------DATA SAVING END-----------------------------------
@@ -71,7 +71,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     _kale_update_uimetadata('create_matrix_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("rnd_matrix_artifact")
@@ -94,7 +94,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
     artifact_path = rnd_matrix_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
@@ -103,7 +103,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Load rnd_matrix_artifact from input artifact
     rnd_matrix = _kale_marshal.load("rnd_matrix_artifact")
     # -----------------------DATA LOADING END----------------------------------
@@ -128,7 +128,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
@@ -178,6 +178,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+    create_matrix_task.set_env_variable(name="HOME", value="/tmp")
 
     create_matrix_task.set_display_name("create-matrix-step")
     create_matrix_task.set_caching_options(enable_caching=True)
@@ -198,6 +199,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+    sum_matrix_task.set_env_variable(name="HOME", value="/tmp")
 
     sum_matrix_task.after(create_matrix_task)
 
