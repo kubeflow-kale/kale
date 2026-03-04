@@ -37,6 +37,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+    {{ step.name }}_task.set_env_variable(name="HOME", value="/tmp")
 
     {% if loop.index0 > 0 %}
     {%- if step_inputs.get(step.name) %}
