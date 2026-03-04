@@ -31,12 +31,10 @@ import { theme } from '../Theme';
 import { Input } from '../components/Input';
 import Commands from '../lib/Commands';
 import { PageConfig } from '@jupyterlab/coreutils';
-<<<<<<< HEAD
 import { KaleEmptyState } from './KaleEmptyState';
 import kaleLogo from '../../style/icons/kale.svg';
-=======
+
 export type DeployType = 'compile' | 'run' | 'upload';
->>>>>>> 48c55f2 (fix(labextension): disable toolbar buttons when Kale is OFF and add DeployType typing)
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const DEFAULT_UI_URL = 'http://localhost:8080';
