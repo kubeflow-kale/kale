@@ -107,7 +107,7 @@ class PipelineConfig(Config):
     katib_metadata = Field(type=KatibConfig)
     abs_working_dir = Field(type=str, default="")
     marshal_volume = Field(type=bool, default=True)
-    marshal_path = Field(type=str, default="/marshal")
+    marshal_path = Field(type=str, default="/tmp/marshal")
     steps_defaults = Field(type=dict, default={})
     kfp_host = Field(type=str)
     storage_class_name = Field(type=str, validators=[validators.K8sNameValidator])
