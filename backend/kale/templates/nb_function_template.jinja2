@@ -17,7 +17,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
 {%- if step_inputs|length > 0 %}
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil{% endif %}
 {%- for input_art in step_inputs %}
     artifact_path = {{ input_art.name }}_input_artifact.metadata["marshal_path"]
@@ -28,7 +28,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
 {%- for input_art in step_inputs %}
     # Load {{ input_art.name }}_artifact from input artifact
     {{ input_art.name }} = _kale_marshal.load("{{ input_art.name }}_artifact")
@@ -45,7 +45,7 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
 {%- for output_art in step_outputs %}
     # Save {{ output_art.name }} to output artifact
     _ = _kale_marshal.save({{ output_art.name }}, "{{ output_art.name }}_artifact")
