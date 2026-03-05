@@ -1,4 +1,4 @@
-# Copyright 2025 The Kubeflow Authors.
+# Copyright 2026 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use tensorflow-1.14.0 as a base image, allowing the user to
-# speficy if they want GPU support, by setting IMAGE_TYPE to "gpu".
-FROM python:3.6
+ARG BASE_IMAGE=ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-scipy:latest
+FROM ${BASE_IMAGE}
 
-ARG ORG="kubeflow-kale"
-ARG BRANCH="master"
-RUN git clone -b ${BRANCH} https://github.com/${ORG}/kale /kale && \
-    pip3 install --upgrade /kale/backend
+USER root
+
+COPY dist/*.whl /tmp/wheels/
+RUN pip install --no-cache-dir /tmp/wheels/*.whl && \
+    rm -rf /tmp/wheels
+
+USER 1000

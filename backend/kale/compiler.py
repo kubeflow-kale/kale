@@ -298,7 +298,7 @@ class Compiler:
         template_env.filters["add_suffix"] = lambda s, suffix: s + suffix
         template_env.filters["add_prefix"] = lambda s, prefix: prefix + s
         # quote a string when it is materialized in the template
-        template_env.filters["quote_if_not_none"] = lambda x: (f'"{x}"' if x is not None else None)
+        template_env.filters["quote_if_not_none"] = lambda x: f'"{x}"' if x is not None else None
         self.templating_env = template_env
         return template_env
 
