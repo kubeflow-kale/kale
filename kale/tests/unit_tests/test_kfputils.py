@@ -34,7 +34,8 @@ def test_update_uimetadata_not_exists(podutils, workflowutils, tmpdir):
     kfputils.update_uimetadata("test", uimetadata_path=filepath)
 
     # check file has been updated correctly
-    updated = json.loads(open(filepath).read())
+    with open(filepath) as f:
+        updated = json.load(f)
     target = {
         "outputs": [
             {
@@ -58,13 +59,15 @@ def test_update_uimetadata_from_empty(podutils, workflowutils, tmpdir):
     # create base tmp file
     base = {"outputs": []}
     filepath = os.path.join(tmpdir, "tmp_uimetadata.json")
-    json.dump(base, open(filepath, "w"))
+    with open(filepath, "w") as f:
+        json.dump(base, f)
 
     # update tmp file
     kfputils.update_uimetadata("test", uimetadata_path=filepath)
 
     # check file has been updated correctly
-    updated = json.loads(open(filepath).read())
+    with open(filepath) as f:
+        updated = json.load(f)
     target = {
         "outputs": [
             {
@@ -89,13 +92,15 @@ def test_update_uimetadata_from_not_empty(podutils, workflowutils, tmpdir):
     markdown = {"type": "markdown", "storage": "inline", "source": "#Some markdown"}
     base = {"outputs": [markdown]}
     filepath = os.path.join(tmpdir, "tmp_uimetadata.json")
-    json.dump(base, open(filepath, "w"))
+    with open(filepath, "w") as f:
+        json.dump(base, f)
 
     # update tmp file
     kfputils.update_uimetadata("test", uimetadata_path=filepath)
 
     # check file has been updated correctly
-    updated = json.loads(open(filepath).read())
+    with open(filepath) as f:
+        updated = json.load(f)
     target = {
         "outputs": [
             markdown,
