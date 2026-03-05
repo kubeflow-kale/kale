@@ -15,8 +15,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Kale UI Components', () => {
-  test('should display all main UI components in Kale panel', async ({ page }) => {
-
+  test('should display all main UI components in Kale panel', async ({
+    page,
+  }) => {
     await page.goto('http://localhost:8889/lab', { waitUntil: 'load' });
 
     await page.waitForTimeout(3000);
@@ -29,7 +30,9 @@ test.describe('Kale UI Components', () => {
     }
 
     // Click the Kale sidebar tab (Kubeflow Pipelines Deployment Panel)
-    const kaleTab = page.locator('[title="Kubeflow Pipelines Deployment Panel"]');
+    const kaleTab = page.locator(
+      '[title="Kubeflow Pipelines Deployment Panel"]',
+    );
     await kaleTab.click();
 
     await page.waitForTimeout(1000);
@@ -50,12 +53,16 @@ test.describe('Kale UI Components', () => {
     await expect(emptyState).toBeVisible({ timeout: 5000 });
 
     const title = page.locator('.kale-empty-state-title');
-    await expect(title).toContainText('Transform your Notebooks into Pipelines');
+    await expect(title).toContainText(
+      'Transform your Notebooks into Pipelines',
+    );
 
     const featureItems = page.locator('.kale-empty-state-list-item');
     await expect(featureItems).toHaveCount(3);
 
-    const githubLink = page.locator('a[href="https://github.com/kubeflow/kale"]');
+    const githubLink = page.locator(
+      'a[href="https://github.com/kubeflow/kale"]',
+    );
     await expect(githubLink).toBeVisible();
 
     // DeployProgress
