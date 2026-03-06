@@ -9,7 +9,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_output_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
+def create_matrix_step(create_matrix_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], rnd_matrix_output_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
     _kale_pipeline_parameters_block = f'''
         d1 = {d1}
         d2 = {d2}
@@ -77,6 +77,8 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     artifact_path = _kale_marshal.get_path("rnd_matrix_artifact")
     _shutil.copyfile(artifact_path, rnd_matrix_output_artifact.path)
     rnd_matrix_output_artifact.metadata["marshal_path"] = artifact_path
+    from kale.common.kfputils import load_mlpipeline_metrics
+    load_mlpipeline_metrics(kale_metrics_artifact)
 
 
 @kfp_dsl.component(
@@ -85,7 +87,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
+def sum_matrix_step(sum_matrix_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], rnd_matrix_input_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
     _kale_pipeline_parameters_block = f'''
         d1 = {d1}
         d2 = {d2}
@@ -151,6 +153,8 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     with open(sum_matrix_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('sum_matrix_html_report')
+    from kale.common.kfputils import load_mlpipeline_metrics
+    load_mlpipeline_metrics(kale_metrics_artifact)
 
 
 @kfp_dsl.pipeline(

@@ -192,7 +192,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
+def evaluate_model_step(evaluate_model_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = {n_estimators_param}
         MAX_DEPTH = {max_depth_param}
@@ -283,6 +283,8 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     with open(evaluate_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('evaluate_model_html_report')
+    from kale.common.kfputils import load_mlpipeline_metrics
+    load_mlpipeline_metrics(kale_metrics_artifact)
 
 
 @kfp_dsl.pipeline(
