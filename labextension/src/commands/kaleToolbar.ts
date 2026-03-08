@@ -34,7 +34,9 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:compile', {
     label: 'Compile Notebook',
     execute: () => {
-      if (!leftPanelRef?.isKaleEnabled()) {return;}
+      if (!leftPanelRef?.isKaleEnabled()) {
+        return;
+      }
 
       activateKalePanel(app);
       leftPanelRef.triggerCompile();
@@ -44,7 +46,9 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:run', {
     label: 'Run Pipeline',
     execute: () => {
-      if (!leftPanelRef?.isKaleEnabled()) {return;}
+      if (!leftPanelRef?.isKaleEnabled()) {
+        return;
+      }
 
       activateKalePanel(app);
       leftPanelRef.triggerRun();
