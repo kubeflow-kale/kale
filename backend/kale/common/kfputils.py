@@ -283,8 +283,11 @@ def generate_mlpipeline_metrics(metrics):
         metrics (dict): a dictionary where the key is the metric name and the
             value is its value.
     """
-    with open(KFP_UI_METRICS_FILE_PATH, "w", encoding="utf-8") as _kale_mf:
-        json.dump(metrics, _kale_mf)
+    try:
+        with open(KFP_UI_METRICS_FILE_PATH, "w", encoding="utf-8") as _kale_mf:
+            json.dump(metrics, _kale_mf)
+    except (OSError, TypeError, PermissionError) as e:
+        log.error("Not able to create metrics file, an unexpected error happened: %s", e)
 
 
 def load_mlpipeline_metrics(output):

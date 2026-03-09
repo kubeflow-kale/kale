@@ -143,7 +143,7 @@ Kale uses special cell types (tags) to organize your notebook into pipeline comp
 | **Imports** | ✅ Works | The code in this cell will be pre-pended to every step of the pipeline. Used for all import statements. **All imports must be placed in cells tagged as `imports`.** Importing libraries (pandas, tensorflow, etc.) in other cell types will cause pipeline execution errors. |
 | **Functions** | ✅ Works |The code in this cell will be pre-pended to every step of the pipeline, after **imports**. Used for function and class definitions only.  **Do not include** top-level executable statements |
 | **Pipeline Parameters** | ✅ Works | Define variables that will become pipeline parameters. If more than one Pipeline Parameters cell exists, and a parameter is defined in each cell, only the final value will be taken.|
-| **Pipeline Metrics** | ⚠️ Known Issue | Intended for defining pipeline metrics, but currently not working. |
+| **Pipeline Metrics** | ✅ Works | Print scalar metrics and transform it into pipeline metrics. |
 | **Step** | ✅ Works | Regular pipeline steps with custom names. This is the default cell type for your data processing and ML logic. Each step can have dependencies on other steps. Steps can also define their own image and GPU requirements. |
 | **Skip Cell** | ✅ Works | Cells marked as skip will be excluded from the pipeline. Useful for exploratory code or debugging that shouldn't be part of the production pipeline. |
 
