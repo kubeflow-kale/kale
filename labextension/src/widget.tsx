@@ -38,6 +38,7 @@ import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { LabIcon } from '@jupyterlab/ui-components';
+import { registerKaleCommands, setLeftPanelRef } from './commands/kaleToolbar';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
@@ -48,9 +49,12 @@ export interface IKubeflowKale {
   widget: Widget;
 }
 
+export const KALE_PANEL_ID = 'kubeflow-kale-labextension/kubeflowDeployment';
+
 const id = 'kubeflow-kale-labextension:deploymentPanel';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
+let kalePanelWidget: ReactWidget | undefined;
 
 /**
  * Adds a visual Kubeflow Pipelines Deployment tool to the sidebar.
@@ -70,7 +74,6 @@ async function activate(
   tracker: INotebookTracker,
   docManager: IDocumentManager,
 ): Promise<IKubeflowKale> {
-  let widget: ReactWidget | undefined;
   const kernel: Kernel.IKernelConnection =
     await NotebookUtils.createNewKernel();
   window.addEventListener('beforeunload', () => kernel.shutdown());
@@ -118,13 +121,13 @@ async function activate(
     }
 
     // add widget
-    if (widget && !widget.isAttached) {
-      labShell.add(widget, 'left');
+    if (kalePanelWidget && !kalePanelWidget.isAttached) {
+      labShell.add(kalePanelWidget, 'left');
     }
     // open widget if resuming from a notebook
-    if (reveal_widget && widget) {
+    if (reveal_widget && kalePanelWidget) {
       // open kale panel
-      widget.activate();
+      kalePanelWidget.activate();
     }
   }
 
@@ -132,8 +135,9 @@ async function activate(
   lab.started.then(() => {
     // show list of commands in the commandRegistry
     // console.log(lab.commands.listCommands());
-    widget = ReactWidget.create(
+    kalePanelWidget = ReactWidget.create(
       <KubeflowKaleLeftPanel
+        ref={ref => setLeftPanelRef(ref)}
         lab={lab}
         tracker={tracker}
         docManager={docManager}
@@ -141,12 +145,12 @@ async function activate(
         kernel={kernel}
       />,
     );
-    widget.id = 'kubeflow-kale-labextension/kubeflowDeployment';
-    widget.title.icon = kaleIcon;
-    widget.title.caption = 'Kubeflow Pipelines Deployment Panel';
-    widget.node.classList.add('kale-panel');
+    kalePanelWidget.id = KALE_PANEL_ID;
+    kalePanelWidget!.title.icon = kaleIcon;
+    kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
+    kalePanelWidget!.node.classList.add('kale-panel');
 
-    restorer.add(widget, widget.id);
+    restorer.add(kalePanelWidget, kalePanelWidget.id);
   });
 
   // Initialize once the application shell has been restored
@@ -154,13 +158,14 @@ async function activate(
   lab.restored.then(() => {
     loadPanel();
   });
+  registerKaleCommands(lab, kaleIcon);
 
   return {
     get widget() {
-      if (!widget) {
+      if (!kalePanelWidget) {
         throw new Error('Widget not initialized yet');
       }
-      return widget;
+      return kalePanelWidget;
     },
   };
 }
