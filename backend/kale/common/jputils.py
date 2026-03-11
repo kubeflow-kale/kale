@@ -180,7 +180,7 @@ def process_outputs(cells):
     html_outputs = [generate_html_output(c.outputs) for c in cells]
     html_outputs = "\n".join(html_outputs).strip()
     if html_outputs == "":
-        html_outputs = "This step did not produce any artifacts."
+        html_outputs = "This step did not produce any HTML output."
     html_artifact = HTML_TEMPLATE % html_outputs
     return html_artifact
 

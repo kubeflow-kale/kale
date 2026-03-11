@@ -276,15 +276,10 @@ def _prepare_transformer_assets(fn: Callable, assets: dict = None):
     )
     if not assets:
         assets = {}
-    if not isinstance(assets, dict):
-        ValueError(
-            "Please provide preprocessing assets as a dictionary"
-            " mapping variables *names* to their objects"
-        )
     missing_assets = [x not in assets for x in missing_names]
     if any(missing_assets):
         raise RuntimeError(
-            "The following abjects are a dependency for the"
+            "The following objects are a dependency for the"
             " provided preprocessing function. Please add the"
             " to the `preprocessing_assets` dictionary: %s"
             % [a for a, m in zip(missing_names, missing_assets, strict=False) if m]
@@ -354,8 +349,8 @@ def create_inference_service(
     predictor_spec = yaml.safe_load(predictor_spec)
     if predictor == "tensorflow":
         # XXX: TF Server is the only predictor being pulled from an external
-        # repository. TFServer container are tagger using the library's version
-        # number. All the other predictor are built by the KFServing community
+        # repository. TFServer containers are tagged using the library's version
+        # number. All the other predictors are built by the KFServing community
         # and are tagged following KFServing's version number. Default values
         # for these can be set in the `inferenceservice-config` ConfigMap.
         _version = _get_runtime_version(predictor)

@@ -132,6 +132,10 @@ class Compiler:
 
         # Separate parameters with and without defaults for proper ordering
         params_without_defaults = [f"{step.name}_html_report: Output[HTML]"]
+
+        if hasattr(step, "metrics") and step.metrics:
+            params_without_defaults.append("kale_metrics_artifact: Output[Metrics]")
+
         params_with_defaults = []
         step_inputs_list, step_outputs_list = [], []
         if hasattr(step, "ins") and step.ins:
