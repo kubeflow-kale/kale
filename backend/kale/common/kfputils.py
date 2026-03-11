@@ -283,36 +283,23 @@ def generate_mlpipeline_metrics(metrics):
         metrics (dict): a dictionary where the key is the metric name and the
             value is its value.
     """
-    metadata = []
-    for name, value in metrics.items():
-        if not isinstance(value, int | float):
-            try:
-                value = float(value)
-            except ValueError:
-                print(
-                    f"Variable {name} with type {type(value)} not supported as pipeline"
-                    " metric. Can only write `int` or `float` types as"
-                    " pipeline metrics"
-                )
-                continue
-        metadata.append(
-            {
-                "name": name,
-                "numberValue": value,
-                "format": "RAW",
-            }
-        )
-
     try:
-        utils.ensure_or_create_dir(KFP_UI_METRICS_FILE_PATH)
-    except RuntimeError:
-        log.exception(
-            "Writing to '%s' failed. This step will not be able to show metrics in the KFP UI.",
-            KFP_UI_METRICS_FILE_PATH,
-        )
-        return
-    with open(KFP_UI_METRICS_FILE_PATH, "w") as f:
-        json.dump({"metrics": metadata}, f)
+        with open(KFP_UI_METRICS_FILE_PATH, "w", encoding="utf-8") as _kale_mf:
+            json.dump(metrics, _kale_mf)
+    except (OSError, TypeError, PermissionError) as e:
+        log.error("Not able to create metrics file, an unexpected error happened: %s", e)
+
+
+def load_mlpipeline_metrics(output):
+    """Loads the saved metrics into the provided Output metrics artifact.
+    Args:
+    output (Output[Metrics]): the Output artifact to load the metrics into.
+    """
+    if os.path.exists(KFP_UI_METRICS_FILE_PATH):
+        with open(KFP_UI_METRICS_FILE_PATH, encoding="utf-8") as _kale_mf:
+            _kale_kfp_metrics = json.load(_kale_mf)
+            for _metric_name, _metric_value in _kale_kfp_metrics.items():
+                output.log_metric(_metric_name, _metric_value)
 
 
 def get_experiment_from_run_id(run_id: str):

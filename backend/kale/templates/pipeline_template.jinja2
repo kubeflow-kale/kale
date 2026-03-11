@@ -1,6 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.kubernetes import security_context
 
 {{ lightweight_components | join('\n\n') }}
 
@@ -29,6 +30,14 @@ def auto_generated_pipeline(
         {%- endfor %}
     {%- endif %}
     )
+
+    security_context.set_security_context(
+        task={{ step.name }}_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+    {{ step.name }}_task.set_env_variable(name="HOME", value="/tmp")
 
     {% if loop.index0 > 0 %}
     {%- if step_inputs.get(step.name) %}

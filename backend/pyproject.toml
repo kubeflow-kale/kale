@@ -13,6 +13,7 @@ license = { text = "Apache License Version 2.0" }
 
 dependencies = [
   "kfp>=2.0.0",
+  "kfp[kubernetes]>=2.16.0",
   "autopep8>=2.0.0",
   "astor>=0.8.1",
   "networkx>=3.0.0",

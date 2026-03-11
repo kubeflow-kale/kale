@@ -1,6 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.kubernetes import security_context
 
 
 @kfp_dsl.component(
@@ -9,7 +10,7 @@ from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_output_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
+def create_matrix_step(create_matrix_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], rnd_matrix_output_artifact: Output[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
     _kale_pipeline_parameters_block = f'''
         d1 = {d1}
         d2 = {d2}
@@ -20,7 +21,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -44,7 +45,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Save rnd_matrix to output artifact
     _ = _kale_marshal.save(rnd_matrix, "rnd_matrix_artifact")
     # -----------------------DATA SAVING END-----------------------------------
@@ -71,12 +72,14 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     _kale_update_uimetadata('create_matrix_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("rnd_matrix_artifact")
     _shutil.copyfile(artifact_path, rnd_matrix_output_artifact.path)
     rnd_matrix_output_artifact.metadata["marshal_path"] = artifact_path
+    from kale.common.kfputils import load_mlpipeline_metrics
+    load_mlpipeline_metrics(kale_metrics_artifact)
 
 
 @kfp_dsl.component(
@@ -85,7 +88,7 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], rnd_matrix_outpu
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
+def sum_matrix_step(sum_matrix_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], rnd_matrix_input_artifact: Input[Dataset], d1: int = 5, d2: int = 6, booltest: bool = True, strtest: str = 'test'):
     _kale_pipeline_parameters_block = f'''
         d1 = {d1}
         d2 = {d2}
@@ -94,7 +97,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
     artifact_path = rnd_matrix_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
@@ -103,7 +106,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Load rnd_matrix_artifact from input artifact
     rnd_matrix = _kale_marshal.load("rnd_matrix_artifact")
     # -----------------------DATA LOADING END----------------------------------
@@ -128,7 +131,7 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
@@ -151,6 +154,8 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], rnd_matrix_input_artif
     with open(sum_matrix_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('sum_matrix_html_report')
+    from kale.common.kfputils import load_mlpipeline_metrics
+    load_mlpipeline_metrics(kale_metrics_artifact)
 
 
 @kfp_dsl.pipeline(
@@ -172,6 +177,14 @@ def auto_generated_pipeline(
         strtest=strtest
     )
 
+    security_context.set_security_context(
+        task=create_matrix_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+    create_matrix_task.set_env_variable(name="HOME", value="/tmp")
+
     create_matrix_task.set_display_name("create-matrix-step")
     create_matrix_task.set_caching_options(enable_caching=True)
     create_matrix_task.set_accelerator_type(
@@ -184,6 +197,14 @@ def auto_generated_pipeline(
         booltest=booltest,
         strtest=strtest
     )
+
+    security_context.set_security_context(
+        task=sum_matrix_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+    sum_matrix_task.set_env_variable(name="HOME", value="/tmp")
 
     sum_matrix_task.after(create_matrix_task)
 
