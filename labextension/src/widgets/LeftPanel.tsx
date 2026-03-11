@@ -110,6 +110,7 @@ export const DefaultState: IState = {
 let deployIndex = 0;
 
 export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
+  public onKaleStateChange?: (enabled: boolean) => void;
   // init state default values
   state = DefaultState;
 
@@ -562,6 +563,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   onMetadataEnable = (isEnabled: boolean) => {
     this.setState({ isEnabled });
+    this.onKaleStateChange?.(isEnabled);
   };
 
   render() {

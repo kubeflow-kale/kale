@@ -34,7 +34,9 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:compile', {
     label: 'Compile Notebook',
     execute: () => {
-      if (!leftPanelRef?.isKaleEnabled()) {return;}
+      if (!leftPanelRef?.isKaleEnabled()) {
+        return;
+      }
 
       activateKalePanel(app);
       leftPanelRef.triggerCompile();
@@ -44,7 +46,9 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
   app.commands.addCommand('kale:run', {
     label: 'Run Pipeline',
     execute: () => {
-      if (!leftPanelRef?.isKaleEnabled()) {return;}
+      if (!leftPanelRef?.isKaleEnabled()) {
+        return;
+      }
 
       activateKalePanel(app);
       leftPanelRef.triggerRun();
@@ -71,16 +75,18 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
       panel.toolbar.addItem('kaleCompile', compileBtn);
       panel.toolbar.addItem('kaleRun', runBtn);
 
-      //  disable logic
-      const updateState = () => {
-        const enabled = leftPanelRef?.isKaleEnabled() ?? false;
-        compileBtn.enabled = enabled;
-        runBtn.enabled = enabled;
-      };
+      // initial state
+      const enabled = leftPanelRef?.isKaleEnabled() ?? false;
+      compileBtn.enabled = enabled;
+      runBtn.enabled = enabled;
 
-      updateState();
-      const interval = setInterval(updateState, 500);
-      panel.disposed.connect(() => clearInterval(interval));
+      // reactive update from left panel
+      if (leftPanelRef) {
+        leftPanelRef.onKaleStateChange = (enabled: boolean) => {
+          compileBtn.enabled = enabled;
+          runBtn.enabled = enabled;
+        };
+      }
     }
   }
 
