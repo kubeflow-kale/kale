@@ -37,16 +37,16 @@ test.describe('Kale UI Components', () => {
 
     await page.waitForTimeout(1000);
 
-    // InlineCellMetadata - Enable Switch
+    // Enable Switch
+    const toolbarContainer = page.locator('.toolbar.input-container');
+    await expect(toolbarContainer).toBeVisible();
+
     const enableLabel = page.locator('.switch-label', { hasText: 'Enable' });
     await expect(enableLabel).toBeVisible({ timeout: 5000 });
 
     const enableSwitch = page.locator('input[name="enableKale"]');
     await expect(enableSwitch).toBeVisible({ timeout: 5000 });
     await expect(enableSwitch).not.toBeChecked();
-
-    const toolbarContainer = page.locator('.toolbar.input-container');
-    await expect(toolbarContainer).toBeVisible();
 
     // KaleEmptyState
     const emptyState = page.locator('.kale-empty-state-container');
