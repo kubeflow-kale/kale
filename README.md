@@ -56,8 +56,9 @@ Read more about Kale and how it works in this Medium post:
 
 ### Requirements
 
-- **Python 3.10+**
-- **Kubeflow Pipelines v2.4.0+** - Install as recommended in the official [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/) documentation
+- **Python 3.11+**
+- **Kubeflow Pipelines v2.16.0+**
+     - Install as recommended in the official [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/) documentation
 - A Kubernetes cluster (`minikube`, `kind`, or any K8s cluster)
 
 ### Installation
