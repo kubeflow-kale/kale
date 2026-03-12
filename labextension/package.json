@@ -1,5 +1,5 @@
 {
-  "name": "kubeflow-kale-labextension",
+  "name": "jupyterlab-kubeflow-kale",
   "version": "2.0.0-alpha.1",
   "description": "Convert Notebooks to Kubeflow pipelines with Kale",
   "keywords": [
@@ -7,9 +7,9 @@
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/kubeflow-kale/kale",
+  "homepage": "https://github.com/kubeflow/kale",
   "bugs": {
-    "url": "https://github.com/kubeflow-kale/kale/issues"
+    "url": "https://github.com/kubeflow/kale/issues"
   },
   "license": "Apache-2.0",
   "engines": {
@@ -29,7 +29,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kubeflow-kale/kale.git"
+    "url": "https://github.com/kubeflow/kale.git"
   },
   "scripts": {
     "build": "jlpm build:lib && jlpm build:labextension:dev",
@@ -41,7 +41,7 @@
     "clean": "jlpm clean:lib",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
     "clean:lintcache": "rimraf .eslintcache .stylelintcache",
-    "clean:labextension": "rimraf kubeflow_kale_labextension/labextension kubeflow_kale_labextension/_version.py",
+    "clean:labextension": "rimraf ../jupyterlab_kubeflow_kale/labextension",
     "clean:all": "jlpm clean:lib && jlpm clean:labextension && jlpm clean:lintcache",
     "eslint": "jlpm eslint:check --fix",
     "eslint:check": "eslint . --cache --ext .ts,.tsx",
@@ -117,12 +117,12 @@
           "pip"
         ],
         "base": {
-          "name": "kubeflow_kale_labextension"
+          "name": "jupyterlab_kubeflow_kale"
         }
       }
     },
     "extension": true,
-    "outputDir": "kubeflow_kale_labextension/labextension",
+    "outputDir": "../jupyterlab_kubeflow_kale/labextension",
     "webpackConfig": "webpack.config.js"
   },
   "stylelint": {

@@ -7,13 +7,6 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
-[manifest]
-members = [
-    "kale-workspace",
-    "kubeflow-kale",
-    "kubeflow-kale-labextension",
-]
-
 [[package]]
 name = "anyio"
 version = "4.12.1"
@@ -1136,20 +1129,6 @@ wheels = [
 ]
 
 [[package]]
-name = "kale-workspace"
-version = "0.0.0"
-source = { virtual = "." }
-
-[package.optional-dependencies]
-dev = [
-    { name = "pre-commit" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pre-commit", marker = "extra == 'dev'" }]
-provides-extras = ["dev"]
-
-[[package]]
 name = "kfp"
 version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1218,7 +1197,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/39/d7/13c537014f6372882
 
 [[package]]
 name = "kubeflow-kale"
-source = { editable = "backend" }
+source = { editable = "." }
 dependencies = [
     { name = "astor" },
     { name = "autopep8" },
@@ -1241,24 +1220,32 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "coverage" },
+    { name = "pre-commit" },
     { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "pytest-clarity" },
     { name = "pytest-cov" },
+    { name = "pytest-jupyter", extra = ["server"] },
     { name = "ruff" },
     { name = "testfixtures" },
+]
+jupyter = [
+    { name = "jupyter-server" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "astor", specifier = ">=0.8.1" },
     { name = "autopep8", specifier = ">=2.0.0" },
+    { name = "coverage", marker = "extra == 'dev'" },
     { name = "dill", specifier = ">=0.3.8" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipython", specifier = ">=8.30.0" },
     { name = "jinja2", specifier = ">=3.0.0" },
     { name = "jupyter-client", specifier = ">=8.6.3" },
     { name = "jupyter-core", specifier = ">=5.8.1" },
-    { name = "kfp", specifier = ">=2.0.0" },
+    { name = "jupyter-server", marker = "extra == 'jupyter'", specifier = ">=2.4.0,<3" },
     { name = "kfp", extras = ["kubernetes"], specifier = ">=2.16.0" },
     { name = "kubernetes", specifier = ">=30.0.0" },
     { name = "nbconvert", specifier = ">=7.16.0" },
@@ -1266,44 +1253,18 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.0.0" },
     { name = "notebook", specifier = ">=7.4.4" },
     { name = "packaging", specifier = ">=25.0" },
+    { name = "pre-commit", marker = "extra == 'dev'" },
     { name = "progress", specifier = ">=1.5" },
     { name = "pyflakes", specifier = ">=3.0.0" },
     { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'" },
     { name = "pytest-clarity", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "pytest-jupyter", extras = ["server"], marker = "extra == 'dev'", specifier = ">=0.6.0" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "testfixtures", marker = "extra == 'dev'" },
 ]
-provides-extras = ["dev"]
-
-[[package]]
-name = "kubeflow-kale-labextension"
-source = { editable = "labextension" }
-dependencies = [
-    { name = "jupyter-server" },
-    { name = "kubeflow-kale" },
-]
-
-[package.optional-dependencies]
-test = [
-    { name = "coverage" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-jupyter", extra = ["server"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "coverage", marker = "extra == 'test'" },
-    { name = "jupyter-server", specifier = ">=2.4.0,<3" },
-    { name = "kubeflow-kale", editable = "backend" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pytest-asyncio", marker = "extra == 'test'" },
-    { name = "pytest-cov", marker = "extra == 'test'" },
-    { name = "pytest-jupyter", extras = ["server"], marker = "extra == 'test'", specifier = ">=0.6.0" },
-]
-provides-extras = ["test"]
+provides-extras = ["dev", "jupyter"]
 
 [[package]]
 name = "kubernetes"

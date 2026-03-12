@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
+import pytest
 
-if __name__ == "__main__":
-    setup()
+pytest_plugins = ("pytest_jupyter.jupyter_server",)
+
+
+@pytest.fixture
+def jp_server_config(jp_server_config):
+    return {"ServerApp": {"jpserver_extensions": {"jupyterlab_kubeflow_kale": True}}}

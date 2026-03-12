@@ -1,7 +1,7 @@
 {
   "ServerApp": {
     "jpserver_extensions": {
-      "kubeflow_kale_labextension": true
+      "jupyterlab_kubeflow_kale": true
     }
   }
 }

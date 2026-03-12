@@ -20,7 +20,7 @@ import pytest
 from kale import Compiler, NotebookProcessor
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-EXAMPLES_DIR = os.path.join(THIS_DIR, "../../../../examples/")
+EXAMPLES_DIR = os.path.join(THIS_DIR, "../../../examples/")
 
 
 @pytest.mark.parametrize(

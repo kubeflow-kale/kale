@@ -7,8 +7,7 @@ node_modules/
 .ipynb_checkpoints
 *.tsbuildinfo
 .vscode/
-kale/labextension
-kale/_version.py
+jupyterlab_kubeflow_kale/labextension
 .kale/
 # Integration tests
 ui-tests/test-results/
@@ -46,7 +45,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 labextension/lib/
-# labextension/kubeflow-kale-labextension/
 labextension/static/
 labextension/package-lock.json
 

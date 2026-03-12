@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Python unit tests for kubeflow-kale-labextension."""
+"""Python unit tests for jupyterlab-kubeflow-kale."""

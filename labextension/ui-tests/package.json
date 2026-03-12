@@ -1,7 +1,7 @@
 {
-  "name": "kubeflow-kale-labextension-ui-tests",
+  "name": "jupyterlab-kubeflow-kale-ui-tests",
   "version": "1.0.0",
-  "description": "JupyterLab kubeflow-kale-labextension Integration Tests",
+  "description": "JupyterLab jupyterlab-kubeflow-kale Integration Tests",
   "private": true,
   "scripts": {
     "start": "jupyter lab --config jupyter_server_test_config.py",
