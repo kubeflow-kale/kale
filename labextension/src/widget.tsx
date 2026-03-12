@@ -23,6 +23,8 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
+
 import { ReactWidget } from '@jupyterlab/apputils';
 
 import { Token } from '@lumino/coreutils';
@@ -53,6 +55,8 @@ export const KALE_PANEL_ID = 'jupyterlab-kubeflow-kale/kubeflowDeployment';
 
 const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 
+const KALE_SETTINGS_PLUGIN_ID = 'kubeflow-kale-labextension:kale-settings';
+
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
 
@@ -62,7 +66,13 @@ let kalePanelWidget: ReactWidget | undefined;
 export default {
   activate,
   id,
-  requires: [ILabShell, ILayoutRestorer, INotebookTracker, IDocumentManager],
+  requires: [
+    ILabShell,
+    ILayoutRestorer,
+    INotebookTracker,
+    IDocumentManager,
+    ISettingRegistry,
+  ],
   provides: IKubeflowKale,
   autoStart: true,
 } as JupyterFrontEndPlugin<IKubeflowKale>;
@@ -73,6 +83,7 @@ async function activate(
   restorer: ILayoutRestorer,
   tracker: INotebookTracker,
   docManager: IDocumentManager,
+  settingRegistry: ISettingRegistry,
 ): Promise<IKubeflowKale> {
   const kernel: Kernel.IKernelConnection =
     await NotebookUtils.createNewKernel();
@@ -104,6 +115,20 @@ async function activate(
       throw error;
     }
   }
+
+  let enableKaleByDefault = false;
+  Promise.all([lab.restored, settingRegistry.load(KALE_SETTINGS_PLUGIN_ID)])
+    .then(([, setting]) => {
+      enableKaleByDefault =
+        (setting.get('enableKaleByDefault').composite as boolean) ?? false;
+      setting.changed.connect(() => {
+        enableKaleByDefault =
+          (setting.get('enableKaleByDefault').composite as boolean) ?? false;
+      });
+    })
+    .catch(reason => {
+      console.error('Failed to load Kale settings:', reason);
+    });
 
   async function loadPanel() {
     let reveal_widget = undefined;
@@ -143,6 +168,7 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
+        getEnableKaleByDefault={() => enableKaleByDefault}
       />,
     );
     kalePanelWidget.id = KALE_PANEL_ID;
