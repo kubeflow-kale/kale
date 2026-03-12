@@ -107,7 +107,7 @@ class PipelineConfig(Config):
     katib_metadata = Field(type=KatibConfig)
     abs_working_dir = Field(type=str, default="")
     marshal_volume = Field(type=bool, default=True)
-    marshal_path = Field(type=str, default="/marshal")
+    marshal_path = Field(type=str, default="/tmp/marshal")
     steps_defaults = Field(type=dict, default={})
     kfp_host = Field(type=str)
     storage_class_name = Field(type=str, validators=[validators.K8sNameValidator])
@@ -176,7 +176,7 @@ class PipelineConfig(Config):
     def _set_marshal_path(self):
         # Check if the workspace directory is under a mounted volume.
         # If so, marshal data into a folder in that volume,
-        # otherwise create a new volume and mount it at /marshal
+        # otherwise create a new volume and mount it at /tmp/marshal
         wd = os.path.realpath(self.abs_working_dir)
         # get the volumes for which the working directory is a sub-path of
         # the mount point

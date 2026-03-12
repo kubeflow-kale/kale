@@ -20,9 +20,12 @@ from kale import NotebookConfig
 @pytest.mark.parametrize(
     "args,target",
     [
-        ((None, []), (True, "/marshal")),
+        ((None, []), (True, "/tmp/marshal")),
         # ---
-        (("/users", [{"name": "test", "type": "pvc", "mount_point": "/root"}]), (True, "/marshal")),
+        (
+            ("/users", [{"name": "test", "type": "pvc", "mount_point": "/root"}]),
+            (True, "/tmp/marshal"),
+        ),
         # ---
         (
             ("/user/kale/test", [{"name": "test", "type": "pvc", "mount_point": "/user/kale"}]),
@@ -31,7 +34,7 @@ from kale import NotebookConfig
         # ---
         (
             ("/user/kale/", [{"name": "test", "type": "pvc", "mount_point": "/user/kale/test"}]),
-            (True, "/marshal"),
+            (True, "/tmp/marshal"),
         ),
     ],
 )

@@ -1,6 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.kubernetes import security_context
 
 
 @kfp_dsl.component(
@@ -19,7 +20,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA LOADING END----------------------------------
     '''
 
@@ -44,7 +45,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Save x_trn to output artifact
     _ = _kale_marshal.save(x_trn, "x_trn_artifact")
     # Save x_tst to output artifact
@@ -77,7 +78,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_update_uimetadata('load_transform_data_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("x_trn_artifact")
@@ -108,7 +109,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
     artifact_path = x_trn_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
@@ -120,7 +121,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Load x_trn_artifact from input artifact
     x_trn = _kale_marshal.load("x_trn_artifact")
     # Load y_trn_artifact from input artifact
@@ -150,7 +151,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Save model to output artifact
     _ = _kale_marshal.save(model, "model_artifact")
     # -----------------------DATA SAVING END-----------------------------------
@@ -177,7 +178,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_update_uimetadata('train_model_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
 
     artifact_path = _kale_marshal.get_path("model_artifact")
@@ -192,14 +193,14 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
+def evaluate_model_step(evaluate_model_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = {n_estimators_param}
         MAX_DEPTH = {max_depth_param}
     '''
     # Saves the received artifacts to be retrieved during the nb execution
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     import shutil as _shutil
     artifact_path = model_input_artifact.metadata["marshal_path"]
     if artifact_path is not None:
@@ -214,7 +215,7 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     _kale_data_loading_block = '''
     # -----------------------DATA LOADING START--------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # Load model_artifact from input artifact
     model = _kale_marshal.load("model_artifact")
     # Load x_tst_artifact from input artifact
@@ -259,7 +260,7 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     _kale_data_saving_block = '''
     # -----------------------DATA SAVING START---------------------------------
     from kale import marshal as _kale_marshal
-    _kale_marshal.set_data_dir("/marshal")
+    _kale_marshal.set_data_dir("/tmp/marshal")
     # -----------------------DATA SAVING END-----------------------------------
     '''
 
@@ -283,6 +284,8 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], model_input_ar
     with open(evaluate_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
     _kale_update_uimetadata('evaluate_model_html_report')
+    from kale.common.kfputils import load_mlpipeline_metrics
+    load_mlpipeline_metrics(kale_metrics_artifact)
 
 
 @kfp_dsl.pipeline(
@@ -300,6 +303,14 @@ def auto_generated_pipeline(
         max_depth_param=max_depth
     )
 
+    security_context.set_security_context(
+        task=load_transform_data_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+    load_transform_data_task.set_env_variable(name="HOME", value="/tmp")
+
     load_transform_data_task.set_display_name("load-transform-data-step")
     load_transform_data_task.set_caching_options(enable_caching=False)
 
@@ -309,6 +320,14 @@ def auto_generated_pipeline(
         n_estimators_param=n_estimators,
         max_depth_param=max_depth
     )
+
+    security_context.set_security_context(
+        task=train_model_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+    train_model_task.set_env_variable(name="HOME", value="/tmp")
 
     train_model_task.after(load_transform_data_task)
     train_model_task.after(load_transform_data_task)
@@ -323,6 +342,14 @@ def auto_generated_pipeline(
         n_estimators_param=n_estimators,
         max_depth_param=max_depth
     )
+
+    security_context.set_security_context(
+        task=evaluate_model_task,
+        run_as_user=65534,
+        run_as_group=0,
+        run_as_non_root=True
+    )
+    evaluate_model_task.set_env_variable(name="HOME", value="/tmp")
 
     evaluate_model_task.after(train_model_task)
     evaluate_model_task.after(load_transform_data_task)

@@ -22,5 +22,5 @@ def serialize(value):
 
 
 def deserialize(value):
-    """Decode a Bse64 string into a JSON object."""
+    """Decode a Base64 string into a JSON object."""
     return json.loads(base64.b64decode(value).decode("utf-8"))
