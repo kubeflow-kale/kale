@@ -37,7 +37,7 @@ test.describe('Kale UI Components', () => {
 
     await page.waitForTimeout(1000);
 
-    // Enable Switch
+    // Verify Enable Switch
     const toolbarContainer = page.locator('.toolbar.input-container');
     await expect(toolbarContainer).toBeVisible();
 
@@ -48,7 +48,7 @@ test.describe('Kale UI Components', () => {
     await expect(enableSwitch).toBeVisible({ timeout: 5000 });
     await expect(enableSwitch).not.toBeChecked();
 
-    // KaleEmptyState
+    // Verify Empty State
     const emptyState = page.locator('.kale-empty-state-container');
     await expect(emptyState).toBeVisible({ timeout: 5000 });
 
@@ -65,11 +65,39 @@ test.describe('Kale UI Components', () => {
     );
     await expect(githubLink).toBeVisible();
 
-    // DeployProgress
-    const kalePanel = page.locator('.kale-panel');
-    await expect(kalePanel).toBeVisible({ timeout: 5000 });
+    // Create a new notebook
+    const pythonNotebook = page
+      .locator(
+        '.jp-LauncherCard:has(.jp-LauncherCard-label[title="Python 3 (ipykernel)"])',
+      )
+      .first();
+    await pythonNotebook.click();
 
-    const deploysProgress = page.locator('.deploys-progress');
-    await expect(deploysProgress).toHaveCount(1);
+    const notebookPanel = page.locator('.jp-NotebookPanel');
+    await expect(notebookPanel).toBeVisible({ timeout: 5000 });
+
+    // Enable Kale
+    await enableSwitch.click();
+    await expect(enableSwitch).toBeChecked();
+
+    // Verify deploy button
+    const compileButton = page.locator('button:has-text("Compile")');
+    await expect(compileButton).toBeVisible();
+
+    // Verify inline metadata
+    const editButton = page.locator('.kale-editor-toggle');
+    await expect(editButton).toBeVisible({ timeout: 5000 });
+    await editButton.click();
+    await page.waitForTimeout(500);
+    const metadataEditor = page.locator('.kale-metadata-editor-wrapper');
+    await expect(metadataEditor).toBeVisible({ timeout: 5000 });
+
+    // Verify metadata editor fields
+    await expect(page.locator('label:has-text("Cell type")')).toBeVisible();
+    await expect(page.locator('label:has-text("Step name")')).toBeVisible();
+    await expect(page.locator('label:has-text("Depends on")')).toBeVisible();
+    await expect(page.locator('[title="Base Image"]')).toBeVisible();
+    await expect(page.locator('[title="GPU"]')).toBeVisible();
+    await expect(page.locator('[title="Caching"]')).toBeVisible();
   });
 });
