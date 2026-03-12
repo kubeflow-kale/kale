@@ -1,0 +1,14 @@
+{
+  "title": "Kale",
+  "description": "Kubeflow Kale extension settings.",
+  "properties": {
+    "enableKaleByDefault": {
+      "type": "boolean",
+      "title": "Enable Kale by default",
+      "description": "Enable Kale automatically when opening a notebook.",
+      "default": false
+    }
+  },
+  "additionalProperties": false,
+  "type": "object"
+}
