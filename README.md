@@ -8,8 +8,8 @@
 <a target="_blank" href="https://pypi.org/project/kubeflow-kale/">
     <img alt="PyPI Version" src="https://badgen.net/pypi/v/kubeflow-kale">
 </a>
-<a target="_blank" href="https://www.npmjs.com/package/kubeflow-kale-labextension">
-  <img alt="npm Version" src="https://badgen.net/npm/v/kubeflow-kale-labextension">
+<a target="_blank" href="https://www.npmjs.com/package/jupyterlab-kubeflow-kale">
+  <img alt="npm Version" src="https://badgen.net/npm/v/jupyterlab-kubeflow-kale">
 </a>
 <a target="_blank" href="https://github.com/kubeflow/kale/actions">
   <img alt="Kale CI Workflow Status" src="https://github.com/kubeflow/kale/workflows/CI/badge.svg">
@@ -77,7 +77,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions.
 Once v2.0 is released, you'll be able to install from PyPI:
 
 ```bash
-pip install "jupyterlab>=4.0.0" kubeflow-kale kubeflow-kale-labextension
+pip install "jupyterlab>=4.0.0" kubeflow-kale[jupyter]
 jupyter lab
 ```
 

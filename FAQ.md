@@ -55,7 +55,7 @@ falling back to using `dill` when an object type is not recognised.
 This means that, in case you see errors related to pickle failing to save a
 particular object at the end of a pipeline step, Kale needs to implement a
 specific backend to save that object (if possible). This system was build to be
-easily extensible, you can take a look [here](backend/kale/marshal/backends.py)
+easily extensible, you can take a look [here](kale/marshal/backends.py)
 at existing backends and open a new issue to request for the new backend to be
 implemented.
 

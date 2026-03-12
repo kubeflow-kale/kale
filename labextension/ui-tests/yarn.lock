@@ -4092,6 +4092,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jupyterlab-kubeflow-kale-ui-tests@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "jupyterlab-kubeflow-kale-ui-tests@workspace:."
+  dependencies:
+    "@jupyterlab/galata": ^5.0.5
+    "@playwright/test": ^1.37.0
+  languageName: unknown
+  linkType: soft
+
 "katex@npm:^0.16.22":
   version: 0.16.27
   resolution: "katex@npm:0.16.27"
@@ -4109,15 +4118,6 @@ __metadata:
   checksum: b34ba39d3a9a52d388110bded8cb1c12272eb69c249d8eb26feab12d18a96a9bc4ceec4851d2afa43de4569f7d5ea78fa305965a3d0e96a38e02fe77c53677da
   languageName: node
   linkType: hard
-
-"kubeflow-kale-labextension-ui-tests@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "kubeflow-kale-labextension-ui-tests@workspace:."
-  dependencies:
-    "@jupyterlab/galata": ^5.0.5
-    "@playwright/test": ^1.37.0
-  languageName: unknown
-  linkType: soft
 
 "langium@npm:3.3.1":
   version: 3.3.1

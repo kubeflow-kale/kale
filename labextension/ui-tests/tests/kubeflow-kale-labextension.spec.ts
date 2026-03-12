@@ -12,12 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
- * Example of [Jest](https://jestjs.io/docs/getting-started) unit tests
- */
+import { expect, test } from '@jupyterlab/galata';
 
-describe('jupyterlab-kubeflow-kale', () => {
-  it('should be tested', () => {
-    expect(1 + 1).toEqual(2);
+/**
+ * Don't load JupyterLab webpage before running the tests.
+ * This is required to ensure we capture all log messages.
+ */
+test.use({ autoGoto: false });
+
+test('should emit an activation console message', async ({ page }) => {
+  const logs: string[] = [];
+
+  page.on('console', message => {
+    logs.push(message.text());
   });
+
+  await page.goto();
+
+  expect(
+    logs.filter(
+      s => s === 'JupyterLab extension jupyterlab-kubeflow-kale is activated!',
+    ),
+  ).toHaveLength(1);
 });

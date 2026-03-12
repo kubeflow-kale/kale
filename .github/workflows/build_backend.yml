@@ -1,6 +1,3 @@
-# ABOUTME: CI workflow for Kale backend (Python).
-# ABOUTME: Runs pytest and ruff linting using uv for dependency management.
-
 name: Kale Backend CI
 
 on:
@@ -15,6 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node is required by make dev (builds the JupyterLab extension)
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
@@ -25,8 +28,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: uv sync --all-packages --all-extras --frozen
+      - name: Set up development environment
+        run: make dev
 
       - name: Run backend tests
         run: make test-backend
@@ -36,6 +39,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node is required by make dev (builds the JupyterLab extension)
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
@@ -46,8 +55,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: uv sync --all-packages --all-extras --frozen
+      - name: Set up development environment
+        run: make dev
 
       - name: Lint backend
         run: make lint-backend

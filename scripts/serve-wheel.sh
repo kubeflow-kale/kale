@@ -17,12 +17,11 @@ set -euo pipefail
 
 WHEEL_DIR="${1:-.kfp-wheels}"
 PORT="${2:-8765}"
-KFP_DEV_VERSION="${3:-2.0.0a1}"
 # Host address for KFP to reach the wheel server (Linux users: override with your host IP)
 KFP_HOST_ADDR="${KFP_HOST_ADDR:-host.docker.internal}"
 
-echo "Building backend wheel with version $KFP_DEV_VERSION..."
-(cd backend && SETUPTOOLS_SCM_PRETEND_VERSION="$KFP_DEV_VERSION" uv build)
+echo "Building wheel..."
+uv build
 
 # Create PEP 503 compliant simple index structure
 rm -rf "$WHEEL_DIR"

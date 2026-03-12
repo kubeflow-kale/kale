@@ -1,6 +1,3 @@
-# ABOUTME: CI workflow for Kale JupyterLab extension.
-# ABOUTME: Runs linting, builds extension, and tests isolated installation.
-
 name: Build Kale Jupyter Labextension
 
 on:
@@ -19,7 +16,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
- 
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -35,10 +32,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          uv sync --all-packages --all-extras --frozen
-          cd labextension && uv run jlpm install
+      - name: Set up development environment
+        run: make dev
 
       - name: Lint labextension
         run: make lint-labextension
@@ -64,62 +59,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          uv sync --all-packages --all-extras --frozen
-          cd labextension && uv run jlpm install
+      - name: Set up development environment
+        run: make dev
 
-      - name: Build labextension
-        run: make build-labextension
+      - name: Build wheel
+        run: make build
 
       - name: Verify extension
         run: |
           uv run jupyter labextension list
-          uv run jupyter labextension list 2>&1 | grep -ie "kubeflow-kale-labextension.*OK"
+          uv run jupyter labextension list 2>&1 | grep -ie "jupyterlab-kubeflow-kale.*OK"
           uv run python -m jupyterlab.browser_check
-
-      # TODO: Re-enable artifact upload and isolated test in a later PR
-      # - name: Upload extension packages
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: extension-artifacts
-      #     path: dist/kubeflow_kale_labextension*
-      #     if-no-files-found: error
-
-  # test_isolated:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Install Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.12"
-  #
-  #     - name: Install uv
-  #       uses: astral-sh/setup-uv@v4
-  #       with:
-  #         version: "latest"
-  #
-  #     - name: Build backend
-  #       run: make build-backend
-  #
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         name: extension-artifacts
-  #
-  #     - name: Install and test extension
-  #       run: |
-  #         set -eux
-  #         # Remove NodeJS to test prebuilt extension
-  #         sudo rm -rf $(which node) || true
-  #
-  #         uv pip install "jupyterlab>=4.0.0,<5" \
-  #           dist/kubeflow_kale-*.whl \
-  #           kubeflow_kale_labextension*.whl
-  #
-  #         uv run jupyter labextension list
-  #         uv run jupyter labextension list 2>&1 | grep -ie "kubeflow-kale-labextension.*OK"
-  #         uv run python -m jupyterlab.browser_check --no-browser-test

@@ -42,16 +42,16 @@ import { registerKaleCommands, setLeftPanelRef } from './commands/kaleToolbar';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
-  'kubeflow-kale-labextension:IKubeflowKale',
+  'jupyterlab-kubeflow-kale:IKubeflowKale',
 );
 
 export interface IKubeflowKale {
   widget: Widget;
 }
 
-export const KALE_PANEL_ID = 'kubeflow-kale-labextension/kubeflowDeployment';
+export const KALE_PANEL_ID = 'jupyterlab-kubeflow-kale/kubeflowDeployment';
 
-const id = 'kubeflow-kale-labextension:deploymentPanel';
+const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
