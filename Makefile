@@ -5,7 +5,8 @@
         kfp-build kfp-serve kfp-compile kfp-run \
         clean clean-venv lock lock-upgrade check-uv \
         jupyter jupyter-kfp watch-labextension \
-        docker-build docker-run
+        docker-build docker-run \
+        release verify check-versions
 
 UV := uv
 # jlpm is a yarn wrapper provided by JupyterLab - use it for extension development
@@ -184,6 +185,45 @@ jupyter-kfp: ## Start JupyterLab with KFP dev environment (run kfp-serve first!)
 
 watch-labextension: ## Watch labextension for changes (run in separate terminal)
 	cd labextension && $(JLPM) watch
+
+##@ Release
+
+check-versions: ## Verify backend and labextension versions match
+	@PY_VERSION=$$($(UV) run python -c "import re; m = re.search(r'__version__\s*=\s*\"([^\"]+)\"', open('kale/__init__.py').read()); print(m.group(1))"); \
+	NPM_VERSION=$$(node -p "require('./labextension/package.json').version"); \
+	PY_AS_SEMVER=$$(echo "$$PY_VERSION" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)(a)([0-9]+)/\1-alpha.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(b)([0-9]+)/\1-beta.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(rc)([0-9]+)/\1-rc.\3/'); \
+	if [ "$$PY_AS_SEMVER" != "$$NPM_VERSION" ]; then \
+		printf "$(YELLOW)Version mismatch!\n$(NC)"; \
+		printf "  Python (PEP 440):  $$PY_VERSION\n"; \
+		printf "  Python (as semver): $$PY_AS_SEMVER\n"; \
+		printf "  npm (semver):      $$NPM_VERSION\n"; \
+		exit 1; \
+	fi; \
+	printf "$(GREEN)Versions match: $$PY_VERSION (Python) == $$NPM_VERSION (npm)\n$(NC)"
+
+verify: lint test check-versions ## Run all checks (lint + test + version check)
+
+release: ## Set release version (usage: make release VERSION=X.Y.Z)
+	@test -n "$(VERSION)" || { printf "$(YELLOW)Usage: make release VERSION=X.Y.Za1\n$(NC)"; exit 1; }
+	@# Validate PEP 440 version format
+	@echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(a[0-9]+|b[0-9]+|rc[0-9]+)?$$' || { \
+		printf "$(YELLOW)Invalid version format: $(VERSION)\n$(NC)"; \
+		printf "$(YELLOW)Expected: X.Y.Z, X.Y.Za1, X.Y.Zb1, or X.Y.Zrc1\n$(NC)"; \
+		exit 1; \
+	}
+	@# Update version
+	python3 -c "import re; p='kale/__init__.py'; t=open(p).read(); open(p,'w').write(re.sub(r'__version__ = \".*\"', '__version__ = \"$(VERSION)\"', t))"
+	@# Convert PEP 440 to semver for package.json
+	@NPM_VERSION=$$(echo "$(VERSION)" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)(a)([0-9]+)/\1-alpha.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(b)([0-9]+)/\1-beta.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(rc)([0-9]+)/\1-rc.\3/'); \
+	cd labextension && npm version "$$NPM_VERSION" --no-git-tag-version --allow-same-version; \
+	printf "$(GREEN)Version set to $(VERSION) (npm: $$NPM_VERSION)\n$(NC)"
+	@# Generate changelog if git-cliff is available
+	@command -v git-cliff >/dev/null 2>&1 && { \
+		MAJOR=$$(echo "$(VERSION)" | cut -d. -f1); \
+		MINOR=$$(echo "$(VERSION)" | cut -d. -f2); \
+		git-cliff --output CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md; \
+		printf "$(GREEN)Changelog generated: CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md\n$(NC)"; \
+	} || printf "$(YELLOW)git-cliff not found, skipping changelog generation\n$(NC)"
 
 ##@ Docker
 
