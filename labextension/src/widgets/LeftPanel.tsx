@@ -59,6 +59,7 @@ interface IProps {
   docManager: IDocumentManager;
   backend: boolean;
   kernel: Kernel.IKernelConnection;
+  getEnableKaleByDefault: () => boolean;
 }
 
 interface IState {
@@ -301,8 +302,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // Set the current notebook and wait for the session to be ready
     if (notebook) {
       await this.setNotebookPanel(notebook);
-      // Enable Kale by default when a notebook is opened
-      this.setState({ isEnabled: true });
+      const enableByDefault = this.props.getEnableKaleByDefault();
+      this.setState(prevState => ({
+        isEnabled: enableByDefault || prevState.isEnabled, // preserve toggle when setting off
+      }));
     } else {
       // Handle null case - reset to default state and disable
       this.setState(DefaultState);
@@ -720,6 +723,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                   notebook={activeNotebook}
                   pipelineBaseImage={this.state.metadata.base_image}
                   defaultBaseImage={this.state.defaultBaseImage}
+                  initialChecked={this.state.isEnabled}
                 />
               ) : (
                 <>
