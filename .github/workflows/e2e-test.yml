@@ -30,6 +30,13 @@ jobs:
           version: v0.20.0
           cluster_name: kind-kale-test
 
+      - name: Create kubeflow namespace with PSS restricted
+        run: |
+          kubectl create namespace kubeflow
+          kubectl label namespace kubeflow \
+            pod-security.kubernetes.io/enforce=restricted \
+            pod-security.kubernetes.io/enforce-version=latest
+
       - name: Install KFP
         run: |
           export PIPELINE_VERSION=${{ env.KFP_VERSION }}
@@ -49,13 +56,6 @@ jobs:
         if: failure()
         run: kubectl get all -n kubeflow
 
-      - name: Enable PSS restricted on kubeflow namespace
-        # pipeline step pods run only in the kubeflow namespace
-        run: |
-          kubectl label namespace kubeflow --overwrite \
-            pod-security.kubernetes.io/enforce=restricted \
-            pod-security.kubernetes.io/enforce-version=latest
-
       - name: Port Forward KFP (background)
         run: |
           nohup kubectl port-forward svc/ml-pipeline-ui 8080:80 -n kubeflow > /dev/null 2>&1 &
@@ -65,7 +65,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          python-version: '3.12'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
