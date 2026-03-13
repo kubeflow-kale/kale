@@ -14,8 +14,8 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Kale UI Components', () => {
-  test('should display all main UI components in Kale panel', async ({
+test.describe('Kale Empty State', () => {
+  test('should open the Kale panel and verify the empty-state components', async ({
     page,
   }) => {
     await page.goto('http://localhost:8889/lab', { waitUntil: 'load' });
@@ -64,6 +64,31 @@ test.describe('Kale UI Components', () => {
       'a[href="https://github.com/kubeflow/kale"]',
     );
     await expect(githubLink).toBeVisible();
+  });
+});
+
+test.describe('Open a Notebook and Enable Kale', () => {
+  test('should open a JupyterNotebook, enable Kale with the toggle, and verify UI components', async ({
+    page,
+  }) => {
+    await page.goto('http://localhost:8889/lab', { waitUntil: 'load' });
+
+    await page.waitForTimeout(3000);
+
+    // Dismiss the Git dialog if it appears
+    const dismissButton = page.locator('button', { hasText: 'Dismiss' });
+    if (await dismissButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await dismissButton.click();
+      await page.waitForTimeout(500);
+    }
+
+    // Click the Kale sidebar tab (Kubeflow Pipelines Deployment Panel)
+    const kaleTab = page.locator(
+      '[title="Kubeflow Pipelines Deployment Panel"]',
+    );
+    await kaleTab.click();
+
+    await page.waitForTimeout(1000);
 
     // Create a new notebook
     const pythonNotebook = page
@@ -77,6 +102,7 @@ test.describe('Kale UI Components', () => {
     await expect(notebookPanel).toBeVisible({ timeout: 5000 });
 
     // Enable Kale
+    const enableSwitch = page.locator('input[name="enableKale"]');
     await enableSwitch.click();
     await expect(enableSwitch).toBeChecked();
 
