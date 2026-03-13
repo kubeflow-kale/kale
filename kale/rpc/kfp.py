@@ -84,10 +84,10 @@ def _get_pipeline_id(pipeline_name):
     client = _get_client()
     token = ""
     pipeline_id = None
-    while pipeline_id is None or token is not None:
+    while pipeline_id is None and token is not None:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
-        f = next(filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines), None)
+        f = next(filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines or []), None)
         if f is not None:
             pipeline_id = f.pipeline_id
     return pipeline_id
