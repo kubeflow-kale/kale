@@ -1,6 +1,8 @@
 {
   "title": "Kale",
   "description": "Kubeflow Kale extension settings.",
+  "jupyter.lab.setting-icon": "kale:logo",
+  "jupyter.lab.setting-icon-label": "Kale",
   "properties": {
     "enableKaleByDefault": {
       "type": "boolean",
