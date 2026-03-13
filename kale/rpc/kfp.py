@@ -21,6 +21,15 @@ def _get_client(host=None):
     return kfp.Client()
 
 
+def ping(request):
+    try:
+        c = _get_client()
+        c.get_kfp_healthz()
+        return True
+    except Exception:
+        return False
+
+
 def list_experiments(request):
     """List Kubeflow Pipelines experiments."""
     c = _get_client()

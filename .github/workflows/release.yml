@@ -1,0 +1,284 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Release target'
+        type: choice
+        default: 'dry-run'
+        options:
+          - dry-run
+          - testpypi
+          - testpypi+pypi
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(python3 -c "
+          import re, sys
+          m = re.search(r'__version__\s*=\s*\"([^\"]+)\"', open('kale/__init__.py').read())
+          if not m: sys.exit('Could not find __version__')
+          print(m.group(1))
+          ")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+          # Detect prerelease (a=alpha, b=beta, rc=release candidate)
+          if echo "$VERSION" | grep -qE '(a|b|rc)[0-9]+$'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Version: $VERSION"
+          echo "Tag: v$VERSION"
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: |
+          SKIP_JUPYTER_BUILDER=1 uv sync --all-extras --frozen
+          cd labextension && uv run jlpm install
+
+      - name: Build labextension
+        run: |
+          cd labextension && uv run jlpm build:prod
+
+      - name: Check versions match
+        run: make check-versions
+
+      - name: Lint
+        run: make lint
+
+      - name: Test backend
+        run: make test-backend-unit
+
+      - name: Test labextension
+        run: make test-labextension
+
+      - name: Build wheel
+        run: make build
+
+      - name: Check wheel
+        run: |
+          pip install twine
+          twine check dist/*.whl
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: |
+            dist/kubeflow_kale-*.whl
+            dist/kubeflow_kale-*.tar.gz
+          if-no-files-found: error
+
+  test-wheels:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: wheels/
+
+      - name: Install wheel (lean, no jupyter)
+        run: |
+          python -m venv /tmp/test-env
+          source /tmp/test-env/bin/activate
+          pip install wheels/kubeflow_kale-*.whl
+
+      - name: Smoke test - version
+        run: |
+          source /tmp/test-env/bin/activate
+          python -c "from kale import __version__; print(f'kale version: {__version__}')"
+          test "$(source /tmp/test-env/bin/activate && python -c 'from kale import __version__; print(__version__)')" = "${{ needs.prepare.outputs.version }}"
+
+      - name: Smoke test - CLI
+        run: |
+          source /tmp/test-env/bin/activate
+          kale --help
+
+      - name: Install wheel with jupyter extra
+        run: |
+          python -m venv /tmp/test-env-jupyter
+          source /tmp/test-env-jupyter/bin/activate
+          WHEEL=$(ls wheels/kubeflow_kale-*.whl)
+          pip install "jupyterlab>=4.0.0,<5" "${WHEEL}[jupyter]"
+
+      - name: Smoke test - labextension
+        run: |
+          source /tmp/test-env-jupyter/bin/activate
+          jupyter labextension list 2>&1 | grep -i "jupyterlab-kubeflow-kale"
+
+  create-tag:
+    needs: [prepare, test-wheels]
+    if: ${{ inputs.target != 'dry-run' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          # Check if tag already exists
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping"
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "Created and pushed tag $TAG"
+          fi
+
+  publish-testpypi:
+    needs: [prepare, create-tag]
+    if: ${{ inputs.target != 'dry-run' }}
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TESTPYPI_API_TOKEN }}
+          skip-existing: true
+
+  publish-pypi:
+    needs: [prepare, publish-testpypi]
+    if: ${{ inputs.target == 'testpypi+pypi' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  github-release:
+    needs: [prepare, publish-testpypi]
+    if: ${{ inputs.target != 'dry-run' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
+          prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: dist/*
+
+  bump-dev-version:
+    needs: [prepare, publish-testpypi]
+    if: ${{ inputs.target != 'dry-run' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Compute next dev version
+        id: next
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          NEXT=$(python3 -c "
+          import re
+          v = '$VERSION'
+          m = re.match(r'(\d+\.\d+\.\d+)(a|b|rc)(\d+)$', v)
+          if m:
+              print(f'{m.group(1)}{m.group(2)}{int(m.group(3))+1}')
+          else:
+              parts = v.split('.')
+              parts[2] = str(int(parts[2]) + 1)
+              print('.'.join(parts) + 'a1')
+          ")
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Released $VERSION → next dev version: $NEXT"
+
+      - name: Bump version
+        run: make release VERSION=${{ steps.next.outputs.next }}
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Bump dev version to ${{ steps.next.outputs.next }}"
+          branch: bump-dev-version/${{ steps.next.outputs.next }}
+          title: "Bump dev version to ${{ steps.next.outputs.next }}"
+          body: "Automated version bump after releasing v${{ needs.prepare.outputs.version }}."
+          committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
