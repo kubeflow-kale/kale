@@ -536,6 +536,68 @@ a {
   vertical-align: middle;
 }
 
+/* -----------------------------------------------------------------------------
+| KFP Status Badge
+|---------------------------------------------------------------------------- */
+
+.kfp-status-container {
+  display: flex;
+  justify-content: center;
+  margin-top: -8px;
+  margin-bottom: 10px;
+}
+
+.kfp-status-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.kfp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: var(--jp-layout-color2);
+  border: 1px solid var(--jp-border-color2);
+  cursor: default;
+  user-select: none;
+}
+
+.kfp-status-description {
+  margin: 0;
+  font-size: 10px;
+  color: var(--jp-ui-font-color2);
+  text-align: center;
+  padding: 0 8px;
+  line-height: 1.3;
+}
+
+.kfp-status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kfp-status-text-connected {
+  color: #16a34a;
+}
+
+.kfp-status-text-disconnected {
+  color: #d97706;
+}
+
+.kfp-status-text-checking {
+  color: var(--jp-ui-font-color2);
+}
+
+.kfp-status-spinner {
+  flex-shrink: 0;
+}
+
 .kale-disabled-toggle {
   margin-bottom: 8px;
 }
