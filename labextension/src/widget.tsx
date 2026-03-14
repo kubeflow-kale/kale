@@ -55,7 +55,7 @@ export const KALE_PANEL_ID = 'jupyterlab-kubeflow-kale/kubeflowDeployment';
 
 const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 
-const KALE_SETTINGS_PLUGIN_ID = 'kubeflow-kale-labextension:kale-settings';
+const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
