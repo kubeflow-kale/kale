@@ -12,10 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
+"""
+Entry point for the Kale KFServing Transformer server.
 
+This script initializes and starts a KFServing server with a KaleTransformer
+model. It accepts command-line arguments for the model name and predictor host.
+
+Usage:
+    python transformer.py --predictor_host <URL> [--model_name <name>]
+
+Args:
+    --model_name (str): The name the model is served under. 
+                        Defaults to 'model'.
+    --predictor_host (str): The URL for the model predict function. 
+                            Required.
+
+Example:
+    python transformer.py --predictor_host http://localhost:8080
+"""
+import argparse
 from kale.kfserving.transformer import KaleTransformer
+
 import kfserving
+
 
 DEFAULT_MODEL_NAME = "model"
 
