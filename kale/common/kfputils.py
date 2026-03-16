@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import cache
 import hashlib
 import importlib.util
 import json
@@ -25,7 +24,7 @@ from typing import Any
 
 import kfp
 
-from kale.common import podutils, utils, workflowutils
+from kale.common import utils
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
@@ -316,49 +315,6 @@ def get_workflow_from_run(run):
 def format_kfp_run_id_uri(run_id: str):
     """Return a KFP run ID as a URI."""
     return f"kfp:run:{run_id}"
-
-
-@cache
-def is_kfp_step() -> bool:
-    """Detect if running inside a KFP step.
-
-    The detection involves two steps:
-
-      1. Auto-detect if the current Pod is part of an Argo workflow
-      2. Read one of the annotations that the KFP API Server sets in the
-         workflow object (one-off runs and recurring ones have different
-         annotations).
-    """
-    log.info("Checking if running inside a KFP step...")
-    try:
-        namespace = podutils.get_namespace()
-        workflow = workflowutils.get_workflow(
-            workflowutils.get_workflow_name(podutils.get_pod_name(), namespace), namespace
-        )
-        annotations = workflow["metadata"]["annotations"]
-        try:
-            _ = annotations[KFP_RUN_NAME_ANNOTATION_KEY]
-        except KeyError:
-            _ = annotations[KFP_SWF_NAME_ANNOTATION_KEY]
-    except Exception:
-        log.info("Not in a KFP step.")
-        return False
-    log.info("Running in a KFP step.")
-    return True
-
-
-def detect_run_uuid() -> str:
-    """Get the workflow's UUID form inside a pipeline step."""
-    namespace = podutils.get_namespace()
-    workflow = workflowutils.get_workflow(
-        workflowutils.get_workflow_name(podutils.get_pod_name(), namespace), namespace
-    )
-    run_uuid = workflow["metadata"].get("labels", {}).get(KFP_RUN_ID_LABEL_KEY, None)
-
-    # KFP api-server adds run UUID as label to workflows for KFP>=0.1.26.
-    # Return run UUID if available. Else return workflow UUID to maintain
-    # backwards compatibility.
-    return run_uuid or workflow["metadata"]["uid"]
 
 
 def compute_component_id(pod):
