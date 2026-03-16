@@ -26,6 +26,7 @@ from typing import Any
 import kfp
 
 from kale.common import podutils, utils, workflowutils
+from kale.config import kfp_server_config
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
@@ -40,8 +41,39 @@ _logger = None
 log = logging.getLogger(__name__)
 
 
-def _get_kfp_client(host=None, namespace: str = "kubeflow"):
-    return kfp.Client(host=host, namespace=namespace)
+def _get_kfp_client(
+    host=None, namespace: str = None, cookies: str = None, existing_token: str = None
+):
+    """Get a KFP client with configuration.
+
+    Loads saved configuration and allows parameter overrides.
+    Explicit parameters take precedence over saved config.
+
+    Args:
+        host: KFP API server host (overrides config if provided)
+        namespace: Kubernetes namespace (overrides config if provided)
+        cookies: Authentication cookies (overrides config if provided)
+        existing_token: Bearer token for authentication (overrides config if provided)
+
+    Returns:
+        kfp.Client instance
+    """
+    # Load saved configuration
+    config = kfp_server_config.load_config()
+
+    # Use parameter if provided, otherwise fall back to config
+    if host is None:
+        host = config.host
+    if namespace is None:
+        namespace = config.namespace or "kubeflow"
+    if cookies is None:
+        cookies = config.cookies
+    if existing_token is None:
+        existing_token = config.existing_token
+
+    return kfp.Client(
+        host=host, namespace=namespace, cookies=cookies, existing_token=existing_token
+    )
 
 
 def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
