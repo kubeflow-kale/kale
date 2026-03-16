@@ -299,4 +299,8 @@ Open the project in VS Code - debug configurations are provided in `.vscode/laun
 5. Update fixtures if template output changed
 6. Commit your changes
 
+## Releasing
+
+See [RELEASE.md](RELEASE.md) for instructions on publishing to TestPyPI and PyPI.
+
 Happy hacking! If anything in this guide is unclear, open an issue or PR with improvements.
