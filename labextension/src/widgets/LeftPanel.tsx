@@ -32,7 +32,13 @@ import { Input } from '../components/Input';
 import Commands from '../lib/Commands';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { KaleEmptyState } from './KaleEmptyState';
+import { KFPStatusBadge, KfpStatus } from '../components/KFPStatusBadge';
+import { executeRpc } from '../lib/RPCUtils';
 import kaleLogo from '../../style/icons/kale.svg';
+
+export type DeployType = 'compile' | 'run' | 'upload';
+
+const KFP_STATUS_REFRESH_MS = 30_000;
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const DEFAULT_UI_URL = 'http://localhost:8080';
@@ -58,7 +64,7 @@ interface IProps {
 interface IState {
   metadata: IKaleNotebookMetadata;
   runDeployment: boolean;
-  deploymentType: string;
+  deploymentType: DeployType;
   deployDebugMessage: boolean;
   experiments: IExperiment[];
   gettingExperiments: boolean;
@@ -67,6 +73,7 @@ interface IState {
   namespace: string;
   kfpUiHost: string;
   defaultBaseImage: string;
+  kfpStatus: KfpStatus;
 }
 
 // keep names with Python notation because they will be read
@@ -103,6 +110,7 @@ export const DefaultState: IState = {
   namespace: '',
   kfpUiHost: '',
   defaultBaseImage: '',
+  kfpStatus: 'checking',
 };
 
 let deployIndex = 0;
@@ -110,6 +118,8 @@ let deployIndex = 0;
 export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   // init state default values
   state = DefaultState;
+
+  private _kfpPollTimerId: ReturnType<typeof setInterval> | null = null;
 
   // Return the notebook file name without extension (e.g. 'MyNotebook' from 'path/to/MyNotebook.ipynb')
   getNotebookFileName = (notebook: NotebookPanel | null): string => {
@@ -192,12 +202,23 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       metadata: { ...prevState.metadata, enable_caching: enabled },
     }));
 
-  activateRunDeployState = (type: string) => {
+  activateRunDeployState = (type: DeployType) => {
     if (!this.state.runDeployment) {
       // Clear all previous deploys when starting a new one, so only the latest panel is shown
       this.setState({ runDeployment: true, deploymentType: type, deploys: {} });
       this.runDeploymentCommand();
     }
+  };
+
+  public triggerCompile = () => {
+    this.activateRunDeployState('compile');
+  };
+
+  public isKaleEnabled = (): boolean => {
+    return this.state.isEnabled;
+  };
+  public triggerRun = () => {
+    this.activateRunDeployState('run');
   };
 
   changeDeployDebugMessage = () =>
@@ -210,7 +231,21 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     this.setState(prevState => ({
       ...DefaultState,
       isEnabled: prevState.isEnabled,
+      kfpStatus: prevState.kfpStatus,
     }));
+
+  refreshKfpStatus = async () => {
+    const kernelStatus = this.props.kernel?.status;
+    if (
+      !this.props.backend ||
+      kernelStatus === 'dead' ||
+      kernelStatus === 'terminating'
+    ) {
+      return;
+    }
+    const isConnected = await executeRpc(this.props.kernel, 'kfp.ping');
+    this.setState({ kfpStatus: isConnected ? 'connected' : 'disconnected' });
+  };
 
   componentDidMount = () => {
     // Notebook tracker will signal when a notebook is changed
@@ -218,6 +253,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // Set notebook widget if one is open
     if (this.props.tracker.currentWidget instanceof NotebookPanel) {
       this.setNotebookPanel(this.props.tracker.currentWidget);
+    }
+    this.refreshKfpStatus();
+    this._kfpPollTimerId = setInterval(
+      this.refreshKfpStatus,
+      KFP_STATUS_REFRESH_MS,
+    );
+  };
+
+  componentWillUnmount = () => {
+    if (this._kfpPollTimerId !== null) {
+      clearInterval(this._kfpPollTimerId);
     }
   };
 
@@ -432,6 +478,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   onPanelRemove = (index: number) => {
+    const deploy = this.state.deploys[index];
+    if (deploy === undefined || deploy === null) {
+      return;
+    }
     const deploys = { ...this.state.deploys };
     deploys[index].deleted = true;
     this.setState({ deploys });
@@ -642,6 +692,11 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                   alt="Kale Logo"
                 />
               </p>
+              {this.props.backend && (
+                <div className="kfp-status-container">
+                  <KFPStatusBadge status={this.state.kfpStatus} />
+                </div>
+              )}
             </div>
 
             <div className="kale-component">

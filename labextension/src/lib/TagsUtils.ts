@@ -15,7 +15,6 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
-import { ICellModel, CodeCellModel } from '@jupyterlab/cells';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
@@ -268,47 +267,36 @@ export default class TagsUtils {
   }
 
   public static removeOldDependencies(
-    notebook: NotebookPanel,
-    removedCell: ICellModel,
+    notebook: NotebookPanel
   ) {
-    if (!(removedCell instanceof CodeCellModel)) {
+    const cells = notebook.model?.cells;
+    if (!cells) {
       return;
     }
-    const metadata = removedCell.metadata as any;
-    let tagsValue;
-    if (metadata && typeof metadata.get === 'function') {
-      tagsValue = metadata.get('tags');
-    } else if (metadata && metadata.tags) {
-      tagsValue = metadata.tags;
-    } else {
-      return; // No tags found
+
+    const allBlocks = this.getAllBlocks(notebook.content);
+    const allBlocksSet = new Set(allBlocks);
+
+    for (let index = 0; index < cells.length; index++) {
+      const kaleTags = this.getKaleCellTags(notebook.content, index);
+      if (!kaleTags) {
+        continue;
+      }
+
+      const newPrevBlockNames = kaleTags.prevBlockNames.filter(
+        dep => allBlocksSet.has(dep)
+      );
+
+      if (newPrevBlockNames.length !== kaleTags.prevBlockNames.length) {
+        const updatedMetadata = {
+          ...kaleTags,
+          prevBlockNames: newPrevBlockNames,
+        };
+
+        this.setKaleCellTags(notebook, index, updatedMetadata, false);
+      }
     }
-    if (!Array.isArray(tagsValue)) {
-      return;
-    }
-    const tags = tagsValue.filter((tag): tag is string => typeof tag === 'string');
-    if (!tags) {
-      return;
-    }
-    const blockName = tags
-      .filter(t => t.startsWith('step:'))
-      .map(t => t.replace('step:', ''))[0];
-    if (!blockName) {
-      return;
-    }
-    const removedDependency = `prev:${blockName}`;
-    this.cellsToArray(notebook)
-      .filter(cell => {
-        const cellTags = cell?.metadata['tags'];
-        return Array.isArray(cellTags) && cellTags.includes(removedDependency);
-      })
-      .forEach(cell => {
-        const cellTags = cell?.metadata['tags'];
-        if (Array.isArray(cellTags)) {
-          const newTags = cellTags.filter(e => e !== removedDependency);
-          cell.metadata['tags'] =  newTags;
-        }
-      });
+
     notebook.context.save();
   }
 }

@@ -1,13 +1,12 @@
-# ABOUTME: Kale Development Makefile - unified task automation.
-# ABOUTME: Use 'make dev' to set up the development environment.
-
 .PHONY: help dev install \
         test test-backend test-backend-unit test-labextension test-e2e test-e2e-install \
         lint lint-backend lint-labextension format-labextension format-backend \
-        build-backend build-labextension \
+        build \
         kfp-build kfp-serve kfp-compile kfp-run \
         clean clean-venv lock lock-upgrade check-uv \
-        jupyter jupyter-kfp watch-labextension
+        jupyter jupyter-kfp watch-labextension \
+        docker-build docker-run \
+        release verify check-versions
 
 UV := uv
 # jlpm is a yarn wrapper provided by JupyterLab - use it for extension development
@@ -35,23 +34,19 @@ check-uv: ## Verify uv is installed
 
 ##@ Installation
 
-# Dev version used for local development (matches KFP_DEV_VERSION)
-DEV_VERSION ?= 2.0.0a1
-
 dev: check-uv ## Set up development environment
 	@printf "$(BLUE)Setting up Kale development environment...\n$(NC)"
-	@# Step 1: Install backend first to get jlpm available
-	SETUPTOOLS_SCM_PRETEND_VERSION=$(DEV_VERSION) $(UV) sync --package kubeflow-kale --all-extras
+	@# Step 1: Install package to get jlpm available
+	@# Skip the hatch jupyter-builder hook — we build the labextension explicitly below
+	SKIP_JUPYTER_BUILDER=1 $(UV) sync --all-extras
 	@# Step 2: Build labextension (requires jlpm from step 1)
 	cd labextension && $(JLPM) install
 	@# Clean tsbuildinfo cache before build (fixes incremental build issues after make clean)
 	cd labextension && $(JLPM) clean:lib
 	cd labextension && $(JLPM) build
-	@# Step 3: Now sync all packages (labextension editable install needs lib/ to exist)
-	SETUPTOOLS_SCM_PRETEND_VERSION=$(DEV_VERSION) $(UV) sync --all-packages --all-extras
-	@# Step 4: Link extension for development (must run from labextension directory)
-	cd labextension && SETUPTOOLS_SCM_PRETEND_VERSION=$(DEV_VERSION) $(UV) run jupyter labextension develop . --overwrite
-	@# Step 5: Set up pre-commit hooks (Python + TypeScript/JavaScript linting)
+	@# Step 3: Link extension for development
+	$(UV) run jupyter labextension develop --overwrite .
+	@# Step 4: Set up pre-commit hooks (Python + TypeScript/JavaScript linting)
 	@$(UV) run pre-commit install 2>/dev/null || { \
 		printf "$(YELLOW)Note: pre-commit hooks not installed (core.hooksPath is set globally).\n$(NC)"; \
 		printf "$(YELLOW)To enable pre-commit hooks, run: git config --unset core.hooksPath\n$(NC)"; \
@@ -66,11 +61,11 @@ test: test-backend test-labextension ## Run all tests
 
 test-backend: ## Run backend tests
 	@printf "$(BLUE)Running backend tests...\n$(NC)"
-	$(UV) run pytest backend/kale/tests -vv
+	$(UV) run pytest kale/tests -vv
 
 test-backend-unit: ## Run backend unit tests only
 	@printf "$(BLUE)Running backend unit tests...\n$(NC)"
-	$(UV) run pytest backend/kale/tests/unit_tests -vv
+	$(UV) run pytest kale/tests/unit_tests -vv
 
 test-labextension: ## Run labextension tests
 	@printf "$(BLUE)Running labextension tests...\n$(NC)"
@@ -93,8 +88,8 @@ lint: lint-backend lint-labextension ## Run all linters
 
 lint-backend: ## Lint backend code (ruff)
 	@printf "$(BLUE)Linting backend...\n$(NC)"
-	$(UV) run ruff check backend
-	$(UV) run ruff format --check backend
+	$(UV) run ruff check kale
+	$(UV) run ruff format --check kale
 
 lint-labextension: ## Lint labextension code (eslint + prettier)
 	@printf "$(BLUE)Linting labextension...\n$(NC)"
@@ -104,34 +99,27 @@ format-labextension: ## Format labextension code
 	cd labextension && $(JLPM) prettier && $(JLPM) eslint
 
 format-backend: ## Format backend code (ruff)
-	$(UV) run ruff check --fix backend
-	$(UV) run ruff format backend
+	$(UV) run ruff check --fix kale
+	$(UV) run ruff format kale
 
 ##@ Building
 
-build-backend: ## Build backend wheel
-	@printf "$(BLUE)Building backend wheel with version $(DEV_VERSION)...\n$(NC)"
-	cd backend && SETUPTOOLS_SCM_PRETEND_VERSION=$(DEV_VERSION) $(UV) build
-	@printf "$(GREEN)Wheel built: backend/dist/\n$(NC)"
-
-build-labextension: ## Build labextension wheel
-	@printf "$(BLUE)Building labextension...\n$(NC)"
-	cd labextension && $(JLPM) build:prod
-	cd labextension && $(UV) build
-	@printf "$(GREEN)Labextension wheel built: labextension/dist/\n$(NC)"
+build: ## Build wheel
+	@printf "$(BLUE)Building wheel...\n$(NC)"
+	$(UV) build
+	@printf "$(GREEN)Wheel built: dist/\n$(NC)"
 
 ##@ KFP Development (replaces devpi workflow)
 
 KFP_WHEEL_DIR ?= $(CURDIR)/.kfp-wheels
 KFP_PORT ?= 8765
-KFP_DEV_VERSION ?= $(DEV_VERSION)
 # Host address for KFP to reach the wheel server (Linux users: override with your host IP)
 KFP_HOST_ADDR ?= host.docker.internal
 
 kfp-build: ## Build wheel for KFP cluster testing (fixed version for reproducibility)
-	@printf "$(BLUE)Building wheel with version $(KFP_DEV_VERSION)...\n$(NC)"
+	@printf "$(BLUE)Building wheel...\n$(NC)"
 	rm -f dist/kubeflow_kale-*.whl
-	cd backend && SETUPTOOLS_SCM_PRETEND_VERSION=$(KFP_DEV_VERSION) $(UV) build
+	$(UV) build
 	@# Create PEP 503 compliant simple index structure
 	rm -rf $(KFP_WHEEL_DIR)
 	mkdir -p $(KFP_WHEEL_DIR)/kubeflow-kale
@@ -148,7 +136,6 @@ kfp-serve: kfp-build ## Serve wheel via HTTP for Kind/Docker clusters
 kfp-compile: ## Compile notebook with local wheel (usage: make kfp-compile NB=path/to/notebook.ipynb)
 	@test -n "$(NB)" || { printf "$(YELLOW)Usage: make kfp-compile NB=path/to/notebook.ipynb\n$(NC)"; exit 1; }
 	@printf "$(YELLOW)Make sure 'make kfp-serve' is running in another terminal\n$(NC)"
-	SETUPTOOLS_SCM_PRETEND_VERSION=$(KFP_DEV_VERSION) \
 	KALE_PIP_INDEX_URLS="http://$(KFP_HOST_ADDR):$(KFP_PORT)" \
 	KALE_PIP_TRUSTED_HOSTS="$(KFP_HOST_ADDR)" \
 	$(UV) run kale --nb $(NB)
@@ -157,7 +144,6 @@ kfp-run: ## Compile and run on KFP with local wheel (usage: make kfp-run NB=... 
 	@test -n "$(NB)" || { printf "$(YELLOW)Usage: make kfp-run NB=path/to/notebook.ipynb KFP_HOST=http://localhost:8080\n$(NC)"; exit 1; }
 	@test -n "$(KFP_HOST)" || { printf "$(YELLOW)Error: KFP_HOST not set\n$(NC)"; exit 1; }
 	@printf "$(YELLOW)Make sure 'make kfp-serve' is running in another terminal\n$(NC)"
-	SETUPTOOLS_SCM_PRETEND_VERSION=$(KFP_DEV_VERSION) \
 	KALE_PIP_INDEX_URLS="http://$(KFP_HOST_ADDR):$(KFP_PORT)" \
 	KALE_PIP_TRUSTED_HOSTS="$(KFP_HOST_ADDR)" \
 	$(UV) run kale --nb $(NB) --kfp_host $(KFP_HOST) --run_pipeline
@@ -167,10 +153,9 @@ kfp-run: ## Compile and run on KFP with local wheel (usage: make kfp-run NB=... 
 clean: ## Clean all build artifacts
 	@printf "$(BLUE)Cleaning...\n$(NC)"
 	rm -rf .venv
-	rm -rf dist backend/dist backend/*.egg-info
-	rm -rf labextension/dist labextension/*.egg-info
+	rm -rf dist *.egg-info
 	rm -rf labextension/lib labextension/node_modules
-	rm -rf labextension/kubeflow_kale_labextension/labextension
+	rm -rf jupyterlab_kubeflow_kale/labextension
 	rm -rf .kfp-wheels .kale
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
@@ -190,14 +175,87 @@ lock-upgrade: check-uv ## Upgrade all dependencies and update lock
 ##@ Development Helpers
 
 jupyter: ## Start JupyterLab
-	SETUPTOOLS_SCM_PRETEND_VERSION=$(DEV_VERSION) $(UV) run jupyter lab
+	$(UV) run jupyter lab
 
 jupyter-kfp: ## Start JupyterLab with KFP dev environment (run kfp-serve first!)
 	@printf "$(YELLOW)Make sure 'make kfp-serve' is running in another terminal\n$(NC)"
-	SETUPTOOLS_SCM_PRETEND_VERSION=$(KFP_DEV_VERSION) \
 	KALE_PIP_INDEX_URLS="http://$(KFP_HOST_ADDR):$(KFP_PORT)" \
 	KALE_PIP_TRUSTED_HOSTS="$(KFP_HOST_ADDR)" \
 	$(UV) run jupyter lab
 
 watch-labextension: ## Watch labextension for changes (run in separate terminal)
 	cd labextension && $(JLPM) watch
+
+##@ Release
+
+check-versions: ## Verify backend and labextension versions match
+	@PY_VERSION=$$($(UV) run python -c "import re; m = re.search(r'__version__\s*=\s*\"([^\"]+)\"', open('kale/__init__.py').read()); print(m.group(1))"); \
+	NPM_VERSION=$$(node -p "require('./labextension/package.json').version"); \
+	PY_AS_SEMVER=$$(echo "$$PY_VERSION" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)(a)([0-9]+)/\1-alpha.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(b)([0-9]+)/\1-beta.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(rc)([0-9]+)/\1-rc.\3/'); \
+	if [ "$$PY_AS_SEMVER" != "$$NPM_VERSION" ]; then \
+		printf "$(YELLOW)Version mismatch!\n$(NC)"; \
+		printf "  Python (PEP 440):  $$PY_VERSION\n"; \
+		printf "  Python (as semver): $$PY_AS_SEMVER\n"; \
+		printf "  npm (semver):      $$NPM_VERSION\n"; \
+		exit 1; \
+	fi; \
+	printf "$(GREEN)Versions match: $$PY_VERSION (Python) == $$NPM_VERSION (npm)\n$(NC)"
+
+verify: lint test check-versions ## Run all checks (lint + test + version check)
+
+release: ## Set release version (usage: make release VERSION=X.Y.Z)
+	@test -n "$(VERSION)" || { printf "$(YELLOW)Usage: make release VERSION=X.Y.Za1\n$(NC)"; exit 1; }
+	@# Validate PEP 440 version format
+	@echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(a[0-9]+|b[0-9]+|rc[0-9]+)?$$' || { \
+		printf "$(YELLOW)Invalid version format: $(VERSION)\n$(NC)"; \
+		printf "$(YELLOW)Expected: X.Y.Z, X.Y.Za1, X.Y.Zb1, or X.Y.Zrc1\n$(NC)"; \
+		exit 1; \
+	}
+	@# Update version
+	python3 -c "import re; p='kale/__init__.py'; t=open(p).read(); open(p,'w').write(re.sub(r'__version__ = \".*\"', '__version__ = \"$(VERSION)\"', t))"
+	@# Convert PEP 440 to semver for package.json
+	@NPM_VERSION=$$(echo "$(VERSION)" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)(a)([0-9]+)/\1-alpha.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(b)([0-9]+)/\1-beta.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(rc)([0-9]+)/\1-rc.\3/'); \
+	cd labextension && npm version "$$NPM_VERSION" --no-git-tag-version --allow-same-version; \
+	printf "$(GREEN)Version set to $(VERSION) (npm: $$NPM_VERSION)\n$(NC)"
+	@# Generate changelog if git-cliff is available
+	@command -v git-cliff >/dev/null 2>&1 && { \
+		MAJOR=$$(echo "$(VERSION)" | cut -d. -f1); \
+		MINOR=$$(echo "$(VERSION)" | cut -d. -f2); \
+		git-cliff --output CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md; \
+		printf "$(GREEN)Changelog generated: CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md\n$(NC)"; \
+	} || printf "$(YELLOW)git-cliff not found, skipping changelog generation\n$(NC)"
+
+##@ Docker
+
+DOCKER_IMAGE ?= kubeflow-kale
+DOCKER_TAG ?= dev
+KFP_HOST ?= http://host.docker.internal:8080
+
+docker-build: build ## Build Docker image with Kale pre-installed
+	@printf "$(BLUE)Building Docker image $(DOCKER_IMAGE):$(DOCKER_TAG)...\n$(NC)"
+	docker build -f docker/Dockerfile -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@printf "$(GREEN)Image built: $(DOCKER_IMAGE):$(DOCKER_TAG)\n$(NC)"
+
+docker-run: ## Run Kale in Docker (JupyterLab on http://localhost:8888)
+	@printf "$(YELLOW)Requires: kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:8080\n$(NC)"
+	@printf "$(YELLOW)Requires: make kfp-serve (in another terminal)\n$(NC)"
+	@printf "$(BLUE)Starting $(DOCKER_IMAGE):$(DOCKER_TAG) on http://localhost:8888\n$(NC)"
+	docker run --rm -p 8888:8888 \
+		--add-host=host.docker.internal:host-gateway \
+		-e KF_PIPELINES_ENDPOINT=$(KFP_HOST) \
+		-e KF_PIPELINES_UI_ENDPOINT=http://localhost:8080 \
+		-e KALE_PIP_INDEX_URLS=http://$(KFP_HOST_ADDR):$(KFP_PORT) \
+		-e KALE_PIP_TRUSTED_HOSTS=$(KFP_HOST_ADDR) \
+		$(DOCKER_IMAGE):$(DOCKER_TAG)
+
+podman-run: ## Run Kale with Podman (JupyterLab on http://localhost:8888)
+	@printf "$(YELLOW)Requires: kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:8080\n$(NC)"
+	@printf "$(YELLOW)Requires: make kfp-serve (in another terminal)\n$(NC)"
+	@printf "$(BLUE)Starting $(DOCKER_IMAGE):$(DOCKER_TAG) on http://localhost:8888\n$(NC)"
+	podman run --rm \
+		--network=host \
+		-e KF_PIPELINES_ENDPOINT=$(KFP_HOST) \
+		-e KF_PIPELINES_UI_ENDPOINT=http://localhost:8080 \
+		-e KALE_PIP_INDEX_URLS=http://$(KFP_HOST_ADDR):$(KFP_PORT) \
+		-e KALE_PIP_TRUSTED_HOSTS=$(KFP_HOST_ADDR) \
+		$(DOCKER_IMAGE):$(DOCKER_TAG)

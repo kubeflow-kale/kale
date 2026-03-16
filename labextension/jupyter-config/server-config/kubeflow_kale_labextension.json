@@ -1,7 +1,0 @@
-{
-  "ServerApp": {
-    "jpserver_extensions": {
-      "kubeflow_kale_labextension": true
-    }
-  }
-}

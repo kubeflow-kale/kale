@@ -11,11 +11,11 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^(backend/kale/tests/assets/|examples/)
+        exclude: ^(kale/tests/assets/|examples/)
       - id: end-of-file-fixer
-        exclude: ^(backend/kale/tests/assets/|examples/)
+        exclude: ^(kale/tests/assets/|examples/)
       - id: check-yaml
-        exclude: ^backend/kale/tests/assets/
+        exclude: ^kale/tests/assets/
       - id: check-added-large-files
 
   # Python linting (ruff is faster than flake8)
@@ -24,9 +24,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        exclude: ^(backend/kale/tests/assets/|examples/|labextension/ui-tests/)
+        exclude: ^(kale/tests/assets/|examples/|labextension/ui-tests/)
       - id: ruff-format
-        exclude: ^(backend/kale/tests/assets/|examples/|labextension/ui-tests/)
+        exclude: ^(kale/tests/assets/|examples/|labextension/ui-tests/)
 
   # TypeScript/JavaScript linting for labextension
   - repo: local

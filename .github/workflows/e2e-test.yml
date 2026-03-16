@@ -7,7 +7,7 @@ on:
       pipeline_version:
         description: 'KFP version to install'
         required: false
-        default: '2.15.0'
+        default: '2.16.0'
         type: string
 
 jobs:
@@ -46,6 +46,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install Kale
         run: |
           make dev
