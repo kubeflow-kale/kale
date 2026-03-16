@@ -35,7 +35,21 @@ jobs:
           kubectl create namespace kubeflow
           kubectl label namespace kubeflow \
             pod-security.kubernetes.io/enforce=restricted \
-            pod-security.kubernetes.io/enforce-version=latest
+            pod-security.kubernetes.io/enforce-version=latest \
+            --overwrite
+
+      - name: Verify PSS restricted policy rejects root pods (regression test)
+        run: |
+          OUTPUT=$(kubectl run root-test --image=busybox --restart=Never -n kubeflow \
+            --overrides='{"spec":{"containers":[{"name":"root-test","image":"busybox","command":["sleep","10"],"securityContext":{"runAsUser":0,"runAsNonRoot":false}}]}}' \
+            2>&1 || true)
+          if echo "$OUTPUT" | grep -qiE "Error|forbidden|violates|denied"; then
+            echo "OK: Root pod correctly rejected by PSS restricted policy"
+          else
+            echo "ERROR: Root pod was NOT rejected by PSS restricted policy!"
+            echo "Output: $OUTPUT"
+            exit 1
+          fi
 
       - name: Install KFP
         run: |
