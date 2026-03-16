@@ -478,6 +478,10 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
   };
 
   onPanelRemove = (index: number) => {
+    const deploy = this.state.deploys[index];
+    if (deploy === undefined || deploy === null) {
+      return;
+    }
     const deploys = { ...this.state.deploys };
     deploys[index].deleted = true;
     this.setState({ deploys });
