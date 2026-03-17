@@ -259,13 +259,8 @@ export default class NotebookUtilities {
       );
     }
 
-    if (notebookPanel.model?.metadata) {
-      const metadata = notebookPanel.model.metadata as any;
-      if (typeof metadata.has === 'function' && metadata.has(key)) {
-        return metadata.get(key);
-      }
-      // Fallback for different metadata implementations
-      return metadata[key] || null;
+    if (notebookPanel.model) {
+      return notebookPanel.model.getMetadata(key) || null;
     }
     return null;
   }
@@ -292,20 +287,12 @@ export default class NotebookUtilities {
       );
     }
 
-    if (!notebookPanel.model?.metadata) {
-      throw new Error('Notebook metadata is not available.');
+    if (!notebookPanel.model) {
+      throw new Error('Notebook model is not available.');
     }
 
-    const metadata = notebookPanel.model.metadata as any;
-    let oldVal: any;
-
-    if (typeof metadata.set === 'function') {
-      oldVal = metadata.set(key, value);
-    } else {
-      // Fallback for different metadata implementations
-      oldVal = (metadata as any)[key];
-      (metadata as any)[key] = value;
-    }
+    const oldVal = notebookPanel.model.getMetadata(key);
+    notebookPanel.model.setMetadata(key, value);
 
     if (save) {
       this.saveNotebook(notebookPanel);

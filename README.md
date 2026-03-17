@@ -56,8 +56,11 @@ Read more about Kale and how it works in this Medium post:
 
 ### Requirements
 
-- **Python 3.10+**
-- **Kubeflow Pipelines v2.4.0+** - Install as recommended in the official [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/) documentation
+- **Python 3.11+**
+- **Kubeflow Pipelines v2.16.0+**
+     - The `securityContext` field in the Kubernetes executor config is not recognized by older KFP servers (`kfp[kubernetes] < 2.16.0`), causing pipeline submission to fail.
+     - Install KFP as recommended in the official [Kubeflow Pipelines Installation](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/) documentation (make sure to set `PIPELINE_VERSION=2.16.0` or later)
+     - If you are upgrading from an earlier version, make sure you have `kfp[kubernetes]>=2.16.0` in your dependencies along with `kfp>=2.0.0`
 - A Kubernetes cluster (`minikube`, `kind`, or any K8s cluster)
 
 ### Installation

@@ -49,6 +49,8 @@ def test_notebook_to_dsl(random_string, notebook_path, dsl_path):
 
     dsl_script_path = Compiler(pipeline, imports_and_functions).compile()
 
-    expected_result = open(dsl_path).read()
-    result = open(dsl_script_path).read()
+    with open(dsl_path) as f:
+        expected_result = f.read()
+    with open(dsl_script_path) as f:
+        result = f.read()
     assert result == expected_result
