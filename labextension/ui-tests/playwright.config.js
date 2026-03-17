@@ -19,6 +19,10 @@ const baseConfig = require('@jupyterlab/galata/lib/playwright-config');
 
 module.exports = {
   ...baseConfig,
+  use: {
+    ...baseConfig.use,
+    baseURL: 'http://localhost:8889',
+  },
   webServer: {
     command: 'jlpm start',
     url: 'http://localhost:8889/lab',
