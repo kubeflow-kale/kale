@@ -127,9 +127,19 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   };
 
   onActiveCellChanged = (notebook: Notebook, activeCell: Cell | null) => {
+    const prevCell = notebook.model?.cells.get(this.state.activeCellIndex);
+    if (prevCell) {
+      prevCell.metadataChanged.disconnect(this.onActiveCellMetadataChange);
+    }
     this.setState({
       activeCellIndex: notebook.activeCellIndex,
     });
+    activeCell?.model.metadataChanged.connect(this.onActiveCellMetadataChange);
+  };
+
+  onActiveCellMetadataChange = (_: any) => {
+    console.log('Metadata Changed!');
+    this.refreshEditorsPropsAndInlineMetadata(true);
   };
 
   handleSaveState = (context: DocumentRegistry.Context, state: SaveState) => {
@@ -147,13 +157,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     // multiple cells using Shift + click the args.oldValues has only one cell
     // each time.
     if (args.type === 'set' && prevValue instanceof CodeCellModel) {
-      CellUtils.setCellMetaData(
-        this.props.notebook,
-        args.newIndex,
-        'tags',
-        [],
-        true,
-      );
+      CellUtils.setCellMetaData(this.props.notebook, args.newIndex, 'tags', []);
     }
 
     // Change type 'remove' is when a cell is removed from the notebook.
@@ -204,12 +208,12 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     }
   }
 
-  refreshEditorsPropsAndInlineMetadata() {
+  refreshEditorsPropsAndInlineMetadata(isEditorVisible: boolean = false) {
     if (this.state.checked) {
       this.clearEditorsPropsAndInlineMetadata(() => {
         this.generateEditorsPropsAndInlineMetadata();
       });
-      this.setState({ isEditorVisible: false });
+      this.setState({ isEditorVisible: isEditorVisible });
     }
   }
 
