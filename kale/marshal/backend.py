@@ -143,7 +143,8 @@ class MarshalBackend:
     def _default_load(file_path: str) -> Any:
         import dill
 
-        return dill.load(open(file_path, "rb"))
+        with open(file_path, "rb") as f:
+            return dill.load(f)
 
 
 dispatcher = None
