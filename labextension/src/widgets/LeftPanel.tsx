@@ -748,6 +748,15 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 {enable_caching_toggle}
               </div>
             </div>
+
+            <div
+              className={
+                'kale-component ' +
+                (this.state.isEnabled && activeNotebook ? '' : 'hidden')
+              }
+            >
+              {' '}
+            </div>
           </div>
           <div
             className={this.state.isEnabled && activeNotebook ? '' : 'hidden'}
