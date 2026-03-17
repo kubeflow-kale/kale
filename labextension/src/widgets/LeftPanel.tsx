@@ -35,7 +35,6 @@ import { KaleEmptyState } from './KaleEmptyState';
 import { KFPStatusBadge, KfpStatus } from '../components/KFPStatusBadge';
 import { executeRpc } from '../lib/RPCUtils';
 import kaleLogo from '../../style/icons/kale.svg';
-import { KFPServerSettings } from '../components/KFPServerSettings';
 
 export type DeployType = 'compile' | 'run' | 'upload';
 
@@ -749,20 +748,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
                 {enable_caching_toggle}
               </div>
             </div>
-
-            {this.props.backend && (
-              <div
-                className={
-                  'kale-component ' +
-                  (this.state.isEnabled && activeNotebook ? '' : 'hidden')
-                }
-              >
-                <KFPServerSettings
-                  kernel={this.props.kernel}
-                  onConfigChange={this.refreshKfpStatus}
-                />
-              </div>
-            )}
           </div>
           <div
             className={this.state.isEnabled && activeNotebook ? '' : 'hidden'}
