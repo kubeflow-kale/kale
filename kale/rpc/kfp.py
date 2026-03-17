@@ -130,7 +130,8 @@ def set_kfp_server_config(request, config):
     """Save KFP server configuration.
 
     Args:
-        config: Dictionary with configuration values (host, namespace, cookies, existing_token)
+        config: Dictionary with configuration values
+        (host, cookies, credentials, existing_toekn, namespace, ssl_ca_cert)
 
     Returns:
         The saved configuration
@@ -155,9 +156,11 @@ def validate_kfp_server_config(request, config=None):
             # Test provided config without saving
             client = kfputils._get_kfp_client(
                 host=config.get("host"),
-                namespace=config.get("namespace"),
                 cookies=config.get("cookies"),
+                credentials=config.get("credentials"),
                 existing_token=config.get("existing_token"),
+                namespace=config.get("namespace"),
+                ssl_ca_cert=config.get("ssl_ca_cert"),
             )
         else:
             # Test current saved config

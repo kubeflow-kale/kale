@@ -42,7 +42,12 @@ log = logging.getLogger(__name__)
 
 
 def _get_kfp_client(
-    host=None, namespace: str = None, cookies: str = None, existing_token: str = None
+    host=None,
+    cookies: str = None,
+    credentials: str = None,
+    existing_token: str = None,
+    namespace: str = None,
+    ssl_ca_cert: str = None,
 ):
     """Get a KFP client with configuration.
 
@@ -51,9 +56,11 @@ def _get_kfp_client(
 
     Args:
         host: KFP API server host (overrides config if provided)
-        namespace: Kubernetes namespace (overrides config if provided)
         cookies: Authentication cookies (overrides config if provided)
+        credentials:
         existing_token: Bearer token for authentication (overrides config if provided)
+        namespace: Kubernetes namespace (overrides config if provided)
+        ssl_ca_cert:
 
     Returns:
         kfp.Client instance
@@ -64,15 +71,24 @@ def _get_kfp_client(
     # Use parameter if provided, otherwise fall back to config
     if host is None:
         host = config.host
-    if namespace is None:
-        namespace = config.namespace or "kubeflow"
     if cookies is None:
         cookies = config.cookies
+    if credentials is None:
+        credentials = config.credentials
     if existing_token is None:
         existing_token = config.existing_token
+    if namespace is None:
+        namespace = config.namespace or "kubeflow"
+    if ssl_ca_cert is None:
+        ssl_ca_cert = config.ssl_ca_cert
 
     return kfp.Client(
-        host=host, namespace=namespace, cookies=cookies, existing_token=existing_token
+        host=host,
+        cookies=cookies,
+        credentials=credentials,
+        existing_token=existing_token,
+        namespace=namespace,
+        ssl_ca_cert=ssl_ca_cert,
     )
 
 

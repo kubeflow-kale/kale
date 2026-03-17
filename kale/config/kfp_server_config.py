@@ -26,9 +26,11 @@ class KFPServerConfig(Config):
     """Configuration for KFP server connection."""
 
     host = Field(type=str, default=None)
-    namespace = Field(type=str, default="kubeflow")
     cookies = Field(type=str, default=None)
+    credentials = Field(type=str, default=None)
     existing_token = Field(type=str, default=None)
+    namespace = Field(type=str, default="kubeflow")
+    ssl_ca_cert = Field(type=str, default=None)
 
 
 def get_config_path() -> str:
