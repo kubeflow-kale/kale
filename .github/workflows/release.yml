@@ -282,3 +282,4 @@ jobs:
           title: "Bump dev version to ${{ steps.next.outputs.next }}"
           body: "Automated version bump after releasing v${{ needs.prepare.outputs.version }}."
           committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          signoff: true

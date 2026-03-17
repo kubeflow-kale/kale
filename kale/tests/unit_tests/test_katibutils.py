@@ -58,9 +58,8 @@ def test_create_katib_experiment_v1alpha3():
         experiment_name=experiment_name,
     )
 
-    target = open(
-        os.path.join(THIS_DIR, "../assets/yamls", "katib-experiment-v1alpha3.yaml")
-    ).read()
+    with open(os.path.join(THIS_DIR, "../assets/yamls", "katib-experiment-v1alpha3.yaml")) as f:
+        target = f.read()
     target = target.replace("{{KATIB_TRIAL_IMAGE}}", katibutils._get_trial_image())
 
     assert yaml.dump(katib_experiment) == target
@@ -78,7 +77,8 @@ def test_create_katib_experiment_v1beta1():
         experiment_name=experiment_name,
     )
 
-    target = open(os.path.join(THIS_DIR, "../assets/yamls", "katib-experiment-v1beta1.yaml")).read()
+    with open(os.path.join(THIS_DIR, "../assets/yamls", "katib-experiment-v1beta1.yaml")) as f:
+        target = f.read()
     target = target.replace("{{KATIB_TRIAL_IMAGE}}", katibutils._get_trial_image())
 
     assert yaml.dump(katib_experiment) == target
