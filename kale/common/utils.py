@@ -154,7 +154,8 @@ def graceful_exit(exit_code):
 def read_json_from_file(path: str) -> dict:
     """Read a file that contains a JSON object and return it as dictionary."""
     try:
-        return json.loads(open(path).read())
+        with open(path) as f:
+            return json.load(f)
     except json.JSONDecodeError:
         log.exception("Failed to parse json file %s", path)
         raise
