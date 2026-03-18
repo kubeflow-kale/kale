@@ -115,6 +115,13 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     if (notebook.model) {
       notebook.model.cells.changed.connect(this.handleCellChange);
     }
+
+    if (notebook.content.activeCell?.model.type === 'code') {
+      notebook.content.activeCell.model.metadataChanged.connect(
+        this.onActiveCellMetadataChange,
+      );
+      this.setState({ activeCellIndex: notebook.content.activeCellIndex });
+    }
   };
 
   disconnectHandlersFromNotebook = (notebook: NotebookPanel) => {
