@@ -145,7 +145,6 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
   };
 
   onActiveCellMetadataChange = (_: any) => {
-    console.log('Metadata Changed!');
     this.refreshEditorsPropsAndInlineMetadata(true);
   };
 
