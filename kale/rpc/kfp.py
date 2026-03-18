@@ -14,7 +14,6 @@
 
 
 from kale.common import kfputils
-from kale.config import kfp_server_config
 
 
 def _get_client(host=None):
@@ -118,56 +117,3 @@ def get_run(request, run_id):
     client = _get_client()
     run = client.get_run(run_id)
     return {"id": run.run_id, "name": run.display_name, "status": run.state}
-
-
-def get_kfp_server_config(request):
-    """Get the current KFP server configuration."""
-    config = kfp_server_config.load_config()
-    return config.to_dict()
-
-
-def set_kfp_server_config(request, config):
-    """Save KFP server configuration.
-
-    Args:
-        config: Dictionary with configuration values
-        (host, cookies, credentials, existing_toekn, namespace, ssl_ca_cert)
-
-    Returns:
-        The saved configuration
-    """
-    kfp_server_config.save_config(config)
-    # Return the saved config to confirm
-    saved_config = kfp_server_config.load_config()
-    return saved_config.to_dict()
-
-
-def validate_kfp_server_config(request, config=None):
-    """Validate KFP server configuration by testing connection.
-
-    Args:
-        config: Optional config dict to test. If not provided, tests saved config.
-
-    Returns:
-        Dict with success status and message
-    """
-    try:
-        if config:
-            # Test provided config without saving
-            client = kfputils._get_kfp_client(
-                host=config.get("host"),
-                cookies=config.get("cookies"),
-                credentials=config.get("credentials"),
-                existing_token=config.get("existing_token"),
-                namespace=config.get("namespace"),
-                ssl_ca_cert=config.get("ssl_ca_cert"),
-            )
-        else:
-            # Test current saved config
-            client = _get_client()
-
-        # Try to get health status
-        client.get_kfp_healthz()
-        return {"success": True, "message": "Successfully connected to KFP server"}
-    except Exception as e:
-        return {"success": False, "message": f"Failed to connect to KFP server: {str(e)}"}
