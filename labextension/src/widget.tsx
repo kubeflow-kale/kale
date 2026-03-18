@@ -56,6 +56,7 @@ export const KALE_PANEL_ID = 'jupyterlab-kubeflow-kale/kubeflowDeployment';
 const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 
 const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
+const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
@@ -116,19 +117,61 @@ async function activate(
     }
   }
 
-  let enableKaleByDefault = false;
-  Promise.all([lab.restored, settingRegistry.load(KALE_SETTINGS_PLUGIN_ID)])
-    .then(([, setting]) => {
-      enableKaleByDefault =
-        (setting.get('enableKaleByDefault').composite as boolean) ?? false;
-      setting.changed.connect(() => {
-        enableKaleByDefault =
-          (setting.get('enableKaleByDefault').composite as boolean) ?? false;
-      });
-    })
-    .catch(reason => {
-      console.error('Failed to load Kale settings:', reason);
-    });
+  // Load and react to changes in the enableKaleByDefault setting
+  const SettingsAwareLeftPanel = () => {
+    const [enableKaleByDefault, setEnableKaleByDefault] = React.useState(false);
+
+    React.useEffect(() => {
+      let disposed = false;
+      let setting: any | null = null;
+      let onSettingChanged: (() => void) | null = null;
+
+      settingRegistry
+        .load(KALE_SETTINGS_PLUGIN_ID)
+        .then(loadedSetting => {
+          setting = loadedSetting;
+
+          const read = (): boolean => {
+            const value = loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY)
+              .composite as boolean | undefined;
+            return value ?? false;
+          };
+
+          const update = () => {
+            if (disposed) {
+              return;
+            }
+            setEnableKaleByDefault(read());
+          };
+
+          update();
+          onSettingChanged = () => update();
+          (loadedSetting.changed as any).connect(onSettingChanged);
+        })
+        .catch(reason => {
+          console.error('Failed to load Kale settings:', reason);
+        });
+
+      return () => {
+        disposed = true;
+        if (setting && onSettingChanged) {
+          (setting.changed as any).disconnect(onSettingChanged);
+        }
+      };
+    }, []);
+
+    return (
+      <KubeflowKaleLeftPanel
+        ref={ref => setLeftPanelRef(ref)}
+        lab={lab}
+        tracker={tracker}
+        docManager={docManager}
+        backend={backend}
+        kernel={kernel}
+        enableKaleByDefault={enableKaleByDefault}
+      />
+    );
+  };
 
   async function loadPanel() {
     let reveal_widget = undefined;
@@ -160,17 +203,7 @@ async function activate(
   lab.started.then(() => {
     // show list of commands in the commandRegistry
     // console.log(lab.commands.listCommands());
-    kalePanelWidget = ReactWidget.create(
-      <KubeflowKaleLeftPanel
-        ref={ref => setLeftPanelRef(ref)}
-        lab={lab}
-        tracker={tracker}
-        docManager={docManager}
-        backend={backend}
-        kernel={kernel}
-        getEnableKaleByDefault={() => enableKaleByDefault}
-      />,
-    );
+    kalePanelWidget = ReactWidget.create(<SettingsAwareLeftPanel />);
     kalePanelWidget.id = KALE_PANEL_ID;
     kalePanelWidget!.title.icon = kaleIcon;
     kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';

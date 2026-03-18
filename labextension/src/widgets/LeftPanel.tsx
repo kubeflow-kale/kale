@@ -59,7 +59,7 @@ interface IProps {
   docManager: IDocumentManager;
   backend: boolean;
   kernel: Kernel.IKernelConnection;
-  getEnableKaleByDefault: () => boolean;
+  enableKaleByDefault: boolean;
 }
 
 interface IState {
@@ -272,6 +272,17 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     prevProps: Readonly<IProps>,
     prevState: Readonly<IState>,
   ) => {
+    // If the user has the setting enabled, we should allow Kale to turn on
+    // for the currently opened notebook without requiring a notebook switch.
+    // When the setting is turned off we keep the current toggle state.
+    if (
+      !prevProps.enableKaleByDefault &&
+      this.props.enableKaleByDefault &&
+      !this.state.isEnabled
+    ) {
+      this.setState({ isEnabled: true });
+    }
+
     // fast comparison of Metadata objects.
     // warning: this method does not work if keys change order.
     if (
@@ -302,7 +313,7 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
     // Set the current notebook and wait for the session to be ready
     if (notebook) {
       await this.setNotebookPanel(notebook);
-      const enableByDefault = this.props.getEnableKaleByDefault();
+      const enableByDefault = this.props.enableKaleByDefault;
       this.setState(prevState => ({
         isEnabled: enableByDefault || prevState.isEnabled, // preserve toggle when setting off
       }));
