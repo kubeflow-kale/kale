@@ -12,6 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Concrete marshalling backend implementations for popular libraries.
+
+This module provides specialized MarshalBackend subclasses that handle
+serialization of objects from popular ML, data science, and deep learning
+libraries. Each backend registers itself with the Dispatcher (defined in
+backend.py) which automatically routes objects to the correct handler.
+
+Available Backends:
+    FunctionBackend: Python functions (pickle-based)
+    SKLearnBackend: scikit-learn estimators/models (joblib format)
+    NumpyBackend: NumPy arrays (.npy binary format)
+    PandasBackend: Pandas DataFrames and Series (.pickle format)
+    XGBoostModelBackend: XGBoost Booster models (.bst format)
+    XGBoostDMatrixBackend: XGBoost DMatrix objects (.dmatrix format)
+    PyTorchBackend: PyTorch nn.Module objects (.pt TorchScript format)
+    KerasBackend: Keras models (.keras format)
+    TensorflowKerasBackend: TensorFlow Keras models (.tfkeras format)
+
+How Registration Works:
+    Each backend class is decorated with @register_backend, which:
+    1. Calls get_dispatcher().register(BackendClass)
+    2. Creates an instance of the backend
+    3. Stores it in Dispatcher.backends dict by class name
+    4. The Dispatcher automatically uses it when saving/loading objects
+
+Example - Adding Support for a New Library:
+    
+    @register_backend
+    class MyLibraryBackend(MarshalBackend):
+        name = "My Library backend"
+        display_name = "mylib"
+        file_type = "mylib"
+        obj_type_regex = r"mylib\\..*"
+        
+        def save(self, obj, path):
+            '''Save object to path using MyLibrary format.'''
+            import mylib
+            mylib.save(obj, path)
+        
+        def load(self, file_path):
+            '''Load object from path.'''
+            import mylib
+            return mylib.load(file_path)
+
+See Also:
+    backend.py: Core Dispatcher and MarshalBackend base class
+"""
+
 import logging
 
 from kale.marshal.backend import MarshalBackend, get_dispatcher

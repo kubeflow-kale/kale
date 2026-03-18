@@ -12,6 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Core marshalling backend system for serializing Python objects.
+
+This module provides the infrastructure for saving and loading Python objects
+to/from disk using specialized backends. It handles the dispatch logic that
+routes objects to appropriate serialization handlers based on their type.
+
+Key Components:
+    MarshalBackend: Abstract base class for implementing object marshalling.
+                    Subclasses implement save/load for specific libraries.
+    
+    Dispatcher: Routes objects to the correct backend based on:
+                - Object type (via regex matching on obj_type_regex)
+                - File extension (via file_type attribute)
+    
+    Data Management: Functions to get/set the marshalling data directory
+                     where serialized objects are stored.
+
+Usage:
+    The Dispatcher is the primary interface. Use the top-level functions
+    from kale.marshal module:
+    
+    from kale.marshal import save, load
+    
+    save(my_dataframe, "my_data")  # Dispatcher routes to PandasBackend
+    loaded = load("my_data")        # Dispatcher finds .pdpkl file
+
+How It Works:
+    1. save() is called with an object
+    2. Dispatcher._dispatch_obj_type() matches object type against all
+       registered backends' obj_type_regex patterns
+    3. The matching backend's wrapped_save() is called
+    4. For load(), Dispatcher._dispatch_file_type() matches the file
+       extension to find the correct backend
+
+Extending:
+    To add support for a new library, see backends.py for examples.
+    
+See Also:
+    backends.py: Concrete implementations for popular ML/data libraries
+"""
+
 import logging
 import os
 import re
@@ -40,22 +81,38 @@ def get_data_dir():
 
 
 class MarshalBackend:
-    """Base class for marshalling Python objects.
+"""Abstract base class for marshalling Python objects.
 
-    This class is supposed to be subclassed by specialized backends that
-    implement the `save` and `load` functions to marshal library-specific
-    objects.
+    This class defines the interface and default behavior for serializing
+    and deserializing Python objects. Subclasses implement library-specific
+    serialization logic.
 
-    A backend registers itself to specific objects/file types using the
-    following class attributes:
+    Attributes:
+        name (str): Human-readable name of the backend (e.g., "Pandas backend")
+        display_name (str): Short display name, typically the library name
+        file_type (str): File extension without dot (e.g., "pdpkl", "joblib")
+        obj_type_regex (str): Regex pattern to match object types this backend
+                              handles. Matched against type(obj).__name__.
+                              Example: r"pandas\\.(core\\.)?frame\\.DataFrame"
+        predictor_type (str): Optional. Used for KFServing model serving.
+        fallback_on_missing_lib (bool): If True, falls back to dill serialization
+                                        when the library import fails.
 
-    * `file_type`: The file extension of the files/folders the backend is able
-                   to restore. NOTE: Currently this can be just *one* ext.
-    * `obj_type_regex`: A regex which is matched against the `type` of an
-                        object.
+    How Dispatch Works:
+        1. Dispatcher.save(obj, name) is called
+        2. Dispatcher._dispatch_obj_type(obj) searches all registered backends
+        3. First backend whose obj_type_regex matches the object type is used
+        4. That backend's wrapped_save() is called, which delegates to save()
 
-    Take a look at `backend.py` for some examples on how to create custom
-    marshal backends.
+    Implementing Custom Backends:
+        1. Subclass MarshalBackend
+        2. Set class attributes (name, display_name, file_type, obj_type_regex)
+        3. Implement save(self, obj, path) method
+        4. Implement load(self, file_path) method
+        5. Decorate with @register_backend (see backends.py for examples)
+
+    See Also:
+        backends.py: Concrete implementations for sklearn, pandas, pytorch, etc.
     """
 
     name: str = "Default backend"
