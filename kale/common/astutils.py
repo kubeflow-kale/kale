@@ -263,8 +263,8 @@ def parse_assignments_expressions(code):
             value = value.value
             if isinstance(value, bool):
                 var_type = "bool"
-                if value is None:
-                    raise ValueError("`None` value None is not supported in pipeline parameters")
+            elif value is None:
+                raise ValueError("`None` value None is not supported in pipeline parameters")
             elif isinstance(value, (int, float)):
                 var_type = type(value).__name__
             elif isinstance(value, str):
