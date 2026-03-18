@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 def _get_kfp_client(
     host=None,
     cookies: str = None,
-    credentials: str = None,
+    credentials=None,
     existing_token: str = None,
     namespace: str = None,
     ssl_ca_cert: str = None,
@@ -55,12 +55,12 @@ def _get_kfp_client(
     Explicit parameters take precedence over saved config.
 
     Args:
-        host: KFP API server host (overrides config if provided)
-        cookies: Authentication cookies (overrides config if provided)
-        credentials:
-        existing_token: Bearer token for authentication (overrides config if provided)
-        namespace: Kubernetes namespace (overrides config if provided)
-        ssl_ca_cert:
+        host: KFP API server host
+        cookies: Authentication cookies
+        credentials: Service account credentials for authentication
+        existing_token: Bearer token for authentication
+        namespace: Kubernetes namespace
+        ssl_ca_cert: Path to CA certificate file for SSL verification
 
     Returns:
         kfp.Client instance
