@@ -193,7 +193,7 @@ class Step:
 
 
 def __default_execution_handler(step: Step, *args, **kwargs):
-    """Default handler for executing a Step when no pipeline is registered.
+"""Default handler for executing a Step when no pipeline is registered.
 
     Logs a warning and executes the step's source function directly if
     it is callable. Raises a RuntimeError if the step was created from

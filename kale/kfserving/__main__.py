@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Entry point for the Kale KFServing Transformer server.
+"""Entry point for the Kale KFServing Transformer server.
 
 This script initializes and starts a KFServing server with a KaleTransformer
 model. It accepts command-line arguments for the model name and predictor host.
