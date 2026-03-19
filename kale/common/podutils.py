@@ -17,13 +17,10 @@
 from functools import cache
 import logging
 import os
-import re
 
 from kale.common import k8sutils
 
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-
-K8S_SIZE_RE = re.compile(r"^([0-9]+)(E|Ei|P|Pi|T|Ti|G|Gi|M|Mi|K|Ki){0,1}$")
 
 log = logging.getLogger(__name__)
 
