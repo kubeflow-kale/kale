@@ -55,8 +55,6 @@ def {{ step.name }}_step({{ component_signature_args }}):
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
 
     _kale_blocks = (
         _kale_pipeline_parameters_block,
@@ -69,7 +67,6 @@ def {{ step.name }}_step({{ component_signature_args }}):
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open({{ step.name }}_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
-    _kale_update_uimetadata('{{ step.name }}_html_report')
 
 {%- if step.outs|length > 0 %}
     # Prepare output artifacts to be retrieved during the pipeline execution

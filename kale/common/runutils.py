@@ -17,7 +17,7 @@ import logging
 import os
 import signal
 
-from kale.common import kfputils, utils
+from kale.common import utils
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def ttl(timeout: int = None):
     return _decorator_ttl
 
 
-def link_artifacts(artifacts: dict, link=True):
+def link_artifacts(artifacts: dict):
     """Link a series of artifacts to mlpipeline-ui-metadata.json.
 
     We use the `link` argument to avoid writing to
@@ -95,6 +95,3 @@ def link_artifacts(artifacts: dict, link=True):
             )
         if os.path.isdir(path):
             raise RuntimeError(f"Cannot create an artifact from path '{path}': it is a folder.")
-        if link:
-            # FIXME: Currently this supports just HTML artifacts
-            kfputils.update_uimetadata(name)

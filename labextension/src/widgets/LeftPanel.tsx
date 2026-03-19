@@ -285,7 +285,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
           activeNotebook,
           KALE_NOTEBOOK_METADATA_KEY,
           this.state.metadata,
-          true,
         );
       }
     }
@@ -489,12 +488,25 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
 
   runDeploymentCommand = async () => {
     const activeNotebook = this.getActiveNotebook();
+
     if (!activeNotebook) {
       this.setState({ runDeployment: false });
       return;
     }
 
-    await activeNotebook.context.save();
+    // TODO: Check here
+    if (activeNotebook.model?.dirty) {
+      const result = await NotebookUtils.showYesNoDialog('Unsaved Changes', [
+        'Your current Notebook contains unsaved changes. Saving is required to proceed.',
+        'Would you like to save now?',
+      ]);
+      if (result) {
+        await activeNotebook.context.save();
+      } else {
+        this.setState({ runDeployment: false });
+        return;
+      }
+    }
 
     const commands = new Commands(activeNotebook, this.props.kernel);
     const _deployIndex = ++deployIndex;
