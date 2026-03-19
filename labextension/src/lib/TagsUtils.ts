@@ -149,8 +149,7 @@ export default class TagsUtils {
   public static setKaleCellTags(
     notebookPanel: NotebookPanel,
     index: number,
-    metadata: IKaleCellTags,
-    save: boolean,
+    metadata: IKaleCellTags
   ): Promise<any> {
     // make the dict to save to tags
     let nb = metadata.blockName;
@@ -177,7 +176,7 @@ export default class TagsUtils {
       tags.push(CACHE_TAG + (metadata.enableCaching ? 'enabled' : 'disabled'));
     }
 
-    return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags, save);
+    return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags);
   }
 
   /**
@@ -216,12 +215,10 @@ export default class TagsUtils {
         })
         .filter(t => t !== '' && t !== 'prev:');
       allPromises.push(
-        CellUtils.setCellMetaData(notebookPanel, i, 'tags', newTags, false),
+        CellUtils.setCellMetaData(notebookPanel, i, 'tags', newTags),
       );
     }
-    Promise.all(allPromises).then(() => {
-      notebookPanel.context.save();
-    });
+    Promise.all(allPromises);
   }
 
   /**
@@ -247,8 +244,7 @@ export default class TagsUtils {
     TagsUtils.setKaleCellTags(
       notebook,
       activeCellIndex,
-      cellMetadata,
-      false,
+      cellMetadata
     ).then(oldValue => {
       TagsUtils.updateKaleCellsTags(notebook, oldBlockName, value);
     });
@@ -293,10 +289,9 @@ export default class TagsUtils {
           prevBlockNames: newPrevBlockNames,
         };
 
-        this.setKaleCellTags(notebook, index, updatedMetadata, false);
+        this.setKaleCellTags(notebook, index, updatedMetadata);
       }
     }
 
-    notebook.context.save();
   }
 }
