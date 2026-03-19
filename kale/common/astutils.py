@@ -258,7 +258,7 @@ def parse_assignments_expressions(code):
         target = targets[0].id
         value = block.value
         # now get the type of the variable
-       
+
         if isinstance(value, ast.Constant):
             value = value.value
             if isinstance(value, bool):
