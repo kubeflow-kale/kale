@@ -30,32 +30,18 @@ def get_kfp_client(
     """Create a KFP client with configuration.
 
     Loads saved configuration from ~/.kale/kfp_server_config.json and allows
-    parameter overrides. Explicit parameters take precedence over saved config.
+    parameter overrides. Explicit parameters override saved config if they are provided.
 
     Args:
-        host: KFP API server host (overrides config if provided)
-        cookies: Authentication cookies (overrides config if provided)
-        credentials: Service account credentials (overrides config if provided)
-        existing_token: Bearer token for authentication (overrides config if provided)
-        namespace: Kubernetes namespace (overrides config if provided)
-        ssl_ca_cert: Path to CA certificate file (overrides config if provided)
+        host: KFP API server host
+        cookies: Authentication cookies
+        credentials: Service account credentials
+        existing_token: Bearer token for authentication
+        namespace: Kubernetes namespace
+        ssl_ca_cert: Path to CA certificate file
 
     Returns:
         kfp.Client instance configured with provided parameters or saved config
-
-    Examples:
-        # Use saved configuration (or defaults if no config exists)
-        client = get_kfp_client()
-
-        # Override specific parameters
-        client = get_kfp_client(host="http://custom:8888")
-
-        # Specify all parameters explicitly
-        client = get_kfp_client(
-            host="http://kfp:8888",
-            namespace="custom-ns",
-            existing_token="bearer_token_here"
-        )
     """
     # Load saved configuration
     config = kfp_server_config.load_config()
