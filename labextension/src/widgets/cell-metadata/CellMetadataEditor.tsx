@@ -307,7 +307,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      false,
     ).then(() => {
       TagsUtils.updateKaleCellsTags(this.props.notebook, oldBlockName, value);
     });
@@ -333,7 +332,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
     );
   };
 
@@ -376,7 +374,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
     );
   };
 
@@ -465,7 +462,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
     );
   };
 
@@ -482,7 +478,6 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.props.notebook,
       this.context.activeCellIndex,
       currentCellMetadata,
-      true,
     );
   };
 

@@ -1,6 +1,6 @@
 import json
 import kfp.dsl as kfp_dsl
-from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
 from kfp.kubernetes import security_context
 
 
@@ -53,8 +53,6 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], kale_metrics_art
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
 
     _kale_blocks = (
         _kale_pipeline_parameters_block,
@@ -69,7 +67,6 @@ def create_matrix_step(create_matrix_html_report: Output[HTML], kale_metrics_art
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open(create_matrix_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
-    _kale_update_uimetadata('create_matrix_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/tmp/marshal")
@@ -137,8 +134,6 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], kale_metrics_artifact:
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
 
     _kale_blocks = (
         _kale_pipeline_parameters_block,
@@ -153,7 +148,6 @@ def sum_matrix_step(sum_matrix_html_report: Output[HTML], kale_metrics_artifact:
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open(sum_matrix_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
-    _kale_update_uimetadata('sum_matrix_html_report')
     from kale.common.kfputils import load_mlpipeline_metrics
     load_mlpipeline_metrics(kale_metrics_artifact)
 

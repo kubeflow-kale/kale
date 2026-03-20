@@ -1,6 +1,6 @@
 import json
 import kfp.dsl as kfp_dsl
-from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
 from kfp.kubernetes import security_context
 
 
@@ -59,8 +59,6 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
 
     _kale_blocks = (
         _kale_pipeline_parameters_block,
@@ -75,7 +73,6 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open(load_transform_data_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
-    _kale_update_uimetadata('load_transform_data_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/tmp/marshal")
@@ -159,8 +156,6 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
 
     _kale_blocks = (
         _kale_pipeline_parameters_block,
@@ -175,7 +170,6 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open(train_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
-    _kale_update_uimetadata('train_model_html_report')
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/tmp/marshal")
@@ -266,8 +260,6 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], kale_metrics_a
 
     # run the code blocks inside a jupyter kernel
     from kale.common.jputils import run_code as _kale_run_code
-    from kale.common.kfputils import \
-        update_uimetadata as _kale_update_uimetadata
 
     _kale_blocks = (
         _kale_pipeline_parameters_block,
@@ -283,7 +275,6 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], kale_metrics_a
     _kale_html_artifact = _kale_run_code(_kale_blocks)
     with open(evaluate_model_html_report.path, "w") as f:
         f.write(_kale_html_artifact)
-    _kale_update_uimetadata('evaluate_model_html_report')
     from kale.common.kfputils import load_mlpipeline_metrics
     load_mlpipeline_metrics(kale_metrics_artifact)
 

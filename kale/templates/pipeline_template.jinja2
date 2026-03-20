@@ -1,6 +1,6 @@
 import json
 import kfp.dsl as kfp_dsl
-from kfp.dsl import Input, Output, Dataset, HTML, Metrics, ClassificationMetrics, Artifact, Model
+from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
 from kfp.kubernetes import security_context
 
 {{ lightweight_components | join('\n\n') }}
