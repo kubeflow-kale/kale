@@ -255,3 +255,10 @@ def test_link_fns_to_return_vars():
     target = {"foo": ["res"], "bar": ["res2"]}
 
     assert kale_ast.link_fns_to_return_vars(source) == target
+
+
+def test_parse_assignments_expressions_exc_none():
+    """Test parse_assignments_expressions function raises correct error for None."""
+    with pytest.raises(ValueError) as exec:
+        kale_ast.parse_assignments_expressions("a = None")
+    assert "`None` value None is not supported in pipeline parameters" in str(exec.value)

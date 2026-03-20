@@ -64,34 +64,6 @@ def resume_notebook_path(request, server_root=None):
         return p
 
 
-def list_volumes(request):
-    """Get the list of mounted volumes."""
-    volumes = podutils.list_volumes()
-    volumes_out = [
-        {
-            "type": "clone",
-            "name": volume.name,
-            "mount_point": path,
-            "size": size,
-            "size_type": "",
-            "snapshot": False,
-        }
-        for path, volume, size in volumes
-    ]
-    return volumes_out
-
-
-def get_volume_containing_path(request, path):
-    """Get the closest volume mount point to the input absolute path."""
-    vol = podutils.get_volume_containing_path(path)
-    return {"name": vol[1].name, "mount_point": vol[0]}
-
-
-def get_base_image(request):
-    """Get the current pod's docker base image."""
-    return podutils.get_docker_base_image()
-
-
 def get_default_base_image(request):
     """Get the default base image used when no other image is specified."""
     from kale.pipeline import DEFAULT_BASE_IMAGE

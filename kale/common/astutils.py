@@ -258,17 +258,21 @@ def parse_assignments_expressions(code):
         target = targets[0].id
         value = block.value
         # now get the type of the variable
-        if isinstance(value, ast.Num):  # [int|float]
-            value = value.n
-            var_type = type(value).__name__
-        elif isinstance(value, ast.Str):
-            value = value.s
-            var_type = "str"
-        elif isinstance(value, ast.NameConstant):  # [True|False|None]
+
+        if isinstance(value, ast.Constant):
             value = value.value
-            if value is None:
+            if isinstance(value, bool):
+                var_type = "bool"
+            elif value is None:
                 raise ValueError("`None` value None is not supported in pipeline parameters")
-            var_type = "bool"
+            elif isinstance(value, (int, float)):
+                var_type = type(value).__name__
+            elif isinstance(value, str):
+                var_type = "str"
+            else:
+                raise ValueError(
+                    "Variables block must be comprised of primitive variables (int, float, str, bool)"
+                )
         else:
             raise ValueError(
                 "Variables block must be comprised of primitive variables (int, float, str, bool)"

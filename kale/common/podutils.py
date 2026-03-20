@@ -17,46 +17,12 @@
 from functools import cache
 import logging
 import os
-import re
-
-import tabulate
 
 from kale.common import k8sutils
 
 NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
-K8S_SIZE_RE = re.compile(r"^([0-9]+)(E|Ei|P|Pi|T|Ti|G|Gi|M|Mi|K|Ki){0,1}$")
-K8S_SIZE_UNITS = {
-    "E": 10**18,
-    "P": 10**15,
-    "T": 10**12,
-    "G": 10**9,
-    "M": 10**6,
-    "K": 10**3,
-    "Ei": 2**60,
-    "Pi": 2**50,
-    "Ti": 2**40,
-    "Gi": 2**30,
-    "Mi": 2**20,
-    "Ki": 2**10,
-    "": 2**0,
-}
-
 log = logging.getLogger(__name__)
-
-
-def parse_k8s_size(size):
-    """Parse a string with K8s size and return its integer equivalent."""
-    match = K8S_SIZE_RE.match(size)
-    if not match:
-        raise ValueError(f"Could not parse Kubernetes size: {size}")
-
-    count, unit = match.groups()
-    # FIXME: This function returns an integer. In the labextension, when using
-    #  the `list_volumes` RPC, `getMountedVolumes` converts this integer back
-    #  to a string with units.
-    #  Consider returning size and size_type from the beginning.
-    return int(count) * K8S_SIZE_UNITS[unit or ""]
 
 
 def get_namespace():
@@ -158,62 +124,6 @@ def _get_container_image_sha(pod, container_name):
     return status.image_id[len(_prefix) :]
 
 
-def _get_mount_path(container, volume):
-    for volume_mount in container.volume_mounts:
-        if volume_mount.name == volume.name:
-            return volume_mount.mount_path
-
-    raise RuntimeError(f"Could not find volume {volume.name} in container {container.name}")
-
-
-def _list_volumes(client, namespace, pod_name, container_name):
-    pod = client.read_namespaced_pod(pod_name, namespace)
-    container = _get_pod_container(pod, container_name)
-
-    volumes = []
-    for volume in pod.spec.volumes:
-        pvc_spec = volume.persistent_volume_claim
-        if not pvc_spec:
-            continue
-
-        pvc = client.read_namespaced_persistent_volume_claim(pvc_spec.claim_name, namespace)
-        mount_path = _get_mount_path(container, volume)
-        volume_size = parse_k8s_size(pvc.spec.resources.requests["storage"])
-        volumes.append((mount_path, volume, volume_size))
-
-    return volumes
-
-
-def get_volume_containing_path(path):
-    """Get the closest volume mount point to the input absolute path.
-
-    Returns a tuple in the following format: (mount_path, volume, size)
-    """
-    if not os.path.isabs(path):
-        raise ValueError(f"Path '{path}' is not an absolute path")
-    if not os.path.exists(path):
-        raise ValueError(f"Path '{path}' does not exist")
-
-    mounted_vols = list_volumes()
-    mount_point = 0
-    # get the volumes that contain the input path
-    vols = list(filter(lambda x: path.startswith(x[mount_point]), mounted_vols))
-    if len(vols) > 0:
-        # get vol with longest mount point (i.e. closest to input path)
-        return sorted(vols, key=lambda k: len(k[mount_point]), reverse=True)[0]
-    else:
-        raise RuntimeError("Input path is not under any volume mount point")
-
-
-def list_volumes():
-    """List the currently mounted volumes."""
-    client = k8sutils.get_v1_client()
-    namespace = get_namespace()
-    pod_name = get_pod_name()
-    container_name = get_container_name()
-    return _list_volumes(client, namespace, pod_name, container_name)
-
-
 def get_docker_base_image():
     """Get the current container's docker image.
 
@@ -254,22 +164,9 @@ def get_docker_base_image():
     return image
 
 
-def print_volumes():
-    """Print the current volumes."""
-    headers = ("Mount Path", "Volume Name", "Volume Size")
-    rows = [(path, volume.name, size) for path, volume, size in list_volumes()]
-    print(tabulate.tabulate(rows, headers=headers))
-
-
 def is_workspace_dir(directory):
     """Check dir path is the container's home folder."""
     return directory == os.getenv("HOME")
-
-
-def patch_pod(name, namespace, patch):
-    """Patch a pod."""
-    k8s_client = k8sutils.get_v1_client()
-    k8s_client.patch_namespaced_pod(name=name, namespace=namespace, body=patch)
 
 
 def get_pod(name, namespace):

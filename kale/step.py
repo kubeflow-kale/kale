@@ -118,7 +118,7 @@ class Step:
         )
         marshaller()
         log.info("%s Successfully ran step '%s'... %s", "-" * 10, self.name, "-" * 10)
-        runutils.link_artifacts({a.name: a.path for a in self.artifacts}, link=False)
+        runutils.link_artifacts({a.name: a.path for a in self.artifacts})
 
     @property
     def name(self):
