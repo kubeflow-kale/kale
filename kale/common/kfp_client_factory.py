@@ -14,9 +14,14 @@
 
 """Factory for creating KFP client instances with configuration support."""
 
+from typing import TYPE_CHECKING
+
 import kfp
 
 from kale.config import kfp_server_config
+
+if TYPE_CHECKING:
+    from kfp import Client
 
 
 def get_kfp_client(
@@ -26,7 +31,7 @@ def get_kfp_client(
     existing_token: str | None = None,
     namespace: str | None = None,
     ssl_ca_cert: str | None = None,
-) -> kfp.Client:
+) -> "Client":
     """Create a KFP client with configuration.
 
     Loads saved configuration from ~/.kale/kfp_server_config.json and allows
