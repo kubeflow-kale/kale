@@ -24,8 +24,7 @@ from typing import Any
 
 import kfp
 
-from kale.common import utils
-from kale.config import kfp_server_config
+from kale.common import kfp_client_factory, utils
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
 KFP_RUN_NAME_ANNOTATION_KEY = "pipelines.kubeflow.org/run_name"
@@ -39,57 +38,6 @@ _logger = None
 log = logging.getLogger(__name__)
 
 
-def _get_kfp_client(
-    host=None,
-    cookies: str = None,
-    credentials=None,
-    existing_token: str = None,
-    namespace: str = None,
-    ssl_ca_cert: str = None,
-):
-    """Get a KFP client with configuration.
-
-    Loads saved configuration and allows parameter overrides.
-    Explicit parameters take precedence over saved config.
-
-    Args:
-        host: KFP API server host
-        cookies: Authentication cookies
-        credentials: Service account credentials for authentication
-        existing_token: Bearer token for authentication
-        namespace: Kubernetes namespace
-        ssl_ca_cert: Path to CA certificate file for SSL verification
-
-    Returns:
-        kfp.Client instance
-    """
-    # Load saved configuration
-    config = kfp_server_config.load_config()
-
-    # Use parameter if provided, otherwise fall back to config
-    if host is None:
-        host = config.host
-    if cookies is None:
-        cookies = config.cookies
-    if credentials is None:
-        credentials = config.credentials
-    if existing_token is None:
-        existing_token = config.existing_token
-    if namespace is None:
-        namespace = config.namespace or "kubeflow"
-    if ssl_ca_cert is None:
-        ssl_ca_cert = config.ssl_ca_cert
-
-    return kfp.Client(
-        host=host,
-        cookies=cookies,
-        credentials=credentials,
-        existing_token=existing_token,
-        namespace=namespace,
-        ssl_ca_cert=ssl_ca_cert,
-    )
-
-
 def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     """List through the existing pipelines and filter by pipeline name.
 
@@ -100,7 +48,7 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     Returns:
         The matching pipeline id. None if not found
     """
-    client = _get_kfp_client(host)
+    client = kfp_client_factory.get_kfp_client(host)
     token = ""
     pipeline_id = None
     while pipeline_id is None and token is not None:
@@ -123,7 +71,7 @@ def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = Non
     Returns:
         The matching pipeline id. None if not found
     """
-    client = _get_kfp_client(host)
+    client = kfp_client_factory.get_kfp_client(host)
     page_token = ""
     version_id = None
     while version_id is None and page_token is not None:
@@ -170,7 +118,7 @@ def upload_pipeline(
         host: custom host when executing outside of the cluster
     Returns: (pipeline_id, version_id)
     """
-    client = _get_kfp_client(host)
+    client = kfp_client_factory.get_kfp_client(host)
     log.info("Uploading pipeline '%s'...", pipeline_name)
     pipeline_id = get_pipeline_id(pipeline_name, host=host)
     if not pipeline_id:
@@ -217,7 +165,7 @@ def run_pipeline(
     Returns:
         Pipeline run metadata
     """
-    client = _get_kfp_client(host)
+    client = kfp_client_factory.get_kfp_client(host)
     log.info("Creating KFP experiment '%s'...", experiment_name)
     client.create_experiment(experiment_name)
     pipeline = client.get_pipeline(pipeline_id)
@@ -288,7 +236,7 @@ def get_experiment_from_run_id(run_id: str):
     Returns: ApiExperiment - the KFP Experiment which owns the run
     """
     log.info("Getting experiment from run with ID '%s'...", run_id)
-    client = _get_kfp_client()
+    client = kfp_client_factory.get_kfp_client()
     run = client.runs.get_run(run_id=run_id).run
     experiment_id = None
     type_experiment = client.api_models.ApiResourceType.EXPERIMENT
@@ -304,7 +252,7 @@ def get_experiment_from_run_id(run_id: str):
 
 def get_run(run_id: str, host: str = None):
     """Retrieve KFP run based on RunID."""
-    client = _get_kfp_client(host)
+    client = kfp_client_factory.get_kfp_client(host)
     return client.get_run(run_id)
 
 

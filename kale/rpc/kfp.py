@@ -13,12 +13,12 @@
 # limitations under the License.
 
 
-from kale.common import kfputils
+from kale.common import kfp_client_factory, kfputils
 
 
 def _get_client(host=None):
     """Get a KFP client using saved configuration."""
-    return kfputils._get_kfp_client(host=host)
+    return kfp_client_factory.get_kfp_client(host=host)
 
 
 def ping(request):

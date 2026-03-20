@@ -17,7 +17,7 @@ import os
 
 from testfixtures import mock
 
-from kale.common import kfputils
+from kale.common import kfp_client_factory
 from kale.config import kfp_server_config
 from kale.config.kfp_server_config import KFPServerConfig
 
@@ -211,7 +211,7 @@ def test_config_persistence(tmpdir):
         assert reloaded_config.cookies == original_config["cookies"]
 
 
-@mock.patch("kale.common.kfputils.kfp.Client")
+@mock.patch("kale.common.kfp_client_factory.kfp.Client")
 def test_get_kfp_client_with_saved_config(mock_client, tmpdir):
     """Test that _get_kfp_client uses saved configuration."""
     config_path = os.path.join(tmpdir, "kfp_server_config.json")
@@ -226,7 +226,7 @@ def test_get_kfp_client_with_saved_config(mock_client, tmpdir):
         json.dump(saved_config, f)
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
-        kfputils._get_kfp_client()
+        kfp_client_factory.get_kfp_client()
 
     # Verify kfp.Client was called with saved config
     mock_client.assert_called_once_with(
@@ -239,7 +239,7 @@ def test_get_kfp_client_with_saved_config(mock_client, tmpdir):
     )
 
 
-@mock.patch("kale.common.kfputils.kfp.Client")
+@mock.patch("kale.common.kfp_client_factory.kfp.Client")
 def test_get_kfp_client_parameter_override(mock_client, tmpdir):
     """Test that explicit parameters override saved config."""
     config_path = os.path.join(tmpdir, "kfp_server_config.json")
@@ -255,7 +255,7 @@ def test_get_kfp_client_parameter_override(mock_client, tmpdir):
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
         # Call with explicit parameters that should override
-        kfputils._get_kfp_client(
+        kfp_client_factory.get_kfp_client(
             host="http://override-host:9090",
             namespace="override-namespace",
         )
@@ -271,14 +271,14 @@ def test_get_kfp_client_parameter_override(mock_client, tmpdir):
     )
 
 
-@mock.patch("kale.common.kfputils.kfp.Client")
+@mock.patch("kale.common.kfp_client_factory.kfp.Client")
 def test_get_kfp_client_default_behavior(mock_client, tmpdir):
     """Test default behavior when no config and no parameters provided."""
     config_path = os.path.join(tmpdir, "kfp_server_config.json")
 
     # No config file exists
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
-        kfputils._get_kfp_client()
+        kfp_client_factory.get_kfp_client()
 
     # Verify kfp.Client was called with defaults (None for host allows in-cluster discovery)
     mock_client.assert_called_once_with(
@@ -291,13 +291,13 @@ def test_get_kfp_client_default_behavior(mock_client, tmpdir):
     )
 
 
-@mock.patch("kale.common.kfputils.kfp.Client")
+@mock.patch("kale.common.kfp_client_factory.kfp.Client")
 def test_get_kfp_client_all_parameters(mock_client, tmpdir):
     """Test that all 6 parameters are correctly passed to kfp.Client."""
     config_path = os.path.join(tmpdir, "kfp_server_config.json")
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
-        kfputils._get_kfp_client(
+        kfp_client_factory.get_kfp_client(
             host="http://test-host:8080",
             cookies="test_cookies",
             credentials="test_credentials",
