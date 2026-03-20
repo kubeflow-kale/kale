@@ -24,7 +24,7 @@ from typing import Any
 
 import kfp
 
-from kale.common import podutils, utils, workflowutils
+from kale.common import utils
 from kale.config import kfp_server_config
 
 KFP_RUN_ID_LABEL_KEY = "pipeline/runid"
