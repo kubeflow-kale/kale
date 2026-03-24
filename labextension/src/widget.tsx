@@ -57,6 +57,7 @@ const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 
 const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
+const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
@@ -117,9 +118,12 @@ async function activate(
     }
   }
 
-  // Load and react to changes in the enableKaleByDefault setting
+  // Load and react to Kale JupyterLab settings
   const SettingsAwareLeftPanel = () => {
-    const [enableKaleByDefault, setEnableKaleByDefault] = React.useState(false);
+    const [kaleSettings, setKaleSettings] = React.useState({
+      enableKaleByDefault: false,
+      autoSaveOnCompileOrRun: false,
+    });
 
     React.useEffect(() => {
       let disposed = false;
@@ -131,17 +135,22 @@ async function activate(
         .then(loadedSetting => {
           setting = loadedSetting;
 
-          const read = (): boolean => {
-            const value = loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY)
-              .composite as boolean | undefined;
-            return value ?? false;
-          };
+          const read = () => ({
+            enableKaleByDefault:
+              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            autoSaveOnCompileOrRun:
+              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+          });
 
           const update = () => {
             if (disposed) {
               return;
             }
-            setEnableKaleByDefault(read());
+            setKaleSettings(read());
           };
 
           update();
@@ -168,7 +177,8 @@ async function activate(
         docManager={docManager}
         backend={backend}
         kernel={kernel}
-        enableKaleByDefault={enableKaleByDefault}
+        enableKaleByDefault={kaleSettings.enableKaleByDefault}
+        autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
       />
     );
   };

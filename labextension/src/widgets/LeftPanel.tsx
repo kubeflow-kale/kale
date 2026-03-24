@@ -60,6 +60,7 @@ interface IProps {
   backend: boolean;
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
+  autoSaveOnCompileOrRun: boolean;
 }
 
 interface IState {
@@ -510,17 +511,20 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       return;
     }
 
-    // TODO: Check here
     if (activeNotebook.model?.dirty) {
-      const result = await NotebookUtils.showYesNoDialog('Unsaved Changes', [
-        'Your current Notebook contains unsaved changes. Saving is required to proceed.',
-        'Would you like to save now?',
-      ]);
-      if (result) {
+      if (this.props.autoSaveOnCompileOrRun) {
         await activeNotebook.context.save();
       } else {
-        this.setState({ runDeployment: false });
-        return;
+        const result = await NotebookUtils.showYesNoDialog('Unsaved Changes', [
+          'Your current Notebook contains unsaved changes. Saving is required to proceed.',
+          'Would you like to save now?',
+        ]);
+        if (result) {
+          await activeNotebook.context.save();
+        } else {
+          this.setState({ runDeployment: false });
+          return;
+        }
       }
     }
 
