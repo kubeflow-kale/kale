@@ -26,9 +26,8 @@ class KFPServerConfig(Config):
     """Configuration for KFP server connection."""
 
     host = Field(type=str, default=None)
-    cookies = Field(type=str, default=None)
-    credentials = Field(type=str, default=None)
-    existing_token = Field(type=str, default=None)
+    auth_type = Field(type=str, default="none")
+    auth_params = Field(type=dict, default=None)
     namespace = Field(type=str, default="kubeflow")
     ssl_ca_cert = Field(type=str, default=None)
 

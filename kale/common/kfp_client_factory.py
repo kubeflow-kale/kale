@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import kfp
 
+from kale.common import kfp_authenticator
 from kale.config import kfp_server_config
 
 if TYPE_CHECKING:
@@ -26,9 +27,8 @@ if TYPE_CHECKING:
 
 def get_kfp_client(
     host: str | None = None,
-    cookies: str | None = None,
-    credentials: str | None = None,
-    existing_token: str | None = None,
+    auth_type: str | None = None,
+    auth_params: dict | None = None,
     namespace: str | None = None,
     ssl_ca_cert: str | None = None,
 ) -> "Client":
@@ -37,11 +37,17 @@ def get_kfp_client(
     Loads saved configuration from ~/.config/kale/kfp_server_config.json and allows
     parameter overrides. Explicit parameters override saved config if they are provided.
 
+    Authentication is handled by creating credentials at runtime using the authenticator
+    module, so credential objects are never serialized to disk.
+
     Args:
         host: KFP API server host
-        cookies: Authentication cookies
-        credentials: Service account credentials
-        existing_token: Bearer token for authentication
+        auth_type: Authentication type. Supported values:
+            - "kubernetes_service_account_token": K8s service account token
+            - "existing_bearer_token": Pre-existing bearer token
+            - "dex": DEX cookie-based authentication
+            - "none": No authentication (default)
+        auth_params: Parameters for the authentication type (e.g., {"token": "..."})
         namespace: Kubernetes namespace
         ssl_ca_cert: Path to CA certificate file
 
@@ -52,24 +58,21 @@ def get_kfp_client(
     config = kfp_server_config.load_config()
 
     # Use parameter if provided, otherwise fall back to config
-    if host is None:
-        host = config.host
-    if cookies is None:
-        cookies = config.cookies
-    if credentials is None:
-        credentials = config.credentials
-    if existing_token is None:
-        existing_token = config.existing_token
-    if namespace is None:
-        namespace = config.namespace or "kubeflow"
-    if ssl_ca_cert is None:
-        ssl_ca_cert = config.ssl_ca_cert
+    host = host or config.host
+    auth_type = auth_type or config.auth_type or "none"
+    auth_params = auth_params or config.auth_params or {}
+    namespace = namespace or config.namespace or "kubeflow"
+    ssl_ca_cert = ssl_ca_cert or config.ssl_ca_cert
+
+    # Create credentials at runtime using authenticator
+    authenticator = kfp_authenticator.get_authenticator(auth_type)
+    auth_result = authenticator.authenticate(auth_params)
 
     return kfp.Client(
         host=host,
-        cookies=cookies,
-        credentials=credentials,
-        existing_token=existing_token,
+        credentials=auth_result.credentials,
+        cookies=auth_result.cookies,
+        existing_token=auth_result.existing_token,
         namespace=namespace,
         ssl_ca_cert=ssl_ca_cert,
     )
