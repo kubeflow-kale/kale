@@ -111,8 +111,8 @@ def test_load_config_read_error(tmpdir):
 
 
 def test_save_config_creates_directory(tmpdir):
-    """Test that .kale directory is created if it doesn't exist."""
-    config_path = os.path.join(tmpdir, ".kale", "kfp_server_config.json")
+    """Test that .config/kale directory is created if it doesn't exist."""
+    config_path = os.path.join(tmpdir, ".config/kale", "kfp_server_config.json")
     test_config = {"host": "http://localhost:8080"}
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):

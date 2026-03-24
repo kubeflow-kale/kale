@@ -34,7 +34,7 @@ def get_kfp_client(
 ) -> "Client":
     """Create a KFP client with configuration.
 
-    Loads saved configuration from ~/.kale/kfp_server_config.json and allows
+    Loads saved configuration from ~/.config/kale/kfp_server_config.json and allows
     parameter overrides. Explicit parameters override saved config if they are provided.
 
     Args:

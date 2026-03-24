@@ -35,7 +35,7 @@ class KFPServerConfig(Config):
 
 def get_config_path() -> str:
     """Get the path to the KFP server configuration file."""
-    kale_dir = os.path.join(os.path.expanduser("~"), ".kale")
+    kale_dir = os.path.join(os.path.expanduser("~"), ".config/kale")
     return os.path.join(kale_dir, "kfp_server_config.json")
 
 
@@ -72,7 +72,7 @@ def save_config(config: KFPServerConfig | dict[str, Any]) -> None:
     config_path = get_config_path()
     kale_dir = os.path.dirname(config_path)
 
-    # Create .kale directory if it doesn't exist
+    # Create .config/kale directory if it doesn't exist
     os.makedirs(kale_dir, exist_ok=True)
 
     config_dict = config.to_dict()
