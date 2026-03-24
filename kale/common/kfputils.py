@@ -17,12 +17,14 @@ import importlib.util
 import json
 import logging
 import os
+import re
 from shutil import copyfile
 import tempfile
 import time
 from typing import Any
 
 import kfp
+from kfp_server_api.exceptions import ApiException
 
 from kale.common import utils
 
@@ -58,7 +60,10 @@ def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
     while pipeline_id is None and token is not None:
         pipelines = client.list_pipelines(page_token=token)
         token = pipelines.next_page_token
-        f = next(filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines or []), None)
+        f = next(
+            filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines or []),
+            None,
+        )
         if f is not None:
             pipeline_id = f.pipeline_id
     return pipeline_id
@@ -80,7 +85,9 @@ def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = Non
     version_id = None
     while version_id is None and page_token is not None:
         versions = client.pipelines.list_pipeline_versions(
-            resource_key_type="PIPELINE", resource_key_id=pipeline_id, page_token=page_token
+            resource_key_type="PIPELINE",
+            resource_key_id=pipeline_id,
+            page_token=page_token,
         )
         page_token = versions.next_page_token
         f = next(filter(lambda x: x.name == version_name, versions.versions), None)
@@ -180,7 +187,10 @@ def run_pipeline(
             pipeline_id=pipeline_id, pipeline_version_id=version_id
         ).display_name
     except Exception:
-        log.debug("Could not retrieve pipeline version with ID '%s'. Using 'unknown'.", version_id)
+        log.debug(
+            "Could not retrieve pipeline version with ID '%s'. Using 'unknown'.",
+            version_id,
+        )
         version_name = "unknown"
 
     if not run_name:
@@ -193,12 +203,41 @@ def run_pipeline(
         display_version,
     )
 
-    run = client.create_run_from_pipeline_package(
-        pipeline_file=pipeline_package_path,
-        arguments=kwargs,
-        run_name=run_name,
-        experiment_name=experiment_name,
-    )
+    try:
+        run = client.create_run_from_pipeline_package(
+            pipeline_file=pipeline_package_path,
+            arguments=kwargs,
+            run_name=run_name,
+            experiment_name=experiment_name,
+        )
+    except ApiException as e:
+        try:
+            body = json.loads(e.body or "{}")
+
+            if body.get("code") == 13:
+                details = body.get("details") or []
+
+                for d in details:
+                    if (
+                        d.get("@type") == "type.googleapis.com/google.rpc.Status"
+                        and d.get("code") == 2
+                    ):
+                        message = body.get("message", "").lower()
+
+                        if "failed to unmarshal kubernetes config" in message and re.search(
+                            r"unknown field.*securitycontext",
+                            message,
+                            re.IGNORECASE,
+                        ):
+                            raise RuntimeError(
+                                "Your KFP server does not support the 'securityContext' field. "
+                                "Please upgrade Kubeflow Pipelines to version >= 2.16.0."
+                            ) from e
+
+        except (ValueError, TypeError):
+            pass
+
+        raise
 
     print("Pipeline submitted!")
     log.info("Run ID: %s", run.run_id)
@@ -323,7 +362,11 @@ def compute_component_id(pod):
     Kale steps are KFP SDK Components. This is the way MetadataWriter generates
     unique names for such components.
     """
-    log.info("Computing component ID for pod %s/%s...", pod.metadata.namespace, pod.metadata.name)
+    log.info(
+        "Computing component ID for pod %s/%s...",
+        pod.metadata.namespace,
+        pod.metadata.name,
+    )
     component_spec_text = pod.metadata.annotations.get(KFP_COMPONENT_SPEC_ANNOTATION_KEY)
     if not component_spec_text:
         raise ValueError("KFP component spec annotation not found in pod")
