@@ -110,7 +110,7 @@ class XGBoostModelBackend(MarshalBackend):
 
     name = "XGBoost Model backend"
     display_name = "xgboost"
-    file_type = "bst"
+    file_type = "json"
     obj_type_regex = r"xgboost\.core\.Booster"
     predictor_type = "xgboost"
 
