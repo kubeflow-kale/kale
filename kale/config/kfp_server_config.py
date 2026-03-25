@@ -33,7 +33,15 @@ class KFPServerConfig(Config):
 
 
 def get_config_path() -> str:
-    """Get the path to the KFP server configuration file."""
+    """Get the path to the KFP server configuration file.
+
+    The path can be overridden by setting the KALE_CONFIG_PATH environment variable.
+    If not set, defaults to ~/.config/kale/kfp_server_config.json
+    """
+    env_path = os.getenv("KALE_CONFIG_PATH")
+    if env_path:
+        return env_path
+
     kale_dir = os.path.join(os.path.expanduser("~"), ".config/kale")
     return os.path.join(kale_dir, "kfp_server_config.json")
 

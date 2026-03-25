@@ -22,6 +22,22 @@ from kale.config import kfp_server_config
 from kale.config.kfp_server_config import KFPServerConfig
 
 
+def test_get_config_path_default():
+    """Test that default config path is returned when no env var is set."""
+    with mock.patch.dict(os.environ, {}, clear=True):
+        path = kfp_server_config.get_config_path()
+        assert path.endswith(".config/kale/kfp_server_config.json")
+        assert os.path.expanduser("~") in path
+
+
+def test_get_config_path_env_override():
+    """Test that KALE_CONFIG_PATH env var overrides default path."""
+    custom_path = "/custom/path/to/config.json"
+    with mock.patch.dict(os.environ, {"KALE_CONFIG_PATH": custom_path}):
+        path = kfp_server_config.get_config_path()
+        assert path == custom_path
+
+
 def test_load_config_no_file(tmpdir):
     """Test that default config is returned when no file exists."""
     config_path = os.path.join(tmpdir, "kfp_server_config.json")
