@@ -511,21 +511,18 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
       return;
     }
 
-    if (activeNotebook.model?.dirty) {
-      if (this.props.autoSaveOnCompileOrRun) {
-        await activeNotebook.context.save();
-      } else {
-        const result = await NotebookUtils.showYesNoDialog('Unsaved Changes', [
-          'Your current Notebook contains unsaved changes. Saving is required to proceed.',
-          'Would you like to save now?',
-        ]);
-        if (result) {
-          await activeNotebook.context.save();
-        } else {
-          this.setState({ runDeployment: false });
-          return;
-        }
+    if (activeNotebook.model?.dirty && !this.props.autoSaveOnCompileOrRun) {
+      const result = await NotebookUtils.showYesNoDialog('Unsaved Changes', [
+        'Your current Notebook contains unsaved changes. Saving is required to proceed.',
+        'Would you like to save now?',
+      ]);
+      if (!result) {
+        this.setState({ runDeployment: false });
+        return;
       }
+    }
+    if (activeNotebook.model?.dirty) {
+      await activeNotebook.context.save();
     }
 
     const commands = new Commands(activeNotebook, this.props.kernel);
