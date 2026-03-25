@@ -18,8 +18,6 @@ import logging
 import os
 from typing import Any
 
-from kfp.client import KF_PIPELINES_SA_TOKEN_PATH, ServiceAccountTokenVolumeCredentials
-
 log = logging.getLogger(__name__)
 
 
@@ -37,7 +35,7 @@ class AuthResult:
 
     def __init__(
         self,
-        credentials: ServiceAccountTokenVolumeCredentials | None = None,
+        credentials: Any | None = None,
         cookies: str | None = None,
         existing_token: str | None = None,
     ):
@@ -68,6 +66,8 @@ class K8sServiceAccountTokenAuthenticator:
             FileNotFoundError: If token file doesn't exist
             ValueError: If token file is empty
         """
+        from kfp.client import KF_PIPELINES_SA_TOKEN_PATH, ServiceAccountTokenVolumeCredentials
+
         params = params or {}
         token_path = params.get(
             "token_path",
