@@ -54,7 +54,7 @@ def load_config() -> KFPServerConfig:
             config_dict = json.load(f)
         log.info("Loaded KFP server config from %s", config_path)
         return KFPServerConfig(**config_dict)
-    except (json.JSONDecodeError, OSError) as e:
+    except (json.JSONDecodeError, OSError, RuntimeError) as e:
         log.warning("Failed to load KFP server config from %s: %s. Using defaults.", config_path, e)
         return KFPServerConfig()
 
