@@ -71,10 +71,6 @@ def load_config() -> KFPServerConfig:
 def save_config(config: KFPServerConfig | dict[str, Any]) -> None:
     """Save KFP server configuration to disk.
 
-    Uses atomic write with temp file to prevent:
-    - Secret exposure window (temp file has 0o600 from creation)
-    - Data loss on write failure (original file untouched until success)
-
     Args:
         config: KFPServerConfig instance or dict with config values
     """
