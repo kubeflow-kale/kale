@@ -254,7 +254,10 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     if (!props.notebook) {
       return null;
     }
-    const allBlocks = TagsUtils.getAllBlocks(props.notebook.content);
+    const allBlocks = TagsUtils.getAllBlocks(
+      props.notebook.content,
+      this.context.activeCellIndex,
+    );
     const dependencyChoices: BlockDependencyChoice[] = allBlocks
       // remove all reserved names and current step name
       .filter(
