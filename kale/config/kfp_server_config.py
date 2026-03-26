@@ -15,6 +15,7 @@
 import json
 import logging
 import os
+import tempfile
 from typing import Any
 
 from kale.config.config import Config, Field
@@ -70,6 +71,10 @@ def load_config() -> KFPServerConfig:
 def save_config(config: KFPServerConfig | dict[str, Any]) -> None:
     """Save KFP server configuration to disk.
 
+    Uses atomic write with temp file to prevent:
+    - Secret exposure window (temp file has 0o600 from creation)
+    - Data loss on write failure (original file untouched until success)
+
     Args:
         config: KFPServerConfig instance or dict with config values
     """
@@ -83,9 +88,21 @@ def save_config(config: KFPServerConfig | dict[str, Any]) -> None:
     os.makedirs(kale_dir, exist_ok=True)
 
     config_dict = config.to_dict()
-    with open(config_path, "w") as f:
-        json.dump(config_dict, f, indent=2)
 
-    # Set restrictive permissions for security (only owner can read/write)
-    os.chmod(config_path, 0o600)
-    log.info("Saved KFP server config to %s", config_path)
+    # Create temp file with secure permissions (0o600) from creation
+    fd, temp_path = tempfile.mkstemp(dir=kale_dir, prefix=".kfp_server_config.", suffix=".tmp")
+
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(config_dict, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())  # Ensure data written to disk
+
+        os.replace(temp_path, config_path)
+        log.info("Saved KFP server config to %s", config_path)
+
+    except Exception:
+        # Clean up temp file on any failure
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise
