@@ -41,7 +41,7 @@ export default class TagsUtils {
       return [];
     }
     const blocks = new Set<string>();
-    const toCell = cellIndex == -1 ? notebook.model.cells.length : cellIndex;
+    const toCell = cellIndex < 0 ? notebook.model.cells.length : cellIndex;
     // iterate through the notebook cells
     for (const idx of Array(toCell).keys()) {
       // get the tags of the current cell
