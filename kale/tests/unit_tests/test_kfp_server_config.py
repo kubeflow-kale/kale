@@ -48,7 +48,7 @@ def test_load_config_no_file(tmpdir):
     # Should return default values
     assert config.host is None
     assert config.auth_type == "none"
-    assert config.auth_params is None
+    assert config.auth_config is None
     assert config.namespace == "kubeflow"
     assert config.ssl_ca_cert is None
 
@@ -59,7 +59,7 @@ def test_load_config_valid(tmpdir):
     test_config = {
         "host": "http://localhost:8080",
         "auth_type": "existing_bearer_token",
-        "auth_params": {"token": "test_token"},
+        "auth_config": {"env_var": "TEST_TOKEN"},
         "namespace": "custom-namespace",
         "ssl_ca_cert": "/path/to/cert",
     }
@@ -73,7 +73,7 @@ def test_load_config_valid(tmpdir):
 
     assert config.host == "http://localhost:8080"
     assert config.auth_type == "existing_bearer_token"
-    assert config.auth_params == {"token": "test_token"}
+    assert config.auth_config == {"env_var": "TEST_TOKEN"}
     assert config.namespace == "custom-namespace"
     assert config.ssl_ca_cert == "/path/to/cert"
 
@@ -92,7 +92,7 @@ def test_load_config_malformed_json(tmpdir):
     # Should return defaults when JSON is malformed
     assert config.host is None
     assert config.auth_type == "none"
-    assert config.auth_params is None
+    assert config.auth_config is None
     assert config.namespace == "kubeflow"
     assert config.ssl_ca_cert is None
 
@@ -113,7 +113,7 @@ def test_load_config_read_error(tmpdir):
         # Should return defaults when file cannot be read
         assert config.host is None
         assert config.auth_type == "none"
-        assert config.auth_params is None
+        assert config.auth_config is None
         assert config.namespace == "kubeflow"
         assert config.ssl_ca_cert is None
     finally:
@@ -158,7 +158,7 @@ def test_save_config_from_object(tmpdir):
     test_config = KFPServerConfig(
         host="http://localhost:8080",
         auth_type="dex",
-        auth_params={"cookies": "test_cookie"},
+        auth_config={"env_var": "TEST_COOKIES"},
         namespace="custom-namespace",
     )
 
@@ -170,7 +170,7 @@ def test_save_config_from_object(tmpdir):
 
     assert saved["host"] == "http://localhost:8080"
     assert saved["auth_type"] == "dex"
-    assert saved["auth_params"] == {"cookies": "test_cookie"}
+    assert saved["auth_config"] == {"env_var": "TEST_COOKIES"}
     assert saved["namespace"] == "custom-namespace"
 
 
@@ -193,7 +193,7 @@ def test_config_persistence(tmpdir):
     original_config = {
         "host": "http://localhost:8080",
         "auth_type": "existing_bearer_token",
-        "auth_params": {"token": "test_token"},
+        "auth_config": {"env_var": "TEST_TOKEN"},
         "namespace": "custom-namespace",
         "ssl_ca_cert": "/path/to/cert",
     }
@@ -208,7 +208,7 @@ def test_config_persistence(tmpdir):
         # Verify all fields match
         assert loaded_config.host == original_config["host"]
         assert loaded_config.auth_type == original_config["auth_type"]
-        assert loaded_config.auth_params == original_config["auth_params"]
+        assert loaded_config.auth_config == original_config["auth_config"]
         assert loaded_config.namespace == original_config["namespace"]
         assert loaded_config.ssl_ca_cert == original_config["ssl_ca_cert"]
 
@@ -232,7 +232,7 @@ def test_get_kfp_client_with_saved_config(mock_get_auth, mock_client, tmpdir):
     saved_config = {
         "host": "http://saved-host:8080",
         "auth_type": "dex",
-        "auth_params": {"cookies": "saved_cookie"},
+        "auth_config": {"env_var": "TEST_COOKIES"},
         "namespace": "saved-namespace",
     }
 
@@ -240,22 +240,22 @@ def test_get_kfp_client_with_saved_config(mock_get_auth, mock_client, tmpdir):
     with open(config_path, "w") as f:
         json.dump(saved_config, f)
 
-    # Mock authenticator to return cookies
+    # Mock authenticator to return cookies (simulating resolution from env var)
     mock_authenticator = mock.Mock()
-    mock_authenticator.authenticate.return_value = AuthResult(cookies="saved_cookie")
+    mock_authenticator.authenticate.return_value = AuthResult(cookies="resolved_cookie_value")
     mock_get_auth.return_value = mock_authenticator
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
         kfp_client_factory.get_kfp_client()
 
-    # Verify authenticator was called with correct params
+    # Verify authenticator was called with config reference (not actual cookie)
     mock_get_auth.assert_called_once_with("dex")
-    mock_authenticator.authenticate.assert_called_once_with({"cookies": "saved_cookie"})
+    mock_authenticator.authenticate.assert_called_once_with({"env_var": "TEST_COOKIES"})
 
-    # Verify kfp.Client was called with auth result
+    # Verify kfp.Client was called with resolved auth result
     mock_client.assert_called_once_with(
         host="http://saved-host:8080",
-        cookies="saved_cookie",
+        cookies="resolved_cookie_value",
         credentials=None,
         existing_token=None,
         namespace="saved-namespace",
@@ -273,7 +273,7 @@ def test_get_kfp_client_parameter_override(mock_get_auth, mock_client, tmpdir):
     saved_config = {
         "host": "http://saved-host:8080",
         "auth_type": "dex",
-        "auth_params": {"cookies": "saved_cookie"},
+        "auth_config": {"env_var": "TEST_COOKIES"},
         "namespace": "saved-namespace",
     }
 
@@ -283,7 +283,7 @@ def test_get_kfp_client_parameter_override(mock_get_auth, mock_client, tmpdir):
 
     # Mock authenticator for override auth
     mock_authenticator = mock.Mock()
-    mock_authenticator.authenticate.return_value = AuthResult(existing_token="override_token")
+    mock_authenticator.authenticate.return_value = AuthResult(existing_token="resolved_token_value")
     mock_get_auth.return_value = mock_authenticator
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
@@ -291,20 +291,20 @@ def test_get_kfp_client_parameter_override(mock_get_auth, mock_client, tmpdir):
         kfp_client_factory.get_kfp_client(
             host="http://override-host:9090",
             auth_type="existing_bearer_token",
-            auth_params={"token": "override_token"},
+            auth_config={"env_var": "OVERRIDE_TOKEN"},
             namespace="override-namespace",
         )
 
-    # Verify authenticator was called with override params
+    # Verify authenticator was called with override config
     mock_get_auth.assert_called_once_with("existing_bearer_token")
-    mock_authenticator.authenticate.assert_called_once_with({"token": "override_token"})
+    mock_authenticator.authenticate.assert_called_once_with({"env_var": "OVERRIDE_TOKEN"})
 
-    # Verify kfp.Client was called with override values
+    # Verify kfp.Client was called with resolved token from override config
     mock_client.assert_called_once_with(
         host="http://override-host:9090",
         cookies=None,
         credentials=None,
-        existing_token="override_token",
+        existing_token="resolved_token_value",
         namespace="override-namespace",
         ssl_ca_cert=None,
     )
@@ -351,28 +351,28 @@ def test_get_kfp_client_all_parameters(mock_get_auth, mock_client, tmpdir):
 
     # Mock authenticator
     mock_authenticator = mock.Mock()
-    mock_authenticator.authenticate.return_value = AuthResult(existing_token="test_token")
+    mock_authenticator.authenticate.return_value = AuthResult(existing_token="resolved_test_token")
     mock_get_auth.return_value = mock_authenticator
 
     with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
         kfp_client_factory.get_kfp_client(
             host="http://test-host:8080",
             auth_type="existing_bearer_token",
-            auth_params={"token": "test_token"},
+            auth_config={"env_var": "TEST_TOKEN"},
             namespace="test_namespace",
             ssl_ca_cert="/path/to/cert",
         )
 
-    # Verify authenticator was used
+    # Verify authenticator was used with config reference
     mock_get_auth.assert_called_once_with("existing_bearer_token")
-    mock_authenticator.authenticate.assert_called_once_with({"token": "test_token"})
+    mock_authenticator.authenticate.assert_called_once_with({"env_var": "TEST_TOKEN"})
 
-    # Verify all parameters were passed correctly
+    # Verify all parameters were passed correctly with resolved token
     mock_client.assert_called_once_with(
         host="http://test-host:8080",
         cookies=None,
         credentials=None,
-        existing_token="test_token",
+        existing_token="resolved_test_token",
         namespace="test_namespace",
         ssl_ca_cert="/path/to/cert",
     )

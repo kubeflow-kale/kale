@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 def get_kfp_client(
     host: str | None = None,
     auth_type: str | None = None,
-    auth_params: dict | None = None,
+    auth_config: dict | None = None,
     namespace: str | None = None,
     ssl_ca_cert: str | None = None,
 ) -> "Client":
@@ -38,7 +38,8 @@ def get_kfp_client(
     parameter overrides. Explicit parameters override saved config if they are provided.
 
     Authentication is handled by creating credentials at runtime using the authenticator
-    module, so credential objects are never serialized to disk.
+    module. Credentials are NEVER stored in config - only references to where they
+    can be found (env vars, file paths).
 
     Args:
         host: KFP API server host
@@ -47,7 +48,10 @@ def get_kfp_client(
             - "existing_bearer_token": Pre-existing bearer token
             - "dex": DEX cookie-based authentication
             - "none": No authentication (default)
-        auth_params: Parameters for the authentication type (e.g., {"token": "..."})
+        auth_config: Configuration references for authentication:
+            - {"env_var": "VAR_NAME"}: Read credential from environment variable
+            - {"file_path": "/path/to/file"}: Read credential from file
+            - {"token_path": "/path/to/token"}: K8s SA token path (SA auth only)
         namespace: Kubernetes namespace
         ssl_ca_cert: Path to CA certificate file
 
@@ -60,13 +64,13 @@ def get_kfp_client(
     # Use parameter if provided, otherwise fall back to config
     host = host or config.host
     auth_type = auth_type or config.auth_type or "none"
-    auth_params = auth_params or config.auth_params or {}
+    auth_config = auth_config or config.auth_config or {}
     namespace = namespace or config.namespace or "kubeflow"
     ssl_ca_cert = ssl_ca_cert or config.ssl_ca_cert
 
     # Create credentials at runtime using authenticator
     authenticator = kfp_authenticator.get_authenticator(auth_type)
-    auth_result = authenticator.authenticate(auth_params)
+    auth_result = authenticator.authenticate(auth_config)
 
     return kfp.Client(
         host=host,

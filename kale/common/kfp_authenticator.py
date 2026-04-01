@@ -51,13 +51,13 @@ class K8sServiceAccountTokenAuthenticator:
     service account token from a file path (typically mounted by Kubernetes).
     """
 
-    def authenticate(self, params: dict[str, Any] | None = None) -> AuthResult:
+    def authenticate(self, config: dict[str, Any] | None = None) -> AuthResult:
         """Create credentials from Kubernetes service account token.
 
         Args:
-            params: Optional dictionary containing:
+            config: Optional dictionary containing:
                 - token_path: Path to service account token file.
-                  Defaults to KF_PIPELINES_SA_TOKEN_PATH env var or standard location.
+                  If not provided, uses KF_PIPELINES_SA_TOKEN_PATH env var or standard location.
 
         Returns:
             AuthResult with ServiceAccountTokenVolumeCredentials
@@ -68,8 +68,8 @@ class K8sServiceAccountTokenAuthenticator:
         """
         from kfp.client import KF_PIPELINES_SA_TOKEN_PATH, ServiceAccountTokenVolumeCredentials
 
-        params = params or {}
-        token_path = params.get(
+        config = config or {}
+        token_path = config.get(
             "token_path",
             os.getenv("KF_PIPELINES_SA_TOKEN_PATH", KF_PIPELINES_SA_TOKEN_PATH),
         )
@@ -92,65 +92,121 @@ class K8sServiceAccountTokenAuthenticator:
 
 
 class ExistingBearerTokenAuthenticator:
-    """Authenticator for pre-existing bearer token authentication."""
+    """Authenticator for pre-existing bearer token authentication.
 
-    def authenticate(self, params: dict[str, Any] | None = None) -> AuthResult:
+    Resolves token from environment variable or file, never stores it directly in config.
+    """
+
+    def authenticate(self, config: dict[str, Any] | None = None) -> AuthResult:
         """Create credentials from an existing bearer token.
 
+        Token is resolved from environment variable or file at runtime.
+
         Args:
-            params: Dictionary containing:
-                - token: Bearer token string (required)
+            config: Dictionary containing ONE of:
+                - env_var: Name of environment variable containing the token
+                - file_path: Path to file containing the token
+                If neither provided, checks KF_PIPELINES_TOKEN env var by default
 
         Returns:
             AuthResult with bearer token
 
         Raises:
-            ValueError: If token is missing or empty
+            ValueError: If token cannot be resolved
         """
-        params = params or {}
-        token = params.get("token")
+        config = config or {}
 
-        if not token:
-            raise ValueError("Bearer token is required but not provided in auth_params['token']")
+        # Try env_var first
+        env_var = config.get("env_var", "KF_PIPELINES_TOKEN")
+        if env_var:
+            token = os.getenv(env_var)
+            if token:
+                log.info("Using bearer token from environment variable %s", env_var)
+                return AuthResult(existing_token=token.strip())
 
-        log.info("Using existing bearer token for authentication")
-        return AuthResult(existing_token=token)
+        # Try file_path
+        file_path = config.get("file_path")
+        if file_path:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Token file not found at {file_path}")
+
+            with open(file_path) as f:
+                token = f.read().strip()
+                if not token:
+                    raise ValueError(f"Token file at {file_path} is empty")
+
+            log.info("Using bearer token from file %s", file_path)
+            return AuthResult(existing_token=token)
+
+        # No token found
+        raise ValueError(
+            f"Bearer token not found. Set {env_var} environment variable "
+            f"or provide file_path in auth_config"
+        )
 
 
 class DexAuthenticator:
-    """Authenticator for DEX-based authentication using cookies."""
+    """Authenticator for DEX-based authentication using cookies.
 
-    def authenticate(self, params: dict[str, Any] | None = None) -> AuthResult:
+    Resolves cookies from environment variable or file, never stores them directly in config.
+    """
+
+    def authenticate(self, config: dict[str, Any] | None = None) -> AuthResult:
         """Create credentials from DEX session cookies.
 
+        Cookies are resolved from environment variable or file at runtime.
+
         Args:
-            params: Dictionary containing:
-                - cookies: Cookie string (required)
+            config: Dictionary containing ONE of:
+                - env_var: Name of environment variable containing the cookies
+                - file_path: Path to file containing the cookies
+                If neither provided, checks KF_PIPELINES_COOKIES env var by default
 
         Returns:
             AuthResult with cookies
 
         Raises:
-            ValueError: If cookies are missing or empty
+            ValueError: If cookies cannot be resolved
         """
-        params = params or {}
-        cookies = params.get("cookies")
+        config = config or {}
 
-        if not cookies:
-            raise ValueError("Cookies are required but not provided in auth_params['cookies']")
+        # Try env_var first
+        env_var = config.get("env_var", "KF_PIPELINES_COOKIES")
+        if env_var:
+            cookies = os.getenv(env_var)
+            if cookies:
+                log.info("Using DEX cookies from environment variable %s", env_var)
+                return AuthResult(cookies=cookies.strip())
 
-        log.info("Using DEX cookie-based authentication")
-        return AuthResult(cookies=cookies)
+        # Try file_path
+        file_path = config.get("file_path")
+        if file_path:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Cookies file not found at {file_path}")
+
+            with open(file_path) as f:
+                cookies = f.read().strip()
+                if not cookies:
+                    raise ValueError(f"Cookies file at {file_path} is empty")
+
+            log.info("Using DEX cookies from file %s", file_path)
+            return AuthResult(cookies=cookies)
+
+        # No cookies found
+        raise ValueError(
+            f"DEX cookies not found. Set {env_var} environment variable "
+            f"or provide file_path in auth_config"
+        )
 
 
 class NoAuthAuthenticator:
     """Authenticator for unsecured KFP endpoints (no authentication required)."""
 
-    def authenticate(self, params: dict[str, Any] | None = None) -> AuthResult:
+    def authenticate(self, config: dict[str, Any] | None = None) -> AuthResult:
         """Return empty credentials for unsecured endpoints.
 
         Args:
-            params: Ignored
+            config: Ignored
 
         Returns:
             AuthResult with no credentials set

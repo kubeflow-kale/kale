@@ -24,11 +24,18 @@ log = logging.getLogger(__name__)
 
 
 class KFPServerConfig(Config):
-    """Configuration for KFP server connection."""
+    """Configuration for KFP server connection.
+
+    Authentication credentials are NOT stored directly in config.
+    Instead, auth_config contains references to where credentials can be found:
+    - env_var: Name of environment variable containing the credential
+    - file_path: Path to file containing the credential
+    - token_path: Path to K8s service account token (for SA auth)
+    """
 
     host = Field(type=str, default=None)
     auth_type = Field(type=str, default="none")
-    auth_params = Field(type=dict, default=None)
+    auth_config = Field(type=dict, default=None)
     namespace = Field(type=str, default="kubeflow")
     ssl_ca_cert = Field(type=str, default=None)
 
