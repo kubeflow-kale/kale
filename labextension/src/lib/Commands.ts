@@ -49,6 +49,15 @@ interface ICompileNotebookArgs {
   debug: boolean;
 }
 
+type ICompileNotebookResult =
+  | {
+      success: true;
+      pipeline_package_path: string;
+      pipeline_metadata: IKaleNotebookMetadata;
+      script_content: string;
+    }
+  | { success: false };
+
 interface IUploadPipelineArgs {
   pipeline_package_path: string;
   pipeline_metadata: object;
@@ -201,12 +210,12 @@ export default class Commands {
       'nb.validate_notebook',
       validateNotebookArgs,
     );
-    if (!validateNotebook) {
+    if (validateNotebook === null) {
       onUpdate({ notebookValidation: false });
       return false;
     }
-    onUpdate({ notebookValidation: true });
-    return true;
+    onUpdate({ notebookValidation: validateNotebook });
+    return validateNotebook;
   };
 
   /**
@@ -252,7 +261,7 @@ export default class Commands {
     docManager: IDocumentManager,
     deployDebugMessage: boolean,
     onUpdate: OnUpdateCallbak,
-  ) => {
+  ): Promise<ICompileNotebookResult> => {
     // after parsing and validating the metadata, show warnings (if necessary)
     const compileWarnings = this.getCompileWarnings(metadata);
     onUpdate({ showCompileProgress: true, docManager: docManager });
@@ -272,23 +281,25 @@ export default class Commands {
     );
     if (!compileNotebook) {
       onUpdate({ compiledPath: 'error' });
-      await NotebookUtils.showMessage('Operation Failed', [
-        'Could not compile pipeline.',
-      ]);
-    } else {
-      // Pass to the deploy progress the path to the generated py script:
-      // compileNotebook is the name of the tar package, that generated in the
-      // workdir. Instead, the python script has a slightly different name and
-      // is generated in the same directory where the notebook lives.
-      onUpdate({
-        compiledPath: compileNotebook.pipeline_package_path.replace(
-          'pipeline.yaml',
-          'kale.py',
-        ),
-        compiledContent: compileNotebook.script_content,
-      });
+      return { success: false };
     }
-    return compileNotebook;
+    // Pass to the deploy progress the path to the generated py script:
+    // compileNotebook is the name of the tar package, that generated in the
+    // workdir. Instead, the python script has a slightly different name and
+    // is generated in the same directory where the notebook lives.
+    onUpdate({
+      compiledPath: compileNotebook.pipeline_package_path.replace(
+        'pipeline.yaml',
+        'kale.py',
+      ),
+      compiledContent: compileNotebook.script_content,
+    });
+    return {
+      success: true,
+      pipeline_package_path: compileNotebook.pipeline_package_path,
+      pipeline_metadata: compileNotebook.pipeline_metadata,
+      script_content: compileNotebook.script_content,
+    };
   };
 
   uploadPipeline = async (

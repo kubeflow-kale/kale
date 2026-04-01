@@ -53,6 +53,7 @@ const StyledPopper = styled(Popper)({
 interface ISplitDeployButton {
   running: boolean;
   handleClick: (value: DeployType) => void;
+  disabled?: boolean;
   // katibRun: boolean;
 }
 
@@ -73,7 +74,7 @@ export const SplitDeployButton: React.FunctionComponent<
   ];
 
   const handleMenuItemClick = (
-    event: React.MouseEvent<HTMLLIElement>,
+    _event: React.MouseEvent<HTMLLIElement>,
     index: number,
   ) => {
     setSelectedIndex(index);
@@ -114,7 +115,7 @@ export const SplitDeployButton: React.FunctionComponent<
               <MainButton
                 color="primary"
                 onClick={handleMainButtonClick}
-                disabled={props.running}
+                disabled={props.running || props.disabled}
               >
                 {props.running ? (
                   <CircularProgress thickness={6} size={14} color="secondary" />
@@ -128,6 +129,7 @@ export const SplitDeployButton: React.FunctionComponent<
                 aria-controls={open ? 'menu-list-grow' : undefined}
                 aria-haspopup="true"
                 onClick={handleToggle}
+                disabled={props.running || props.disabled}
               >
                 <MoreVertIcon />
               </DropdownButton>

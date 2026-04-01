@@ -40,6 +40,7 @@ interface IProps {
   onMetadataEnable: (isEnabled: boolean) => void;
   pipelineBaseImage?: string;
   defaultBaseImage?: string;
+  initialChecked?: boolean;
 }
 
 type Editors = { [index: string]: EditorProps };
@@ -72,13 +73,29 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     this.onEditorVisibilityChange = this.onEditorVisibilityChange.bind(this);
   }
 
+  static getDerivedStateFromProps(
+    nextProps: IProps,
+    prevState: IState,
+  ): Partial<IState> | null {
+    if (
+      nextProps.initialChecked !== undefined &&
+      nextProps.initialChecked !== prevState.checked
+    ) {
+      return { checked: nextProps.initialChecked };
+    }
+    return null;
+  }
+
   componentDidMount = () => {
     if (this.props.notebook) {
       this.connectAndInitWhenReady(this.props.notebook);
     }
   };
 
-  componentDidUpdate = async (prevProps: Readonly<IProps>) => {
+  componentDidUpdate = async (
+    prevProps: Readonly<IProps>,
+    prevState: Readonly<IState>,
+  ) => {
     if (!this.props.notebook && prevProps.notebook) {
       // no notebook
       this.clearEditorsPropsAndInlineMetadata();
@@ -96,6 +113,10 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       }
       // hide editor on notebook change
       this.setState({ isEditorVisible: false });
+    }
+
+    if (!prevState.checked && this.state.checked && this.props.notebook) {
+      this.runEnableKaleLogic();
     }
   };
 
@@ -174,21 +195,12 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
     this.refreshEditorsPropsAndInlineMetadata();
   };
 
-  /**
-   * Event handler for the global Kale switch (the one below the Kale title in
-   * the left panel). Enabling the switch propagates to the father component
-   * (LeftPanel) to enable the rest of the UI.
-   */
-  toggleGlobalKaleSwitch(checked: boolean) {
-    this.setState({ checked });
-    this.props.onMetadataEnable(checked);
-
-    if (checked) {
+  private runEnableKaleLogic = () => {
+    if (!this.props.notebook || !this.props.notebook.model) {
+      return;
+    }
+    this.props.notebook.context.ready.then(() => {
       this.generateEditorsPropsAndInlineMetadata();
-
-      // When drawing cell metadata on Kale enable/disable, the targeted
-      // cell may be lost. Therefore, we select and scroll to the active
-      // cell.
       if (
         this.props.notebook &&
         this.props.notebook.content &&
@@ -208,6 +220,20 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           );
         }
       }
+    });
+  };
+
+  /**
+   * Event handler for the global Kale switch (the one below the Kale title in
+   * the left panel). Enabling the switch propagates to the father component
+   * (LeftPanel) to enable the rest of the UI.
+   */
+  toggleGlobalKaleSwitch(checked: boolean) {
+    this.setState({ checked });
+    this.props.onMetadataEnable(checked);
+
+    if (checked) {
+      this.runEnableKaleLogic();
     } else {
       this.setState({ isEditorVisible: false });
       this.clearEditorsPropsAndInlineMetadata();

@@ -510,7 +510,8 @@ a {
 }
 
 .dialog-body {
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 /* -----------------------------------------------------------------------------

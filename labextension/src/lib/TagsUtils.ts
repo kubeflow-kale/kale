@@ -36,13 +36,14 @@ export default class TagsUtils {
    * @returns Array<str> - a list of the block names (i.e. the pipeline steps'
    *  names)
    */
-  public static getAllBlocks(notebook: Notebook): string[] {
+  public static getAllBlocks(notebook: Notebook, cellIndex: number = -1): string[] {
     if (!notebook.model) {
       return [];
     }
     const blocks = new Set<string>();
+    const toCell = cellIndex < 0 ? notebook.model.cells.length : cellIndex;
     // iterate through the notebook cells
-    for (const idx of Array(notebook.model.cells.length).keys()) {
+    for (const idx of Array(toCell).keys()) {
       // get the tags of the current cell
       const mt = this.getKaleCellTags(notebook, idx);
       if (mt && mt.blockName && mt.blockName !== '') {

@@ -21,6 +21,7 @@
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+    "schema/*.json",
     "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
     "src/**/*.{ts,tsx}"
   ],
@@ -63,7 +64,8 @@
     "@jupyterlab/cells": "^4.4.9",
     "@jupyterlab/coreutils": "^6.4.5",
     "@jupyterlab/nbformat": "^4.4.9",
-    "@jupyterlab/notebook": "^4.4.9"
+    "@jupyterlab/notebook": "^4.4.9",
+    "@jupyterlab/settingregistry": "^4.4.9"
   },
   "devDependencies": {
     "@emotion/react": "^11.14.0",
@@ -99,7 +101,6 @@
     "stylelint-prettier": "^4.0.0",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.44.1",
-    "use-debounce": "^10.0.5",
     "yjs": "^13.5.40"
   },
   "sideEffects": [
@@ -111,6 +112,7 @@
     "access": "public"
   },
   "jupyterlab": {
+    "schemaDir": "schema",
     "discovery": {
       "server": {
         "managers": [

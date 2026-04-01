@@ -165,8 +165,7 @@
 //     />
 //   );
 // };
-import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
+import React, { useState } from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import { styled } from '@mui/material/styles';
 
@@ -181,12 +180,13 @@ const StyledTextField = styled(TextField)({
   },
   '& .MuiFormHelperText-root': {
     color: 'var(--jp-info-color0)',
+    wordBreak: 'break-word',
   },
 });
 
 export interface IInputProps extends Omit<
   TextFieldProps,
-  'onChange' | 'value'
+  'onChange' | 'value' | 'InputProps'
 > {
   value: string | number;
   regex?: string;
@@ -201,9 +201,6 @@ export interface IInputProps extends Omit<
 }
 
 export const Input: React.FunctionComponent<IInputProps> = props => {
-  const [value, setValue] = React.useState<string | number>('');
-  const [error, updateError] = React.useState(false);
-
   const {
     value: propsValue,
     className,
@@ -215,83 +212,54 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
     inputIndex,
     readOnly = false,
     variant = 'outlined',
-    InputProps,
     updateValue,
-    onBeforeUpdate = undefined,
+    onBeforeUpdate,
     ...rest
   } = props;
+
+  const [beforeUpdateError, setBeforeUpdateError] = useState(false);
 
   const getRegex = (): string | RegExp | undefined => {
     if (regex) {
       return regex;
-    } else if (validation && validation === 'int') {
-      return /^(-\d)?\d*$/;
-    } else if (validation && validation === 'double') {
-      return /^(-\d)?\d*(\.\d)?\d*$/;
-    } else {
-      return undefined;
     }
+    if (validation === 'int') {
+      return /^(-\d)?\d*$/;
+    }
+    if (validation === 'double') {
+      return /^(-\d)?\d*(\.\d)?\d*$/;
+    }
+    return undefined;
   };
 
   const getRegexMessage = (): string | undefined => {
     if (regexErrorMsg) {
       return regexErrorMsg;
-    } else if (validation && validation === 'int') {
+    }
+    if (validation === 'int') {
       return 'Integer value required';
-    } else if (validation && validation === 'double') {
+    }
+    if (validation === 'double') {
       return 'Double value required';
-    } else {
-      return undefined;
     }
+    return undefined;
   };
 
-  const onChange = (value: string, index: number) => {
-    // if the input domain is restricted by a regex
-    const regexPattern = getRegex();
-    if (!regexPattern) {
-      updateValue(value, index);
-      return;
-    }
-
-    const re = new RegExp(regexPattern);
-    if (!re.test(value)) {
-      updateError(true);
-    } else {
-      updateError(false);
-      updateValue(value, index);
-    }
-  };
-
-  React.useEffect(() => {
-    // need this to set the value when the notebook is loaded and the metadata
-    // is updated
-    setValue(propsValue);
-  }, [propsValue]); // Only re-run the effect if propsValue changes
-
-  const debouncedCallback = useDebouncedCallback(
-    // function
-    (value: string, idx: number) => {
-      onChange(value, idx);
-    },
-    // delay in ms
-    500,
-  );
+  const value = String(propsValue);
+  const regexPattern = getRegex();
+  const regexError =
+    regexPattern !== undefined && value !== ''
+      ? !new RegExp(regexPattern).test(value)
+      : false;
+  const error = regexError || beforeUpdateError;
 
   const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = evt.target.value;
-    setValue(newValue);
-
-    if (!onBeforeUpdate) {
-      debouncedCallback(newValue, inputIndex || 0);
-    } else {
+    if (onBeforeUpdate) {
       const hasError = onBeforeUpdate(newValue);
-      if (hasError) {
-        updateError(true);
-      } else {
-        updateError(false);
-        debouncedCallback(newValue, inputIndex || 0);
-      }
+      setBeforeUpdateError(hasError);
     }
+    updateValue(newValue, inputIndex || 0);
   };
 
   return (
@@ -308,7 +276,6 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
       slotProps={{
         input: {
           readOnly: readOnly,
-          ...InputProps,
         },
         inputLabel: {
           shrink: !!placeholder || value !== '',

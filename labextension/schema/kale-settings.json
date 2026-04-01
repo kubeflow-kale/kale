@@ -1,0 +1,22 @@
+{
+  "title": "Kale",
+  "description": "Kubeflow Kale extension settings.",
+  "jupyter.lab.setting-icon": "kale:logo",
+  "jupyter.lab.setting-icon-label": "Kale",
+  "properties": {
+    "enableKaleByDefault": {
+      "type": "boolean",
+      "title": "Enable Kale by default",
+      "description": "Enable Kale automatically when opening a notebook.",
+      "default": false
+    },
+    "autoSaveOnCompileOrRun": {
+      "type": "boolean",
+      "title": "Auto-save the notebook when compiling or running",
+      "description": "When enabled, Kale saves the notebook automatically before compile, run, or upload without prompting. When disabled, you are asked to save if there are unsaved changes.",
+      "default": false
+    }
+  },
+  "additionalProperties": false,
+  "type": "object"
+}

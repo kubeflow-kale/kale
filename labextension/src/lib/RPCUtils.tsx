@@ -303,10 +303,9 @@ export const _legacy_executeRpc = async (
   return result;
 };
 
-// Execute RPC and if an RPCError is caught, show dialog and return null
-// This is our default behavior prior to this commit. This may probably
-// change in the future, setting custom logic for each RPC call. For
-// example, see getBaseImage().
+// Wraps _legacy_executeRpc with user-facing error display.
+// On any BaseError, shows a friendly dialog and returns null.
+// Unexpected errors are re-thrown so the caller can handle them.
 export const _legacy_executeRpcAndShowRPCError = async (
   notebook: NotebookPanel,
   kernel: Kernel.IKernelConnection,
@@ -315,17 +314,19 @@ export const _legacy_executeRpcAndShowRPCError = async (
   nb_path: string | null = null
 ) => {
   try {
-    const result = await _legacy_executeRpc(
-      notebook,
-      kernel,
-      func,
-      args,
-      nb_path
-    );
-    return result;
+    return await _legacy_executeRpc(notebook, kernel, func, args, nb_path);
   } catch (error) {
     if (error instanceof RPCError) {
-      await error.showDialog();
+      const rpcErr = error.error as IRPCError;
+      const message =
+        rpcErr.err_details ||
+        rpcErr.err_message ||
+        'An unexpected RPC error occurred.';
+      await NotebookUtils.showMessage('Error', [message]);
+      return null;
+    }
+    if (error instanceof BaseError) {
+      await error.showDialog(false);
       return null;
     }
     throw error;
@@ -393,4 +394,3 @@ export class RPCError extends BaseError {
     await showRpcError(this.error, refresh);
   }
 }
-
