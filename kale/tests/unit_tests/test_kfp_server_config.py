@@ -15,6 +15,7 @@
 import json
 import os
 
+import pytest
 from testfixtures import mock
 
 from kale.common import kfp_client_factory
@@ -376,3 +377,89 @@ def test_get_kfp_client_all_parameters(mock_get_auth, mock_client, tmpdir):
         namespace="test_namespace",
         ssl_ca_cert="/path/to/cert",
     )
+
+
+def test_save_config_rejects_direct_token(tmpdir):
+    """Test that saving actual token in auth_config is rejected."""
+    config_path = os.path.join(tmpdir, "kfp_server_config.json")
+
+    with (
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
+        pytest.raises(ValueError, match="contains fields that look like secrets"),
+    ):
+        kfp_server_config.save_config(
+            {
+                "auth_type": "existing_bearer_token",
+                "auth_config": {"token": "secret-123"},  # ← Should fail
+            }
+        )
+
+
+def test_save_config_rejects_direct_cookies(tmpdir):
+    """Test that saving actual cookies in auth_config is rejected."""
+    config_path = os.path.join(tmpdir, "kfp_server_config.json")
+
+    with (
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
+        pytest.raises(ValueError, match="contains fields that look like secrets"),
+    ):
+        kfp_server_config.save_config(
+            {
+                "auth_type": "dex",
+                "auth_config": {"cookies": "session=abc"},  # ← Should fail
+            }
+        )
+
+
+def test_save_config_accepts_env_var_reference(tmpdir):
+    """Test that env var reference is accepted."""
+    config_path = os.path.join(tmpdir, "kfp_server_config.json")
+
+    with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
+        # Should NOT raise
+        kfp_server_config.save_config(
+            {
+                "auth_type": "existing_bearer_token",
+                "auth_config": {"env_var": "KF_PIPELINES_TOKEN"},  # ← OK
+            }
+        )
+
+    # Verify it was saved correctly
+    with open(config_path) as f:
+        saved = json.load(f)
+    assert saved["auth_config"] == {"env_var": "KF_PIPELINES_TOKEN"}
+
+
+def test_save_config_accepts_file_path_reference(tmpdir):
+    """Test that file path reference is accepted."""
+    config_path = os.path.join(tmpdir, "kfp_server_config.json")
+
+    with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
+        # Should NOT raise
+        kfp_server_config.save_config(
+            {
+                "auth_type": "existing_bearer_token",
+                "auth_config": {"file_path": "/secrets/token"},  # ← OK
+            }
+        )
+
+    # Verify it was saved correctly
+    with open(config_path) as f:
+        saved = json.load(f)
+    assert saved["auth_config"] == {"file_path": "/secrets/token"}
+
+
+def test_save_config_rejects_unexpected_fields(tmpdir):
+    """Test that unexpected fields in auth_config are rejected."""
+    config_path = os.path.join(tmpdir, "kfp_server_config.json")
+
+    with (
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
+        pytest.raises(ValueError, match="unexpected fields"),
+    ):
+        kfp_server_config.save_config(
+            {
+                "auth_type": "existing_bearer_token",
+                "auth_config": {"random_field": "value"},  # ← Should fail
+            }
+        )

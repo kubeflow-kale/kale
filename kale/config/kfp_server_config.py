@@ -26,8 +26,7 @@ log = logging.getLogger(__name__)
 class KFPServerConfig(Config):
     """Configuration for KFP server connection.
 
-    Authentication credentials are NOT stored directly in config.
-    Instead, auth_config contains references to where credentials can be found:
+    auth_config contains references to where credentials can be found:
     - env_var: Name of environment variable containing the credential
     - file_path: Path to file containing the credential
     - token_path: Path to K8s service account token (for SA auth)
@@ -75,14 +74,61 @@ def load_config() -> KFPServerConfig:
         return KFPServerConfig()
 
 
+def _validate_auth_config(auth_type: str, auth_config: dict | None) -> None:
+    """Validate that auth_config contains only safe references, not actual secrets.
+
+    Raises:
+        ValueError: If auth_config contains disallowed fields that might be secrets
+    """
+    if auth_config is None:
+        return
+
+    # Define allowed fields per auth type (references only, no secrets)
+    allowed_fields = {
+        "kubernetes_service_account_token": {"token_path"},
+        "existing_bearer_token": {"env_var", "file_path"},
+        "dex": {"env_var", "file_path"},
+        "none": set(),
+    }
+
+    # Define dangerous fields that suggest secrets are being passed directly
+    dangerous_fields = {"token", "cookies", "credentials", "password", "secret"}
+
+    allowed = allowed_fields.get(auth_type, set())
+    actual_fields = set(auth_config.keys())
+
+    # Check for dangerous fields
+    dangerous_found = actual_fields & dangerous_fields
+    if dangerous_found:
+        raise ValueError(
+            f"auth_config contains fields that look like secrets: {dangerous_found}. "
+            f"Use references instead: {allowed}. "
+            "Example: {{'env_var': 'KF_PIPELINES_TOKEN'}} or {{'file_path': '/secrets/token'}}"
+        )
+
+    # Check for unexpected fields
+    unexpected = actual_fields - allowed
+    if unexpected:
+        raise ValueError(
+            f"auth_config contains unexpected fields: {unexpected}. "
+            f"Allowed fields for {auth_type}: {allowed}"
+        )
+
+
 def save_config(config: KFPServerConfig | dict[str, Any]) -> None:
     """Save KFP server configuration to disk.
 
     Args:
         config: KFPServerConfig instance or dict with config values
+
+    Raises:
+        ValueError: If auth_config contains actual secrets instead of references
     """
     if isinstance(config, dict):
         config = KFPServerConfig(**config)
+
+    # Validate auth_config before saving to prevent secrets in config file
+    _validate_auth_config(config.auth_type, config.auth_config)
 
     config_path = get_config_path()
     kale_dir = os.path.dirname(config_path)

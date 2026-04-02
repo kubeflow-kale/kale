@@ -135,6 +135,50 @@ make docker-run
 - **KFP UI links** pointing to `localhost:8080` (so pipeline links open in your browser)
 - **Wheel server** connectivity for compiled pipelines
 
+## KFP Server Configuration
+
+Kale stores connection settings in `~/.config/kale/kfp_server_config.json` while keeping credentials secure. **Tokens and secrets are never saved to disk** — only references to environment variables or file paths are stored.
+
+### Quick Setup
+
+**Using environment variables (recommended):**
+```bash
+# Set your token
+export KF_PIPELINES_TOKEN=your-token-here
+
+# Configure Kale to use it
+python -c "
+from kale.config import kfp_server_config
+kfp_server_config.save_config({
+    'host': 'http://ml-pipeline.kubeflow:8888',
+    'auth_type': 'existing_bearer_token',
+    'auth_config': {'env_var': 'KF_PIPELINES_TOKEN'}
+})
+"
+```
+
+**Using Kubernetes mounted secrets:**
+```python
+from kale.config import kfp_server_config
+
+kfp_server_config.save_config({
+    "host": "http://ml-pipeline.kubeflow:8888",
+    "auth_type": "existing_bearer_token",
+    "auth_config": {"file_path": "/var/run/secrets/kfp-token"}
+})
+```
+
+### Authentication Types
+
+| Type | Description | Config Example |
+|------|-------------|----------------|
+| `none` | No authentication | `{"auth_type": "none"}` |
+| `existing_bearer_token` | Bearer token | `{"auth_type": "existing_bearer_token", "auth_config": {"env_var": "KF_PIPELINES_TOKEN"}}` |
+| `dex` | DEX cookies | `{"auth_type": "dex", "auth_config": {"env_var": "KF_PIPELINES_COOKIES"}}` |
+| `kubernetes_service_account_token` | K8s service account | `{"auth_type": "kubernetes_service_account_token", "auth_config": {"token_path": "/var/run/secrets/kubernetes.io/serviceaccount/token"}}` |
+
+**Security:** Configuration stores only references (`env_var`, `file_path`), never actual credentials. Tokens are read fresh from the environment or filesystem at runtime.
+
 ## Cell Types
 
 Kale uses special cell types (tags) to organize your notebook into pipeline components. You can assign these types to cells using the Kale JupyterLab extension or by adding tags directly in the notebook metadata.
