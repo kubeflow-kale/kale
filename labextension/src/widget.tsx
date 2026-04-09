@@ -40,7 +40,7 @@ import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { LabIcon } from '@jupyterlab/ui-components';
-import { registerKaleCommands, setLeftPanelRef } from './commands/kaleToolbar';
+import { registerKaleCommands } from './commands/kaleToolbar';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
@@ -171,7 +171,6 @@ async function activate(
 
     return (
       <KubeflowKaleLeftPanel
-        ref={ref => setLeftPanelRef(ref)}
         lab={lab}
         tracker={tracker}
         docManager={docManager}
