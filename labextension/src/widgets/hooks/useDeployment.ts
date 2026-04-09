@@ -4,7 +4,11 @@ import { Kernel } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { DeployProgressState } from '../deploys-progress/DeploysProgress';
-import { DefaultState, DeployType, IKaleNotebookMetadata } from '../LeftPanel';
+import {
+  DefaultState,
+  DeployType,
+  IKaleNotebookMetadata,
+} from '../LeftPanelTypes';
 import Commands from '../../lib/Commands';
 import NotebookUtils from '../../lib/NotebookUtils';
 
@@ -31,6 +35,11 @@ export interface IDeploymentState {
   ) => void;
 }
 
+/**
+ * Hook that manages the full compile/upload/run deploy lifecycle: triggering
+ * deploys, tracking progress per deploy index, and exposing callbacks for
+ * the toolbar and deploy button.
+ */
 export function useDeployment({
   tracker,
   kernel,
@@ -42,18 +51,14 @@ export function useDeployment({
     [index: number]: DeployProgressState;
   }>({});
 
-  // Refs to read current values from inside the async deploy command
-  // without needing them in dependency arrays.
   const runDeploymentRef = useRef(false);
   runDeploymentRef.current = runDeployment;
 
-  // These refs will be set by the LeftPanel component before deploy is used
   const metadataRef = useRef<IKaleNotebookMetadata>(DefaultState.metadata);
   const namespaceRef = useRef('');
   const deployDebugMessageRef = useRef(false);
   const deploymentTypeRef = useRef<DeployType>('compile');
 
-  // Expose setters so the parent component can keep refs in sync
   const syncRefs = useCallback(
     (
       metadata: IKaleNotebookMetadata,
@@ -148,7 +153,6 @@ export function useDeployment({
       return;
     }
 
-    // VALIDATE
     const validationSucceeded = await commands.validateMetadata(
       nbFilePath,
       metadata,
@@ -160,7 +164,6 @@ export function useDeployment({
     }
     progressCallback({ message: 'Validation completed successfully' });
 
-    // COMPILE
     const compileResult = await commands.compilePipeline(
       nbFilePath,
       metadata,
@@ -174,7 +177,6 @@ export function useDeployment({
     }
     progressCallback({ message: 'Notebook compiled successfully' });
 
-    // UPLOAD
     const currentDeploymentType = deploymentTypeRef.current;
     const uploadPipeline =
       currentDeploymentType === 'upload' || currentDeploymentType === 'run'
@@ -201,7 +203,6 @@ export function useDeployment({
       },
     });
 
-    // RUN
     if (currentDeploymentType === 'run') {
       const runPipeline = await commands.runPipeline(
         uploadPipeline.pipeline.pipelineid,
@@ -252,7 +253,6 @@ export function useDeployment({
     onPanelRemove,
     triggerCompile,
     triggerRun,
-    // Internal: parent calls this each render to keep refs fresh
     syncRefs,
   };
 }

@@ -5,6 +5,10 @@ import { KfpStatus } from '../../components/KFPStatusBadge';
 
 const KFP_STATUS_REFRESH_MS = 30_000;
 
+/**
+ * Hook that polls the KFP API server for connectivity status every 30 seconds.
+ * Returns the current connection state for the status badge in the panel header.
+ */
 export function useKfpStatus(
   kernel: Kernel.IKernelConnection,
   backend: boolean,

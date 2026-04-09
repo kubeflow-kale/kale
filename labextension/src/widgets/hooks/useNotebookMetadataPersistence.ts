@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import NotebookUtils from '../../lib/NotebookUtils';
-import { IKaleNotebookMetadata } from '../LeftPanel';
+import { IKaleNotebookMetadata } from '../LeftPanelTypes';
 
 interface IUseNotebookMetadataPersistenceParams {
   tracker: INotebookTracker;
@@ -9,6 +9,10 @@ interface IUseNotebookMetadataPersistenceParams {
   metadataKey: string;
 }
 
+/**
+ * Hook that writes the current metadata state back to the active notebook's
+ * .ipynb file whenever it changes, keeping the form and the file in sync.
+ */
 export function useNotebookMetadataPersistence({
   tracker,
   metadata,

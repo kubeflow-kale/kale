@@ -4,8 +4,8 @@ import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import NotebookUtils from '../../lib/NotebookUtils';
 import Commands from '../../lib/Commands';
-import { DefaultState, IExperiment, NEW_EXPERIMENT } from '../LeftPanel';
-import { INotebookMetadataStateSlice } from './useNotebookMetadataState';
+import { DefaultState, IExperiment, NEW_EXPERIMENT } from '../LeftPanelTypes';
+import { ILoaderSetters } from './useNotebookMetadata';
 
 const DEFAULT_UI_URL = 'http://localhost:8080';
 
@@ -45,16 +45,21 @@ interface IUseNotebookLoaderParams {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   metadataKey: string;
-  state: INotebookMetadataStateSlice;
+  setters: ILoaderSetters;
 }
 
+/**
+ * Hook that wires up to the notebook tracker's currentChanged signal and
+ * runs the async notebook-loading sequence (session ready, backend RPCs,
+ * metadata read/merge) whenever the active notebook changes.
+ */
 export function useNotebookLoader({
   tracker,
   backend,
   kernel,
   enableKaleByDefault,
   metadataKey,
-  state,
+  setters,
 }: IUseNotebookLoaderParams) {
   const {
     setKfpUiHost,
@@ -68,7 +73,7 @@ export function useNotebookLoader({
     experimentsRef,
     setIsEnabled,
     resetForNoNotebook,
-  } = state;
+  } = setters;
 
   const loadNotebookPanel = useCallback(
     async (notebook: NotebookPanel) => {

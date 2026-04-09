@@ -1,13 +1,24 @@
-import { useCallback } from 'react';
+import {
+  Dispatch,
+  MutableRefObject,
+  SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
-import { IExperiment, IKaleNotebookMetadata } from '../LeftPanel';
-import { useNotebookMetadataState } from './useNotebookMetadataState';
+import {
+  DefaultState,
+  IExperiment,
+  IKaleNotebookMetadata,
+} from '../LeftPanelTypes';
 import { useNotebookLoader } from './useNotebookLoader';
 import { useNotebookMetadataPersistence } from './useNotebookMetadataPersistence';
 import { useEnableByDefaultEffect } from './useEnableByDefaultEffect';
 
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
+const defaultMetadata = DefaultState.metadata;
 
 export interface INotebookMetadataState {
   metadata: IKaleNotebookMetadata;
@@ -25,6 +36,20 @@ export interface INotebookMetadataState {
   setIsEnabled: (enabled: boolean) => void;
 }
 
+export interface ILoaderSetters {
+  setMetadata: Dispatch<SetStateAction<IKaleNotebookMetadata>>;
+  setExperiments: Dispatch<SetStateAction<IExperiment[]>>;
+  setGettingExperiments: Dispatch<SetStateAction<boolean>>;
+  setIsEnabled: Dispatch<SetStateAction<boolean>>;
+  setNamespace: Dispatch<SetStateAction<string>>;
+  setKfpUiHost: Dispatch<SetStateAction<string>>;
+  setDefaultBaseImage: Dispatch<SetStateAction<string>>;
+  metadataRef: MutableRefObject<IKaleNotebookMetadata>;
+  experimentsRef: MutableRefObject<IExperiment[]>;
+  serverBaseImageRef: MutableRefObject<string>;
+  resetForNoNotebook: () => void;
+}
+
 interface IUseNotebookMetadataParams {
   tracker: INotebookTracker;
   backend: boolean;
@@ -32,13 +57,70 @@ interface IUseNotebookMetadataParams {
   enableKaleByDefault: boolean;
 }
 
+/**
+ * Hook that owns all pipeline metadata state for the left panel: notebook
+ * metadata fields, experiment list, enable toggle, and namespace. Composes
+ * sub-hooks for notebook loading, metadata persistence, and the
+ * enable-by-default setting.
+ */
 export function useNotebookMetadata({
   tracker,
   backend,
   kernel,
   enableKaleByDefault,
 }: IUseNotebookMetadataParams): INotebookMetadataState {
-  const state = useNotebookMetadataState();
+  const [metadata, setMetadata] =
+    useState<IKaleNotebookMetadata>(defaultMetadata);
+  const [experiments, setExperiments] = useState<IExperiment[]>([]);
+  const [gettingExperiments, setGettingExperiments] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [namespace, setNamespace] = useState('');
+  const [kfpUiHost, setKfpUiHost] = useState('');
+  const [defaultBaseImage, setDefaultBaseImage] = useState('');
+
+  const metadataRef = useRef(metadata);
+  metadataRef.current = metadata;
+  const experimentsRef = useRef(experiments);
+  experimentsRef.current = experiments;
+  const serverBaseImageRef = useRef('');
+
+  // --- updaters (exposed to LeftPanel form inputs) ---
+
+  const updateExperiment = useCallback((experiment: IExperiment) => {
+    setMetadata(prev => ({
+      ...prev,
+      experiment,
+      experiment_name: experiment.name,
+    }));
+  }, []);
+
+  const updatePipelineName = useCallback((name: string) => {
+    setMetadata(prev => ({ ...prev, pipeline_name: name }));
+  }, []);
+
+  const updatePipelineDescription = useCallback((desc: string) => {
+    setMetadata(prev => ({ ...prev, pipeline_description: desc }));
+  }, []);
+
+  const updateDockerImage = useCallback((name: string) => {
+    setMetadata(prev => ({ ...prev, base_image: name }));
+  }, []);
+
+  const updateEnableCaching = useCallback((enabled: boolean) => {
+    setMetadata(prev => ({ ...prev, enable_caching: enabled }));
+  }, []);
+
+  const resetForNoNotebook = useCallback(() => {
+    setMetadata(defaultMetadata);
+    setExperiments([]);
+    setGettingExperiments(false);
+    setIsEnabled(false);
+    setNamespace('');
+    setKfpUiHost('');
+    setDefaultBaseImage('');
+  }, []);
+
+  // --- composed hooks ---
 
   useNotebookLoader({
     tracker,
@@ -46,41 +128,46 @@ export function useNotebookMetadata({
     kernel,
     enableKaleByDefault,
     metadataKey: KALE_NOTEBOOK_METADATA_KEY,
-    state,
+    setters: {
+      setMetadata,
+      setExperiments,
+      setGettingExperiments,
+      setIsEnabled,
+      setNamespace,
+      setKfpUiHost,
+      setDefaultBaseImage,
+      metadataRef,
+      experimentsRef,
+      serverBaseImageRef,
+      resetForNoNotebook,
+    },
   });
 
   useEnableByDefaultEffect({
     enableKaleByDefault,
-    isEnabled: state.isEnabled,
-    setIsEnabled: state.setIsEnabled,
+    isEnabled,
+    setIsEnabled,
   });
 
   useNotebookMetadataPersistence({
     tracker,
-    metadata: state.metadata,
+    metadata,
     metadataKey: KALE_NOTEBOOK_METADATA_KEY,
   });
 
-  const setIsEnabled = useCallback(
-    (enabled: boolean) => {
-      state.setIsEnabled(enabled);
-    },
-    [state.setIsEnabled],
-  );
-
   return {
-    metadata: state.metadata,
-    experiments: state.experiments,
-    gettingExperiments: state.gettingExperiments,
-    isEnabled: state.isEnabled,
-    namespace: state.namespace,
-    kfpUiHost: state.kfpUiHost,
-    defaultBaseImage: state.defaultBaseImage,
-    updateExperiment: state.updateExperiment,
-    updatePipelineName: state.updatePipelineName,
-    updatePipelineDescription: state.updatePipelineDescription,
-    updateDockerImage: state.updateDockerImage,
-    updateEnableCaching: state.updateEnableCaching,
+    metadata,
+    experiments,
+    gettingExperiments,
+    isEnabled,
+    namespace,
+    kfpUiHost,
+    defaultBaseImage,
+    updateExperiment,
+    updatePipelineName,
+    updatePipelineDescription,
+    updateDockerImage,
+    updateEnableCaching,
     setIsEnabled,
   };
 }
