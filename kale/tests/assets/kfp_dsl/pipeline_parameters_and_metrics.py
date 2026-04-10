@@ -1,6 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
+
 from kfp.kubernetes import security_context
 
 
@@ -177,6 +178,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+
     create_matrix_task.set_env_variable(name="HOME", value="/tmp")
 
     create_matrix_task.set_display_name("create-matrix-step")
@@ -198,6 +200,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+
     sum_matrix_task.set_env_variable(name="HOME", value="/tmp")
 
     sum_matrix_task.after(create_matrix_task)

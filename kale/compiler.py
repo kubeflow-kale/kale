@@ -252,6 +252,10 @@ class Compiler:
             for step in self.pipeline.steps:
                 component_names[step.name] = step.name.replace("_", "-")
 
+        supports_security_context = kfputils.supports_security_context(
+            self.pipeline.config.kfp_host or kfputils.get_kfp_host()
+        )
+
         pipeline_code = template.render(
             pipeline=self.pipeline,
             lightweight_components=lightweight_components,
@@ -260,6 +264,7 @@ class Compiler:
             step_inputs_sources=step_inputs_sources,
             pipeline_param_info=pipeline_param_info,
             component_names=component_names,
+            supports_security_context=supports_security_context,
             **self.pipeline.config.to_dict(),
         )
         # fix code style using pep8 guidelines

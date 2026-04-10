@@ -1,6 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
+
 from kfp.kubernetes import security_context
 
 
@@ -300,6 +301,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+
     load_transform_data_task.set_env_variable(name="HOME", value="/tmp")
 
     load_transform_data_task.set_display_name("load-transform-data-step")
@@ -318,6 +320,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+
     train_model_task.set_env_variable(name="HOME", value="/tmp")
 
     train_model_task.after(load_transform_data_task)
@@ -340,6 +343,7 @@ def auto_generated_pipeline(
         run_as_group=0,
         run_as_non_root=True
     )
+
     evaluate_model_task.set_env_variable(name="HOME", value="/tmp")
 
     evaluate_model_task.after(train_model_task)

@@ -12,9 +12,15 @@ on:
   pull_request:
   # for testing
   workflow_dispatch:
+    inputs:
+      kfp_version:
+        description: 'KFP version to install'
+        required: false
+        default: '2.16.0'
+        type: string
 
 env:
-  KFP_VERSION: "2.16.0"
+  KFP_VERSION: ${{ inputs.kfp_version || '2.16.0' }}
   PYTHON_VERSION: "3.12"
 
 jobs:

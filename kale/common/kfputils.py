@@ -25,6 +25,8 @@ from typing import Any
 
 import kfp
 from kfp_server_api.exceptions import ApiException
+from packaging.version import Version
+import requests
 
 from kale.common import utils
 
@@ -42,6 +44,56 @@ log = logging.getLogger(__name__)
 
 def _get_kfp_client(host=None, namespace: str = "kubeflow"):
     return kfp.Client(host=host, namespace=namespace)
+
+
+def get_kfp_server_version(host: str) -> str | None:
+    """Fetch the KFP server version from the healthz endpoint.
+
+    Args:
+        host: The KFP host URL (e.g., http://localhost:8080)
+
+    Returns:
+        The KFP server version string (apiServerTagName), or None if unavailable
+    """
+    print(f"Fetching KFP server version from host: {host}")
+    if not host:
+        return None
+
+    healthz_url = f"{host.rstrip('/')}/apis/v2beta1/healthz"
+    try:
+        response = requests.get(healthz_url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("apiServerTagName")
+    except (requests.RequestException, ValueError, KeyError) as e:
+        log.warning("Failed to fetch KFP server version from %s: %s", healthz_url, e)
+        return None
+
+
+def supports_security_context(host: str) -> bool:
+    """Check if the KFP server supports security_context (version > 2.16).
+
+    Args:
+        host: The KFP host URL
+
+    Returns:
+        True if KFP version is greater than 2.16, False otherwise
+    """
+    version_str = get_kfp_server_version(host)
+    if not version_str:
+        # If we can't determine the version, assume it's supported to avoid blocking users with newer versions
+        return True
+
+    try:
+        # Handle version strings that may have prefixes like 'v' or suffixes
+        clean_version = version_str.lstrip("v").split("-")[0]
+        kfp_version = Version(clean_version)
+        min_version = Version("2.16")
+        return kfp_version > min_version
+    except Exception as e:
+        log.warning("Failed to parse KFP version '%s': %s", version_str, e)
+        # Assume it is supported if we can't parse the version, to avoid blocking users with newer versions
+        return True
 
 
 def get_pipeline_id(pipeline_name: str, host: str = None) -> str:
@@ -271,6 +323,12 @@ def load_mlpipeline_metrics(output):
             _kale_kfp_metrics = json.load(_kale_mf)
             for _metric_name, _metric_value in _kale_kfp_metrics.items():
                 output.log_metric(_metric_name, _metric_value)
+
+
+def get_kfp_host():
+    """Get the KFP host URL from the client."""
+    client = _get_kfp_client()
+    return getattr(client, "_uihost", None) or getattr(client, "host", None)
 
 
 def get_experiment_from_run_id(run_id: str):
