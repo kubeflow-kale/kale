@@ -65,7 +65,7 @@ def get_kfp_server_version(host: str) -> str | None:
         response.raise_for_status()
         data = response.json()
         return data.get("apiServerTagName")
-    except (requests.RequestException, ValueError, KeyError) as e:
+    except Exception as e:
         log.warning("Failed to fetch KFP server version from %s: %s", healthz_url, e)
         return None
 
