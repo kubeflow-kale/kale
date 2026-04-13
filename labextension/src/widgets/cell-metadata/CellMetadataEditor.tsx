@@ -753,7 +753,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => this.toggleCacheDialog()} color="primary">
-              Close
+              Ok
             </Button>
           </DialogActions>
         </Dialog>
