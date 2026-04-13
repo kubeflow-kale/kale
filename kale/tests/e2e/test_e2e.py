@@ -37,8 +37,9 @@ EXAMPLES_DIR = os.path.join(THIS_DIR, "../../../examples/")
     ],
 )
 @mock.patch("kale.compiler.KALE_VERSION", new="0+unknown")
+@mock.patch("kale.common.kfputils.supports_security_context", return_value=True)
 @mock.patch("kale.common.utils.random_string")
-def test_notebook_to_dsl(random_string, notebook_path, dsl_path):
+def test_notebook_to_dsl(random_string, mock_supports_security_context, notebook_path, dsl_path):
     """Test code generation end to end from notebook to DSL."""
     random_string.return_value = "rnd"
 

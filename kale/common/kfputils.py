@@ -327,8 +327,12 @@ def load_mlpipeline_metrics(output):
 
 def get_kfp_host():
     """Get the KFP host URL from the client."""
-    client = _get_kfp_client()
-    return getattr(client, "_uihost", None) or getattr(client, "host", None)
+    try:
+        client = _get_kfp_client()
+        return getattr(client, "_uihost", None) or getattr(client, "host", None)
+    except Exception as e:
+        log.warning("Failed to get KFP host: %s", e)
+        return None
 
 
 def get_experiment_from_run_id(run_id: str):
