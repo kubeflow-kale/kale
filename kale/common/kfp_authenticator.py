@@ -14,6 +14,7 @@
 
 """KFP authentication module for creating credentials at runtime."""
 
+from abc import ABC, abstractmethod
 import logging
 import os
 from typing import Any
@@ -44,7 +45,23 @@ class AuthResult:
         self.existing_token = existing_token
 
 
-class K8sServiceAccountTokenAuthenticator:
+class Authenticator(ABC):
+    """Base class for KFP authentication strategies."""
+
+    @abstractmethod
+    def authenticate(self, config: dict[str, Any] | None = None) -> AuthResult:
+        """Create credentials for KFP authentication.
+
+        Args:
+            config: Optional configuration dictionary specific to auth type
+
+        Returns:
+            AuthResult with resolved credentials
+        """
+        pass
+
+
+class K8sServiceAccountTokenAuthenticator(Authenticator):
     """Authenticator for Kubernetes service account token-based authentication.
 
     Creates a ServiceAccountTokenVolumeCredentials object that reads the
@@ -91,7 +108,7 @@ class K8sServiceAccountTokenAuthenticator:
         return AuthResult(credentials=credentials)
 
 
-class ExistingBearerTokenAuthenticator:
+class ExistingBearerTokenAuthenticator(Authenticator):
     """Authenticator for pre-existing bearer token authentication.
 
     Resolves token from environment variable or file, never stores it directly in config.
@@ -104,8 +121,8 @@ class ExistingBearerTokenAuthenticator:
 
         Args:
             config: Dictionary containing ONE of:
-                - env_var: Name of environment variable containing the token
                 - file_path: Path to file containing the token
+                - env_var: Name of environment variable containing the token
                 If neither provided, checks KF_PIPELINES_TOKEN env var by default
 
         Returns:
@@ -116,15 +133,6 @@ class ExistingBearerTokenAuthenticator:
         """
         config = config or {}
 
-        # Try env_var first
-        env_var = config.get("env_var", "KF_PIPELINES_TOKEN")
-        if env_var:
-            token = os.getenv(env_var)
-            if token:
-                log.info("Using bearer token from environment variable %s", env_var)
-                return AuthResult(existing_token=token.strip())
-
-        # Try file_path
         file_path = config.get("file_path")
         if file_path:
             if not os.path.exists(file_path):
@@ -138,14 +146,19 @@ class ExistingBearerTokenAuthenticator:
             log.info("Using bearer token from file %s", file_path)
             return AuthResult(existing_token=token)
 
-        # No token found
+        env_var = config.get("env_var", "KF_PIPELINES_TOKEN")
+        token = os.getenv(env_var)
+        if token:
+            log.info("Using bearer token from environment variable %s", env_var)
+            return AuthResult(existing_token=token.strip())
+
         raise ValueError(
             f"Bearer token not found. Set {env_var} environment variable "
             f"or provide file_path in auth_config"
         )
 
 
-class DexAuthenticator:
+class DexAuthenticator(Authenticator):
     """Authenticator for DEX-based authentication using cookies.
 
     Resolves cookies from environment variable or file, never stores them directly in config.
@@ -170,15 +183,6 @@ class DexAuthenticator:
         """
         config = config or {}
 
-        # Try env_var first
-        env_var = config.get("env_var", "KF_PIPELINES_COOKIES")
-        if env_var:
-            cookies = os.getenv(env_var)
-            if cookies:
-                log.info("Using DEX cookies from environment variable %s", env_var)
-                return AuthResult(cookies=cookies.strip())
-
-        # Try file_path
         file_path = config.get("file_path")
         if file_path:
             if not os.path.exists(file_path):
@@ -192,14 +196,20 @@ class DexAuthenticator:
             log.info("Using DEX cookies from file %s", file_path)
             return AuthResult(cookies=cookies)
 
-        # No cookies found
+        env_var = config.get("env_var", "KF_PIPELINES_COOKIES")
+        if env_var:
+            cookies = os.getenv(env_var)
+            if cookies:
+                log.info("Using DEX cookies from environment variable %s", env_var)
+                return AuthResult(cookies=cookies.strip())
+
         raise ValueError(
             f"DEX cookies not found. Set {env_var} environment variable "
             f"or provide file_path in auth_config"
         )
 
 
-class NoAuthAuthenticator:
+class NoAuthAuthenticator(Authenticator):
     """Authenticator for unsecured KFP endpoints (no authentication required)."""
 
     def authenticate(self, config: dict[str, Any] | None = None) -> AuthResult:
@@ -215,14 +225,7 @@ class NoAuthAuthenticator:
         return AuthResult()
 
 
-def get_authenticator(
-    auth_type: str,
-) -> (
-    K8sServiceAccountTokenAuthenticator
-    | ExistingBearerTokenAuthenticator
-    | DexAuthenticator
-    | NoAuthAuthenticator
-):
+def get_authenticator(auth_type: str) -> Authenticator:
     """Factory function to get the appropriate authenticator for an auth type.
 
     Args:

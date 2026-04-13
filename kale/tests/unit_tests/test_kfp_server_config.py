@@ -463,3 +463,92 @@ def test_save_config_rejects_unexpected_fields(tmpdir):
                 "auth_config": {"random_field": "value"},  # ← Should fail
             }
         )
+
+
+def test_bearer_token_file_path_takes_precedence_over_env_var(tmpdir):
+    """Test that configured file_path is used even when env var exists."""
+    from kale.common.kfp_authenticator import ExistingBearerTokenAuthenticator
+
+    # Create a token file
+    token_file = os.path.join(tmpdir, "token.txt")
+    with open(token_file, "w") as f:
+        f.write("file-token-content")
+
+    # Set environment variable
+    with mock.patch.dict(os.environ, {"KF_PIPELINES_TOKEN": "env-token-content"}):
+        authenticator = ExistingBearerTokenAuthenticator()
+        result = authenticator.authenticate({"file_path": token_file})
+
+        # Should use file content, not env var
+        assert result.existing_token == "file-token-content"
+        assert result.cookies is None
+        assert result.credentials is None
+
+
+def test_bearer_token_env_var_used_when_no_file_path(tmpdir):
+    """Test that env var is used when file_path is not configured."""
+    from kale.common.kfp_authenticator import ExistingBearerTokenAuthenticator
+
+    # Set environment variable
+    with mock.patch.dict(os.environ, {"KF_PIPELINES_TOKEN": "env-token-content"}):
+        authenticator = ExistingBearerTokenAuthenticator()
+        result = authenticator.authenticate({})  # No file_path configured
+
+        # Should use env var
+        assert result.existing_token == "env-token-content"
+        assert result.cookies is None
+        assert result.credentials is None
+
+
+def test_k8s_sa_token_path_config_takes_precedence_over_env_var(tmpdir):
+    """Test that configured token_path is used even when env var exists."""
+    from kale.common.kfp_authenticator import K8sServiceAccountTokenAuthenticator
+
+    # Create two token files
+    config_token_file = os.path.join(tmpdir, "config-token")
+    env_token_file = os.path.join(tmpdir, "env-token")
+
+    with open(config_token_file, "w") as f:
+        f.write("config-token-content")
+    with open(env_token_file, "w") as f:
+        f.write("env-token-content")
+
+    # Set environment variable pointing to env_token_file
+    with (
+        mock.patch.dict(os.environ, {"KF_PIPELINES_SA_TOKEN_PATH": env_token_file}),
+        mock.patch("kfp.client.ServiceAccountTokenVolumeCredentials") as mock_sa_creds,
+    ):
+        authenticator = K8sServiceAccountTokenAuthenticator()
+        result = authenticator.authenticate({"token_path": config_token_file})
+
+        # Should use config path, not env var path
+        # Verify ServiceAccountTokenVolumeCredentials was called with config path
+        mock_sa_creds.assert_called_once_with(path=config_token_file)
+        assert result.credentials is not None
+        assert result.cookies is None
+        assert result.existing_token is None
+
+
+def test_k8s_sa_token_path_env_var_used_when_no_config(tmpdir):
+    """Test that env var is used when token_path is not configured."""
+    from kale.common.kfp_authenticator import K8sServiceAccountTokenAuthenticator
+
+    # Create token file
+    env_token_file = os.path.join(tmpdir, "env-token")
+    with open(env_token_file, "w") as f:
+        f.write("env-token-content")
+
+    # Set environment variable
+    with (
+        mock.patch.dict(os.environ, {"KF_PIPELINES_SA_TOKEN_PATH": env_token_file}),
+        mock.patch("kfp.client.ServiceAccountTokenVolumeCredentials") as mock_sa_creds,
+    ):
+        authenticator = K8sServiceAccountTokenAuthenticator()
+        result = authenticator.authenticate({})  # No token_path configured
+
+        # Should use env var path
+        # Verify ServiceAccountTokenVolumeCredentials was called with env var path
+        mock_sa_creds.assert_called_once_with(path=env_token_file)
+        assert result.credentials is not None
+        assert result.cookies is None
+        assert result.existing_token is None
