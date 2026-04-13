@@ -354,14 +354,6 @@ export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
         if (nbFilePath) {
           await commands.resumeStateIfExploreNotebook(nbFilePath);
         }
-        // Detect the base image of the current Notebook Server
-        const baseImage = await commands.getBaseImage();
-        if (baseImage) {
-          DefaultState.metadata.base_image = baseImage;
-        } else {
-          DefaultState.metadata.base_image = '';
-        }
-
         // Get experiment information last because it may take more time to respond
         this.setState({ gettingExperiments: true });
         const { experiments, experiment, experiment_name } =

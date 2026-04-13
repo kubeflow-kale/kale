@@ -17,7 +17,6 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import {
   _legacy_executeRpc,
   _legacy_executeRpcAndShowRPCError,
-  RPCError,
 } from './RPCUtils';
 
 import { DeployProgressState, RunPipeline } from '../widgets/deploys-progress/DeploysProgress';
@@ -88,26 +87,8 @@ export default class Commands {
     const cmd: string =
       'from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n' +
       `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
-    console.log('Executing command: ' + cmd);
+    console.debug('Executing command: ' + cmd);
     await NotebookUtils.sendKernelRequestFromNotebook(this._notebook, cmd, {});
-  };
-
-  getBaseImage = async () => {
-    let baseImage: string | null = null;
-    try {
-      baseImage = await _legacy_executeRpc(
-        this._notebook,
-        this._kernel,
-        'nb.get_base_image',
-      );
-    } catch (error) {
-      if (error instanceof RPCError) {
-        console.warn('Kale is not running in a Notebook Server', error.error);
-      } else {
-        throw error;
-      }
-    }
-    return baseImage;
   };
 
   getDefaultBaseImage = async (): Promise<string> => {
@@ -435,7 +416,10 @@ export default class Commands {
         'nb.get_namespace',
       );
     } catch (error) {
-      console.error("Failed to retrieve notebook's namespace");
+      console.warn(
+        "Could not detect the notebook's namespace. " +
+        'Pipeline and run links may not include the correct namespace parameter.'
+      );
       return '';
     }
   };
