@@ -1,0 +1,49 @@
+name: Docs
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "kale/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".readthedocs.yaml"
+      - ".github/workflows/docs.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "kale/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".readthedocs.yaml"
+      - ".github/workflows/docs.yaml"
+
+jobs:
+  build:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install docs dependencies
+        run: uv sync --extra docs
+
+      - name: Build Sphinx site
+        run: uv run sphinx-build -b html -W --keep-going docs/source docs/_build/html
+
+      - name: Upload built site
+        uses: actions/upload-artifact@v4
+        with:
+          name: kale-docs-html
+          path: docs/_build/html

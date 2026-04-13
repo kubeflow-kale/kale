@@ -47,6 +47,8 @@ Kale bridges this gap by providing a simple UI to define Kubeflow Pipelines
 workflows directly from your JupyterLab interface, without the need to change a
 single line of code.
 
+📖 **Documentation:** <https://kale.kubeflow.org>
+
 See the `Kale v2.0 Demo` video at the bottom of the `README` for more details.
 
 Read more about Kale and how it works in this Medium post:

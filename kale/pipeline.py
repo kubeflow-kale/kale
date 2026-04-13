@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Pipeline data model.
+
+Defines :class:`Pipeline` — a :class:`networkx.DiGraph` of :class:`~kale.step.Step`
+nodes — along with the configuration classes that describe pipeline-level
+settings such as the pipeline name, KFP host, volumes, and Katib experiments.
+"""
 
 from collections.abc import Iterable
 import copy

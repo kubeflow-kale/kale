@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Notebook → Pipeline conversion.
+
+:class:`NotebookProcessor` reads a Jupyter notebook, parses the Kale-specific
+cell tags and notebook metadata, resolves static data dependencies, and
+produces a ready-to-compile :class:`~kale.pipeline.Pipeline`.
+"""
 
 import logging
 import os
