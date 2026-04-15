@@ -510,7 +510,7 @@ export default class CellUtilities {
       this.getCellMetaData(notebook.content, index, 'tags') || []
     )
       .filter((t: string) => !t.startsWith('prev:'))
-      .map((t: string) => t.replace('block:', ''));
+      .map((t: string) => t.replace('step:', ''));
     return names.length > 0 ? names[0] : '';
   }
 
