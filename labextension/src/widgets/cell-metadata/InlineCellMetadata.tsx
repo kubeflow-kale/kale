@@ -47,7 +47,7 @@ type Editors = { [index: string]: EditorProps };
 
 interface IState {
   activeCellIndex: number;
-  prevBlockName?: string;
+  prevStepName?: string;
   metadataCmp?: React.ReactPortal[];
   checked?: boolean;
   editors?: Editors;
@@ -56,7 +56,7 @@ interface IState {
 
 const DefaultState: IState = {
   activeCellIndex: 0,
-  prevBlockName: undefined,
+  prevStepName: undefined,
   metadataCmp: [],
   checked: false,
   editors: {},
@@ -275,22 +275,22 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
       let tags = TagsUtils.getKaleCellTags(this.props.notebook.content, index);
       if (!tags) {
         tags = {
-          blockName: '',
-          prevBlockNames: [],
+          stepName: '',
+          prevStepNames: [],
         };
       }
-      let previousBlockName: string | undefined = '';
+      let previousStepName: string | undefined = '';
 
-      if (!tags.blockName) {
-        previousBlockName = TagsUtils.getPreviousBlock(
+      if (!tags.stepName) {
+        previousStepName = TagsUtils.getPreviousStep(
           this.props.notebook.content,
           index,
         );
       }
       editors[index] = {
         notebook: this.props.notebook,
-        stepName: tags.blockName || '',
-        stepDependencies: tags.prevBlockNames || [],
+        stepName: tags.stepName || '',
+        stepDependencies: tags.prevStepNames || [],
         limits: tags.limits || {},
         baseImage: tags.baseImage,
         enableCaching: tags.enableCaching,
@@ -321,12 +321,12 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
         <InlineMetadata
           key={index}
           cellElement={cellElement}
-          blockName={tags.blockName}
-          stepDependencies={tags.prevBlockNames}
+          stepName={tags.stepName}
+          stepDependencies={tags.prevStepNames}
           limits={tags.limits || {}}
           baseImage={tags.baseImage}
           enableCaching={tags.enableCaching}
-          previousBlockName={previousBlockName}
+          previousStepName={previousStepName}
           cellIndex={index}
           pipelineBaseImage={this.props.pipelineBaseImage}
           defaultBaseImage={this.props.defaultBaseImage}

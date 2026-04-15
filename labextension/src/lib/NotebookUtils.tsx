@@ -328,12 +328,12 @@ export default class NotebookUtilities {
       if (!cellModel || !isCodeCellModel(cellModel)) {
         continue;
       }
-      const blockName = CellUtilities.getStepName(notebook, i);
+      const stepName = CellUtilities.getStepName(notebook, i);
       // If a cell of that type is found, run that
       // and all consequent cells getting merged to that one
       if (
-        !reservedCellsToBeIgnored.includes(blockName) &&
-        RESERVED_CELL_NAMES.includes(blockName)
+        !reservedCellsToBeIgnored.includes(stepName) &&
+        RESERVED_CELL_NAMES.includes(stepName)
       ) {
         while (i < notebook.model.cells.length) {
           const currentCellModel = notebook.model.cells.get(i);
@@ -342,7 +342,7 @@ export default class NotebookUtilities {
             continue;
           }
           const cellName = CellUtilities.getStepName(notebook, i);
-          if (cellName !== blockName && cellName !== '') {
+          if (cellName !== stepName && cellName !== '') {
             // Decrement by 1 to parse that cell during the next for loop
             i--;
             break;
@@ -360,7 +360,7 @@ export default class NotebookUtilities {
             if (kernelMsg.content && kernelMsg.content.status === 'error') {
               return {
                 status: 'error',
-                cellType: blockName,
+                cellType: stepName,
                 cellIndex: i,
                 ename: kernelMsg.content.ename,
                 evalue: kernelMsg.content.evalue,
@@ -369,7 +369,7 @@ export default class NotebookUtilities {
           } catch (error) {
             return {
               status: 'error',
-              cellType: blockName,
+              cellType: stepName,
               cellIndex: i,
               ename: 'ExecutionError',
               evalue: String(error),
