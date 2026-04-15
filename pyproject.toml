@@ -48,8 +48,6 @@ authors = [
 
 [project.scripts]
 kale = "kale.cli:main"
-kale_server = "kale.cli:server"
-kale-volumes = "kale.cli:kale_volumes"
 
 [project.urls]
 Homepage = "https://github.com/kubeflow/kale"
