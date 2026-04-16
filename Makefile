@@ -175,7 +175,7 @@ lock-upgrade: check-uv ## Upgrade all dependencies and update lock
 ##@ Development Helpers
 
 jupyter: ## Start JupyterLab
-	$(UV) run jupyter lab --ContentsManager.allow_hidden=True
+	$(UV) run jupyter lab
 
 jupyter-kfp: ## Start JupyterLab with KFP dev environment (run kfp-serve first!)
 	@printf "$(YELLOW)Make sure 'make kfp-serve' is running in another terminal\n$(NC)"
