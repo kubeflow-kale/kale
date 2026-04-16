@@ -33,12 +33,7 @@ Then open `examples/base/candies_sharing.ipynb` from the file browser. The
 notebook defines a toy pipeline that demonstrates every Kale concept in the
 minimum amount of code, and it ships already annotated with Kale tags.
 
-:::{admonition} Screenshot TODO — `quickstart-01-jupyterlab.png`
-:class: note
-
-JupyterLab right after opening `examples/base/candies_sharing.ipynb` — file
-browser on the left, notebook in the main area.
-:::
+![JupyterLab right after opening `examples/base/candies_sharing.ipynb` — file browser on the left, notebook in the main area.](../../imgs/quickstart-01-jupyterlab.png)
 
 ## 2. Open the Kale side panel
 
@@ -47,12 +42,7 @@ Deployment Panel. This is the control surface you'll use for the rest of the
 quickstart: it inspects cell tags, compiles the notebook, and submits runs
 to Kubeflow Pipelines.
 
-:::{admonition} Screenshot TODO — `quickstart-02-kale-panel.png`
-:class: note
-
-The Kale side panel expanded on the right, showing the pipeline metadata
-fields (name, description, experiment, KFP host).
-:::
+![The Kale side panel expanded on the right, showing the pipeline metadata fields (name, description, experiment, KFP host).](../../imgs/quickstart-02-kale-panel.png)
 
 ## 3. Review the cell tags
 
@@ -66,12 +56,7 @@ Each cell now has a dropdown showing its Kale cell type. The
 - **Step** — one or more named steps, each with optional dependencies on
   earlier steps (declared via `prev:<step_name>`).
 
-:::{admonition} Screenshot TODO — `quickstart-03-cell-tags.png`
-:class: note
-
-Notebook cells with the Kale tag dropdowns visible (imports / pipeline
-parameters / step).
-:::
+![Notebook cells with the Kale tag dropdowns visible (imports / pipeline parameters / step).](../../imgs/quickstart-03-cell-tags.png)
 
 See [Cell Types & Annotations](../concepts/cell-types.md) for the full tag vocabulary.
 
@@ -83,12 +68,7 @@ In the Kale side panel, confirm the basics:
 - **Experiment** — defaults to `Default` (or the first available KFP
   experiment).
 
-:::{admonition} Screenshot TODO — `quickstart-04-panel-config.png`
-:class: note
-
-The side panel with pipeline name, experiment, and KFP host fields filled
-out.
-:::
+![The side panel with pipeline name, experiment, and KFP host fields filled out.](../../imgs/quickstart-04-panel-config.png)
 
 ## 5. Compile and run from the panel
 
@@ -104,12 +84,7 @@ order:
 Each phase updates in place in the panel, with a link to the generated
 `.kale/<notebook>.kale.py` once it exists.
 
-:::{admonition} Screenshot TODO — `quickstart-05-compile-run.png`
-:class: note
-
-The Kale panel mid-run, with the phase indicators (parse → compile →
-upload → run) visible.
-:::
+![The Kale panel mid-run, with the phase indicators (parse → compile → upload → run) visible.](../../imgs/quickstart-05-compile-run.png)
 
 ## 6. Watch the run in the KFP UI
 
@@ -118,11 +93,7 @@ the Kubeflow Pipelines UI. Follow it to watch the DAG execute step-by-step;
 click any step to see its logs, artifacts, and the data Kale marshalled in
 and out of it.
 
-:::{admonition} Screenshot TODO — `quickstart-06-kfp-run.png`
-:class: note
-
-The KFP UI run page with the `candies_sharing` DAG in progress or completed.
-:::
+![The KFP UI run page with the `candies_sharing` DAG in progress or completed.](../../imgs/quickstart-06-kfp-run.png)
 
 ## What's next?
 
