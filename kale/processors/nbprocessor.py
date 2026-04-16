@@ -507,6 +507,13 @@ class NotebookProcessor:
                 )
             parsed_tags["annotations"] = cell_annotations
 
+        if cell_labels:
+            if missing_step_names:
+                raise ValueError(
+                    "A cell can not provide Pod labels in a cell that does not declare a step name."
+                )
+            parsed_tags["labels"] = cell_labels
+
         if cell_limits:
             if missing_step_names:
                 raise ValueError(
