@@ -13,7 +13,7 @@ of this page covers the same journey.
 
 Before you start, make sure you have:
 
-- Kale installed, including the JupyterLab extension (see [](installation.md)).
+- Kale installed, including the JupyterLab extension (see [Installation](installation.md)).
 - A running Kubernetes cluster with Kubeflow Pipelines v2.16.0+ deployed.
 - The KFP API reachable on `http://127.0.0.1:8080` — for a minikube setup you
   can run:
@@ -73,17 +73,15 @@ Notebook cells with the Kale tag dropdowns visible (imports / pipeline
 parameters / step).
 :::
 
-See [](../concepts/cell-types.md) for the full tag vocabulary.
+See [Cell Types & Annotations](../concepts/cell-types.md) for the full tag vocabulary.
 
 ## 4. Configure the pipeline metadata
 
 In the Kale side panel, confirm the basics:
 
 - **Pipeline name** — defaults to the notebook filename.
-- **Experiment** — defaults to `Kale-Pipeline-Experiment`; create a new one
-  or pick an existing KFP experiment.
-- **KFP host** — `http://127.0.0.1:8080` if you followed the
-  port-forward step above.
+- **Experiment** — defaults to `Default` (or the first available KFP
+  experiment).
 
 :::{admonition} Screenshot TODO — `quickstart-04-panel-config.png`
 :class: note
@@ -98,7 +96,7 @@ Click **Compile and Run** at the bottom of the Kale panel. Kale will, in
 order:
 
 1. Parse the notebook and extract the Kale tags from cell metadata.
-2. Build a pipeline DAG from the `step` and `prev:` annotations.
+2. Build a pipeline DAG (Directed Acyclic Graph) from the `step` and `prev:` annotations.
 3. Detect which variables need to flow between steps.
 4. Generate a KFP v2 DSL Python script under `.kale/`.
 5. Upload the pipeline to KFP and start a new run in the selected experiment.
@@ -129,10 +127,10 @@ The KFP UI run page with the `candies_sharing` DAG in progress or completed.
 ## What's next?
 
 - Learn how Kale detects and moves data between steps in
-  [](../concepts/data-passing.md).
+  [Data Passing & Marshalling](../concepts/data-passing.md).
 - Explore the rest of the panel (volumes, snapshots, parameters) in
-  [](../user-guide/running-pipelines.md).
-- Browse the [](https://github.com/kubeflow/kale/tree/main/examples) gallery for more realistic pipelines.
+  [Running Pipelines](../user-guide/running-pipelines.md).
+- Browse the [examples](https://github.com/kubeflow/kale/tree/main/examples) gallery for more realistic pipelines.
 
 ---
 
@@ -174,4 +172,4 @@ This uploads the pipeline, creates an experiment (default:
 `Kale-Pipeline-Experiment`), and starts a run. Open the KFP UI at
 <http://127.0.0.1:8080> and navigate to **Runs** to watch it execute.
 
-See [](../api/cli.md) for the complete CLI reference.
+See [CLI Reference](../api/cli.md) for the complete CLI reference.

@@ -78,5 +78,5 @@ A few environment variables affect `kale`:
 | `KALE_DEV_MODE`           | Equivalent to passing `--dev`.                                                         |
 | `KALE_DEVPI_SIMPLE_URL`   | Equivalent to `--devpi-simple-url` when `--dev` is set.                                |
 
-See [](../user-guide/running-pipelines.md) for concrete scenarios where
+See [Running Pipelines](../user-guide/running-pipelines.md) for concrete scenarios where
 these are useful.

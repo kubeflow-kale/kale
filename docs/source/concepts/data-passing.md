@@ -1,6 +1,6 @@
 # Data Passing & Marshalling
 
-One of Kale's main jobs is making multi-step pipelines feel like a single
+One of Kale's main jobs is making multi-step pipelines work as a single
 notebook. You write code across many cells, Kale figures out which variables
 need to move between the resulting pipeline steps, and emits the right
 serialization calls for each object type.
@@ -183,5 +183,5 @@ there. It may try to marshal `myfoo` as an input to `A` and crash.
 **Solution**: use explicit imports (`from mymodule import myfoo`). Star
 imports should be avoided in Kale notebooks.
 
-See [](../user-guide/troubleshooting.md) for the wider list of runtime
+See [Troubleshooting](../user-guide/troubleshooting.md) for the wider list of runtime
 issues and how to diagnose them.

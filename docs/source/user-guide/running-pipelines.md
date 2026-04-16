@@ -41,7 +41,7 @@ kale --nb path/to/notebook.ipynb \
 | `--docker_image`       | Override the default base image for all steps.                 |
 | `--debug`              | Keep intermediate files and print verbose logs.                |
 
-See [](../api/cli.md) for the complete list.
+See [CLI Reference](../api/cli.md) for the complete list.
 
 ## From the JupyterLab extension
 
@@ -66,10 +66,13 @@ the extension). You'll end up with:
 
 ```
 .kale/
-└── my_notebook.kale.py
+├── my_notebook.kale.py
+└── my_notebook.yaml       # KFP YAML IR (produced when running the DSL)
 ```
 
-This file is pure KFP v2 DSL. You can:
+The `.kale.py` file is pure KFP v2 DSL. The `.yaml` file is the compiled
+pipeline IR that can be manually uploaded to the KFP UI without using Kale's
+"Compile and Run" button. You can:
 
 - Read it line by line to verify that your step dependencies, inputs, and
   outputs look right.
@@ -105,4 +108,4 @@ A few environment variables are useful when running Kale:
 
 The last two are most useful when testing an unpublished version of Kale
 against a local KFP cluster — see the "Testing with KFP Clusters" section
-of [](../contributing.md).
+of [Contributing](../contributing.md).

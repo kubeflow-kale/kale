@@ -7,7 +7,7 @@ the full document for release-engineering details.
 
 ## Before you start
 
-If you haven't already, skim [](architecture/index.md) — it's a quick tour
+If you haven't already, skim [Architecture](architecture/index.md) — it's a quick tour
 of the codebase and saves a lot of time when you need to find the right
 file to change.
 

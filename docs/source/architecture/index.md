@@ -6,11 +6,8 @@ contributors who want to navigate the repo with confidence.
 
 ## The components
 
-A common misconception is that Kale has a backend service — something you
-install on a cluster, something that runs as a long-lived daemon, something
-you have to connect to. It doesn't. There is no Kale server, no Kale
-operator, and nothing Kale-specific to deploy on Kubernetes. Kale is three
-things sitting next to each other:
+Kale has no server, no operator, and nothing Kale-specific to deploy on
+Kubernetes. Kale has three main components:
 
 1. **The `kale` Python library** — the `kale/` package in this repo. All
    the "work" Kale does (parsing notebooks, analyzing dependencies,

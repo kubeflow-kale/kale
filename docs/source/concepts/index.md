@@ -120,6 +120,6 @@ transformation**: notebook → DSL. That means:
 
 ## Dive deeper
 
-- [](cell-types.md) — the full tag vocabulary
-- [](data-passing.md) — how marshalling works and which types are supported
-- [](compilation.md) — the exact compilation pipeline, file by file
+- [Cell Types & Annotations](cell-types.md) — the full tag vocabulary
+- [Data Passing & Marshalling](data-passing.md) — how marshalling works and which types are supported
+- [Pipeline Compilation](compilation.md) — the exact compilation pipeline, file by file

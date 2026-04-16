@@ -55,7 +55,7 @@ make jupyter  # Start JupyterLab with the Kale panel
   JupyterLab UI.
 - Installing pre-commit hooks for linting.
 
-See [](../contributing.md) for a full breakdown of the available `make` targets
+See [Contributing](../contributing.md) for a full breakdown of the available `make` targets
 and the development workflow.
 
 ## Try Kale in Docker (no cluster required)
@@ -69,7 +69,7 @@ make docker-run     # Start JupyterLab on http://localhost:8889
 ```
 
 To also connect to a KFP cluster, follow the multi-terminal setup in
-[](../user-guide/running-pipelines.md).
+[Running Pipelines](../user-guide/running-pipelines.md).
 
 ## Verify your installation
 
@@ -98,5 +98,5 @@ To also connect to a KFP cluster, follow the multi-terminal setup in
    - Toggle the Kale panel on — you should see cell type dropdowns appear on
      each notebook cell.
 
-If any of these steps fail, head to [](../user-guide/troubleshooting.md) — the
+If any of these steps fail, head to [Troubleshooting](../user-guide/troubleshooting.md) — the
 most common issues are covered there.

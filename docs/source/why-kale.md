@@ -22,4 +22,4 @@ In the meantime, here's the short version:
   run on the same infrastructure as any other Kubeflow workload.
 
 For a concrete walk-through, head over to the
-[](getting-started/quickstart.md).
+[Quickstart](getting-started/quickstart.md).

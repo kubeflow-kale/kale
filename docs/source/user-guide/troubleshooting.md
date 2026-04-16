@@ -28,7 +28,7 @@ it to the install list and the step will fail.
 - For packages the AST can't resolve to a pip name, add them to the
   pipeline's base docker image (or build a custom one).
 
-See [](../concepts/cell-types.md) for details on the imports rule.
+See [Cell Types & Annotations](../concepts/cell-types.md) for details on the imports rule.
 
 ## Pickle / marshal errors
 
@@ -55,10 +55,10 @@ anything unknown. `dill` can serialize a lot, but not:
 
 - Don't pass the offending object between steps. Recreate it from scratch
   at the start of each step that needs it, using a helper in a `functions`
-  cell — see [](../concepts/data-passing.md#non-serializable-objects).
+  cell — see [Data Passing: Non-serializable objects](../concepts/data-passing.md#non-serializable-objects).
 - If the object is a model from an ML library Kale doesn't yet support,
   consider contributing a new `MarshalBackend` — see
-  [](../concepts/data-passing.md#extending-the-dispatcher).
+  [Extending the dispatcher](../concepts/data-passing.md#extending-the-dispatcher).
 
 ## Compiler errors from KFP
 
@@ -90,7 +90,7 @@ print(model1)   # still the old model
 mutations to `model2` in step B don't affect what C loads as `model1`.
 
 **Fix.** Avoid aliasing across steps. Use one name for each object. See
-[](../concepts/data-passing.md#aliasing).
+[Data Passing: Aliasing](../concepts/data-passing.md#aliasing).
 
 ## Global state mutated inside a step is not visible to other steps
 

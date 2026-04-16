@@ -79,11 +79,14 @@ starts a run via the KFP REST API.
 
 ## The `.kale/` directory
 
-After a compile, you'll find something like this next to your notebook:
+After a compile, you'll find the generated files in a `.kale/` directory
+created in the current working directory (not necessarily the same directory
+as the notebook):
 
 ```
 .kale/
-└── my_notebook.kale.py    # generated KFP v2 DSL
+├── my_notebook.kale.py    # generated KFP v2 DSL
+└── my_notebook.yaml       # KFP YAML IR (if submission was triggered)
 ```
 
 Inspecting this file is the fastest way to debug a misbehaving pipeline.

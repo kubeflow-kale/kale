@@ -95,7 +95,7 @@ without rewriting anything.
 ## Community
 
 - **GitHub**: [kubeflow/kale](https://github.com/kubeflow/kale)
-- **Slack**: [#kubeflow-kale](https://kubeflow.slack.com/) on the Kubeflow workspace
+- **Slack**: [#kubeflow-ml-experience](https://kubeflow.slack.com/) on the Kubeflow workspace
 - **Working group**: ML Experience WG meetings — see the [Kubeflow community calendar](https://www.kubeflow.org/docs/about/community/)
 - **Issues & feature requests**: [github.com/kubeflow/kale/issues](https://github.com/kubeflow/kale/issues)
 

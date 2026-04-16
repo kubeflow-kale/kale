@@ -166,5 +166,5 @@ df.plot.hist()
 - **Name your steps explicitly** — `step:load_data`, `step:train`,
   `step:evaluate` — rather than leaving them auto-named.
 
-See [](../user-guide/troubleshooting.md) for the common failure modes these
+See [Troubleshooting](../user-guide/troubleshooting.md) for the common failure modes these
 practices prevent.

@@ -110,4 +110,4 @@ A notebook that compiles well with Kale usually follows this order:
 6. **`skip` cells** wherever you want exploratory code to live without
    affecting the pipeline.
 
-See the [](https://github.com/kubeflow/kale/tree/main/examples) gallery for notebooks that follow this pattern.
+See the [examples](https://github.com/kubeflow/kale/tree/main/examples) gallery for notebooks that follow this pattern.
