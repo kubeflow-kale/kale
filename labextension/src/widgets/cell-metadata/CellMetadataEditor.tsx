@@ -93,18 +93,18 @@ export interface IProps {
   defaultBaseImage?: string;
 }
 
-// this stores the name of a block and its color (form the name hash)
-type BlockDependencyChoice = { value: string; color: string };
+// this stores the name of a step and its color (from the name hash)
+type StepDependencyChoice = { value: string; color: string };
 interface IState {
-  // used to store the closest preceding block name. Used in case the current
-  // block name is empty, to suggest merging to the previous one.
+  // used to store the closest preceding step name. Used in case the current
+  // step name is empty, to suggest merging to the previous one.
   previousStepName?: string;
   stepNameErrorMsg?: string;
-  // a list of blocks that the current step can be dependent on.
-  blockDependenciesChoices: BlockDependencyChoice[];
+  // a list of steps that the current step can be dependent on.
+  stepDependenciesChoices: StepDependencyChoice[];
   // flag to open the metadata editor dialog dialog
   // XXX (stefano): I would like to set this as required, but the return
-  // XXX (stefano): statement of updateBlockDependenciesChoices and
+  // XXX (stefano): statement of updateStepDependenciesChoices and
   // XXX (stefano): updatePreviousStepName don't allow me.
   cellMetadataEditorDialog: boolean;
   baseImageDialogOpen: boolean;
@@ -115,7 +115,7 @@ interface IState {
 const DefaultState: IState = {
   previousStepName: undefined,
   stepNameErrorMsg: STEP_NAME_ERROR_MSG,
-  blockDependenciesChoices: [],
+  stepDependenciesChoices: [],
   cellMetadataEditorDialog: false,
   baseImageDialogOpen: false,
   cacheDialogOpen: false,
@@ -136,9 +136,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     // element.
     this.editorRef = React.createRef();
     this.state = DefaultState;
-    this.updateCurrentBlockName = this.updateCurrentBlockName.bind(this);
+    this.updateCurrentStepName = this.updateCurrentStepName.bind(this);
     this.updateCurrentCellType = this.updateCurrentCellType.bind(this);
-    this.updatePrevBlocksNames = this.updatePrevBlocksNames.bind(this);
+    this.updatePrevStepsNames = this.updatePrevStepsNames.bind(this);
     this.toggleTagsEditorDialog = this.toggleTagsEditorDialog.bind(this);
     this.toggleBaseImageDialog = this.toggleBaseImageDialog.bind(this);
   }
@@ -152,7 +152,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
   updateCurrentCellType = (value: string) => {
     if (RESERVED_CELL_NAMES.includes(value)) {
-      this.updateCurrentBlockName(value);
+      this.updateCurrentStepName(value);
     } else {
       TagsUtils.resetCell(
         this.props.notebook,
@@ -162,7 +162,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     }
   };
 
-  isEqual(a: BlockDependencyChoice[], b: BlockDependencyChoice[]): boolean {
+  isEqual(a: StepDependencyChoice[], b: StepDependencyChoice[]): boolean {
     return JSON.stringify(a) === JSON.stringify(b);
   }
 
@@ -203,9 +203,9 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
   componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
     this.hideEditorIfNotCodeCell();
     this.moveEditor();
-    // this.setState(this.updateBlockDependenciesChoices);
+    // this.setState(this.updateStepDependenciesChoices);
     // this.setState(this.updatePreviousStepName);
-    const dependenciesState = this.updateBlockDependenciesChoices(
+    const dependenciesState = this.updateStepDependenciesChoices(
       this.state,
       this.props,
     );
@@ -242,35 +242,35 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
   }
 
   /**
-   * Scan the notebook for all block tags and get them all, excluded the current
-   * one (and the reserved cell tags) The value `previousBlockChoices` is used
+   * Scan the notebook for all step tags and get them all, excluded the current
+   * one (and the reserved cell tags) The value `previousStepChoices` is used
    * by the dependencies select option to select the current step's
    * dependencies.
    */
-  updateBlockDependenciesChoices(
+  updateStepDependenciesChoices(
     state: Readonly<IState>,
     props: Readonly<IProps>,
-  ): Pick<IState, 'blockDependenciesChoices'> | null {
+  ): Pick<IState, 'stepDependenciesChoices'> | null {
     if (!props.notebook) {
       return null;
     }
-    const allBlocks = TagsUtils.getAllBlocks(
+    const allSteps = TagsUtils.getAllSteps(
       props.notebook.content,
       this.context.activeCellIndex,
     );
-    const dependencyChoices: BlockDependencyChoice[] = allBlocks
+    const dependencyChoices: StepDependencyChoice[] = allSteps
       // remove all reserved names and current step name
       .filter(
         el => !RESERVED_CELL_NAMES.includes(el) && !(el === props.stepName),
       )
       .map(name => ({ value: name, color: `#${ColorUtils.getColor(name)}` }));
 
-    if (this.isEqual(state.blockDependenciesChoices, dependencyChoices)) {
+    if (this.isEqual(state.stepDependenciesChoices, dependencyChoices)) {
       return null;
     }
     // XXX (stefano): By setting state.cellMetadataEditorDialog NOT optional,
     // XXX (stefano): this return will require cellMetadataEditorDialog.
-    return { blockDependenciesChoices: dependencyChoices };
+    return { stepDependenciesChoices: dependencyChoices };
   }
 
   updatePreviousStepName(
@@ -280,30 +280,30 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
     if (!props.notebook) {
       return null;
     }
-    const prevBlockName = TagsUtils.getPreviousBlock(
+    const prevStepName = TagsUtils.getPreviousStep(
       props.notebook.content,
       this.context.activeCellIndex,
     );
-    if (prevBlockName === this.state.previousStepName) {
+    if (prevStepName === this.state.previousStepName) {
       return null;
     }
     // XXX (stefano): By setting state.cellMetadataEditorDialog NOT optional,
     // XXX (stefano): this return will require cellMetadataEditorDialog.
-    return { previousStepName: prevBlockName };
+    return { previousStepName: prevStepName };
   }
 
-  updateCurrentBlockName = (value: string) => {
-    const oldBlockName: string = this.props.stepName || '';
+  updateCurrentStepName = (value: string) => {
+    const oldStepName: string = this.props.stepName || '';
     const tags = TagsUtils.getKaleCellTags(
       this.props.notebook.content,
       this.context.activeCellIndex,
     );
     const currentCellMetadata = {
-      prevBlockNames: this.props.stepDependencies,
+      prevStepNames: this.props.stepDependencies,
       limits: this.props.limits || {},
       baseImage: this.props.baseImage,
       enableCaching: tags?.enableCaching,
-      blockName: value,
+      stepName: value,
     };
 
     TagsUtils.setKaleCellTags(
@@ -311,24 +311,24 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.context.activeCellIndex,
       currentCellMetadata,
     ).then(() => {
-      TagsUtils.updateKaleCellsTags(this.props.notebook, oldBlockName, value);
+      TagsUtils.updateKaleCellsTags(this.props.notebook, oldStepName, value);
     });
   };
 
   /**
-   * Even handler of the MultiSelect used to select the dependencies of a block
+   * Event handler of the MultiSelect used to select the dependencies of a step
    */
-  updatePrevBlocksNames = (previousBlocks: string[]) => {
+  updatePrevStepsNames = (previousSteps: string[]) => {
     const tags = TagsUtils.getKaleCellTags(
       this.props.notebook.content,
       this.context.activeCellIndex,
     );
     const currentCellMetadata = {
-      blockName: this.props.stepName || '',
+      stepName: this.props.stepName || '',
       limits: this.props.limits || {},
       baseImage: this.props.baseImage,
       enableCaching: tags?.enableCaching,
-      prevBlockNames: previousBlocks,
+      prevStepNames: previousSteps,
     };
 
     TagsUtils.setKaleCellTags(
@@ -366,8 +366,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.context.activeCellIndex,
     );
     const currentCellMetadata = {
-      blockName: this.props.stepName || '',
-      prevBlockNames: this.props.stepDependencies,
+      stepName: this.props.stepName || '',
+      prevStepNames: this.props.stepDependencies,
       limits: limits,
       baseImage: this.props.baseImage,
       enableCaching: tags?.enableCaching,
@@ -381,15 +381,15 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
   };
 
   /**
-   * Function called before updating the value of the block name input text
+   * Function called before updating the value of the step name input text
    * field. It acts as a validator.
    */
   onBeforeUpdate = (value: string) => {
     if (value === this.props.stepName) {
       return false;
     }
-    const blockNames = TagsUtils.getAllBlocks(this.props.notebook.content);
-    if (blockNames.includes(value)) {
+    const stepNames = TagsUtils.getAllSteps(this.props.notebook.content);
+    if (stepNames.includes(value)) {
       this.setState({ stepNameErrorMsg: 'This name already exists.' });
       return true;
     }
@@ -454,8 +454,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
       this.context.activeCellIndex,
     );
     const currentCellMetadata = {
-      blockName: this.props.stepName || '',
-      prevBlockNames: this.props.stepDependencies,
+      stepName: this.props.stepName || '',
+      prevStepNames: this.props.stepDependencies,
       limits: this.props.limits || {},
       baseImage: value || undefined,
       enableCaching: tags?.enableCaching,
@@ -470,8 +470,8 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
 
   updateEnableCaching = (value: boolean | undefined) => {
     const currentCellMetadata = {
-      blockName: this.props.stepName || '',
-      prevBlockNames: this.props.stepDependencies,
+      stepName: this.props.stepName || '',
+      prevStepNames: this.props.stepDependencies,
       limits: this.props.limits || {},
       baseImage: this.props.baseImage,
       enableCaching: value,
@@ -525,7 +525,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
               {cellType === 'step' ? (
                 <Input
                   label={'Step name'}
-                  updateValue={this.updateCurrentBlockName}
+                  updateValue={this.updateCurrentStepName}
                   value={this.props.stepName || ''}
                   regex={'^([_a-z]([_a-z0-9]*)?)?$'}
                   regexErrorMsg={this.state.stepNameErrorMsg}
@@ -541,7 +541,7 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                   title={
                     !this.props.stepName || this.props.stepName.length === 0
                       ? 'Please enter a step name first'
-                      : this.state.blockDependenciesChoices.length === 0
+                      : this.state.stepDependenciesChoices.length === 0
                         ? 'No other steps available. Add more pipeline steps to create dependencies.'
                         : 'Select which steps this step depends on'
                   }
@@ -555,15 +555,15 @@ export class CellMetadataEditor extends React.Component<IProps, IState> {
                     }}
                   >
                     <SelectMulti
-                      id="select-previous-blocks"
+                      id="select-previous-steps"
                       label="Depends on"
                       disabled={
                         !(
                           this.props.stepName && this.props.stepName.length > 0
-                        ) || this.state.blockDependenciesChoices.length === 0
+                        ) || this.state.stepDependenciesChoices.length === 0
                       }
-                      updateSelected={this.updatePrevBlocksNames}
-                      options={this.state.blockDependenciesChoices}
+                      updateSelected={this.updatePrevStepsNames}
+                      options={this.state.stepDependenciesChoices}
                       variant="outlined"
                       selected={this.props.stepDependencies || []}
                     />

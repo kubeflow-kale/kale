@@ -21,8 +21,8 @@ const CACHE_TAG = 'cache:';
 const CACHE_ENABLED_VALUE = 'enabled';
 
 interface IKaleCellTags {
-  blockName: string;
-  prevBlockNames: string[];
+  stepName: string;
+  prevStepNames: string[];
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
@@ -31,26 +31,25 @@ interface IKaleCellTags {
 /** Contains utility functions for manipulating/handling Kale cell tags. */
 export default class TagsUtils {
   /**
-   * Get all the `block:<name>` tags in the notebook.
+   * Get all the `step:<name>` tags in the notebook.
    * @param notebook Notebook object
-   * @returns Array<str> - a list of the block names (i.e. the pipeline steps'
-   *  names)
+   * @returns Array<str> - a list of the pipeline step names
    */
-  public static getAllBlocks(notebook: Notebook, cellIndex: number = -1): string[] {
+  public static getAllSteps(notebook: Notebook, cellIndex: number = -1): string[] {
     if (!notebook.model) {
       return [];
     }
-    const blocks = new Set<string>();
+    const steps = new Set<string>();
     const toCell = cellIndex < 0 ? notebook.model.cells.length : cellIndex;
     // iterate through the notebook cells
     for (const idx of Array(toCell).keys()) {
       // get the tags of the current cell
       const mt = this.getKaleCellTags(notebook, idx);
-      if (mt && mt.blockName && mt.blockName !== '') {
-        blocks.add(mt.blockName);
+      if (mt && mt.stepName && mt.stepName !== '') {
+        steps.add(mt.stepName);
       }
     }
-    return Array.from(blocks);
+    return Array.from(steps);
   }
 
   /**
@@ -58,18 +57,18 @@ export default class TagsUtils {
    * tag
    * @param notebook The notebook object
    * @param current The index of the cell to start the search from
-   * @returns string - Name of the `block` tag of the closest previous cell
+   * @returns string - Name of the `step` tag of the closest previous cell
    */
-  public static getPreviousBlock(notebook: Notebook, current: number): string | undefined {
+  public static getPreviousStep(notebook: Notebook, current: number): string | undefined {
     for (let i = current - 1; i >= 0; i--) {
       const mt = this.getKaleCellTags(notebook, i);
       if (
         mt &&
-        mt.blockName &&
-        mt.blockName !== 'skip' &&
-        mt.blockName !== ''
+        mt.stepName &&
+        mt.stepName !== 'skip' &&
+        mt.stepName !== ''
       ) {
-        return mt.blockName;
+        return mt.stepName;
       }
     }
     return undefined;
@@ -130,8 +129,8 @@ export default class TagsUtils {
       }
 
       return {
-        blockName: b_name[0] || '',
-        prevBlockNames: prevs,
+        stepName: b_name[0] || '',
+        prevStepNames: prevs,
         limits: limits,
         baseImage: baseImage,
         enableCaching: enableCaching,
@@ -153,12 +152,12 @@ export default class TagsUtils {
     metadata: IKaleCellTags
   ): Promise<any> {
     // make the dict to save to tags
-    let nb = metadata.blockName;
+    let nb = metadata.stepName;
     // not a reserved name
-    if (!RESERVED_CELL_NAMES.includes(metadata.blockName)) {
+    if (!RESERVED_CELL_NAMES.includes(metadata.stepName)) {
       nb = 'step:' + nb;
     }
-    const stepDependencies = metadata.prevBlockNames || [];
+    const stepDependencies = metadata.prevStepNames || [];
     const limits = metadata.limits || {};
     const baseImage = metadata.baseImage;
     const tags = [nb]
@@ -181,18 +180,18 @@ export default class TagsUtils {
   }
 
   /**
-   * Parse the entire notebook cells to change a block name. This happens when
-   * the block name of a cell is changed by the user, using Kale's inline tag
+   * Parse the entire notebook cells to change a step name. This happens when
+   * the step name of a cell is changed by the user, using Kale's inline tag
    * editor. We need to parse the entire notebook because all the `prev` dependencies
    * specified in the cells must be bound to the new name.
    * @param notebookPanel NotebookPanel object
-   * @param oldBlockName previous block name
-   * @param newBlockName new block name
+   * @param oldStepName previous step name
+   * @param newStepName new step name
    */
   public static updateKaleCellsTags(
     notebookPanel: NotebookPanel,
-    oldBlockName: string,
-    newBlockName: string,
+    oldStepName: string,
+    newStepName: string,
   ) {
     let i: number;
     const allPromises = [];
@@ -206,10 +205,10 @@ export default class TagsUtils {
       // new one.
       const newTags: string[] = (tags || [])
         .map(t => {
-          if (t === 'prev:' + oldBlockName) {
-            return RESERVED_CELL_NAMES.includes(newBlockName)
+          if (t === 'prev:' + oldStepName) {
+            return RESERVED_CELL_NAMES.includes(newStepName)
               ? ''
-              : 'prev:' + newBlockName;
+              : 'prev:' + newStepName;
           } else {
             return t;
           }
@@ -224,7 +223,7 @@ export default class TagsUtils {
 
   /**
    * Clean up the Kale tags from a cell. After cleaning the cell, loop though
-   * the notebook to remove all occurrences of the deleted block name.
+   * the notebook to remove all occurrences of the deleted step name.
    * @param notebook NotebookPanel object
    * @param activeCellIndex The active cell index
    * @param stepName The old name of the active cell to be cleaned.
@@ -235,19 +234,19 @@ export default class TagsUtils {
     stepName: string,
   ) {
     const value = '';
-    const previousBlocks: string[] = [];
+    const previousSteps: string[] = [];
 
-    const oldBlockName: string = stepName;
+    const oldStepName: string = stepName;
     const cellMetadata = {
-      prevBlockNames: previousBlocks,
-      blockName: value,
+      prevStepNames: previousSteps,
+      stepName: value,
     };
     TagsUtils.setKaleCellTags(
       notebook,
       activeCellIndex,
       cellMetadata
     ).then(oldValue => {
-      TagsUtils.updateKaleCellsTags(notebook, oldBlockName, value);
+      TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
     });
   }
 
@@ -271,8 +270,8 @@ export default class TagsUtils {
       return;
     }
 
-    const allBlocks = this.getAllBlocks(notebook.content);
-    const allBlocksSet = new Set(allBlocks);
+    const allSteps = this.getAllSteps(notebook.content);
+    const allStepsSet = new Set(allSteps);
 
     for (let index = 0; index < cells.length; index++) {
       const kaleTags = this.getKaleCellTags(notebook.content, index);
@@ -280,14 +279,14 @@ export default class TagsUtils {
         continue;
       }
 
-      const newPrevBlockNames = kaleTags.prevBlockNames.filter(
-        dep => allBlocksSet.has(dep)
+      const newPrevStepNames = kaleTags.prevStepNames.filter(
+        dep => allStepsSet.has(dep)
       );
 
-      if (newPrevBlockNames.length !== kaleTags.prevBlockNames.length) {
+      if (newPrevStepNames.length !== kaleTags.prevStepNames.length) {
         const updatedMetadata = {
           ...kaleTags,
-          prevBlockNames: newPrevBlockNames,
+          prevStepNames: newPrevStepNames,
         };
 
         this.setKaleCellTags(notebook, index, updatedMetadata);

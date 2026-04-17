@@ -24,8 +24,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
 
 interface IProps {
-  blockName: string;
-  previousBlockName?: string;
+  stepName: string;
+  previousStepName?: string;
   stepDependencies: string[];
   limits: { [id: string]: string };
   baseImage?: string;
@@ -111,8 +111,8 @@ export class InlineMetadata extends React.Component<IProps, IState> {
     }
 
     if (
-      prevProps.blockName !== this.props.blockName ||
-      prevProps.previousBlockName !== this.props.previousBlockName
+      prevProps.stepName !== this.props.stepName ||
+      prevProps.previousStepName !== this.props.previousStepName
     ) {
       this.updateStyles();
     }
@@ -147,7 +147,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   updateIsMergedState = (state: IState, props: IProps) => {
     let newIsMergedCell = false;
     const cellElement = props.cellElement;
-    if (!props.blockName) {
+    if (!props.stepName) {
       newIsMergedCell = true;
 
       // TODO: This is a side effect, consider moving it somewhere else.
@@ -168,13 +168,13 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   };
 
   /**
-   * Check if the block tag of che current cell has a reserved name. If so,
+   * Check if the step tag of the current cell has a reserved name. If so,
    * apply the corresponding css class to the HTML Cell element.
    */
   checkIfReservedName() {
     this.setState((state: IState, props: IProps) => {
       let cellTypeClass = '';
-      if (RESERVED_CELL_NAMES.includes(props.blockName)) {
+      if (RESERVED_CELL_NAMES.includes(props.stepName)) {
         cellTypeClass = 'kale-reserved-cell';
       }
 
@@ -187,13 +187,13 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
   /**
    * Update the style of the active cell, by changing the left border with
-   * the correct color, based on the current block name.
+   * the correct color, based on the current step name.
    */
   updateStyles() {
     if (!isDOMElement(this.props.cellElement)) {
       return;
     }
-    const name = this.props.blockName || this.props.previousBlockName;
+    const name = this.props.stepName || this.props.previousStepName;
     const codeMirrorElem = this.props.cellElement.querySelector(
       '.CodeMirror',
     ) as HTMLElement;
@@ -264,7 +264,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
   /**
    * Create a list of div dots that represent the dependencies of the current
-   * block
+   * step
    */
   updateDependencies() {
     const dependencies = this.props.stepDependencies.map((name, i) => {
@@ -290,9 +290,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
   };
 
   render() {
-    const details = RESERVED_CELL_NAMES.includes(
-      this.props.blockName,
-    ) ? null : (
+    const details = RESERVED_CELL_NAMES.includes(this.props.stepName) ? null : (
       <>
         {/* Add a `depends on: ` string before the deps dots in case there are some*/}
         {this.state.dependencies.length > 0 ? (
@@ -318,7 +316,7 @@ export class InlineMetadata extends React.Component<IProps, IState> {
           }
         >
           {/* Add a `step: ` string before the Chip in case the chip belongs to a pipeline step*/}
-          {RESERVED_CELL_NAMES.includes(this.props.blockName) ? (
+          {RESERVED_CELL_NAMES.includes(this.props.stepName) ? (
             ''
           ) : (
             <p style={{ fontStyle: 'italic', marginRight: '5px' }}>step: </p>
@@ -326,18 +324,18 @@ export class InlineMetadata extends React.Component<IProps, IState> {
 
           <Tooltip
             placement="top"
-            key={this.props.blockName + 'tooltip'}
+            key={this.props.stepName + 'tooltip'}
             title={
-              RESERVED_CELL_NAMES.includes(this.props.blockName)
-                ? RESERVED_CELL_NAMES_HELP_TEXT[this.props.blockName]
-                : 'This cell starts the pipeline step: ' + this.props.blockName
+              RESERVED_CELL_NAMES.includes(this.props.stepName)
+                ? RESERVED_CELL_NAMES_HELP_TEXT[this.props.stepName]
+                : 'This cell starts the pipeline step: ' + this.props.stepName
             }
           >
             <Chip
               className={`kale-chip ${this.state.cellTypeClass}`}
               style={{ backgroundColor: `#${this.state.color}` }}
-              key={this.props.blockName}
-              label={this.props.blockName}
+              key={this.props.stepName}
+              label={this.props.stepName}
             />
           </Tooltip>
 

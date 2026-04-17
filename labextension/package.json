@@ -60,18 +60,18 @@
     "watch:labextension": "jupyter labextension watch ."
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.4.9",
-    "@jupyterlab/cells": "^4.4.9",
-    "@jupyterlab/coreutils": "^6.4.5",
-    "@jupyterlab/nbformat": "^4.4.9",
-    "@jupyterlab/notebook": "^4.4.9",
-    "@jupyterlab/settingregistry": "^4.4.9"
+    "@jupyterlab/application": "^4.5.6",
+    "@jupyterlab/cells": "^4.5.6",
+    "@jupyterlab/coreutils": "^6.5.6",
+    "@jupyterlab/nbformat": "^4.5.6",
+    "@jupyterlab/notebook": "^4.5.6",
+    "@jupyterlab/settingregistry": "^4.5.6"
   },
   "devDependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@jupyterlab/builder": "^4.4.6",
-    "@jupyterlab/testutils": "^4.4.0",
+    "@jupyterlab/builder": "^4.5.6",
+    "@jupyterlab/testutils": "^4.5.6",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
     "@types/jest": "^29.2.0",
