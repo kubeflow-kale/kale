@@ -42,7 +42,7 @@ Deployment Panel. This is the control surface you'll use for the rest of the
 quickstart: it inspects cell tags, compiles the notebook, and submits runs
 to Kubeflow Pipelines.
 
-![The Kale side panel expanded on the right, showing the pipeline metadata fields (name, description, experiment, KFP host).](../../imgs/quickstart-02-kale-panel.png)
+![The Kale side panel expanded on the left, showing the pipeline metadata fields (name, description, experiment).](../../imgs/quickstart-02-kale-panel.png)
 
 ## 3. Review the cell tags
 
@@ -68,7 +68,7 @@ In the Kale side panel, confirm the basics:
 - **Experiment** — defaults to `Default` (or the first available KFP
   experiment).
 
-![The side panel with pipeline name, experiment, and KFP host fields filled out.](../../imgs/quickstart-04-panel-config.png)
+![The side panel with pipeline name, experiment, and description fields filled out.](../../imgs/quickstart-04-panel-config.png)
 
 ## 5. Compile and run from the panel
 

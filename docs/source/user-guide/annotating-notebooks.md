@@ -22,7 +22,7 @@ When you enable Kale, two things happen:
 1. Every notebook cell grows a Kale metadata row at the top showing its cell
    type (Imports, Functions, Step, ...), step name, and dependencies.
 2. The side panel unlocks pipeline-level settings: pipeline name, experiment
-   name, base docker image, KFP host, and the Deploy button.
+   name, and description.
 
 ### Setting a cell's type
 
