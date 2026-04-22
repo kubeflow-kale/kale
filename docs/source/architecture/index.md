@@ -211,7 +211,7 @@ Key source files:
   deploys.
 - `src/lib/RPCUtils.tsx` — JSON-RPC client that talks to the
   Kale-managed Python kernel.
-- `src/lib/CellUtils.ts`, `TagsUtils.ts`, `NotebookUtils.ts` — helpers for
+- `src/lib/CellUtils.ts`, `TagsUtils.ts`, `NotebookUtils.tsx` — helpers for
   manipulating notebook metadata.
 - `schema/kale-settings.json` — JupyterLab settings schema for any
   user-facing preferences.
