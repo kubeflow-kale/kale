@@ -18,7 +18,7 @@ back in sync with the Kubeflow ecosystem:
 - A cleaner, testable compiler pipeline with golden-file fixtures for the
   generated KFP DSL.
 
-Tracking issue: [kubeflow/kale#457 — Road to 2.0](https://github.com/kubeflow-kale/kale/issues/457).
+Tracking issue: [kubeflow/kale#457 — Road to 2.0](https://github.com/kubeflow/kale/issues/457).
 
 ## What we're focused on now
 
