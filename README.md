@@ -1,7 +1,6 @@
 
 # Kubeflow Kale
 [![PyPI version](https://img.shields.io/pypi/v/kubeflow-kale?color=%2334D058&label=pypi%20package)](https://pypi.org/project/kubeflow-kale/)
-[![npm version](https://img.shields.io/npm/v/jupyterlab-kubeflow-kale?color=%2334D058&label=npm%20package)](https://www.npmjs.com/package/jupyterlab-kubeflow-kale)
 [![License](https://img.shields.io/github/license/kubeflow-kale/kale)](https://github.com/kubeflow-kale/kale/blob/main/LICENSE)
 [![CI](https://github.com/kubeflow/kale/workflows/CI/badge.svg)](https://github.com/kubeflow/kale/actions)
 [![Join Slack](https://img.shields.io/badge/Join_Slack-blue?logo=slack)](https://www.kubeflow.org/docs/about/community/#kubeflow-slack-channels)
@@ -22,9 +21,9 @@ Latest News 🔥
 - [2026/04] Kubeflow Kale v2.0 is officially released with support for Kubeflow Pipelines 2.16.0!
 - [2026/04] The new Kubeflow Kale [docs](./docs) is now available!
 
-
-
 ## What is Kale?
+
+KALE (Kubeflow Automated pipeLines Engine) is a tool designed to simplify the deployment of Kubeflow Pipelines workflows.
 
 You've built an amazing ML model in a Jupyter notebook. Now you need to run it in production, schedule it, or scale it up. Usually that means rewriting everything as a Kubeflow Pipeline — learning the SDK, restructuring your code, and debugging YAML.
 
@@ -152,12 +151,6 @@ We'd love to have you!
 - **Questions?** Join [#kubeflow](https://www.kubeflow.org/docs/about/community/#kubeflow-slack-channels) on Slack
 - **Found a bug?** [Open an issue](https://github.com/kubeflow-kale/kale/issues)
 - **Want to contribute?** See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-```bash
-make dev      # Set up dev environment
-make test     # Run tests
-make jupyter  # Start JupyterLab
-```
 
 ## Learn More
 
