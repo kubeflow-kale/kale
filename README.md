@@ -37,12 +37,13 @@ Tag your notebook cells with simple labels like `imports`, `step`, or `skip`. Ka
 
 ### Why Data Scientists Love Kale
 
-✅ push-button pipeline generation (tag cells, click "compile")
-✅ automatic dependency detection
-✅ same notebook for dev and production
-✅ create pipelines directly in notebook without looking at YAML
-✅ requires no direct knowledge of KFP SDK
-✅ no rewriting code into pipeline components
+✅ push-button pipeline generation (tag cells, click "compile")<br>
+✅ automatic dependency detection<br>
+✅ same notebook for dev and production<br>
+✅ create pipelines directly in notebook without looking at YAML<br>
+✅ requires no direct knowledge of KFP SDK<br>
+✅ no rewriting code into pipeline components<br>
+
 
 
 📖 **Documentation:** <https://kale.kubeflow.org>
