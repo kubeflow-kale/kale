@@ -19,7 +19,7 @@
 
 Latest News 🔥
 
-- [2026/04] Kubeflow Kale v2.0 is officially released with support for Kubeflow Pipelines 2.16.0!  
+- [2026/04] Kubeflow Kale v2.0 is officially released with support for Kubeflow Pipelines 2.16.0!
 - [2026/04] The new Kubeflow Kale [docs](./docs) is now available!
 
 
@@ -38,17 +38,15 @@ Tag your notebook cells with simple labels like `imports`, `step`, or `skip`. Ka
 
 ### Why Data Scientists Love Kale
 
-| Without Kale | With Kale |
-|--------------|-----------|
-| Learn Kubeflow Pipelines SDK | Use your existing notebook |
-| Rewrite code as pipeline components | Tag cells, click compile |
-| Manually track variable dependencies | Automatic dependency detection |
-| Debug pipeline YAML | Visual pipeline builder |
-| Context-switch between dev and prod | Same notebook, everywhere |
+✅ push-button pipeline generation (tag cells, click "compile")
+✅ automatic dependency detection
+✅ same notebook for dev and production
+✅ create pipelines directly in notebook without looking at YAML
+✅ requires no direct knowledge of KFP SDK
+✅ no rewriting code into pipeline components
 
 
 📖 **Documentation:** <https://kale.kubeflow.org>
-
 
 
 ## See It In Action
@@ -59,6 +57,13 @@ Watch how to use Kale convert a notebook to a pipeline in minutes:
 [![Kale v2.0 Demo](https://img.youtube.com/vi/UGLJuqJqJYY/hqdefault.jpg)](https://www.youtube.com/watch?v=UGLJuqJqJYY)
 
 ## Get Started
+
+### Requirements
+
+- Python 3.11+
+- Kubeflow Pipelines v2.16.0+ ([install guide](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/))
+- Kubernetes cluster (minikube, kind, or any K8s cluster)
+
 
 ### Quick Install
 
@@ -73,7 +78,7 @@ make jupyter
 
 ### Your First Pipeline in 60 Seconds
 
-1. Open any notebook from `examples/base/`
+1. Open any notebook from `examples`
 2. Click the **Kale icon** in the left sidebar
 3. Toggle **Enable** to see your notebook as a pipeline graph
 4. Click **Compile and Run** — that's it!
@@ -83,11 +88,6 @@ make jupyter
 kale --nb examples/base/candies_sharing.ipynb --kfp_host http://localhost:8080 --run_pipeline
 ```
 
-### Requirements
-
-- Python 3.11+
-- Kubeflow Pipelines v2.16.0+ ([install guide](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/))
-- Kubernetes cluster (minikube, kind, or any K8s cluster)
 
 ## How It Works
 
@@ -101,6 +101,8 @@ Tag your notebook cells to define pipeline structure:
 | `pipeline-metrics` | Metrics to track in the KFP UI |
 | `step:step_name` | A pipeline step (Kale auto-detects dependencies!) |
 | `skip` | Exploratory code to exclude from the pipeline |
+
+Learn more about cell types in [Kale documentation](https://github.com/kubeflow/kale/blob/main/docs/source/concepts/cell-types.md).
 
 > **Pro tip:** Kale automatically detects which variables flow between steps. You don't need to specify inputs and outputs — just write natural notebook code.
 
