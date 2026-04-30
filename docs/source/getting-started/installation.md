@@ -22,15 +22,12 @@ older environment, ensure your Python deps include `kfp[kubernetes]>=2.16.0`.
 ```{admonition} Kale v2.0 pre-release
 :class: important
 
-Kale v2.0 is not yet published on PyPI. Until it is, use the "Install from
-source" instructions below. This section will become the recommended path
-once v2.0 ships.
+Kale v2.0 is available on PyPI as a release candidate. Install it with the
+`--pre` flag until the final release is tagged.
 ```
 
-When v2.0 is released, you will be able to install the package directly:
-
 ```bash
-pip install "jupyterlab>=4.0.0" "kubeflow-kale[jupyter]"
+pip install --pre "jupyterlab>=4.0.0" "kubeflow-kale[jupyter]"
 jupyter lab
 ```
 

@@ -47,7 +47,7 @@ so you can't create cycles.
 
 The side panel's pipeline settings form is mapped to fields on
 {py:class}`kale.pipeline.PipelineConfig`. Changes are saved into the
-notebook's top-level metadata under the `kubeflow_noteobok` key, so they
+notebook's top-level metadata under the `kubeflow_notebook` key, so they
 travel with the notebook and show up on the next open.
 
 ### Submitting
@@ -92,7 +92,7 @@ A step with a dependency and a GPU request:
 ```
 
 Pipeline-level Kale settings live on the notebook (not on a cell) under the
-`metadata.kubeflow_noteobok` key — these are the same fields the side panel
+`metadata.kubeflow_notebook` key — these are the same fields the side panel
 exposes.
 
 ## Organising a notebook for Kale

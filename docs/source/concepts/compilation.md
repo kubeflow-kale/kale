@@ -18,18 +18,27 @@ notebook path and (optionally) a dictionary of metadata overrides, it:
 4. Builds a {py:class}`kale.pipeline.Pipeline` — internally a
    `networkx.DiGraph` — where each node is a {py:class}`kale.step.Step`
    carrying its source code, dependencies, inputs and outputs.
-5. Runs
-   {py:func}`kale.common.astutils.get_marshal_candidates`
-   on every step to resolve data dependencies between steps.
 
 The processor returns the `Pipeline` object along with the combined string
 of `imports` + `functions` code, ready to be pasted into every generated
 component.
 
-### 2. Compiler.generate_lightweight_component
+### 2. Dependency analysis
 
-For each `Step` in the pipeline, the
-{py:class}`kale.compiler.Compiler` renders
+{py:func}`kale.common.astutils.get_marshal_candidates` runs over every step
+to resolve data dependencies: names that are assigned in one step and read in
+another must be saved and loaded at runtime. The output is a set of "marshal
+candidates" per step that the compiler later turns into `marshal.save` /
+`marshal.load` calls.
+
+### 3. Compiler
+
+Once the `Pipeline` object is ready, {py:class}`kale.compiler.Compiler` turns
+it into a single Python file in three passes:
+
+#### generate_lightweight_component
+
+For each `Step`, the compiler renders
 `kale/templates/nb_function_template.jinja2` to produce a
 `@kfp_dsl.component` function. The template:
 
@@ -44,7 +53,7 @@ For each `Step` in the pipeline, the
   {py:func}`kale.compiler.Compiler._get_package_list_from_imports`, which
   walks the imports AST and resolves module names to pip package names.
 
-### 3. Compiler.generate_pipeline
+#### generate_pipeline
 
 Next, the compiler renders
 `kale/templates/pipeline_template.jinja2` to generate the top-level
@@ -56,13 +65,13 @@ Next, the compiler renders
 - Wires task dependencies using KFP's `.after(...)` and input/output
   references so KFP builds the same DAG Kale has in memory.
 
-### 4. Compiler.generate_dsl
+#### generate_dsl
 
 The compiler concatenates:
 
 - A header with imports for the KFP SDK and Kale marshal helpers.
-- All component functions from stage 2.
-- The pipeline function from stage 3.
+- All component functions from the previous pass.
+- The pipeline function from the previous pass.
 - A `__main__` block that invokes `kfp.compiler.Compiler().compile()` so the
   generated file can be executed directly.
 
@@ -70,7 +79,7 @@ The final text is formatted with `autopep8` and written to
 `.kale/<pipeline_name>.kale.py`. **This file is plain KFP v2 DSL** — no
 Kale-specific runtime, just standard Kubeflow Pipelines code.
 
-### 5. Submission (optional)
+### 4. Submission (optional)
 
 If you pass `--run_pipeline` (or the equivalent extension setting),
 {py:func}`kale.common.kfputils.compile_pipeline` invokes the KFP SDK
