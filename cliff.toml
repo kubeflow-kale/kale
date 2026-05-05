@@ -14,7 +14,7 @@ body = """
     {% for commit in commits %}
         - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
             {% if commit.breaking %}[**breaking**] {% endif %}\
-            {{ commit.message | upper_first }}\
+            {{ commit.message | split(pat="\n") | first | upper_first }}\
     {% endfor %}
 {% endfor %}\n
 """
@@ -25,6 +25,9 @@ conventional_commits = true
 filter_unconventional = false
 split_commits = false
 commit_parsers = [
+    { message = "^Bump dev version", skip = true },
+    { message = "^Release v", skip = true },
+    { message = "^Merge", skip = true },
     { message = "^feat", group = "Features" },
     { message = "^fix", group = "Bug Fixes" },
     { message = "^doc", group = "Documentation" },
@@ -35,6 +38,7 @@ commit_parsers = [
     { message = "^chore\\(release\\)", skip = true },
     { message = "^chore|^ci", group = "Miscellaneous" },
     { body = ".*security", group = "Security" },
+    { message = "^build\\(deps\\)", skip = true },
     { message = "^build", group = "Build" },
     { message = ".*", group = "Other" },
 ]
