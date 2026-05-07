@@ -40,6 +40,7 @@ import {
   IKaleNotebookMetadata,
   DefaultState,
   NEW_EXPERIMENT,
+  PIPELINE_NAME_MAX_LENGTH,
 } from './LeftPanelTypes';
 export type { DeployType, IExperiment, IKaleNotebookMetadata };
 export { DefaultState, NEW_EXPERIMENT };
@@ -121,9 +122,10 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
       experimentInputValue = selectedExperiments[0].name;
     }
   }
-  const pipelineNameValid = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(
-    notebookMeta.metadata.pipeline_name,
-  );
+  const pipelineNameValid =
+    /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(
+      notebookMeta.metadata.pipeline_name,
+    ) && notebookMeta.metadata.pipeline_name.length <= PIPELINE_NAME_MAX_LENGTH;
   const experimentNameRegex = /^[a-z]([-a-z0-9]*[a-z0-9])?$/;
   const experimentNameValid =
     experimentInputSelected !== NEW_EXPERIMENT.id ||
@@ -150,6 +152,8 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
       regexErrorMsg={
         "Pipeline name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."
       }
+      maxLength={PIPELINE_NAME_MAX_LENGTH}
+      maxLengthErrorMsg={`Pipeline name must be ${PIPELINE_NAME_MAX_LENGTH} characters or fewer.`}
     />
   );
 

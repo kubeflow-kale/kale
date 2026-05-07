@@ -12,159 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// import * as React from 'react';
-// import { useDebouncedCallback } from 'use-debounce';
-// import TextField, { OutlinedTextFieldProps } from '@material-ui/core/TextField';
-// import { createStyles, makeStyles } from '@material-ui/core/styles';
-
-// const useStyles = makeStyles(() =>
-//   createStyles({
-//     label: {
-//       color: 'var(--jp-input-border-color)',
-//       fontSize: 'var(--jp-ui-font-size2)',
-//     },
-//     input: {
-//       color: 'var(--jp-ui-font-color1)',
-//     },
-//     textField: {
-//       width: '100%',
-//     },
-//     helperLabel: {
-//       color: 'var(--jp-info-color0)',
-//     },
-//   }),
-// );
-
-// // @ts-ignore
-// export interface InputProps extends OutlinedTextFieldProps {
-//   value: string | number;
-//   regex?: string;
-//   regexErrorMsg?: string;
-//   inputIndex?: number;
-//   helperText?: string;
-//   readOnly?: boolean;
-//   validation?: 'int' | 'double';
-//   variant?: 'standard' | 'outlined' | 'filled';
-//   updateValue: Function;
-//   onBeforeUpdate?: (value: string) => boolean;
-// }
-
-// export const Input: React.FunctionComponent<InputProps> = props => {
-//   const [value, setValue] = React.useState('' as any);
-//   const [error, updateError] = React.useState(false);
-//   const classes = useStyles({});
-
-//   const {
-//     value: propsValue,
-//     className,
-//     helperText = null,
-//     regex,
-//     regexErrorMsg,
-//     validation,
-//     placeholder,
-//     inputIndex,
-//     readOnly = false,
-//     variant = 'outlined',
-//     InputProps,
-//     updateValue,
-//     onBeforeUpdate = undefined,
-//     ...rest
-//   } = props;
-
-//   const getRegex = () => {
-//     if (regex) {
-//       return regex;
-//     } else if (validation && validation == 'int') {
-//       return /^(-\d)?\d*$/;
-//     } else if (validation && validation == 'double') {
-//       return /^(-\d)?\d*(\.\d)?\d*$/;
-//     } else {
-//       return undefined;
-//     }
-//   };
-
-//   const getRegexMessage = () => {
-//     if (regexErrorMsg) {
-//       return regexErrorMsg;
-//     } else if (validation && validation == 'int') {
-//       return 'Integer value required';
-//     } else if (validation && validation == 'double') {
-//       return 'Double value required';
-//     } else {
-//       return undefined;
-//     }
-//   };
-
-//   const onChange = (value: string, index: number) => {
-//     // if the input domain is restricted by a regex
-//     if (!getRegex()) {
-//       updateValue(value, index);
-//       return;
-//     }
-
-//     let re = new RegExp(getRegex());
-//     if (!re.test(value)) {
-//       updateError(true);
-//     } else {
-//       updateError(false);
-//       updateValue(value, index);
-//     }
-//   };
-
-//   React.useEffect(() => {
-//     // need this to set the value when the notebook is loaded and the metadata
-//     // is updated
-//     setValue(propsValue);
-//   }, [propsValue]); // Only re-run the effect if propsValue changes
-
-//   const [debouncedCallback] = useDebouncedCallback(
-//     // function
-//     (value: string, idx: number) => {
-//       onChange(value, idx);
-//     },
-//     // delay in ms
-//     500,
-//   );
-
-//   return (
-//     // @ts-ignore
-//     <TextField
-//       {...rest}
-//       variant={variant}
-//       className={classes.textField}
-//       error={error}
-//       value={value}
-//       margin="dense"
-//       placeholder={placeholder}
-//       spellCheck={false}
-//       helperText={error ? getRegexMessage() : helperText}
-//       InputProps={{
-//         classes: { root: classes.input },
-//         readOnly: readOnly,
-//         ...InputProps,
-//       }}
-//       InputLabelProps={{
-//         classes: { root: classes.label },
-//         shrink: !!placeholder || value !== '',
-//       }}
-//       FormHelperTextProps={{ classes: { root: classes.helperLabel } }}
-//       onChange={evt => {
-//         setValue(evt.target.value);
-//         if (!onBeforeUpdate) {
-//           debouncedCallback(evt.target.value, inputIndex);
-//         } else {
-//           const r = onBeforeUpdate(evt.target.value);
-//           if (r) {
-//             updateError(true);
-//           } else {
-//             updateError(false);
-//             debouncedCallback(evt.target.value, inputIndex);
-//           }
-//         }
-//       }}
-//     />
-//   );
-// };
 import React, { useState } from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import { styled } from '@mui/material/styles';
@@ -191,6 +38,8 @@ export interface IInputProps extends Omit<
   value: string | number;
   regex?: string;
   regexErrorMsg?: string;
+  maxLength?: number;
+  maxLengthErrorMsg?: string;
   inputIndex?: number;
   helperText?: string;
   readOnly?: boolean;
@@ -207,6 +56,8 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
     helperText = null,
     regex,
     regexErrorMsg,
+    maxLength,
+    maxLengthErrorMsg,
     validation,
     placeholder,
     inputIndex,
@@ -251,7 +102,19 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
     regexPattern !== undefined && value !== ''
       ? !new RegExp(regexPattern).test(value)
       : false;
-  const error = regexError || beforeUpdateError;
+  const maxLengthError =
+    maxLength !== undefined ? value.length > maxLength : false;
+  const error = regexError || maxLengthError || beforeUpdateError;
+
+  const getErrorMessage = (): string | undefined => {
+    if (maxLengthError) {
+      return (
+        maxLengthErrorMsg ??
+        `Must be ${maxLength} characters or fewer (currently ${value.length})`
+      );
+    }
+    return getRegexMessage();
+  };
 
   const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = evt.target.value;
@@ -268,11 +131,20 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
       variant={variant}
       className={className}
       error={error}
+      sx={
+        error
+          ? {
+              '& .MuiInputLabel-root': { color: 'error.main' },
+              '& .MuiInputBase-input': { color: 'error.main' },
+              '& .MuiFormHelperText-root': { color: 'error.main' },
+            }
+          : undefined
+      }
       value={value}
       margin="dense"
       placeholder={placeholder}
       spellCheck={false}
-      helperText={error ? getRegexMessage() : helperText}
+      helperText={error ? getErrorMessage() : helperText}
       slotProps={{
         input: {
           readOnly: readOnly,

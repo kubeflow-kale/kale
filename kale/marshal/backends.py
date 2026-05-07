@@ -11,6 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Built-in marshal backends.
+
+Concrete :class:`~kale.marshal.backend.MarshalBackend` implementations for the
+Python types Kale supports out of the box: numpy arrays, pandas DataFrames,
+scikit-learn estimators, PyTorch / Keras / TensorFlow models, XGBoost
+boosters and DMatrices, and plain Python functions.
+"""
 
 import logging
 

@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Compile a Kale :class:`~kale.pipeline.Pipeline` into a Kubeflow Pipelines v2 DSL script.
+
+This module renders the Jinja2 templates in ``kale/templates/`` to produce a
+ready-to-run KFP v2 pipeline script, formats it, and optionally hands it off to
+the KFP SDK for compilation and submission.
+"""
 
 import argparse
 import logging

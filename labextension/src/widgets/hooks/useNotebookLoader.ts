@@ -78,7 +78,6 @@ export function useNotebookLoader({
   const {
     setKfpUiHost,
     setDefaultBaseImage,
-    serverBaseImageRef,
     setNamespace,
     setGettingExperiments,
     metadataRef,
@@ -106,7 +105,6 @@ export function useNotebookLoader({
       const notebookMetadata = NotebookUtils.getMetaData(notebook, metadataKey);
 
       let fetchedExperiments: IExperiment[] = [];
-      let serverBaseImage = serverBaseImageRef.current;
 
       if (backend) {
         setNamespace(await commands.getNamespace());
@@ -115,10 +113,6 @@ export function useNotebookLoader({
         if (nbFilePath) {
           await commands.resumeStateIfExploreNotebook(nbFilePath);
         }
-
-        const baseImage = await commands.getBaseImage();
-        serverBaseImage = baseImage || '';
-        serverBaseImageRef.current = serverBaseImage;
 
         setGettingExperiments(true);
         const currentMeta = metadataRef.current;
@@ -202,7 +196,8 @@ export function useNotebookLoader({
               ? notebookMetadata['pipeline_name']
               : sanitized,
           pipeline_description: notebookMetadata['pipeline_description'] || '',
-          base_image: notebookMetadata['base_image'] || serverBaseImage,
+          base_image:
+            notebookMetadata['base_image'] || DefaultState.metadata.base_image,
           steps_defaults: DefaultState.metadata.steps_defaults,
         });
       } else {
@@ -213,7 +208,7 @@ export function useNotebookLoader({
           experiment: prev.experiment,
           experiment_name: prev.experiment_name,
           pipeline_name: sanitized,
-          base_image: serverBaseImage || DefaultState.metadata.base_image,
+          base_image: DefaultState.metadata.base_image,
         }));
       }
     },
@@ -224,7 +219,6 @@ export function useNotebookLoader({
       metadataKey,
       setKfpUiHost,
       setDefaultBaseImage,
-      serverBaseImageRef,
       setNamespace,
       setGettingExperiments,
       metadataRef,

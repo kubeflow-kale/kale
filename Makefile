@@ -6,6 +6,7 @@
         clean clean-venv lock lock-upgrade check-uv \
         jupyter jupyter-kfp watch-labextension \
         docker-build docker-run \
+        docs docs-serve docs-clean \
         release verify check-versions
 
 UV := uv
@@ -185,6 +186,21 @@ jupyter-kfp: ## Start JupyterLab with KFP dev environment (run kfp-serve first!)
 
 watch-labextension: ## Watch labextension for changes (run in separate terminal)
 	cd labextension && $(JLPM) watch
+
+##@ Documentation
+
+docs: ## Build the documentation site (HTML)
+	@printf "$(BLUE)Building documentation...\n$(NC)"
+	$(UV) sync --extra docs
+	$(UV) run sphinx-build -b html docs/source docs/_build/html
+	@printf "$(GREEN)Docs built: docs/_build/html/index.html\n$(NC)"
+
+docs-serve: docs ## Build and serve the docs locally on port 8000
+	@printf "$(BLUE)Serving docs on http://localhost:8000\n$(NC)"
+	cd docs/_build/html && python3 -m http.server 8000
+
+docs-clean: ## Remove built documentation
+	rm -rf docs/_build
 
 ##@ Release
 

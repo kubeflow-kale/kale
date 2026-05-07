@@ -14,6 +14,8 @@
 
 export type DeployType = 'compile' | 'run' | 'upload';
 
+export const PIPELINE_NAME_MAX_LENGTH = 124;
+
 export interface IExperiment {
   id: string;
   name: string;

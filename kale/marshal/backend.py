@@ -11,6 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Marshal dispatcher and backend base class.
+
+Defines :class:`MarshalBackend`, the abstract base class for type-aware
+serializers that Kale uses to pass data between pipeline steps, and
+:class:`Dispatcher`, which routes objects to the correct backend at
+save/load time.
+"""
 
 import logging
 import os

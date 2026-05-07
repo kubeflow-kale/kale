@@ -60,7 +60,6 @@ export interface ILoaderSetters {
   setDefaultBaseImage: Dispatch<SetStateAction<string>>;
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
-  serverBaseImageRef: MutableRefObject<string>;
   resetForNoNotebook: () => void;
 }
 
@@ -96,7 +95,6 @@ export function useNotebookMetadata({
   metadataRef.current = metadata;
   const experimentsRef = useRef(experiments);
   experimentsRef.current = experiments;
-  const serverBaseImageRef = useRef('');
 
   // --- updaters (exposed to LeftPanel form inputs) ---
 
@@ -152,7 +150,6 @@ export function useNotebookMetadata({
       setDefaultBaseImage,
       metadataRef,
       experimentsRef,
-      serverBaseImageRef,
       resetForNoNotebook,
     },
   });
