@@ -277,3 +277,45 @@ def compute_trusted_hosts() -> list[str]:
     if pip_trusted_hosts:
         trusted_hosts = [u.strip() for u in pip_trusted_hosts.split(",") if u.strip()]
     return trusted_hosts
+
+
+def get_security_context_from_env() -> dict:
+    """Read security context configuration from KALE_ environment variables.
+
+    Environment variables:
+        KALE_SECURITY_CONTEXT_ENABLED:
+            Boolean-like flag (1/true/yes/on) to enable/disable security context.
+        KALE_SECURITY_CONTEXT_RUN_AS_USER:
+            Integer UID to run containers as.
+        KALE_SECURITY_CONTEXT_RUN_AS_GROUP:
+            Integer GID to run containers as.
+        KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT:
+            Boolean-like flag (1/true/yes/on) to require non-root execution.
+
+    Returns:
+        dict: Security context config values from environment. Only includes
+        keys that were explicitly set via env vars; missing keys mean the
+        caller should use defaults.
+    """
+    config: dict = {}
+
+    def parse_bool(val: str) -> bool:
+        return val.lower() in {"1", "true", "yes", "on"}
+
+    enabled = os.getenv("KALE_SECURITY_CONTEXT_ENABLED")
+    if enabled is not None:
+        config["enabled"] = parse_bool(enabled)
+
+    run_as_user = os.getenv("KALE_SECURITY_CONTEXT_RUN_AS_USER")
+    if run_as_user is not None:
+        config["run_as_user"] = int(run_as_user)
+
+    run_as_group = os.getenv("KALE_SECURITY_CONTEXT_RUN_AS_GROUP")
+    if run_as_group is not None:
+        config["run_as_group"] = int(run_as_group)
+
+    run_as_non_root = os.getenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT")
+    if run_as_non_root is not None:
+        config["run_as_non_root"] = parse_bool(run_as_non_root)
+
+    return config

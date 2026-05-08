@@ -58,6 +58,21 @@ const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
+const SECURITY_CONTEXT_KEY = 'securityContext';
+
+interface ISecurityContextSettings {
+  enabled: boolean;
+  run_as_user: number;
+  run_as_group: number;
+  run_as_non_root: boolean;
+}
+
+const DEFAULT_SECURITY_CONTEXT: ISecurityContextSettings = {
+  enabled: true,
+  run_as_user: 65534,
+  run_as_group: 0,
+  run_as_non_root: true,
+};
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
@@ -123,6 +138,7 @@ async function activate(
     const [kaleSettings, setKaleSettings] = React.useState({
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
+      securityContext: DEFAULT_SECURITY_CONTEXT,
     });
 
     React.useEffect(() => {
@@ -144,6 +160,10 @@ async function activate(
               (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
                 | boolean
                 | undefined) ?? false,
+            securityContext:
+              (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
+                | ISecurityContextSettings
+                | undefined) ?? DEFAULT_SECURITY_CONTEXT,
           });
 
           const update = () => {
@@ -178,6 +198,7 @@ async function activate(
         kernel={kernel}
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
+        securityContext={kaleSettings.securityContext}
       />
     );
   };
