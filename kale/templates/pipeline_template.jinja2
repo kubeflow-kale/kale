@@ -30,8 +30,7 @@ def auto_generated_pipeline(
         {%- endfor %}
     {%- endif %}
     )
-
-{%- if security_context.enabled %}
+{% if security_context.enabled %}
     security_context.set_security_context(
         task={{ step.name }}_task,
         run_as_user={{ security_context.run_as_user }},

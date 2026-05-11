@@ -98,7 +98,7 @@ class TestPipelineConfigSecurityContext:
         ):
             monkeypatch.delenv(key, raising=False)
 
-    def test_security_context_default_values(self, monkeypatch, tmp_path):
+    def test_security_context_default_values(self, monkeypatch):
         """Test that security_context is initialized with defaults when not provided."""
         self._clear_env(monkeypatch)
 
@@ -115,7 +115,7 @@ class TestPipelineConfigSecurityContext:
         assert config.security_context.run_as_group == 0
         assert config.security_context.run_as_non_root is True
 
-    def test_security_context_env_override(self, monkeypatch, tmp_path):
+    def test_security_context_env_override(self, monkeypatch):
         """Test that env vars override security_context defaults."""
         self._clear_env(monkeypatch)
         monkeypatch.setenv("KALE_SECURITY_CONTEXT_ENABLED", "false")
