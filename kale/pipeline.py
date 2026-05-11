@@ -104,7 +104,7 @@ class SecurityContextConfig(Config):
     """Configuration for Kubernetes security context settings.
 
     These settings control the security context applied to all pipeline steps.
-    Can be configured via JupyterLab settings or KALE_ environment variables.
+    Can be configured via JupyterLab settings or ``KALE_*`` environment variables.
     """
 
     enabled = Field(type=bool, default=True)
