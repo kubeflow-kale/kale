@@ -314,9 +314,14 @@ class Compiler:
 
     def _save_compiled_code(self, path: str = None) -> str:
         if not path:
-            # save the generated file in a hidden local directory
-            path = os.path.join(os.getcwd(), ".kale")
-            os.makedirs(path, exist_ok=True)
+            config_output_path = self.pipeline.config.output_path
+            if config_output_path:
+                # Resolve relative to CWD (the notebook's working directory)
+                path = os.path.join(os.getcwd(), config_output_path)
+            else:
+                # Default: save in hidden .kale/ directory
+                path = os.path.join(os.getcwd(), ".kale")
+        os.makedirs(path, exist_ok=True)
         log.info("Saving generated code in %s", path)
         filename = f"{self.pipeline.config.pipeline_name}.kale.py"
         output_path = os.path.abspath(os.path.join(path, filename))

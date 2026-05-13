@@ -33,6 +33,7 @@ interface IUseDeploymentParams {
   kernel: Kernel.IKernelConnection;
   docManager: IDocumentManager;
   autoSaveOnCompileOrRun: boolean;
+  outputPath: string;
 }
 
 export interface IDeploymentState {
@@ -59,6 +60,7 @@ export function useDeployment({
   kernel,
   docManager,
   autoSaveOnCompileOrRun,
+  outputPath,
 }: IUseDeploymentParams): IDeploymentState {
   const [runDeployment, setRunDeployment] = useState(false);
   const [deploys, setDeploys] = useState<{
@@ -159,6 +161,11 @@ export function useDeployment({
       metadata.base_image = DefaultState.metadata.base_image;
     }
 
+    // outputPath comes from JupyterLab Settings; backend expects it as output_path.
+    if (outputPath) {
+      metadata.output_path = outputPath;
+    }
+
     const nbFilePath = getActiveNotebookPath();
 
     if (!nbFilePath) {
@@ -237,6 +244,7 @@ export function useDeployment({
     kernel,
     docManager,
     autoSaveOnCompileOrRun,
+    outputPath,
     updateDeployProgress,
   ]);
 

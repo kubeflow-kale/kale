@@ -135,6 +135,7 @@ class PipelineConfig(Config):
     )
     timeout = Field(type=int, validators=[validators.PositiveIntegerValidator])
     security_context = Field(type=SecurityContextConfig, default=None)
+    output_path = Field(type=str, default="", validators=[validators.OutputPathValidator])
 
     @property
     def source_path(self):

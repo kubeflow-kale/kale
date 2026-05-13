@@ -207,3 +207,20 @@ class PositiveIntegerValidator(Validator):
             raise ValueError(f"'{value}' is not of type 'int'")
         if value <= 0:
             raise ValueError(f"'{value}' is not a positive integer")
+
+
+class OutputPathValidator(Validator):
+    """Validates that an output path resolves to within the project directory."""
+
+    def _validate(self, value: str):
+        if not value:
+            return
+        from pathlib import Path
+
+        project_dir = Path.cwd().resolve()
+        resolved = (project_dir / value).resolve()
+        if not str(resolved).startswith(str(project_dir)):
+            raise ValueError(
+                f"'{value}' is not a valid output directory. The path must be"
+                " relative to the project directory (e.g. 'pipelines/output')."
+            )

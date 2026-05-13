@@ -52,6 +52,13 @@
           "default": true
         }
       }
+    },
+    "outputPath": {
+      "type": "string",
+      "title": "Pipeline output directory",
+      "description": "Relative path (from the notebook directory) where the compiled pipeline is saved. Leave empty to use the default '.kale/' directory.",
+      "default": ".kale",
+      "pattern": "^$|\\S"
     }
   },
   "additionalProperties": false,

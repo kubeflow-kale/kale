@@ -73,6 +73,7 @@ const DEFAULT_SECURITY_CONTEXT: ISecurityContextSettings = {
   run_as_group: 0,
   run_as_non_root: true,
 };
+const OUTPUT_PATH_KEY = 'outputPath';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
@@ -139,6 +140,7 @@ async function activate(
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
       securityContext: DEFAULT_SECURITY_CONTEXT,
+      outputPath: '',
     });
 
     React.useEffect(() => {
@@ -164,6 +166,10 @@ async function activate(
               (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
                 | ISecurityContextSettings
                 | undefined) ?? DEFAULT_SECURITY_CONTEXT,
+            outputPath:
+              (loadedSetting.get(OUTPUT_PATH_KEY).composite as
+                | string
+                | undefined) ?? '',
           });
 
           const update = () => {
@@ -199,6 +205,7 @@ async function activate(
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
         securityContext={kaleSettings.securityContext}
+        outputPath={kaleSettings.outputPath}
       />
     );
   };
