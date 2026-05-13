@@ -43,6 +43,14 @@ DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
 DEFAULT_BASE_IMAGE = "python:3.12"
 
 
+DEFAULT_SECURITY_CONTEXT = {
+    "enabled": True,
+    "run_as_user": 65534,
+    "run_as_group": 0,
+    "run_as_non_root": True,
+}
+
+
 class VolumeConfig(Config):
     """Used for validating the `volumes` field of NotebookConfig."""
 
@@ -107,10 +115,10 @@ class SecurityContextConfig(Config):
     Can be configured via JupyterLab settings or ``KALE_*`` environment variables.
     """
 
-    enabled = Field(type=bool, default=True)
-    run_as_user = Field(type=int, default=65534)
-    run_as_group = Field(type=int, default=0)
-    run_as_non_root = Field(type=bool, default=True)
+    enabled = Field(type=bool, default=DEFAULT_SECURITY_CONTEXT["enabled"])
+    run_as_user = Field(type=int, default=DEFAULT_SECURITY_CONTEXT["run_as_user"])
+    run_as_group = Field(type=int, default=DEFAULT_SECURITY_CONTEXT["run_as_group"])
+    run_as_non_root = Field(type=bool, default=DEFAULT_SECURITY_CONTEXT["run_as_non_root"])
 
 
 class PipelineConfig(Config):
@@ -216,15 +224,12 @@ class PipelineConfig(Config):
         Precedence: JupyterLab metadata > env vars > defaults
         """
         env_config = utils.get_security_context_from_env()
-
         if self.security_context is None:
-            # No metadata provided - use env vars merged with defaults
-            self.security_context = SecurityContextConfig(**env_config)
-        elif env_config:
-            # Metadata exists but may be incomplete - env vars fill in missing
+            self.security_context = SecurityContextConfig()
+        if env_config is not None:
             for key, value in env_config.items():
                 current = getattr(self.security_context, key, None)
-                if current is None:
+                if current is None or current == DEFAULT_SECURITY_CONTEXT[key]:
                     setattr(self.security_context, key, value)
 
 

@@ -139,7 +139,7 @@ def _clear_security_context_env(monkeypatch):
 
 
 def test_get_security_context_from_env_default(monkeypatch):
-    """When no env vars are set, return empty dict."""
+    """When no env vars are set, the default values should be used"""
     _clear_security_context_env(monkeypatch)
 
     assert utils.get_security_context_from_env() == {}
