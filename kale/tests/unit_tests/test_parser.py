@@ -16,6 +16,7 @@ import nbformat
 import pytest
 
 from kale import NotebookConfig, Pipeline, Step
+from kale.processors.nbprocessor import NotebookProcessor
 
 
 def test_merge_code(dummy_nb_config):
@@ -135,6 +136,23 @@ def test_get_pipeline_parameters_source_followed_reserved(notebook_processor):
     notebook.cells = [nbformat.v4.new_code_cell(source=s, metadata=m) for (s, m) in cells]
     notebook_processor.notebook = notebook
     assert notebook_processor.get_pipeline_parameters_source() == "1\n1\n1"
+
+
+def test_assign_metrics_only_marks_steps_with_assigned_metrics():
+    """Regression test for #787: metrics flag must only be set on steps that
+    actually have a metric variable, not on every leaf node traversed."""
+    pipeline = Pipeline("test")
+    step_a = Step(source=["accuracy = 0.95"], name="step_a")
+    step_b = Step(source=["x = 1"], name="step_b")
+    pipeline.add_step(step_a)
+    pipeline.add_step(step_b)
+
+    proc = NotebookProcessor.__new__(NotebookProcessor)
+    proc.pipeline = pipeline
+    proc.assign_metrics({"accuracy": "accuracy"})
+
+    assert step_a.metrics is True, "step with metric variable should have metrics=True"
+    assert step_b.metrics is False, "step without metric variable should not get metrics=True"
 
 
 def test_get_pipeline_metrics_source_raises(notebook_processor):
