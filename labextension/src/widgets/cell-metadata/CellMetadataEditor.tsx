@@ -13,751 +13,277 @@
 // limitations under the License.
 
 import * as React from 'react';
+import { useCallback, useContext, useRef, useState } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../lib/TagsUtils';
-import { isCodeCellModel } from '@jupyterlab/cells';
 import CloseIcon from '@mui/icons-material/Close';
 import ColorUtils from '../../lib/ColorUtils';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormControlLabel,
-  IconButton,
-  Radio,
-  RadioGroup,
-  Tooltip,
-} from '@mui/material';
-import { CellMetadataEditorDialog } from './CellMetadataEditorDialog';
+import { Button, IconButton, Tooltip } from '@mui/material';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { SelectMulti } from '../../components/SelectMulti';
+import { GpuDialog } from './dialogs/GpuDialog';
+import { BaseImageDialog } from './dialogs/BaseImageDialog';
+import { CacheDialog } from './dialogs/CacheDialog';
+import { useUpdateCellTags } from './hooks/useCellTags';
+import { useEditorPosition } from './hooks/useEditorPosition';
+import {
+  CELL_TYPES,
+  RESERVED_CELL_NAMES,
+  STEP_NAME_ERROR_MSG,
+} from './constants';
 
-const CELL_TYPES = [
-  { value: 'imports', label: 'Imports' },
-  { value: 'functions', label: 'Functions' },
-  { value: 'pipeline-parameters', label: 'Pipeline Parameters' },
-  { value: 'pipeline-metrics', label: 'Pipeline Metrics' },
-  { value: 'step', label: 'Pipeline Step' },
-  { value: 'skip', label: 'Skip Cell' },
-];
-
-export const RESERVED_CELL_NAMES = [
-  'imports',
-  'functions',
-  'pipeline-parameters',
-  'pipeline-metrics',
-  'skip',
-];
-
-export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {
-  imports:
-    'The code in this cell will be pre-pended to every step of the pipeline.',
-  functions:
-    'The code in this cell will be pre-pended to every step of the pipeline,' +
-    ' after `imports`.',
-  'pipeline-parameters':
-    'The variables in this cell will be transformed into pipeline parameters,' +
-    ' preserving the current values as defaults.',
-  'pipeline-metrics':
-    'The variables in this cell will be transformed into pipeline metrics.',
-  skip: 'This cell will be skipped and excluded from pipeline steps',
-};
-export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
-  skip: 'a9a9a9',
-  'pipeline-parameters': 'ee7a1a',
-  'pipeline-metrics': '773d0d',
-  imports: 'a32626',
-  functions: 'a32626',
-};
-
-export const DEFAULT_BASE_IMAGE = 'python:3.12';
-
-const STEP_NAME_ERROR_MSG = `Step name must consist of lower case alphanumeric
- characters or '_', and can not start with a digit.`;
+export {
+  RESERVED_CELL_NAMES,
+  RESERVED_CELL_NAMES_HELP_TEXT,
+  RESERVED_CELL_NAMES_CHIP_COLOR,
+  DEFAULT_BASE_IMAGE,
+} from './constants';
 
 export interface IProps {
   notebook: NotebookPanel;
   stepName?: string;
   stepDependencies: string[];
-  // Resource limits, like gpu limits
   limits?: { [id: string]: string };
-  // Base image for this step
   baseImage?: string;
   enableCaching?: boolean;
   pipelineBaseImage?: string;
   defaultBaseImage?: string;
 }
 
-// this stores the name of a step and its color (from the name hash)
-type StepDependencyChoice = { value: string; color: string };
-interface IState {
-  // used to store the closest preceding step name. Used in case the current
-  // step name is empty, to suggest merging to the previous one.
-  previousStepName?: string;
-  stepNameErrorMsg?: string;
-  // a list of steps that the current step can be dependent on.
-  stepDependenciesChoices: StepDependencyChoice[];
-  // flag to open the metadata editor dialog dialog
-  // XXX (stefano): I would like to set this as required, but the return
-  // XXX (stefano): statement of updateStepDependenciesChoices and
-  // XXX (stefano): updatePreviousStepName don't allow me.
-  cellMetadataEditorDialog: boolean;
-  baseImageDialogOpen: boolean;
-  cacheDialogOpen: boolean;
-  cachingValue: 'default' | 'enabled' | 'disabled';
-}
+export const CellMetadataEditor: React.FC<IProps> = props => {
+  const {
+    notebook,
+    stepName = '',
+    stepDependencies,
+    limits = {},
+    baseImage,
+    enableCaching,
+    pipelineBaseImage,
+    defaultBaseImage,
+  } = props;
 
-const DefaultState: IState = {
-  previousStepName: undefined,
-  stepNameErrorMsg: STEP_NAME_ERROR_MSG,
-  stepDependenciesChoices: [],
-  cellMetadataEditorDialog: false,
-  baseImageDialogOpen: false,
-  cacheDialogOpen: false,
-  cachingValue: 'default',
-};
+  const { activeCellIndex, isEditorVisible, onEditorVisibilityChange } =
+    useContext(CellMetadataContext);
 
-/**
- * Component that allow to edit the Kale cell tags of a notebook cell.
- */
-export class CellMetadataEditor extends React.Component<IProps, IState> {
-  static contextType = CellMetadataContext;
-  context!: React.ContextType<typeof CellMetadataContext>;
-  editorRef: React.RefObject<HTMLDivElement>;
+  const editorRef = useRef<HTMLDivElement>(null);
 
-  constructor(props: IProps) {
-    super(props);
-    // We use this element reference in order to move it inside Notebooks's cell
-    // element.
-    this.editorRef = React.createRef();
-    this.state = DefaultState;
-    this.updateCurrentStepName = this.updateCurrentStepName.bind(this);
-    this.updateCurrentCellType = this.updateCurrentCellType.bind(this);
-    this.updatePrevStepsNames = this.updatePrevStepsNames.bind(this);
-    this.toggleTagsEditorDialog = this.toggleTagsEditorDialog.bind(this);
-    this.toggleBaseImageDialog = this.toggleBaseImageDialog.bind(this);
-  }
+  const updateCellTags = useUpdateCellTags({
+    notebook,
+    stepName,
+    stepDependencies,
+    limits,
+    baseImage,
+    enableCaching,
+  });
 
-  componentWillUnmount() {
-    const editor = this.editorRef.current;
-    if (editor) {
-      editor.remove();
+  useEditorPosition(editorRef, notebook);
+
+  const stepDependenciesChoices = React.useMemo(() => {
+    if (!notebook) {
+      return [];
     }
-  }
-
-  updateCurrentCellType = (value: string) => {
-    if (RESERVED_CELL_NAMES.includes(value)) {
-      this.updateCurrentStepName(value);
-    } else {
-      TagsUtils.resetCell(
-        this.props.notebook,
-        this.context.activeCellIndex,
-        this.props.stepName || '',
-      );
-    }
-  };
-
-  isEqual(a: StepDependencyChoice[], b: StepDependencyChoice[]): boolean {
-    return JSON.stringify(a) === JSON.stringify(b);
-  }
-
-  /**
-   * When the activeCellIndex of the editor changes, the editor needs to be
-   * moved to the correct position.
-   */
-  moveEditor() {
-    if (!this.props.notebook) {
-      return;
-    }
-    // get the HTML element corresponding to the current active cell
-    const notebookContent = this.props.notebook.content;
-    if (!notebookContent?.node?.childNodes) {
-      return;
-    }
-    const metadataWrapper = this.props.notebook.content.widgets[
-      this.context.activeCellIndex
-    ].node as HTMLElement;
-
-    if (!metadataWrapper) {
-      return;
-    }
-    const editor = this.editorRef.current;
-    const inlineElement = metadataWrapper.querySelector(
-      '.kale-inline-cell-metadata-container',
-    );
-    const isEditorAlreadInPlace = metadataWrapper.querySelector(
-      '.kale-metadata-editor-wrapper',
-    );
-
-    if (editor && inlineElement && !isEditorAlreadInPlace) {
-      editor.remove();
-      metadataWrapper.prepend(editor);
-    }
-  }
-
-  componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
-    this.hideEditorIfNotCodeCell();
-    this.moveEditor();
-    // this.setState(this.updateStepDependenciesChoices);
-    // this.setState(this.updatePreviousStepName);
-    const dependenciesState = this.updateStepDependenciesChoices(
-      this.state,
-      this.props,
-    );
-    if (dependenciesState) {
-      this.setState(dependenciesState);
-    }
-
-    const previousStepState = this.updatePreviousStepName(
-      this.state,
-      this.props,
-    );
-    if (previousStepState) {
-      this.setState(previousStepState);
-    }
-  }
-
-  hideEditorIfNotCodeCell() {
-    if (
-      this.props.notebook &&
-      !this.props.notebook.isDisposed &&
-      this.props.notebook.model
-    ) {
-      const cellModel = this.props.notebook.model.cells.get(
-        this.context.activeCellIndex,
-      );
-      if (
-        cellModel &&
-        !isCodeCellModel(cellModel) &&
-        this.context.isEditorVisible
-      ) {
-        this.closeEditor();
-      }
-    }
-  }
-
-  /**
-   * Scan the notebook for all step tags and get them all, excluded the current
-   * one (and the reserved cell tags) The value `previousStepChoices` is used
-   * by the dependencies select option to select the current step's
-   * dependencies.
-   */
-  updateStepDependenciesChoices(
-    state: Readonly<IState>,
-    props: Readonly<IProps>,
-  ): Pick<IState, 'stepDependenciesChoices'> | null {
-    if (!props.notebook) {
-      return null;
-    }
-    const allSteps = TagsUtils.getAllSteps(
-      props.notebook.content,
-      this.context.activeCellIndex,
-    );
-    const dependencyChoices: StepDependencyChoice[] = allSteps
-      // remove all reserved names and current step name
-      .filter(
-        el => !RESERVED_CELL_NAMES.includes(el) && !(el === props.stepName),
-      )
+    const allSteps = TagsUtils.getAllSteps(notebook.content, activeCellIndex);
+    return allSteps
+      .filter(el => !RESERVED_CELL_NAMES.includes(el) && el !== stepName)
       .map(name => ({ value: name, color: `#${ColorUtils.getColor(name)}` }));
+  }, [notebook, stepName, stepDependencies, activeCellIndex]);
 
-    if (this.isEqual(state.stepDependenciesChoices, dependencyChoices)) {
-      return null;
-    }
-    // XXX (stefano): By setting state.cellMetadataEditorDialog NOT optional,
-    // XXX (stefano): this return will require cellMetadataEditorDialog.
-    return { stepDependenciesChoices: dependencyChoices };
-  }
+  const previousStepName = React.useMemo(
+    () =>
+      notebook
+        ? TagsUtils.getPreviousStep(notebook.content, activeCellIndex)
+        : undefined,
+    [notebook, activeCellIndex, stepName],
+  );
 
-  updatePreviousStepName(
-    state: Readonly<IState>,
-    props: Readonly<IProps>,
-  ): Pick<IState, 'previousStepName'> | null {
-    if (!props.notebook) {
-      return null;
-    }
-    const prevStepName = TagsUtils.getPreviousStep(
-      props.notebook.content,
-      this.context.activeCellIndex,
-    );
-    if (prevStepName === this.state.previousStepName) {
-      return null;
-    }
-    // XXX (stefano): By setting state.cellMetadataEditorDialog NOT optional,
-    // XXX (stefano): this return will require cellMetadataEditorDialog.
-    return { previousStepName: prevStepName };
-  }
+  const cellType = RESERVED_CELL_NAMES.includes(stepName) ? stepName : 'step';
+  const cellColor = stepName
+    ? `#${ColorUtils.getColor(stepName)}`
+    : 'transparent';
+  const isStep = cellType === 'step';
+  const hasStepName = !!(stepName && stepName.length > 0);
 
-  updateCurrentStepName = (value: string) => {
-    const oldStepName: string = this.props.stepName || '';
-    const tags = TagsUtils.getKaleCellTags(
-      this.props.notebook.content,
-      this.context.activeCellIndex,
-    );
-    const currentCellMetadata = {
-      prevStepNames: this.props.stepDependencies,
-      limits: this.props.limits || {},
-      baseImage: this.props.baseImage,
-      enableCaching: tags?.enableCaching,
-      stepName: value,
-    };
-
-    TagsUtils.setKaleCellTags(
-      this.props.notebook,
-      this.context.activeCellIndex,
-      currentCellMetadata,
-    ).then(() => {
-      TagsUtils.updateKaleCellsTags(this.props.notebook, oldStepName, value);
-    });
-  };
-
-  /**
-   * Event handler of the MultiSelect used to select the dependencies of a step
-   */
-  updatePrevStepsNames = (previousSteps: string[]) => {
-    const tags = TagsUtils.getKaleCellTags(
-      this.props.notebook.content,
-      this.context.activeCellIndex,
-    );
-    const currentCellMetadata = {
-      stepName: this.props.stepName || '',
-      limits: this.props.limits || {},
-      baseImage: this.props.baseImage,
-      enableCaching: tags?.enableCaching,
-      prevStepNames: previousSteps,
-    };
-
-    TagsUtils.setKaleCellTags(
-      this.props.notebook,
-      this.context.activeCellIndex,
-      currentCellMetadata,
-    );
-  };
-
-  /**
-   * Event triggered when the the CellMetadataEditorDialog dialog is closed
-   */
-  updateCurrentLimits = (
-    actions: {
-      action: 'update' | 'delete';
-      limitKey: string;
-      limitValue?: string;
-    }[],
-  ) => {
-    const limits = { ...this.props.limits };
-    actions.forEach(action => {
-      if (action.action === 'update' && action.limitValue !== undefined) {
-        limits[action.limitKey] = action.limitValue;
-      }
-      if (
-        action.action === 'delete' &&
-        Object.keys(this.props.limits || {}).includes(action.limitKey)
-      ) {
-        delete limits[action.limitKey];
-      }
-    });
-
-    const tags = TagsUtils.getKaleCellTags(
-      this.props.notebook.content,
-      this.context.activeCellIndex,
-    );
-    const currentCellMetadata = {
-      stepName: this.props.stepName || '',
-      prevStepNames: this.props.stepDependencies,
-      limits: limits,
-      baseImage: this.props.baseImage,
-      enableCaching: tags?.enableCaching,
-    };
-
-    TagsUtils.setKaleCellTags(
-      this.props.notebook,
-      this.context.activeCellIndex,
-      currentCellMetadata,
-    );
-  };
-
-  /**
-   * Function called before updating the value of the step name input text
-   * field. It acts as a validator.
-   */
-  onBeforeUpdate = (value: string) => {
-    if (value === this.props.stepName) {
-      return false;
-    }
-    const stepNames = TagsUtils.getAllSteps(this.props.notebook.content);
-    if (stepNames.includes(value)) {
-      this.setState({ stepNameErrorMsg: 'This name already exists.' });
-      return true;
-    }
-    this.setState({ stepNameErrorMsg: STEP_NAME_ERROR_MSG });
-    return false;
-  };
-
-  getPrevStepNotice = () => {
-    return this.state.previousStepName && this.props.stepName === ''
-      ? `Leave the step name empty to merge the cell to step '${this.state.previousStepName}'`
+  const prevStepNotice =
+    previousStepName && stepName === ''
+      ? `Leave the step name empty to merge the cell to step '${previousStepName}'`
       : null;
-  };
 
-  /**
-   * Event handler of close button, positioned on the top right of the cell
-   */
-  closeEditor() {
-    this.context.onEditorVisibilityChange(false);
-  }
+  const [stepNameErrorMsg, setStepNameErrorMsg] = useState(STEP_NAME_ERROR_MSG);
 
-  toggleTagsEditorDialog() {
-    this.setState({
-      cellMetadataEditorDialog: !this.state.cellMetadataEditorDialog,
-    });
-  }
+  const onBeforeUpdate = useCallback(
+    (value: string) => {
+      if (value === stepName) {
+        return false;
+      }
+      const stepNames = TagsUtils.getAllSteps(notebook.content);
+      if (stepNames.includes(value)) {
+        setStepNameErrorMsg('This name already exists.');
+        return true;
+      }
+      setStepNameErrorMsg(STEP_NAME_ERROR_MSG);
+      return false;
+    },
+    [notebook, stepName],
+  );
 
-  toggleBaseImageDialog() {
-    this.setState({
-      baseImageDialogOpen: !this.state.baseImageDialogOpen,
-    });
-  }
+  const [gpuDialogOpen, setGpuDialogOpen] = useState(false);
+  const [baseImageDialogOpen, setBaseImageDialogOpen] = useState(false);
+  const [cacheDialogOpen, setCacheDialogOpen] = useState(false);
 
-  toggleCacheDialog() {
-    const isOpening = !this.state.cacheDialogOpen;
-    // When opening the dialog, read current value directly from notebook tags
-    if (isOpening) {
-      const tags = TagsUtils.getKaleCellTags(
-        this.props.notebook.content,
-        this.context.activeCellIndex,
-      );
-      const currentEnableCaching = tags?.enableCaching;
-      const cachingValue =
-        currentEnableCaching === undefined
-          ? 'default'
-          : currentEnableCaching
-            ? 'enabled'
-            : 'disabled';
-      this.setState({
-        cacheDialogOpen: true,
-        cachingValue: cachingValue,
-      });
-    } else {
-      this.setState({
-        cacheDialogOpen: false,
-      });
-    }
-  }
+  const closeEditor = useCallback(() => {
+    onEditorVisibilityChange(false);
+  }, [onEditorVisibilityChange]);
 
-  updateBaseImage = (value: string) => {
-    const tags = TagsUtils.getKaleCellTags(
-      this.props.notebook.content,
-      this.context.activeCellIndex,
-    );
-    const currentCellMetadata = {
-      stepName: this.props.stepName || '',
-      prevStepNames: this.props.stepDependencies,
-      limits: this.props.limits || {},
-      baseImage: value || undefined,
-      enableCaching: tags?.enableCaching,
-    };
-
-    TagsUtils.setKaleCellTags(
-      this.props.notebook,
-      this.context.activeCellIndex,
-      currentCellMetadata,
-    );
-  };
-
-  updateEnableCaching = (value: boolean | undefined) => {
-    const currentCellMetadata = {
-      stepName: this.props.stepName || '',
-      prevStepNames: this.props.stepDependencies,
-      limits: this.props.limits || {},
-      baseImage: this.props.baseImage,
-      enableCaching: value,
-    };
-
-    TagsUtils.setKaleCellTags(
-      this.props.notebook,
-      this.context.activeCellIndex,
-      currentCellMetadata,
-    );
-  };
-
-  render() {
-    const cellType = RESERVED_CELL_NAMES.includes(this.props.stepName || '')
-      ? this.props.stepName
-      : 'step';
-    const cellColor = this.props.stepName
-      ? `#${ColorUtils.getColor(this.props.stepName)}`
-      : 'transparent';
-
-    const prevStepNotice = this.getPrevStepNotice();
-
-    return (
-      <React.Fragment>
-        <div>
+  return (
+    <>
+      <div>
+        <div
+          className={
+            'kale-metadata-editor-wrapper' +
+            (isEditorVisible ? ' opened' : '') +
+            (isStep ? ' kale-is-step' : '')
+          }
+          ref={editorRef}
+        >
           <div
             className={
-              'kale-metadata-editor-wrapper' +
-              (this.context.isEditorVisible ? ' opened' : '') +
-              (cellType === 'step' ? ' kale-is-step' : '')
+              'kale-cell-metadata-editor' + (isEditorVisible ? '' : ' hidden')
             }
-            ref={this.editorRef}
+            style={{ borderLeft: `2px solid ${cellColor}` }}
           >
-            <div
-              className={
-                'kale-cell-metadata-editor' +
-                (this.context.isEditorVisible ? '' : ' hidden')
-              }
-              style={{ borderLeft: `2px solid ${cellColor}` }}
-            >
-              <Select
-                updateValue={this.updateCurrentCellType}
-                values={CELL_TYPES}
-                value={cellType || 'step'}
-                label={'Cell type'}
-                index={0}
-                variant="outlined"
-                style={{ width: '30%' }}
-              />
+            <Select
+              updateValue={updateCellTags.updateCellType}
+              values={CELL_TYPES}
+              value={cellType || 'step'}
+              label={'Cell type'}
+              index={0}
+              variant="outlined"
+              style={{ width: '30%' }}
+            />
 
-              {cellType === 'step' ? (
+            {isStep && (
+              <>
                 <Input
                   label={'Step name'}
-                  updateValue={this.updateCurrentStepName}
-                  value={this.props.stepName || ''}
+                  updateValue={updateCellTags.updateStepName}
+                  value={stepName}
                   regex={'^([_a-z]([_a-z0-9]*)?)?$'}
-                  regexErrorMsg={this.state.stepNameErrorMsg}
+                  regexErrorMsg={stepNameErrorMsg}
                   variant="outlined"
-                  onBeforeUpdate={this.onBeforeUpdate}
+                  onBeforeUpdate={onBeforeUpdate}
                   style={{ width: '30%' }}
                 />
-              ) : (
-                ''
-              )}
-              {cellType === 'step' ? (
+
                 <Tooltip
                   title={
-                    !this.props.stepName || this.props.stepName.length === 0
+                    !hasStepName
                       ? 'Please enter a step name first'
-                      : this.state.stepDependenciesChoices.length === 0
+                      : stepDependenciesChoices.length === 0
                         ? 'No other steps available. Add more pipeline steps to create dependencies.'
                         : 'Select which steps this step depends on'
                   }
                   placement="top"
                   arrow
                 >
-                  <div
-                    style={{
-                      width: '30%',
-                      marginRight: '4px',
-                    }}
-                  >
+                  <div style={{ width: '30%', marginRight: '4px' }}>
                     <SelectMulti
                       id="select-previous-steps"
                       label="Depends on"
                       disabled={
-                        !(
-                          this.props.stepName && this.props.stepName.length > 0
-                        ) || this.state.stepDependenciesChoices.length === 0
+                        !hasStepName || stepDependenciesChoices.length === 0
                       }
-                      updateSelected={this.updatePrevStepsNames}
-                      options={this.state.stepDependenciesChoices}
+                      updateSelected={updateCellTags.updateDependencies}
+                      options={stepDependenciesChoices}
                       variant="outlined"
-                      selected={this.props.stepDependencies || []}
+                      selected={stepDependencies || []}
                     />
                   </div>
                 </Tooltip>
-              ) : (
-                ''
-              )}
 
-              {cellType === 'step' ? (
                 <div style={{ padding: 0, marginRight: '4px' }}>
                   <Button
-                    disabled={
-                      !(this.props.stepName && this.props.stepName.length > 0)
-                    }
+                    disabled={!hasStepName}
                     color="primary"
                     variant="contained"
                     size="small"
                     title="Base Image"
-                    onClick={() => this.toggleBaseImageDialog()}
+                    onClick={() => setBaseImageDialogOpen(true)}
                     style={{ width: '5%' }}
                   >
                     IMAGE
                   </Button>
                 </div>
-              ) : (
-                ''
-              )}
 
-              {cellType === 'step' ? (
                 <div style={{ padding: 0, marginRight: '4px' }}>
                   <Button
-                    disabled={
-                      !(this.props.stepName && this.props.stepName.length > 0)
-                    }
+                    disabled={!hasStepName}
                     color="primary"
                     variant="contained"
                     size="small"
                     title="GPU"
-                    onClick={() => this.toggleTagsEditorDialog()}
+                    onClick={() => setGpuDialogOpen(true)}
                     style={{ width: '5%' }}
                   >
                     GPU
                   </Button>
                 </div>
-              ) : (
-                ''
-              )}
 
-              {cellType === 'step' ? (
                 <div style={{ padding: 0 }}>
                   <Button
-                    disabled={
-                      !(this.props.stepName && this.props.stepName.length > 0)
-                    }
+                    disabled={!hasStepName}
                     color="primary"
                     variant="contained"
                     size="small"
                     title="Caching"
-                    onClick={() => this.toggleCacheDialog()}
+                    onClick={() => setCacheDialogOpen(true)}
                     style={{ width: '5%' }}
                   >
                     CACHE
                   </Button>
                 </div>
-              ) : (
-                ''
-              )}
+              </>
+            )}
 
-              <IconButton
-                aria-label="delete"
-                onMouseDown={() => this.closeEditor()}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </div>
-            <div
-              className={
-                'kale-cell-metadata-editor-helper-text' +
-                (this.context.isEditorVisible ? '' : ' hidden')
-              }
-            >
-              <p>{prevStepNotice}</p>
-            </div>
+            <IconButton aria-label="delete" onMouseDown={closeEditor}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </div>
+          <div
+            className={
+              'kale-cell-metadata-editor-helper-text' +
+              (isEditorVisible ? '' : ' hidden')
+            }
+          >
+            <p>{prevStepNotice}</p>
           </div>
         </div>
-        <CellMetadataEditorDialog
-          open={this.state.cellMetadataEditorDialog}
-          toggleDialog={this.toggleTagsEditorDialog}
-          stepName={this.props.stepName || ''}
-          limits={this.props.limits || {}}
-          updateLimits={this.updateCurrentLimits}
-        />
-        <Dialog
-          open={this.state.baseImageDialogOpen}
-          onClose={() => this.toggleBaseImageDialog()}
-          fullWidth={true}
-          maxWidth={'sm'}
-        >
-          <DialogTitle>Base Image for Step</DialogTitle>
-          <DialogContent>
-            <p style={{ margin: '8px 0' }}>
-              Default:{' '}
-              <strong>
-                {this.props.defaultBaseImage || DEFAULT_BASE_IMAGE}
-              </strong>
-            </p>
-            <Input
-              variant="outlined"
-              label="Custom Base Image"
-              value={this.props.baseImage || ''}
-              updateValue={(v: string) => this.updateBaseImage(v)}
-              placeholder={
-                this.props.pipelineBaseImage ||
-                this.props.defaultBaseImage ||
-                DEFAULT_BASE_IMAGE
-              }
-              style={{ width: '100%', marginTop: '8px' }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => {
-                this.updateBaseImage('');
-                this.toggleBaseImageDialog();
-              }}
-              color="secondary"
-            >
-              Reset to Default
-            </Button>
-            <Button
-              onClick={() => this.toggleBaseImageDialog()}
-              color="primary"
-            >
-              Ok
-            </Button>
-          </DialogActions>
-        </Dialog>
+      </div>
 
-        {/* Cache Dialog */}
-        <Dialog
-          open={this.state.cacheDialogOpen}
-          onClose={() => this.toggleCacheDialog()}
-          fullWidth={true}
-          maxWidth={'sm'}
-        >
-          <DialogTitle>Step Caching Control</DialogTitle>
-          <DialogContent>
-            <p style={{ margin: '8px 0 16px 0' }}>
-              Control whether this step's results are cached. When enabled,
-              Kubeflow Pipelines will reuse previous execution results if inputs
-              haven't changed.
-            </p>
-            <FormControl component="fieldset">
-              <RadioGroup
-                value={this.state.cachingValue}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const val = e.target.value as
-                    | 'default'
-                    | 'enabled'
-                    | 'disabled';
-                  // Update local state immediately for responsive UI
-                  this.setState({ cachingValue: val });
-                  // Save to notebook
-                  this.updateEnableCaching(
-                    val === 'default' ? undefined : val === 'enabled',
-                  );
-                }}
-              >
-                <FormControlLabel
-                  value="default"
-                  control={<Radio />}
-                  label="Use Pipeline Default"
-                />
-                <FormControlLabel
-                  value="enabled"
-                  control={<Radio />}
-                  label="Enable Caching"
-                />
-                <FormControlLabel
-                  value="disabled"
-                  control={<Radio />}
-                  label="Disable Caching"
-                />
-              </RadioGroup>
-            </FormControl>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => this.toggleCacheDialog()} color="primary">
-              Ok
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </React.Fragment>
-    );
-  }
-}
+      <GpuDialog
+        open={gpuDialogOpen}
+        toggleDialog={() => setGpuDialogOpen(prev => !prev)}
+        stepName={stepName}
+        limits={limits}
+        updateLimits={updateCellTags.updateLimits}
+      />
+
+      <BaseImageDialog
+        open={baseImageDialogOpen}
+        onClose={() => setBaseImageDialogOpen(false)}
+        baseImage={baseImage}
+        pipelineBaseImage={pipelineBaseImage}
+        defaultBaseImage={defaultBaseImage}
+        onUpdateBaseImage={updateCellTags.updateBaseImage}
+      />
+
+      <CacheDialog
+        open={cacheDialogOpen}
+        onClose={() => setCacheDialogOpen(false)}
+        enableCaching={enableCaching}
+        onUpdateCaching={updateCellTags.updateCaching}
+      />
+    </>
+  );
+};

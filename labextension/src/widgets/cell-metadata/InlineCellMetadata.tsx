@@ -365,6 +365,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           stepDependencies: activeEditorData.stepDependencies || [],
           limits: activeEditorData.limits || {},
           baseImage: activeEditorData.baseImage,
+          enableCaching: activeEditorData.enableCaching,
         }
       : {
           notebook: this.props.notebook,
@@ -372,6 +373,7 @@ export class InlineCellsMetadata extends React.Component<IProps, IState> {
           stepDependencies: [],
           limits: {},
           baseImage: undefined,
+          enableCaching: undefined,
         };
 
     const cellMetadataEditor = createPortal(
