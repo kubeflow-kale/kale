@@ -691,9 +691,9 @@ class NotebookProcessor:
                     )
                 )
                 anc_step.source.append(code)
-            # need to have a `metrics` flag set to true in order to set the
-            # metrics output artifact in the pipeline template
-            anc_step.metrics = True
+                # need to have a `metrics` flag set to true in order to set the
+                # metrics output artifact in the pipeline template
+                anc_step.metrics = True
 
         self.pipeline.remove_node(tmp_step_name)
 

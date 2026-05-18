@@ -80,19 +80,6 @@ def create_experiment(request, experiment_name, raise_if_exists=False):
         raise ValueError("Failed to create experiment, experiment already exists.")
 
 
-def _get_pipeline_id(pipeline_name):
-    client = _get_client()
-    token = ""
-    pipeline_id = None
-    while pipeline_id is None or token is not None:
-        pipelines = client.list_pipelines(page_token=token)
-        token = pipelines.next_page_token
-        f = next(filter(lambda x: x.display_name == pipeline_name, pipelines.pipelines), None)
-        if f is not None:
-            pipeline_id = f.pipeline_id
-    return pipeline_id
-
-
 def upload_pipeline(request, pipeline_package_path, pipeline_metadata):
     """Upload a KFP package as a new pipeline."""
     pipeline_name = pipeline_metadata["pipeline_name"]

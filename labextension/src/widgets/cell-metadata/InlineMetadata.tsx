@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import * as React from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Chip, Tooltip } from '@mui/material';
 import ColorUtils from '../../lib/ColorUtils';
 import {
@@ -36,22 +37,6 @@ interface IProps {
   defaultBaseImage?: string;
 }
 
-interface IState {
-  cellTypeClass: string;
-  color: string;
-  dependencies: React.ReactNode[];
-  showEditor: boolean;
-  isMergedCell: boolean;
-}
-
-const DefaultState: IState = {
-  cellTypeClass: '',
-  color: '',
-  dependencies: [],
-  showEditor: false,
-  isMergedCell: false,
-};
-// Check if an object is DOMElement
 function isDOMElement(obj: any): obj is HTMLElement {
   return (
     obj &&
@@ -63,296 +48,167 @@ function isDOMElement(obj: any): obj is HTMLElement {
 }
 
 /**
- * This component is used by InlineCellMetadata to display some state information
+ * This component is used by InlineCellsMetadata to display some state information
  * on top of each cell that is tagged with Kale tags.
  *
  * When a cell is tagged with a step name and some dependencies, a chip with the
  * step name and a series of coloured dots for its dependencies are show.
  */
-export class InlineMetadata extends React.Component<IProps, IState> {
-  static contextType = CellMetadataContext;
-  context!: React.ContextType<typeof CellMetadataContext>;
-  wrapperRef: React.RefObject<HTMLDivElement> | null = null;
-  state = DefaultState;
+export const InlineMetadata: React.FC<IProps> = ({
+  stepName,
+  previousStepName,
+  stepDependencies,
+  limits,
+  baseImage,
+  enableCaching,
+  cellElement,
+  cellIndex,
+  pipelineBaseImage,
+  defaultBaseImage,
+}) => {
+  const context = useContext(CellMetadataContext);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  constructor(props: IProps) {
-    super(props);
-    this.openEditor = this.openEditor.bind(this);
-  }
+  const isMergedCell = !stepName;
+  const isReserved = RESERVED_CELL_NAMES.includes(stepName);
+  const cellTypeClass = isReserved ? 'kale-reserved-cell' : '';
+  const name = stepName || previousStepName;
+  const color = name ? ColorUtils.getColor(name) : '';
+  const showEditor =
+    context.isEditorVisible && context.activeCellIndex === cellIndex;
 
-  componentDidMount() {
-    this.setState(this.updateIsMergedState);
-    this.checkIfReservedName();
-    this.updateStyles();
-    this.updateDependencies();
-  }
+  const dependencies = stepDependencies.map((depName, i) => {
+    const rgb = ColorUtils.getColor(depName);
+    return (
+      <Tooltip placement="top" key={i} title={depName}>
+        <div
+          className="kale-inline-cell-dependency"
+          style={{ backgroundColor: `#${rgb}` }}
+        />
+      </Tooltip>
+    );
+  });
 
-  componentWillUnmount() {
-    const cellElement = this.props.cellElement;
-    if (isDOMElement(cellElement)) {
-      cellElement.classList.remove('kale-merged-cell');
-      const codeMirrorElem = cellElement.querySelector(
-        '.CodeMirror',
-      ) as HTMLElement;
-      if (codeMirrorElem) {
-        codeMirrorElem.style.border = '';
-      }
-    }
-
-    if (this.wrapperRef?.current) {
-      this.wrapperRef.current.remove();
-    }
-  }
-
-  componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
-    const mergedState = this.updateIsMergedState(this.state, this.props);
-    if (mergedState) {
-      this.setState(mergedState);
-    }
-
-    if (
-      prevProps.stepName !== this.props.stepName ||
-      prevProps.previousStepName !== this.props.previousStepName
-    ) {
-      this.updateStyles();
-    }
-
-    if (prevProps.stepDependencies !== this.props.stepDependencies) {
-      this.updateDependencies();
-    }
-
-    this.checkIfReservedName();
-    const editorState = this.updateEditorState(this.state, this.props);
-    if (editorState) {
-      this.setState(editorState);
-    }
-  }
-
-  updateEditorState = (state: IState, props: IProps) => {
-    let showEditor = false;
-
-    if (this.context && this.context.isEditorVisible) {
-      if (this.context.activeCellIndex === props.cellIndex) {
-        showEditor = true;
-      }
-    }
-
-    if (showEditor === state.showEditor) {
-      return null;
-    }
-
-    return { showEditor };
-  };
-
-  updateIsMergedState = (state: IState, props: IProps) => {
-    let newIsMergedCell = false;
-    const cellElement = props.cellElement;
-    if (!props.stepName) {
-      newIsMergedCell = true;
-
-      // TODO: This is a side effect, consider moving it somewhere else.
-      if (isDOMElement(cellElement)) {
-        cellElement.classList.add('kale-merged-cell');
-      }
-    } else {
-      if (isDOMElement(cellElement)) {
-        cellElement.classList.remove('kale-merged-cell');
-      }
-    }
-
-    if (newIsMergedCell === state.isMergedCell) {
-      return null;
-    }
-
-    return { isMergedCell: newIsMergedCell };
-  };
-
-  /**
-   * Check if the step tag of the current cell has a reserved name. If so,
-   * apply the corresponding css class to the HTML Cell element.
-   */
-  checkIfReservedName() {
-    this.setState((state: IState, props: IProps) => {
-      let cellTypeClass = '';
-      if (RESERVED_CELL_NAMES.includes(props.stepName)) {
-        cellTypeClass = 'kale-reserved-cell';
-      }
-
-      if (cellTypeClass === state.cellTypeClass) {
-        return null;
-      }
-      return { cellTypeClass };
-    });
-  }
-
-  /**
-   * Update the style of the active cell, by changing the left border with
-   * the correct color, based on the current step name.
-   */
-  updateStyles() {
-    if (!isDOMElement(this.props.cellElement)) {
+  useEffect(() => {
+    if (!isDOMElement(cellElement)) {
       return;
     }
-    const name = this.props.stepName || this.props.previousStepName;
-    const codeMirrorElem = this.props.cellElement.querySelector(
+    if (isMergedCell) {
+      cellElement.classList.add('kale-merged-cell');
+    } else {
+      cellElement.classList.remove('kale-merged-cell');
+    }
+  }, [cellElement, isMergedCell]);
+
+  useEffect(() => {
+    if (!isDOMElement(cellElement)) {
+      return;
+    }
+    const codeMirrorElem = cellElement.querySelector(
       '.CodeMirror',
     ) as HTMLElement;
-
     if (codeMirrorElem) {
-      codeMirrorElem.style.borderLeft = '2px solid transparent';
+      codeMirrorElem.style.borderLeft = color
+        ? `2px solid #${color}`
+        : '2px solid transparent';
     }
-    if (!name) {
-      this.setState({ color: '' });
-      return;
-    }
-    const rgb = this.getColorFromName(name);
-    this.setState({ color: rgb });
+  }, [cellElement, color]);
 
-    if (codeMirrorElem) {
-      codeMirrorElem.style.borderLeft = `2px solid #${rgb}`;
-    }
-  }
+  useEffect(() => {
+    return () => {
+      if (isDOMElement(cellElement)) {
+        cellElement.classList.remove('kale-merged-cell');
+        const codeMirrorElem = cellElement.querySelector(
+          '.CodeMirror',
+        ) as HTMLElement;
+        if (codeMirrorElem) {
+          codeMirrorElem.style.border = '';
+        }
+      }
+      if (wrapperRef.current) {
+        wrapperRef.current.remove();
+      }
+    };
+  }, [cellElement]);
 
-  getColorFromName(name: string) {
-    return ColorUtils.getColor(name);
-  }
-
-  createLimitsText() {
-    const gpuType = Object.keys(this.props.limits)[0] || undefined;
-    return gpuType ? (
-      <React.Fragment>
-        <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-          GPU request: {gpuType + ' - '}
-          {this.props.limits[gpuType]}
-        </p>
-      </React.Fragment>
-    ) : (
-      ''
-    );
-  }
-
-  createBaseImageText() {
-    const effectiveImage =
-      this.props.baseImage ||
-      this.props.pipelineBaseImage ||
-      this.props.defaultBaseImage ||
-      DEFAULT_BASE_IMAGE;
-    const isDefault = !this.props.baseImage;
-
-    return (
-      !isDefault && (
-        <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-          Base Image: {effectiveImage}
-        </p>
-      )
-    );
-  }
-
-  createCacheText() {
-    // Only show if caching is explicitly set (not using pipeline default)
-    if (this.props.enableCaching === undefined) {
-      return null;
-    }
-
-    const cacheStatus = this.props.enableCaching ? 'enabled' : 'disabled';
-    return (
-      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-        Cache: {cacheStatus}
-      </p>
-    );
-  }
-
-  /**
-   * Create a list of div dots that represent the dependencies of the current
-   * step
-   */
-  updateDependencies() {
-    const dependencies = this.props.stepDependencies.map((name, i) => {
-      const rgb = this.getColorFromName(name);
-      return (
-        <Tooltip placement="top" key={i} title={name}>
-          <div
-            className="kale-inline-cell-dependency"
-            style={{
-              backgroundColor: `#${rgb}`,
-            }}
-          ></div>
-        </Tooltip>
-      );
-    });
-    this.setState({ dependencies });
-  }
-
-  openEditor = () => {
-    const showEditor = true;
-    this.setState({ showEditor });
-    this.context.onEditorVisibilityChange(showEditor);
+  const openEditor = () => {
+    context.onEditorVisibilityChange(true);
   };
 
-  render() {
-    const details = RESERVED_CELL_NAMES.includes(this.props.stepName) ? null : (
-      <>
-        {/* Add a `depends on: ` string before the deps dots in case there are some*/}
-        {this.state.dependencies.length > 0 ? (
-          <p style={{ fontStyle: 'italic', margin: '0 5px' }}>depends on: </p>
-        ) : null}
-        {this.state.dependencies}
+  const gpuType = Object.keys(limits)[0] || undefined;
+  const limitsText = gpuType ? (
+    <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+      GPU request: {gpuType + ' - '}
+      {limits[gpuType]}
+    </p>
+  ) : null;
 
-        {this.createLimitsText()}
-        {this.createBaseImageText()}
-        {this.createCacheText()}
-      </>
-    );
+  const baseImageText = baseImage ? (
+    <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+      Base Image:{' '}
+      {baseImage || pipelineBaseImage || defaultBaseImage || DEFAULT_BASE_IMAGE}
+    </p>
+  ) : null;
 
-    return (
+  const cacheText =
+    enableCaching !== undefined ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        Cache: {enableCaching ? 'enabled' : 'disabled'}
+      </p>
+    ) : null;
+
+  const details = isReserved ? null : (
+    <>
+      {dependencies.length > 0 ? (
+        <p style={{ fontStyle: 'italic', margin: '0 5px' }}>depends on: </p>
+      ) : null}
+      {dependencies}
+      {limitsText}
+      {baseImageText}
+      {cacheText}
+    </>
+  );
+
+  return (
+    <div ref={wrapperRef} className={'kale-inline-cell-metadata-container'}>
       <div
-        ref={this.wrapperRef}
-        className={'kale-inline-cell-metadata-container'}
+        className={
+          'kale-inline-cell-metadata' + (isMergedCell ? ' hidden' : '')
+        }
       >
-        <div
-          className={
-            'kale-inline-cell-metadata' +
-            (this.state.isMergedCell ? ' hidden' : '')
+        {isReserved ? (
+          ''
+        ) : (
+          <p style={{ fontStyle: 'italic', marginRight: '5px' }}>step: </p>
+        )}
+
+        <Tooltip
+          placement="top"
+          key={stepName + 'tooltip'}
+          title={
+            isReserved
+              ? RESERVED_CELL_NAMES_HELP_TEXT[stepName]
+              : 'This cell starts the pipeline step: ' + stepName
           }
         >
-          {/* Add a `step: ` string before the Chip in case the chip belongs to a pipeline step*/}
-          {RESERVED_CELL_NAMES.includes(this.props.stepName) ? (
-            ''
-          ) : (
-            <p style={{ fontStyle: 'italic', marginRight: '5px' }}>step: </p>
-          )}
+          <Chip
+            className={`kale-chip ${cellTypeClass}`}
+            style={{ backgroundColor: `#${color}` }}
+            key={stepName}
+            label={stepName}
+          />
+        </Tooltip>
 
-          <Tooltip
-            placement="top"
-            key={this.props.stepName + 'tooltip'}
-            title={
-              RESERVED_CELL_NAMES.includes(this.props.stepName)
-                ? RESERVED_CELL_NAMES_HELP_TEXT[this.props.stepName]
-                : 'This cell starts the pipeline step: ' + this.props.stepName
-            }
-          >
-            <Chip
-              className={`kale-chip ${this.state.cellTypeClass}`}
-              style={{ backgroundColor: `#${this.state.color}` }}
-              key={this.props.stepName}
-              label={this.props.stepName}
-            />
-          </Tooltip>
-
-          {details}
-        </div>
-
-        <div
-          className={
-            'kale-editor-toggle-parent' +
-            (this.state.showEditor ? ' hidden' : '')
-          }
-        >
-          <button className="kale-editor-toggle" onClick={this.openEditor}>
-            <EditIcon />
-          </button>
-        </div>
+        {details}
       </div>
-    );
-  }
-}
+
+      <div
+        className={'kale-editor-toggle-parent' + (showEditor ? ' hidden' : '')}
+      >
+        <button className="kale-editor-toggle" onClick={openEditor}>
+          <EditIcon />
+        </button>
+      </div>
+    </div>
+  );
+};

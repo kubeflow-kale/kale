@@ -83,10 +83,10 @@ def get_container_name():
     candidates = [c for c in container_names if all(x not in c for x in potentially_sidecar_names)]
     if len(candidates) > 1:
         raise RuntimeError(
-            "Too many container candidates.Cannot infer the"
+            "Too many container candidates. Cannot infer the"
             f" name of the current container from: {candidates} "
         )
-    if len(candidates) > 0:
+    if len(candidates) == 0:
         raise RuntimeError(
             "No container names left. Could not infer the name of the running container."
         )

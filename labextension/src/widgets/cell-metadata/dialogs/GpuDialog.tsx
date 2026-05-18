@@ -24,9 +24,9 @@ import {
   Switch,
   Box,
 } from '@mui/material';
-import ColorUtils from '../../lib/ColorUtils';
-import { Input } from '../../components/Input';
-import { Select } from '../../components/Select';
+import ColorUtils from '../../../lib/ColorUtils';
+import { Input } from '../../../components/Input';
+import { Select } from '../../../components/Select';
 
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },
@@ -40,7 +40,7 @@ export interface ILimitAction {
   limitValue?: string;
 }
 
-interface ICellMetadataEditorDialog {
+interface IGpuDialogProps {
   open: boolean;
   stepName: string;
   limits: { [id: string]: string };
@@ -48,9 +48,7 @@ interface ICellMetadataEditorDialog {
   toggleDialog: () => void;
 }
 
-export const CellMetadataEditorDialog: React.FunctionComponent<
-  ICellMetadataEditorDialog
-> = props => {
+export const GpuDialog: React.FC<IGpuDialogProps> = props => {
   const handleClose = () => {
     props.toggleDialog();
   };
