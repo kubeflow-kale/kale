@@ -48,7 +48,7 @@ function isDOMElement(obj: any): obj is HTMLElement {
 }
 
 /**
- * This component is used by InlineCellMetadata to display some state information
+ * This component is used by InlineCellsMetadata to display some state information
  * on top of each cell that is tagged with Kale tags.
  *
  * When a cell is tagged with a step name and some dependencies, a chip with the

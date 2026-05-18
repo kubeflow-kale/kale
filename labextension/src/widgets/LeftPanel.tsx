@@ -15,7 +15,7 @@
 import * as React from 'react';
 import { useEffect } from 'react';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
+import { InlineCellsMetadata } from './cell-metadata/InlineCellsMetadata';
 import { SplitDeployButton } from '../components/DeployButton';
 import { Kernel } from '@jupyterlab/services';
 import { ExperimentInput } from '../components/ExperimentInput';
