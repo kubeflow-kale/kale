@@ -27,6 +27,21 @@ import { createPortal } from 'react-dom';
 export type Editors = { [index: string]: EditorProps };
 type SaveState = 'started' | 'completed' | 'failed';
 
+/** Keep inline labels below the cell metadata editor when it is mounted in the cell. */
+function insertMetadataParent(
+  cellElement: HTMLElement,
+  metadataParent: HTMLDivElement,
+): void {
+  const editorWrapper = cellElement.querySelector(
+    '.kale-metadata-editor-wrapper',
+  );
+  if (editorWrapper) {
+    cellElement.insertBefore(metadataParent, editorWrapper.nextSibling);
+  } else {
+    cellElement.prepend(metadataParent);
+  }
+}
+
 interface IUseInlineMetadataOptions {
   pipelineBaseImage?: string;
   defaultBaseImage?: string;
@@ -121,11 +136,11 @@ export function useInlineMetadata(
       newContainers.push(metadataParent);
       if (cellElement.childNodes.length === 0) {
         new MutationObserver((_, obs) => {
-          cellElement.prepend(metadataParent);
+          insertMetadataParent(cellElement, metadataParent);
           obs.disconnect();
         }).observe(cellElement, { childList: true });
       } else {
-        cellElement.prepend(metadataParent);
+        insertMetadataParent(cellElement, metadataParent);
       }
 
       metadata.push(
