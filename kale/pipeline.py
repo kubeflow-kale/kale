@@ -43,14 +43,6 @@ DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
 DEFAULT_BASE_IMAGE = "python:3.12"
 
 
-DEFAULT_SECURITY_CONTEXT = {
-    "enabled": True,
-    "run_as_user": 65534,
-    "run_as_group": 0,
-    "run_as_non_root": True,
-}
-
-
 class VolumeConfig(Config):
     """Used for validating the `volumes` field of NotebookConfig."""
 
@@ -115,10 +107,20 @@ class SecurityContextConfig(Config):
     Can be configured via JupyterLab settings or ``KALE_*`` environment variables.
     """
 
-    enabled = Field(type=bool, default=DEFAULT_SECURITY_CONTEXT["enabled"])
-    run_as_user = Field(type=int, default=DEFAULT_SECURITY_CONTEXT["run_as_user"])
-    run_as_group = Field(type=int, default=DEFAULT_SECURITY_CONTEXT["run_as_group"])
-    run_as_non_root = Field(type=bool, default=DEFAULT_SECURITY_CONTEXT["run_as_non_root"])
+    enabled = Field(type=bool, default=True)
+    run_as_user = Field(type=int, default=65534)
+    run_as_group = Field(type=int, default=0)
+    run_as_non_root = Field(type=bool, default=True)
+
+    def __eq__(self, value):
+        if not isinstance(value, SecurityContextConfig):
+            return False
+        return (
+            self.enabled == value.enabled
+            and self.run_as_user == value.run_as_user
+            and self.run_as_group == value.run_as_group
+            and self.run_as_non_root == value.run_as_non_root
+        )
 
 
 class PipelineConfig(Config):
@@ -225,11 +227,11 @@ class PipelineConfig(Config):
         """
         env_config = utils.get_security_context_from_env()
         if self.security_context is None:
-            self.security_context = SecurityContextConfig()
-        if env_config is not None:
-            for key, value in env_config.items():
+            self.security_context = env_config
+        else:
+            for key, value in env_config.__dict__.items():
                 current = getattr(self.security_context, key, None)
-                if current is None or current == DEFAULT_SECURITY_CONTEXT[key]:
+                if current is None or str(current) == "":
                     setattr(self.security_context, key, value)
 
 

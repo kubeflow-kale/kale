@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from kale.common import utils
+from kale.pipeline import SecurityContextConfig
 
 
 def test_comment_magic_commands():
@@ -142,7 +143,9 @@ def test_get_security_context_from_env_default(monkeypatch):
     """When no env vars are set, the default values should be used"""
     _clear_security_context_env(monkeypatch)
 
-    assert utils.get_security_context_from_env() == {}
+    default_sc = SecurityContextConfig()
+    sc_from_config = utils.get_security_context_from_env()
+    assert sc_from_config == default_sc
 
 
 def test_get_security_context_from_env_enabled_true(monkeypatch):
@@ -152,7 +155,7 @@ def test_get_security_context_from_env_enabled_true(monkeypatch):
     for val in ("1", "true", "True", "TRUE", "yes", "YES", "on", "ON"):
         monkeypatch.setenv("KALE_SECURITY_CONTEXT_ENABLED", val)
         result = utils.get_security_context_from_env()
-        assert result["enabled"] is True, f"Expected True for '{val}'"
+        assert result.enabled is True, f"Expected True for '{val}'"
 
 
 def test_get_security_context_from_env_enabled_false(monkeypatch):
@@ -162,7 +165,7 @@ def test_get_security_context_from_env_enabled_false(monkeypatch):
     for val in ("0", "false", "False", "FALSE", "no", "NO", "off", "OFF", ""):
         monkeypatch.setenv("KALE_SECURITY_CONTEXT_ENABLED", val)
         result = utils.get_security_context_from_env()
-        assert result["enabled"] is False, f"Expected False for '{val}'"
+        assert result.enabled is False, f"Expected False for '{val}'"
 
 
 def test_get_security_context_from_env_run_as_user(monkeypatch):
@@ -171,7 +174,7 @@ def test_get_security_context_from_env_run_as_user(monkeypatch):
     monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_USER", "1000")
 
     result = utils.get_security_context_from_env()
-    assert result["run_as_user"] == 1000
+    assert result.run_as_user == 1000
 
 
 def test_get_security_context_from_env_run_as_group(monkeypatch):
@@ -180,7 +183,7 @@ def test_get_security_context_from_env_run_as_group(monkeypatch):
     monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_GROUP", "500")
 
     result = utils.get_security_context_from_env()
-    assert result["run_as_group"] == 500
+    assert result.run_as_group == 500
 
 
 def test_get_security_context_from_env_run_as_non_root(monkeypatch):
@@ -188,10 +191,10 @@ def test_get_security_context_from_env_run_as_non_root(monkeypatch):
     _clear_security_context_env(monkeypatch)
 
     monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT", "true")
-    assert utils.get_security_context_from_env()["run_as_non_root"] is True
+    assert utils.get_security_context_from_env().run_as_non_root is True
 
     monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT", "false")
-    assert utils.get_security_context_from_env()["run_as_non_root"] is False
+    assert utils.get_security_context_from_env().run_as_non_root is False
 
 
 def test_get_security_context_from_env_all_set(monkeypatch):
@@ -202,10 +205,6 @@ def test_get_security_context_from_env_all_set(monkeypatch):
     monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_GROUP", "1000")
     monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT", "false")
 
-    result = utils.get_security_context_from_env()
-    assert result == {
-        "enabled": False,
-        "run_as_user": 1000,
-        "run_as_group": 1000,
-        "run_as_non_root": False,
-    }
+    assert utils.get_security_context_from_env() == SecurityContextConfig(
+        enabled=False, run_as_user=1000, run_as_group=1000, run_as_non_root=False
+    )

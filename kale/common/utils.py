@@ -25,6 +25,7 @@ from typing import Any
 import urllib
 
 import __main__
+from kale.pipeline import SecurityContextConfig
 
 log = logging.getLogger(__name__)
 
@@ -279,7 +280,7 @@ def compute_trusted_hosts() -> list[str]:
     return trusted_hosts
 
 
-def get_security_context_from_env() -> dict:
+def get_security_context_from_env() -> SecurityContextConfig:
     """Read security context configuration from KALE_ environment variables.
 
     Environment variables:
@@ -297,10 +298,11 @@ def get_security_context_from_env() -> dict:
         keys that were explicitly set via env vars; missing keys mean the
         caller should use defaults.
     """
-    config: dict = {}
 
     def parse_bool(val: str) -> bool:
         return val.lower() in {"1", "true", "yes", "on"}
+
+    security_context = SecurityContextConfig()
 
     enabled = os.getenv("KALE_SECURITY_CONTEXT_ENABLED")
     run_as_user = os.getenv("KALE_SECURITY_CONTEXT_RUN_AS_USER")
@@ -308,11 +310,11 @@ def get_security_context_from_env() -> dict:
     run_as_non_root = os.getenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT")
 
     if enabled is not None:
-        config["enabled"] = parse_bool(enabled)
+        security_context.enabled = parse_bool(enabled)
     if run_as_user is not None:
-        config["run_as_user"] = int(run_as_user)
+        security_context.run_as_user = int(run_as_user)
     if run_as_group is not None:
-        config["run_as_group"] = int(run_as_group)
+        security_context.run_as_group = int(run_as_group)
     if run_as_non_root is not None:
-        config["run_as_non_root"] = parse_bool(run_as_non_root)
-    return config
+        security_context.run_as_non_root = parse_bool(run_as_non_root)
+    return security_context

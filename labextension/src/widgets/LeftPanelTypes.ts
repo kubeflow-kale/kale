@@ -29,10 +29,10 @@ export const NEW_EXPERIMENT: IExperiment = {
 // Security context settings for pipeline steps
 // Uses Python naming convention as it will be read by Kale backend
 export interface ISecurityContext {
-  enabled: boolean;
-  run_as_user: number;
-  run_as_group: number;
-  run_as_non_root: boolean;
+  enabled?: boolean;
+  run_as_user?: number;
+  run_as_group?: number;
+  run_as_non_root?: boolean;
 }
 
 // keep names with Python notation because they will be read

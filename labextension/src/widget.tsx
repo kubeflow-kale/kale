@@ -61,18 +61,12 @@ const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
 const SECURITY_CONTEXT_KEY = 'securityContext';
 
 interface ISecurityContextSettings {
-  enabled: boolean;
-  run_as_user: number;
-  run_as_group: number;
-  run_as_non_root: boolean;
+  enabled?: boolean;
+  run_as_user?: number;
+  run_as_group?: number;
+  run_as_non_root?: boolean;
 }
 
-const DEFAULT_SECURITY_CONTEXT: ISecurityContextSettings = {
-  enabled: true,
-  run_as_user: 65534,
-  run_as_group: 0,
-  run_as_non_root: true,
-};
 const OUTPUT_PATH_KEY = 'outputPath';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
@@ -139,9 +133,27 @@ async function activate(
     const [kaleSettings, setKaleSettings] = React.useState({
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
-      securityContext: DEFAULT_SECURITY_CONTEXT,
+      securityContext: {} as ISecurityContextSettings,
       outputPath: '',
     });
+
+    // Fetch backend defaults for security context from env vars
+    const [backendSecurityContext, setBackendSecurityContext] =
+      React.useState<ISecurityContextSettings | null>(null);
+
+    React.useEffect(() => {
+      if (!backend) {
+        return;
+      }
+
+      executeRpc(kernel, 'nb.get_security_context_defaults')
+        .then((result: ISecurityContextSettings) => {
+          setBackendSecurityContext(result);
+        })
+        .catch(error => {
+          console.warn('Failed to fetch security context defaults:', error);
+        });
+    }, []);
 
     React.useEffect(() => {
       let disposed = false;
@@ -150,27 +162,50 @@ async function activate(
 
       settingRegistry
         .load(KALE_SETTINGS_PLUGIN_ID)
-        .then(loadedSetting => {
+        .then(async loadedSetting => {
           setting = loadedSetting;
 
-          const read = () => ({
-            enableKaleByDefault:
-              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
-                | boolean
-                | undefined) ?? false,
-            autoSaveOnCompileOrRun:
-              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
-                | boolean
-                | undefined) ?? false,
-            securityContext:
-              (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
-                | ISecurityContextSettings
-                | undefined) ?? DEFAULT_SECURITY_CONTEXT,
-            outputPath:
-              (loadedSetting.get(OUTPUT_PATH_KEY).composite as
-                | string
-                | undefined) ?? '',
-          });
+          // If backend env vars are available and user hasn't modified the setting,
+          // programmatically set them so they appear in the Settings UI
+          const jlSecurityContextSetting =
+            loadedSetting.get(SECURITY_CONTEXT_KEY);
+          if (
+            backendSecurityContext &&
+            Object.keys(backendSecurityContext).length > 0 &&
+            jlSecurityContextSetting.user === undefined
+          ) {
+            const currentComposite = jlSecurityContextSetting.composite as
+              | ISecurityContextSettings
+              | undefined;
+            const mergedSecurityContext = {
+              ...currentComposite,
+              ...backendSecurityContext,
+            };
+            await loadedSetting.set(
+              SECURITY_CONTEXT_KEY,
+              mergedSecurityContext,
+            );
+          }
+
+          const read = () => {
+            return {
+              enableKaleByDefault:
+                (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
+                  | boolean
+                  | undefined) ?? false,
+              autoSaveOnCompileOrRun:
+                (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY)
+                  .composite as boolean | undefined) ?? false,
+              securityContext:
+                (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
+                  | ISecurityContextSettings
+                  | undefined) ?? {},
+              outputPath:
+                (loadedSetting.get(OUTPUT_PATH_KEY).composite as
+                  | string
+                  | undefined) ?? '',
+            };
+          };
 
           const update = () => {
             if (disposed) {
@@ -193,7 +228,7 @@ async function activate(
           (setting.changed as any).disconnect(onSettingChanged);
         }
       };
-    }, []);
+    }, [backendSecurityContext]);
 
     return (
       <KubeflowKaleLeftPanel
