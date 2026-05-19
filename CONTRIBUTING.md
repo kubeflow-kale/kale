@@ -40,8 +40,7 @@ Run `make help` to see all available commands.
 | `make lint-backend` | Lint backend code (ruff) |
 | `make lint-labextension` | Lint labextension code (eslint + prettier) |
 | `make format-labextension` | Format labextension code |
-| `make build-backend` | Build backend wheel |
-| `make build-labextension` | Build labextension wheel |
+| `make build` | Build wheel |
 | `make kfp-build` | Build wheel for KFP cluster testing |
 | `make kfp-serve` | Serve local wheel for KFP testing |
 | `make kfp-compile NB=...` | Compile notebook with local wheel |
@@ -58,10 +57,10 @@ Run `make help` to see all available commands.
 
 ### Adding a Python Dependency
 
-1. Edit the appropriate `pyproject.toml`:
-   - Backend dependencies: `backend/pyproject.toml` in `[project.dependencies]`
-   - Dev dependencies: `backend/pyproject.toml` in `[project.optional-dependencies.dev]`
-   - Labextension dependencies: `labextension/pyproject.toml` in `[project.dependencies]`
+1. Edit `pyproject.toml`:
+   - Backend dependencies: `[project.dependencies]`
+   - Jupyter dependencies: `[project.optional-dependencies.jupyter]`
+   - Dev dependencies: `[project.optional-dependencies.dev]`
 
 2. Update the lockfile:
    ```bash
@@ -70,7 +69,7 @@ Run `make help` to see all available commands.
 
 3. Sync your environment:
    ```bash
-   uv sync --all-packages --all-extras
+   uv sync --all-extras
    ```
 
 ### Adding a JavaScript Dependency
@@ -89,32 +88,30 @@ make lock-upgrade
 
 ## Building Release Artifacts
 
-Build the production wheels for testing or distribution:
+Build the production wheel:
 
 ```bash
-make build-backend       # Creates: dist/kubeflow_kale-2.0.0a1-py3-none-any.whl
-make build-labextension  # Creates: dist/kubeflow_kale_labextension-2.0.0a1-py3-none-any.whl
+make build    # Creates: dist/kubeflow_kale-2.0.0a1-py3-none-any.whl
 ```
 
 ### Testing in a Fresh Environment
 
-To test the wheels work correctly in isolation:
+To test the wheel works correctly in isolation:
 
 ```bash
 # Create a fresh virtual environment
 mkdir /tmp/kale-test && cd /tmp/kale-test
 uv venv && source .venv/bin/activate
 
-# Install JupyterLab and both Kale wheels
-uv pip install "jupyterlab>=4.0.0,<5" \
-  /path/to/kale/dist/kubeflow_kale-2.0.0a1-py3-none-any.whl \
-  /path/to/kale/dist/kubeflow_kale_labextension-2.0.0a1-py3-none-any.whl
+# Install lean backend only
+uv pip install /path/to/kale/dist/kubeflow_kale-2.0.0a1-py3-none-any.whl
+
+# Or install with JupyterLab extension
+uv pip install "jupyterlab>=4.0.0,<5" "/path/to/kale/dist/kubeflow_kale-2.0.0a1-py3-none-any.whl[jupyter]"
 
 # Start JupyterLab
 jupyter lab
 ```
-
-**Note:** The labextension depends on the backend (`kubeflow-kale>=2.0.0a1`). Once both packages are published to PyPI, users will only need to install `kubeflow-kale-labextension` and the backend will be pulled automatically.
 
 ## Testing with KFP Clusters
 
@@ -162,14 +159,14 @@ podman run --network=host ...
 
 The `make kfp-serve` command:
 
-1. Builds the backend wheel with a fixed version (`2.0.0a1` by default)
+1. Builds the wheel with a fixed version (`2.0.0a1` by default)
 2. Copies the wheel to `.kfp-wheels/` directory
 3. Starts a simple HTTP server on port 8765
 4. Kind/Docker clusters can reach this server via `host.docker.internal:8765`
 
 The fixed version ensures reproducibility - you can rebuild the wheel multiple
 times and it will always have the same version, so compiled pipelines continue
-to work. Override the version with `make kfp-build KFP_DEV_VERSION=x.y.z`.
+to work. The version is set in `kale/__init__.py`.
 
 When you set `KALE_PIP_INDEX_URLS`, Kale's compiler includes this URL in the
 generated KFP DSL. The pipeline components then install Kale from your local
@@ -236,10 +233,10 @@ make kfp-run NB=examples/base/candies_sharing.ipynb KFP_HOST=http://localhost:80
 
 ## Versioning
 
-- **Backend**: Uses `setuptools_scm` - version derived from git tags automatically
+- **Backend**: Version set in `kale/__init__.py` (`__version__`)
 - **Labextension**: Version set in `labextension/package.json`
 
-During development, commits after a tag get version like `1.0.0.dev31+gHASH`.
+Both versions should match (PEP 440 for Python, semver for npm). Use `make check-versions` to verify.
 
 ## Live Reload
 
@@ -257,7 +254,7 @@ kernel restart. However, `make test-backend` always runs with fresh imports.
 
 ## Testing
 
-Backend tests compare generated DSL against golden files in `backend/kale/tests/assets/kfp_dsl/`.
+Backend tests compare generated DSL against golden files in `kale/tests/assets/kfp_dsl/`.
 When modifying template output, update these fixtures.
 
 ```bash
@@ -301,5 +298,9 @@ Open the project in VS Code - debug configurations are provided in `.vscode/laun
 4. Run linting: `make lint`
 5. Update fixtures if template output changed
 6. Commit your changes
+
+## Releasing
+
+See [RELEASE.md](RELEASE.md) for instructions on publishing to TestPyPI and PyPI.
 
 Happy hacking! If anything in this guide is unclear, open an issue or PR with improvements.

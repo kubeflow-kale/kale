@@ -13,41 +13,38 @@
 // limitations under the License.
 
 import * as React from 'react';
-import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
-import NotebookUtils from '../lib/NotebookUtils';
-import { InlineCellsMetadata } from './cell-metadata/InlineCellMetadata';
+import { useEffect } from 'react';
+import { INotebookTracker } from '@jupyterlab/notebook';
+import { InlineCellsMetadata } from './cell-metadata/InlineCellsMetadata';
 import { SplitDeployButton } from '../components/DeployButton';
 import { Kernel } from '@jupyterlab/services';
 import { ExperimentInput } from '../components/ExperimentInput';
-import {
-  DeployProgressState,
-  DeploysProgress,
-} from './deploys-progress/DeploysProgress';
+import { DeploysProgress } from './deploys-progress/DeploysProgress';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@mui/material/styles';
-import { FormControlLabel, Switch } from '@mui/material';
+import { FormControlLabel, Link, Switch } from '@mui/material';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { theme } from '../Theme';
 import { Input } from '../components/Input';
-import Commands from '../lib/Commands';
-import { PageConfig } from '@jupyterlab/coreutils';
 import { KaleEmptyState } from './KaleEmptyState';
+import { KFPStatusBadge } from '../components/KFPStatusBadge';
 import kaleLogo from '../../style/icons/kale.svg';
+import { useKfpStatus } from './hooks/useKfpStatus';
+import { useNotebookMetadata } from './hooks/useNotebookMetadata';
+import { useDeployment } from './hooks/useDeployment';
+import { setLeftPanelCallbacks } from '../commands/kaleToolbar';
 
-export type DeployType = 'compile' | 'run' | 'upload';
-
-const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
-const DEFAULT_UI_URL = 'http://localhost:8080';
-
-export interface IExperiment {
-  id: string;
-  name: string;
-}
-
-export const NEW_EXPERIMENT: IExperiment = {
-  name: '+ New Experiment',
-  id: 'new',
-};
+import {
+  DeployType,
+  IExperiment,
+  IKaleNotebookMetadata,
+  DefaultState,
+  NEW_EXPERIMENT,
+  PIPELINE_NAME_MAX_LENGTH,
+} from './LeftPanelTypes';
+export type { DeployType, IExperiment, IKaleNotebookMetadata };
+export { DefaultState, NEW_EXPERIMENT };
 
 interface IProps {
   lab: JupyterFrontEnd;
@@ -55,689 +52,270 @@ interface IProps {
   docManager: IDocumentManager;
   backend: boolean;
   kernel: Kernel.IKernelConnection;
+  enableKaleByDefault: boolean;
+  autoSaveOnCompileOrRun: boolean;
+  outputPath: string;
 }
 
-interface IState {
-  metadata: IKaleNotebookMetadata;
-  runDeployment: boolean;
-  deploymentType: DeployType;
-  deployDebugMessage: boolean;
-  experiments: IExperiment[];
-  gettingExperiments: boolean;
-  deploys: { [index: number]: DeployProgressState };
-  isEnabled: boolean;
-  namespace: string;
-  kfpUiHost: string;
-  defaultBaseImage: string;
-}
+export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
+  const {
+    lab,
+    tracker,
+    backend,
+    kernel,
+    docManager,
+    enableKaleByDefault,
+    autoSaveOnCompileOrRun,
+    outputPath,
+  } = props;
 
-// keep names with Python notation because they will be read
-// in python by Kale.
-export interface IKaleNotebookMetadata {
-  experiment: IExperiment;
-  experiment_name: string; // Keep this for backwards compatibility
-  pipeline_name: string;
-  pipeline_description: string;
-  base_image: string;
-  enable_caching?: boolean;
+  const kfpStatus = useKfpStatus(kernel, backend);
 
-  steps_defaults?: string[];
-  storage_class_name?: string;
-}
+  const notebookMeta = useNotebookMetadata({
+    tracker,
+    backend,
+    kernel,
+    enableKaleByDefault,
+  });
 
-export const DefaultState: IState = {
-  metadata: {
-    experiment: { id: '', name: '' },
-    experiment_name: '',
-    pipeline_name: '',
-    pipeline_description: '',
-    base_image: '',
-    enable_caching: true, // Default value in KFP is true
-    steps_defaults: [],
-  },
-  runDeployment: false,
-  deploymentType: 'compile',
-  deployDebugMessage: false,
-  experiments: [],
-  gettingExperiments: false,
-  deploys: {},
-  isEnabled: false,
-  namespace: '',
-  kfpUiHost: '',
-  defaultBaseImage: '',
-};
+  const deployment = useDeployment({
+    tracker,
+    kernel,
+    docManager,
+    autoSaveOnCompileOrRun,
+    outputPath,
+  });
 
-let deployIndex = 0;
-
-export class KubeflowKaleLeftPanel extends React.Component<IProps, IState> {
-  public onKaleStateChange?: (enabled: boolean) => void;
-  // init state default values
-  state = DefaultState;
-
-  // Return the notebook file name without extension (e.g. 'MyNotebook' from 'path/to/MyNotebook.ipynb')
-  getNotebookFileName = (notebook: NotebookPanel | null): string => {
-    if (!notebook || !notebook.context || !notebook.context.path) {
-      return '';
-    }
-    const path = notebook.context.path as string;
-    const base = path.split('/').pop() || '';
-    return base.replace(/\.ipynb$/i, '');
+  const openKaleSettings = () => {
+    // Settings Editor filter matches schema title, not plugin id.
+    lab.commands.execute('settingeditor:open', { query: 'Kale' });
   };
 
-  // Sanitize a name to match the pipeline name regex:
-  // '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-  // Steps:
-  // - lowercase
-  // - replace invalid chars with '-'
-  // - collapse multiple '-' into one
-  // - trim leading/trailing '-'
-  // - if result is empty, return a fallback unique name
-  sanitizePipelineName = (name: string): string => {
-    if (!name) {
-      return '';
-    }
-    let s = name.toLowerCase();
-    // replace any char that is not [a-z0-9-] with '-'
-    s = s.replace(/[^a-z0-9-]+/g, '-');
-    // collapse multiple hyphens
-    s = s.replace(/-+/g, '-');
-    // trim leading/trailing hyphens
-    s = s.replace(/^-+|-+$/g, '');
-    // ensure it starts and ends with alphanumeric; if not, fallback
-    if (!/^[a-z0-9].*[a-z0-9]$/.test(s)) {
-      // fallback: use a predictable but unique name
-      return 'pipeline-' + Date.now().toString(36);
-    }
-    return s;
-  };
+  // Keep deployment refs in sync with current metadata/namespace
+  deployment.syncRefs(notebookMeta.metadata, notebookMeta.namespace, false);
 
-  getActiveNotebook = (): NotebookPanel | null => {
-    return this.props.tracker.currentWidget;
-  };
+  // Register toolbar callbacks on mount, clear on unmount
+  useEffect(() => {
+    setLeftPanelCallbacks({
+      triggerCompile: deployment.triggerCompile,
+      triggerRun: deployment.triggerRun,
+      isKaleEnabled: () => notebookMeta.isEnabled,
+    });
+    return () => setLeftPanelCallbacks(null);
+  }, [
+    deployment.triggerCompile,
+    deployment.triggerRun,
+    notebookMeta.isEnabled,
+  ]);
 
-  getActiveNotebookPath = () => {
-    return (
-      this.getActiveNotebook() &&
-      // absolute path to the notebook's root (--notebook-dir option, if set)
-      PageConfig.getOption('serverRoot') +
-        '/' +
-        // relative path wrt to 'serverRoot'
-        this.getActiveNotebook()?.context.path
-    );
-  };
+  // --- render logic ---
 
-  // update metadata state values: use destructure operator to update nested dict
-  updateExperiment = (experiment: IExperiment) =>
-    this.setState(prevState => ({
-      metadata: {
-        ...prevState.metadata,
-        experiment: experiment,
-        experiment_name: experiment.name,
-      },
-    }));
-  updatePipelineName = (name: string) =>
-    this.setState(prevState => ({
-      metadata: { ...prevState.metadata, pipeline_name: name },
-    }));
-  updatePipelineDescription = (desc: string) =>
-    this.setState(prevState => ({
-      metadata: { ...prevState.metadata, pipeline_description: desc },
-    }));
-  updateDockerImage = (name: string) =>
-    this.setState(prevState => ({
-      metadata: {
-        ...prevState.metadata,
-        base_image: name,
-      },
-    }));
-  updateEnableCaching = (enabled: boolean) =>
-    this.setState(prevState => ({
-      metadata: { ...prevState.metadata, enable_caching: enabled },
-    }));
-
-  activateRunDeployState = (type: DeployType) => {
-    if (!this.state.runDeployment) {
-      // Clear all previous deploys when starting a new one, so only the latest panel is shown
-      this.setState({ runDeployment: true, deploymentType: type, deploys: {} });
-      this.runDeploymentCommand();
-    }
-  };
-
-  public triggerCompile = () => {
-    this.activateRunDeployState('compile');
-  };
-
-  public isKaleEnabled = (): boolean => {
-    return this.state.isEnabled;
-  };
-  public triggerRun = () => {
-    this.activateRunDeployState('run');
-  };
-
-  changeDeployDebugMessage = () =>
-    this.setState(prevState => ({
-      deployDebugMessage: !prevState.deployDebugMessage,
-    }));
-
-  // restore state to default values
-  resetState = () =>
-    this.setState(prevState => ({
-      ...DefaultState,
-      isEnabled: prevState.isEnabled,
-    }));
-
-  componentDidMount = () => {
-    // Notebook tracker will signal when a notebook is changed
-    this.props.tracker.currentChanged.connect(this.handleNotebookChanged, this);
-    // Set notebook widget if one is open
-    if (this.props.tracker.currentWidget instanceof NotebookPanel) {
-      this.setNotebookPanel(this.props.tracker.currentWidget);
-    }
-  };
-
-  componentDidUpdate = (
-    prevProps: Readonly<IProps>,
-    prevState: Readonly<IState>,
-  ) => {
-    // fast comparison of Metadata objects.
-    // warning: this method does not work if keys change order.
-    if (
-      JSON.stringify(prevState.metadata) !==
-        JSON.stringify(this.state.metadata) &&
-      this.getActiveNotebook()
-    ) {
-      const activeNotebook = this.getActiveNotebook();
-      if (activeNotebook) {
-        // Write new metadata to the notebook and save
-        NotebookUtils.setMetaData(
-          activeNotebook,
-          KALE_NOTEBOOK_METADATA_KEY,
-          this.state.metadata,
-          true,
-        );
-      }
-    }
-  };
-
-  /**
-   * This handles when a notebook is switched to another notebook.
-   * The parameters are automatically passed from the signal when a switch occurs.
-   */
-  handleNotebookChanged = async (
-    tracker: INotebookTracker,
-    notebook: NotebookPanel | null,
-  ) => {
-    // Set the current notebook and wait for the session to be ready
-    if (notebook) {
-      await this.setNotebookPanel(notebook);
-    } else {
-      // Handle null case - reset to default state and disable
-      this.setState(DefaultState);
-    }
-  };
-
-  /**
-   * Read new notebook and assign its metadata to the state.
-   * @param notebook active NotebookPanel
-   */
-  setNotebookPanel = async (notebook: NotebookPanel | null) => {
-    // if there at least an open notebook
-    if (this.props.tracker.size > 0 && notebook) {
-      const commands = new Commands(notebook, this.props.kernel);
-      // wait for the session to be ready before reading metadata
-      await notebook.sessionContext.ready;
-
-      const kfpUiHost = (await commands.getKfpUiHost()) || DEFAULT_UI_URL;
-      const defaultBaseImage = await commands.getDefaultBaseImage();
-      this.setState({ kfpUiHost: kfpUiHost, defaultBaseImage });
-
-      // get notebook metadata
-      const notebookMetadata = NotebookUtils.getMetaData(
-        notebook,
-        KALE_NOTEBOOK_METADATA_KEY,
-      );
-
-      let fetchedExperiments: IExperiment[] = [];
-      if (this.props.backend) {
-        // Retrieve the notebook's namespace
-        this.setState({ namespace: await commands.getNamespace() });
-        // Detect whether this is an exploration, i.e., recovery from snapshot
-        const nbFilePath = this.getActiveNotebookPath();
-        if (nbFilePath) {
-          await commands.resumeStateIfExploreNotebook(nbFilePath);
-        }
-        // Detect the base image of the current Notebook Server
-        const baseImage = await commands.getBaseImage();
-        if (baseImage) {
-          DefaultState.metadata.base_image = baseImage;
-        } else {
-          DefaultState.metadata.base_image = '';
-        }
-
-        // Get experiment information last because it may take more time to respond
-        this.setState({ gettingExperiments: true });
-        const { experiments, experiment, experiment_name } =
-          await commands.getExperiments(
-            this.state.metadata.experiment,
-            this.state.metadata.experiment_name,
-          );
-        fetchedExperiments = experiments;
-        this.setState((prevState, props) => ({
-          experiments,
-          gettingExperiments: false,
-          metadata: {
-            ...prevState.metadata,
-            experiment,
-            experiment_name,
-          },
-        }));
-      }
-
-      // if the key exists in the notebook's metadata
-      if (notebookMetadata) {
-        let experiment: IExperiment = this.state.metadata.experiment;
-        let experiment_name: string = this.state.metadata.experiment_name;
-        if (notebookMetadata['experiment']) {
-          experiment = {
-            id:
-              notebookMetadata['experiment']['id'] ||
-              this.state.metadata.experiment.id,
-            name:
-              notebookMetadata['experiment']['name'] ||
-              this.state.metadata.experiment.name,
-          };
-          experiment_name = experiment.name;
-          // If the experiment has empty values, use the first experiment from the list if available
-          const experimentsToUse =
-            fetchedExperiments.length > 0
-              ? fetchedExperiments
-              : this.state.experiments;
-          if (
-            !experiment.id &&
-            !experiment.name &&
-            experimentsToUse.length > 0
-          ) {
-            experiment = experimentsToUse[0];
-            experiment_name = experimentsToUse[0].name;
-          }
-        } else if (notebookMetadata['experiment_name']) {
-          const matchingExperiments = this.state.experiments.filter(
-            e => e.name === notebookMetadata['experiment_name'],
-          );
-          if (matchingExperiments.length > 0) {
-            experiment = matchingExperiments[0];
-          } else {
-            experiment = {
-              id: NEW_EXPERIMENT.id,
-              name: notebookMetadata['experiment_name'],
-            };
-          }
-          experiment_name = notebookMetadata['experiment_name'];
-        } else {
-          // If no experiment data exists, use the first experiment from the list if available
-          if (this.state.experiments.length > 0) {
-            experiment = this.state.experiments[0];
-            experiment_name = this.state.experiments[0].name;
-          } else {
-            // Keep existing experiment values if they exist, otherwise use defaults
-            if (
-              this.state.metadata.experiment.id ||
-              this.state.metadata.experiment.name
-            ) {
-              experiment = this.state.metadata.experiment;
-              experiment_name = this.state.metadata.experiment_name || '';
-            } else {
-              experiment = { id: '', name: '' };
-              experiment_name = '';
-            }
-          }
-        }
-
-        // Use notebook filename as default pipeline name when not provided in metadata
-        const defaultPipelineName = this.getNotebookFileName(notebook);
-        const sanitizedDefaultPipelineName =
-          this.sanitizePipelineName(defaultPipelineName);
-        const metadata: IKaleNotebookMetadata = {
-          ...notebookMetadata,
-          experiment: experiment,
-          experiment_name: experiment_name,
-          pipeline_name:
-            notebookMetadata['pipeline_name'] &&
-            notebookMetadata['pipeline_name'] !== ''
-              ? notebookMetadata['pipeline_name']
-              : sanitizedDefaultPipelineName,
-          pipeline_description: notebookMetadata['pipeline_description'] || '',
-          base_image:
-            notebookMetadata['base_image'] || DefaultState.metadata.base_image,
-          steps_defaults: DefaultState.metadata.steps_defaults,
-        };
-        this.setState({
-          metadata: metadata,
-        });
+  const selectedExperiments: IExperiment[] = notebookMeta.experiments.filter(
+    e =>
+      e.id === notebookMeta.metadata.experiment.id ||
+      e.name === notebookMeta.metadata.experiment.name,
+  );
+  if (notebookMeta.experiments.length > 0 && selectedExperiments.length === 0) {
+    selectedExperiments.push(notebookMeta.experiments[0]);
+  }
+  let experimentInputSelected = '';
+  let experimentInputValue = '';
+  if (selectedExperiments.length > 0) {
+    experimentInputSelected = selectedExperiments[0].id;
+    if (selectedExperiments[0].id === NEW_EXPERIMENT.id) {
+      if (notebookMeta.metadata.experiment.name !== '') {
+        experimentInputValue = notebookMeta.metadata.experiment.name;
       } else {
-        // If no notebook metadata exists, set pipeline_name to the sanitized notebook filename
-        const defaultPipelineName = this.getNotebookFileName(notebook);
-        const sanitizedDefaultPipelineName =
-          this.sanitizePipelineName(defaultPipelineName);
-        this.setState(prevState => ({
-          metadata: {
-            ...DefaultState.metadata,
-            experiment: prevState.metadata.experiment,
-            experiment_name: prevState.metadata.experiment_name,
-            pipeline_name: sanitizedDefaultPipelineName,
-          },
-        }));
+        experimentInputValue = notebookMeta.metadata.experiment_name;
       }
     } else {
-      this.resetState();
+      experimentInputValue = selectedExperiments[0].name;
     }
-  };
+  }
+  const pipelineNameValid =
+    /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(
+      notebookMeta.metadata.pipeline_name,
+    ) && notebookMeta.metadata.pipeline_name.length <= PIPELINE_NAME_MAX_LENGTH;
+  const experimentNameRegex = /^[a-z]([-a-z0-9]*[a-z0-9])?$/;
+  const experimentNameValid =
+    experimentInputSelected !== NEW_EXPERIMENT.id ||
+    experimentNameRegex.test(experimentInputValue);
 
-  updateDeployProgress = (index: number, progress: DeployProgressState) => {
-    this.setState(prevState => {
-      let deploy: { [index: number]: DeployProgressState };
-      if (!prevState.deploys[index]) {
-        deploy = { [index]: progress };
-      } else {
-        deploy = { [index]: { ...prevState.deploys[index], ...progress } };
+  const experiment_name_input = (
+    <ExperimentInput
+      updateValue={notebookMeta.updateExperiment}
+      options={notebookMeta.experiments}
+      selected={experimentInputSelected}
+      value={experimentInputValue}
+      loading={notebookMeta.gettingExperiments}
+    />
+  );
+
+  const pipeline_name_input = (
+    <Input
+      variant="standard"
+      inputIndex={0}
+      label={'Pipeline Name'}
+      updateValue={notebookMeta.updatePipelineName}
+      value={notebookMeta.metadata.pipeline_name}
+      regex={'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'}
+      regexErrorMsg={
+        "Pipeline name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."
       }
-      return { deploys: { ...prevState.deploys, ...deploy } };
-    });
-  };
+      maxLength={PIPELINE_NAME_MAX_LENGTH}
+      maxLengthErrorMsg={`Pipeline name must be ${PIPELINE_NAME_MAX_LENGTH} characters or fewer.`}
+    />
+  );
 
-  onPanelRemove = (index: number) => {
-    const deploys = { ...this.state.deploys };
-    deploys[index].deleted = true;
-    this.setState({ deploys });
-  };
+  const pipeline_desc_input = (
+    <Input
+      variant="standard"
+      inputIndex={0}
+      label={'Pipeline Description'}
+      updateValue={notebookMeta.updatePipelineDescription}
+      value={notebookMeta.metadata.pipeline_description}
+    />
+  );
 
-  runDeploymentCommand = async () => {
-    const activeNotebook = this.getActiveNotebook();
-    if (!activeNotebook) {
-      this.setState({ runDeployment: false });
-      return;
-    }
-
-    await activeNotebook.context.save();
-
-    const commands = new Commands(activeNotebook, this.props.kernel);
-    const _deployIndex = ++deployIndex;
-    const _updateDeployProgress = (x: DeployProgressState) => {
-      this.updateDeployProgress(_deployIndex, {
-        ...x,
-        namespace: this.state.namespace,
-      });
-    };
-
-    const metadata = JSON.parse(JSON.stringify(this.state.metadata)); // Deepcopy metadata
-
-    // assign the default docker image in case it is empty
-    if (metadata.base_image === '') {
-      metadata.base_image = DefaultState.metadata.base_image;
-    }
-
-    const nbFilePath = this.getActiveNotebookPath();
-
-    if (!nbFilePath) {
-      // Handle the error, show a message, or return early
-      const extendedProgress: DeployProgressState = {
-        message: 'No active notebook path found.',
-      };
-      _updateDeployProgress(extendedProgress);
-      this.setState({ runDeployment: false });
-      return;
-    }
-
-    // VALIDATE METADATA
-    const validationSucceeded = await commands.validateMetadata(
-      nbFilePath,
-      metadata,
-      _updateDeployProgress,
-    );
-    if (!validationSucceeded) {
-      this.setState({ runDeployment: false });
-      return;
-    }
-    _updateDeployProgress({
-      message: 'Validation completed successfully',
-    });
-
-    // CREATE PIPELINE
-    const compileNotebook = await commands.compilePipeline(
-      nbFilePath,
-      metadata,
-      this.props.docManager,
-      this.state.deployDebugMessage,
-      _updateDeployProgress,
-    );
-    if (!compileNotebook) {
-      this.setState({ runDeployment: false });
-      return;
-    }
-    _updateDeployProgress({
-      message: 'Notebook compiled successfully',
-    });
-
-    // UPLOAD
-    const uploadPipeline =
-      this.state.deploymentType === 'upload' ||
-      this.state.deploymentType === 'run'
-        ? await commands.uploadPipeline(
-            compileNotebook.pipeline_package_path,
-            compileNotebook.pipeline_metadata,
-            _updateDeployProgress,
-          )
-        : null;
-
-    if (!uploadPipeline) {
-      this.setState({ runDeployment: false });
-      _updateDeployProgress({ pipeline: false });
-      return;
-    }
-    _updateDeployProgress({
-      message: 'Pipeline uploaded successfully',
-      pipeline: {
-        pipeline: {
-          pipelineid: uploadPipeline.pipeline.pipelineid,
-          versionid: uploadPipeline.pipeline.versionid,
-          name: uploadPipeline.pipeline.name,
-        },
-      },
-    });
-    // RUN
-    if (this.state.deploymentType === 'run') {
-      const runPipeline = await commands.runPipeline(
-        uploadPipeline.pipeline.pipelineid,
-        uploadPipeline.pipeline.versionid,
-        compileNotebook.pipeline_metadata,
-        compileNotebook.pipeline_package_path,
-        _updateDeployProgress,
-      );
-      if (runPipeline) {
-        commands.pollRun(runPipeline, _updateDeployProgress);
+  const enable_caching_toggle = (
+    <FormControlLabel
+      control={
+        <Switch
+          checked={notebookMeta.metadata.enable_caching ?? true}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            notebookMeta.updateEnableCaching(e.target.checked)
+          }
+          color="primary"
+        />
       }
-    }
-    // stop deploy button icon spin
-    this.setState({ runDeployment: false });
-  };
+      label="Enable Pipeline Caching"
+    />
+  );
 
-  onMetadataEnable = (isEnabled: boolean) => {
-    this.setState({ isEnabled });
-    this.onKaleStateChange?.(isEnabled);
-  };
+  const activeNotebook = tracker.currentWidget;
 
-  render() {
-    // FIXME: What about human-created Notebooks? Match name and old API as well
-    const selectedExperiments: IExperiment[] = this.state.experiments.filter(
-      e =>
-        e.id === this.state.metadata.experiment.id ||
-        e.name === this.state.metadata.experiment.name,
-    );
-    if (this.state.experiments.length > 0 && selectedExperiments.length === 0) {
-      selectedExperiments.push(this.state.experiments[0]);
-    }
-    let experimentInputSelected = '';
-    let experimentInputValue = '';
-    if (selectedExperiments.length > 0) {
-      experimentInputSelected = selectedExperiments[0].id;
-      if (selectedExperiments[0].id === NEW_EXPERIMENT.id) {
-        if (this.state.metadata.experiment.name !== '') {
-          experimentInputValue = this.state.metadata.experiment.name;
-        } else {
-          experimentInputValue = this.state.metadata.experiment_name;
-        }
-      } else {
-        experimentInputValue = selectedExperiments[0].name;
-      }
-    }
-    const experiment_name_input = (
-      <ExperimentInput
-        updateValue={this.updateExperiment}
-        options={this.state.experiments}
-        selected={experimentInputSelected}
-        value={experimentInputValue}
-        loading={this.state.gettingExperiments}
-      />
-    );
+  return (
+    <ThemeProvider theme={theme}>
+      <div className={'kubeflow-widget'} key="kale-widget">
+        <div className={'kubeflow-widget-content'}>
+          <div>
+            <p
+              className="kale-header kale-main-header"
+              style={{ color: theme.kale.headers.main }}
+            >
+              Kale
+              <img
+                src={`data:image/svg+xml,${encodeURIComponent(kaleLogo)}`}
+                className="kale-logo-img"
+                alt="Kale Logo"
+              />
+            </p>
+            {backend && (
+              <div className="kfp-status-container">
+                <KFPStatusBadge status={kfpStatus} />
+              </div>
+            )}
+          </div>
 
-    const pipeline_name_input = (
-      <Input
-        variant="standard"
-        inputIndex={0}
-        label={'Pipeline Name'}
-        updateValue={this.updatePipelineName}
-        value={this.state.metadata.pipeline_name}
-        regex={'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'}
-        regexErrorMsg={
-          "Pipeline name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character."
-        }
-      />
-    );
+          <div className="kale-component">
+            {activeNotebook ? (
+              <InlineCellsMetadata
+                onMetadataEnable={notebookMeta.setIsEnabled}
+                notebook={activeNotebook}
+                pipelineBaseImage={notebookMeta.metadata.base_image}
+                defaultBaseImage={notebookMeta.defaultBaseImage}
+                initialChecked={notebookMeta.isEnabled}
+              />
+            ) : (
+              <>
+                <div className="toolbar input-container kale-disabled-toggle">
+                  <div className={'switch-label'}>Enable</div>
+                  <Switch
+                    disabled
+                    checked={false}
+                    color="primary"
+                    name="enableKale"
+                    slotProps={{ input: { 'aria-label': 'Enable Kale' } }}
+                    classes={{ root: 'material-switch' }}
+                  />
+                </div>
+                <div className="kale-no-notebook-message">
+                  <p className="kale-no-notebook-text">
+                    Open a notebook to start working with Kale
+                  </p>
+                </div>
+              </>
+            )}
+            {!notebookMeta.isEnabled && <KaleEmptyState />}
+          </div>
 
-    const pipeline_desc_input = (
-      <Input
-        variant="standard"
-        inputIndex={0}
-        label={'Pipeline Description'}
-        updateValue={this.updatePipelineDescription}
-        value={this.state.metadata.pipeline_description}
-      />
-    );
-
-    const enable_caching_toggle = (
-      <FormControlLabel
-        control={
-          <Switch
-            checked={this.state.metadata.enable_caching ?? true}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              this.updateEnableCaching(e.target.checked)
+          <div
+            className={
+              'kale-component ' +
+              (notebookMeta.isEnabled && activeNotebook ? '' : 'hidden')
             }
-            color="primary"
-          />
-        }
-        label="Enable Pipeline Caching"
-      />
-    );
-
-    const activeNotebook = this.getActiveNotebook();
-    return (
-      <ThemeProvider theme={theme}>
-        <div className={'kubeflow-widget'} key="kale-widget">
-          <div className={'kubeflow-widget-content'}>
+          >
             <div>
               <p
-                className="kale-header kale-main-header"
+                className="kale-header"
                 style={{ color: theme.kale.headers.main }}
               >
-                Kale
-                <img
-                  // encode the SVG string into a data URI
-                  src={`data:image/svg+xml,${encodeURIComponent(kaleLogo)}`}
-                  className="kale-logo-img"
-                  alt="Kale Logo"
-                />
+                Pipeline Metadata
               </p>
             </div>
 
-            <div className="kale-component">
-              {activeNotebook ? (
-                <InlineCellsMetadata
-                  onMetadataEnable={this.onMetadataEnable}
-                  notebook={activeNotebook}
-                  pipelineBaseImage={this.state.metadata.base_image}
-                  defaultBaseImage={this.state.defaultBaseImage}
-                />
-              ) : (
-                <>
-                  <div className="toolbar input-container kale-disabled-toggle">
-                    <div className={'switch-label'}>Enable</div>
-                    <Switch
-                      disabled
-                      checked={false}
-                      color="primary"
-                      name="enableKale"
-                      slotProps={{ input: { 'aria-label': 'Enable Kale' } }}
-                      classes={{ root: 'material-switch' }}
-                    />
-                  </div>
-                  <div className="kale-no-notebook-message">
-                    <p className="kale-no-notebook-text">
-                      Open a notebook to start working with Kale
-                    </p>
-                  </div>
-                </>
-              )}
-              {!this.state.isEnabled && <KaleEmptyState />}
+            <div className={'input-container'}>
+              {experiment_name_input}
+              {pipeline_name_input}
+              {pipeline_desc_input}
+              {enable_caching_toggle}
             </div>
 
-            <div
-              className={
-                'kale-component ' +
-                (this.state.isEnabled && activeNotebook ? '' : 'hidden')
-              }
-            >
-              <div>
-                <p
-                  className="kale-header"
-                  style={{ color: theme.kale.headers.main }}
+            <div className="kale-settings-notice">
+              <SettingsOutlinedIcon
+                className="kale-settings-notice-icon"
+                fontSize="small"
+              />
+              <span>
+                Advanced Kale settings live in JupyterLab Settings.{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  underline="hover"
+                  onClick={openKaleSettings}
+                  sx={{ color: theme.kale.headers.main }}
                 >
-                  Pipeline Metadata
-                </p>
-              </div>
-
-              <div className={'input-container'}>
-                {experiment_name_input}
-                {pipeline_name_input}
-                {pipeline_desc_input}
-                {enable_caching_toggle}
-              </div>
-            </div>
-
-            <div
-              className={
-                'kale-component ' +
-                (this.state.isEnabled && activeNotebook ? '' : 'hidden')
-              }
-            >
-              {' '}
+                  Open settings
+                </Link>
+              </span>
             </div>
           </div>
+
           <div
-            className={this.state.isEnabled && activeNotebook ? '' : 'hidden'}
-            style={{ marginTop: 'auto' }}
+            className={
+              'kale-component ' +
+              (notebookMeta.isEnabled && activeNotebook ? '' : 'hidden')
+            }
           >
-            <DeploysProgress
-              deploys={this.state.deploys}
-              onPanelRemove={this.onPanelRemove}
-              kfpUiHost={this.state.kfpUiHost}
-            />
-            <SplitDeployButton
-              running={this.state.runDeployment}
-              handleClick={this.activateRunDeployState}
-            />
+            {' '}
           </div>
         </div>
-      </ThemeProvider>
-    );
-  }
-}
+        <div
+          className={notebookMeta.isEnabled && activeNotebook ? '' : 'hidden'}
+          style={{ marginTop: 'auto' }}
+        >
+          <DeploysProgress
+            deploys={deployment.deploys}
+            onPanelRemove={deployment.onPanelRemove}
+            kfpUiHost={notebookMeta.kfpUiHost}
+          />
+          <SplitDeployButton
+            running={deployment.runDeployment}
+            handleClick={deployment.activateRunDeployState}
+            disabled={!pipelineNameValid || !experimentNameValid}
+          />
+        </div>
+      </div>
+    </ThemeProvider>
+  );
+};

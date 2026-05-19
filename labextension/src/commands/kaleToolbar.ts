@@ -16,13 +16,18 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 import { NotebookPanel, INotebookModel } from '@jupyterlab/notebook';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { LabIcon } from '@jupyterlab/ui-components';
-import { KubeflowKaleLeftPanel } from '../widgets/LeftPanel';
 import { KALE_PANEL_ID } from '../widget';
 
-let leftPanelRef: KubeflowKaleLeftPanel | null = null;
+export interface ILeftPanelHandle {
+  triggerCompile: () => void;
+  triggerRun: () => void;
+  isKaleEnabled: () => boolean;
+}
 
-export const setLeftPanelRef = (ref: KubeflowKaleLeftPanel | null) => {
-  leftPanelRef = ref;
+let leftPanelRef: ILeftPanelHandle | null = null;
+
+export const setLeftPanelCallbacks = (callbacks: ILeftPanelHandle | null) => {
+  leftPanelRef = callbacks;
 };
 
 function activateKalePanel(app: JupyterFrontEnd) {

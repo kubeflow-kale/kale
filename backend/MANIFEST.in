@@ -1,3 +1,0 @@
-include README.md
-include kale/templates/*
-include docs/imgs/*

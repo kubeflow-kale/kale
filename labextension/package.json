@@ -1,15 +1,15 @@
 {
-  "name": "kubeflow-kale-labextension",
-  "version": "2.0.0-alpha.1",
+  "name": "jupyterlab-kubeflow-kale",
+  "version": "2.1.0",
   "description": "Convert Notebooks to Kubeflow pipelines with Kale",
   "keywords": [
     "jupyter",
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/kubeflow-kale/kale",
+  "homepage": "https://github.com/kubeflow/kale",
   "bugs": {
-    "url": "https://github.com/kubeflow-kale/kale/issues"
+    "url": "https://github.com/kubeflow/kale/issues"
   },
   "license": "Apache-2.0",
   "engines": {
@@ -21,6 +21,7 @@
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+    "schema/*.json",
     "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
     "src/**/*.{ts,tsx}"
   ],
@@ -29,7 +30,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kubeflow-kale/kale.git"
+    "url": "https://github.com/kubeflow/kale.git"
   },
   "scripts": {
     "build": "jlpm build:lib && jlpm build:labextension:dev",
@@ -41,7 +42,7 @@
     "clean": "jlpm clean:lib",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
     "clean:lintcache": "rimraf .eslintcache .stylelintcache",
-    "clean:labextension": "rimraf kubeflow_kale_labextension/labextension kubeflow_kale_labextension/_version.py",
+    "clean:labextension": "rimraf ../jupyterlab_kubeflow_kale/labextension",
     "clean:all": "jlpm clean:lib && jlpm clean:labextension && jlpm clean:lintcache",
     "eslint": "jlpm eslint:check --fix",
     "eslint:check": "eslint . --cache --ext .ts,.tsx",
@@ -59,17 +60,18 @@
     "watch:labextension": "jupyter labextension watch ."
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.4.9",
-    "@jupyterlab/cells": "^4.4.9",
-    "@jupyterlab/coreutils": "^6.4.5",
-    "@jupyterlab/nbformat": "^4.4.9",
-    "@jupyterlab/notebook": "^4.4.9"
+    "@jupyterlab/application": "^4.5.6",
+    "@jupyterlab/cells": "^4.5.6",
+    "@jupyterlab/coreutils": "^6.5.6",
+    "@jupyterlab/nbformat": "^4.5.6",
+    "@jupyterlab/notebook": "^4.5.6",
+    "@jupyterlab/settingregistry": "^4.5.6"
   },
   "devDependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@jupyterlab/builder": "^4.4.6",
-    "@jupyterlab/testutils": "^4.4.0",
+    "@jupyterlab/builder": "^4.5.6",
+    "@jupyterlab/testutils": "^4.5.6",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
     "@types/jest": "^29.2.0",
@@ -99,7 +101,6 @@
     "stylelint-prettier": "^4.0.0",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.44.1",
-    "use-debounce": "^10.0.5",
     "yjs": "^13.5.40"
   },
   "sideEffects": [
@@ -111,18 +112,19 @@
     "access": "public"
   },
   "jupyterlab": {
+    "schemaDir": "schema",
     "discovery": {
       "server": {
         "managers": [
           "pip"
         ],
         "base": {
-          "name": "kubeflow_kale_labextension"
+          "name": "jupyterlab_kubeflow_kale"
         }
       }
     },
     "extension": true,
-    "outputDir": "kubeflow_kale_labextension/labextension",
+    "outputDir": "../jupyterlab_kubeflow_kale/labextension",
     "webpackConfig": "webpack.config.js"
   },
   "stylelint": {

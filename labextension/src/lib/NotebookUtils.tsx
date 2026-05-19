@@ -105,6 +105,27 @@ export default class NotebookUtilities {
     );
   }
 
+/**
+   * Opens a pop-up dialog in JupyterLab to display a simple message.
+   * @param title The title for the message popup
+   * @param msg The message as an array of strings
+   * @param buttonLabel The label to use for the button. Default is 'OK'
+   * @param buttonClassName The classname to give to the 'ok' button
+   * @returns Promise<void> - A promise once the message is closed.
+   */
+  public static async showConfirmationDialog(
+    title: string,
+    msg: string[]
+  ) {
+    const buttons: ReadonlyArray<Dialog.IButton> = [
+      Dialog.cancelButton(),
+      Dialog.okButton(),
+    ];
+    const messageBody = this.buildDialogBody(msg);
+    return showDialog({ title, buttons, body: messageBody });
+  }
+
+
   /**
    * Opens a pop-up dialog in JupyterLab to display a simple message.
    * @param title The title for the message popup
@@ -210,8 +231,7 @@ export default class NotebookUtilities {
    */
   public static async saveNotebook(
     notebookPanel: NotebookPanel,
-    withPrompt: boolean = false,
-    waitSave: boolean = false,
+    withPrompt: boolean = false
   ): Promise<boolean> {
     if (!notebookPanel?.model) {
       return false;
@@ -227,9 +247,6 @@ export default class NotebookUtilities {
       ) {
         return false;
       }
-      waitSave
-        ? await notebookPanel.context.save()
-        : notebookPanel.context.save();
       return true;
     }
     return false;
@@ -259,13 +276,8 @@ export default class NotebookUtilities {
       );
     }
 
-    if (notebookPanel.model?.metadata) {
-      const metadata = notebookPanel.model.metadata as any;
-      if (typeof metadata.has === 'function' && metadata.has(key)) {
-        return metadata.get(key);
-      }
-      // Fallback for different metadata implementations
-      return metadata[key] || null;
+    if (notebookPanel.model) {
+      return notebookPanel.model.getMetadata(key) || null;
     }
     return null;
   }
@@ -283,8 +295,7 @@ export default class NotebookUtilities {
   public static setMetaData(
     notebookPanel: NotebookPanel,
     key: string,
-    value: any,
-    save: boolean = false,
+    value: any
   ): any {
     if (!notebookPanel) {
       throw new Error(
@@ -292,24 +303,13 @@ export default class NotebookUtilities {
       );
     }
 
-    if (!notebookPanel.model?.metadata) {
-      throw new Error('Notebook metadata is not available.');
+    if (!notebookPanel.model) {
+      throw new Error('Notebook model is not available.');
     }
 
-    const metadata = notebookPanel.model.metadata as any;
-    let oldVal: any;
+    const oldVal = notebookPanel.model.getMetadata(key);
+    notebookPanel.model.setMetadata(key, value);
 
-    if (typeof metadata.set === 'function') {
-      oldVal = metadata.set(key, value);
-    } else {
-      // Fallback for different metadata implementations
-      oldVal = (metadata as any)[key];
-      (metadata as any)[key] = value;
-    }
-
-    if (save) {
-      this.saveNotebook(notebookPanel);
-    }
     return oldVal;
   }
 
@@ -328,12 +328,12 @@ export default class NotebookUtilities {
       if (!cellModel || !isCodeCellModel(cellModel)) {
         continue;
       }
-      const blockName = CellUtilities.getStepName(notebook, i);
+      const stepName = CellUtilities.getStepName(notebook, i);
       // If a cell of that type is found, run that
       // and all consequent cells getting merged to that one
       if (
-        !reservedCellsToBeIgnored.includes(blockName) &&
-        RESERVED_CELL_NAMES.includes(blockName)
+        !reservedCellsToBeIgnored.includes(stepName) &&
+        RESERVED_CELL_NAMES.includes(stepName)
       ) {
         while (i < notebook.model.cells.length) {
           const currentCellModel = notebook.model.cells.get(i);
@@ -342,7 +342,7 @@ export default class NotebookUtilities {
             continue;
           }
           const cellName = CellUtilities.getStepName(notebook, i);
-          if (cellName !== blockName && cellName !== '') {
+          if (cellName !== stepName && cellName !== '') {
             // Decrement by 1 to parse that cell during the next for loop
             i--;
             break;
@@ -360,7 +360,7 @@ export default class NotebookUtilities {
             if (kernelMsg.content && kernelMsg.content.status === 'error') {
               return {
                 status: 'error',
-                cellType: blockName,
+                cellType: stepName,
                 cellIndex: i,
                 ename: kernelMsg.content.ename,
                 evalue: kernelMsg.content.evalue,
@@ -369,7 +369,7 @@ export default class NotebookUtilities {
           } catch (error) {
             return {
               status: 'error',
-              cellType: blockName,
+              cellType: stepName,
               cellIndex: i,
               ename: 'ExecutionError',
               evalue: String(error),

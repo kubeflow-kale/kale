@@ -110,8 +110,7 @@ export default class CellUtilities {
     notebookPanel: NotebookPanel,
     index: number,
     key: string,
-    value: any,
-    save: boolean = false,
+    value: any
   ): Promise<any> {
     if (!notebookPanel || !notebookPanel.model) {
       throw new Error('Notebook was null!');
@@ -128,10 +127,6 @@ export default class CellUtilities {
       if (metadata) {
         oldVal = metadata[key];
         cell.setMetadata(key, value);
-      }
-
-      if (save) {
-        return notebookPanel.context.save();
       }
       return Promise.resolve(oldVal);
     } catch (error) {
@@ -515,7 +510,7 @@ export default class CellUtilities {
       this.getCellMetaData(notebook.content, index, 'tags') || []
     )
       .filter((t: string) => !t.startsWith('prev:'))
-      .map((t: string) => t.replace('block:', ''));
+      .map((t: string) => t.replace('step:', ''));
     return names.length > 0 ? names[0] : '';
   }
 

@@ -1,0 +1,719 @@
+/*
+ * Kale documentation custom styles.
+ *
+ * Mirrors the Kubeflow SDK docs site (sdk.kubeflow.org) so that Kale's
+ * documentation stays visually consistent with the rest of the Kubeflow
+ * project. Layered on top of the Furo Sphinx theme.
+ */
+
+/* ============================================
+   Color Palette
+   ============================================ */
+
+:root {
+    /* Primary colors */
+    --kf-blue: #4299e1;
+    --kf-blue-light: #63b3ed;
+    --kf-blue-dark: #3182ce;
+
+    /* Text colors */
+    --kf-heading: #2d3748;
+    --kf-text: #4a5568;
+    --kf-text-light: #718096;
+
+    /* Backgrounds and borders */
+    --kf-bg-subtle: #f7fafc;
+    --kf-border: #e2e8f0;
+
+    /* Accent */
+    --kf-accent: #81e6d9;
+
+    /* API docs colors */
+    --kf-api-name: #3182ce;
+    --kf-api-param: #4a5568;
+    --kf-api-text: #000;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --kf-blue: #63b3ed;
+        --kf-blue-light: #90cdf4;
+        --kf-blue-dark: #4299e1;
+        --kf-heading: #e2e8f0;
+        --kf-text: #cbd5e0;
+        --kf-text-light: #a0aec0;
+        --kf-bg-subtle: #2d3748;
+        --kf-border: #4a5568;
+        --kf-api-name: #63b3ed;
+        --kf-api-param: #a0aec0;
+        --kf-api-text: #e2e8f0;
+    }
+}
+
+[data-theme="dark"] {
+    --kf-blue: #63b3ed;
+    --kf-blue-light: #90cdf4;
+    --kf-blue-dark: #4299e1;
+    --kf-heading: #e2e8f0;
+    --kf-text: #cbd5e0;
+    --kf-text-light: #a0aec0;
+    --kf-bg-subtle: #2d3748;
+    --kf-border: #4a5568;
+    --kf-api-name: #63b3ed;
+    --kf-api-param: #a0aec0;
+    --kf-api-text: #e2e8f0;
+}
+
+/* ============================================
+   TOP NAVIGATION BAR
+   ============================================ */
+
+/* Override Furo's announcement styling */
+.announcement {
+    background: var(--kf-bg-subtle) !important;
+    border-bottom: 1px solid var(--kf-border) !important;
+    padding: 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 100 !important;
+}
+
+/* Add padding to page content to account for fixed navbar */
+.page {
+    padding-top: 52px !important;
+}
+
+/* Offset sidebar sticky elements for fixed navbar */
+.sidebar-sticky {
+    top: 52px !important;
+}
+
+.toc-sticky {
+    top: 52px !important;
+}
+
+/* Mobile header offset */
+.mobile-header {
+    top: 52px !important;
+}
+
+.announcement-content {
+    max-width: none !important;
+    padding: 0 !important;
+}
+
+/* Top navigation container */
+.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0.6rem 1.5rem;
+}
+
+/* Brand section (logo + name) */
+.top-nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none !important;
+    color: var(--kf-heading) !important;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.top-nav-brand:hover {
+    color: var(--kf-blue) !important;
+}
+
+.top-nav-logo {
+    height: 28px;
+    width: auto;
+}
+
+/* Navigation links */
+.top-nav-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.top-nav-links a {
+    color: var(--kf-text) !important;
+    text-decoration: none !important;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+}
+
+.top-nav-links a:hover {
+    color: var(--kf-blue-dark) !important;
+    background: rgba(66, 153, 225, 0.12);
+}
+
+/* Hide on mobile - let sidebar handle navigation */
+@media (max-width: 768px) {
+    .top-nav-links {
+        display: none;
+    }
+    .top-nav {
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   LOGO
+   ============================================ */
+
+/* Hide logo/name from sidebar - it's in the top navbar now */
+.sidebar-brand {
+    display: none !important;
+}
+
+.sidebar-logo {
+    max-height: 5rem;
+    width: auto;
+}
+
+/* ============================================
+   HEADINGS - Grey with blue accents
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--kf-heading);
+}
+
+h1 {
+    font-size: 2rem;
+    color: var(--kf-heading);
+    border-bottom: 2px solid var(--kf-blue-light);
+    padding-bottom: 0.5rem;
+}
+
+h2 {
+    font-size: 1.4rem;
+    margin-top: 1rem;
+    color: var(--kf-heading);
+    border-bottom: 1px solid var(--kf-border);
+    padding-bottom: 0.3rem;
+}
+
+h3 {
+    font-size: 1.15rem;
+    color: var(--kf-text);
+}
+
+/* ============================================
+   LINKS
+   ============================================ */
+
+a {
+    color: var(--kf-blue);
+}
+
+a:visited {
+    color: var(--kf-blue);
+}
+
+a:hover {
+    color: var(--kf-blue-dark);
+}
+
+/* ============================================
+   SIDEBAR - Calm, muted colors
+   ============================================ */
+
+.sidebar-tree a,
+.sidebar-tree .reference,
+.sidebar-drawer a,
+.toctree-l1 > a,
+.toctree-l2 > a,
+.toctree-l3 > a,
+.caption-text {
+    color: var(--kf-text) !important;
+    transition: color 0.15s;
+}
+
+.sidebar-tree a:hover,
+.sidebar-tree .reference:hover {
+    color: var(--kf-blue) !important;
+}
+
+.sidebar-tree .current > .reference,
+.sidebar-tree .current-page > .reference {
+    color: var(--kf-blue-dark) !important;
+    font-weight: 600;
+}
+
+.sidebar-tree .caption {
+    color: var(--kf-text-light) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   API DOCS - Minimal two-color scheme
+   Color 1 (blue): API/method/class names
+   Color 2 (grey): Parameter names
+   Everything else: Uses --kf-api-text (black in light, light in dark)
+   ============================================ */
+
+/* Main class/function container */
+dl.py.class,
+dl.py.function {
+    margin: 2rem 0 !important;
+}
+
+dl.py.method {
+    margin: 1.5rem 0 !important;
+}
+
+/* Remove all hover effects */
+dl.py:hover,
+dl.py.class:hover,
+dl.py.function:hover,
+dl.py.method:hover,
+dl.py dt:hover,
+dl.py dd:hover {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Class/function signature header */
+dl.py.class > dt.sig,
+dl.py.function > dt.sig {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 1rem;
+    color: var(--kf-api-text) !important;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--kf-border);
+    margin: 0;
+}
+
+/* Class/method/function names - BLUE (the only colored element for names) */
+dl.py dt.sig .sig-name {
+    font-weight: 700;
+    color: var(--kf-api-name) !important;
+}
+
+/* Method signature */
+dl.py.method > dt.sig,
+dl.py.method dt.sig {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.9rem !important;
+    color: var(--kf-api-text) !important;
+    padding: 0.25rem 0 !important;
+    border-bottom: 1px solid var(--kf-border);
+    margin-top: 1rem;
+}
+
+/* All signature text except names */
+dl.py dt.sig,
+dl.py dt.sig .sig-paren,
+dl.py dt.sig .sig-param,
+dl.py dt.sig .n,
+dl.py dt.sig .o,
+dl.py dt.sig .default_value,
+dl.py dt.sig .p,
+.sig .sig-return,
+.sig .sig-return-typehint {
+    color: var(--kf-api-text) !important;
+    font-style: normal !important;
+}
+
+/* Description body */
+dl.py.class > dd,
+dl.py.function > dd {
+    margin: 0 !important;
+    padding: 0.75rem 0;
+}
+
+dl.py.method > dd {
+    margin: 0 !important;
+    padding: 0.5rem 0 !important;
+}
+
+/* All docstring text */
+dl.py dd > p,
+dl.py dd p {
+    color: var(--kf-api-text) !important;
+    font-size: 1rem !important;
+    line-height: 1.6;
+    margin: 0.5rem 0;
+}
+
+/* Nested methods within a class */
+dl.py.class dd dl.py.method {
+    margin: 1rem 0 !important;
+}
+
+/* Parameters/Returns/Raises section styling */
+dl.field-list {
+    margin: 0.75rem 0;
+}
+
+/* Section headers (Parameters, Returns, Raises) - bold */
+dl.field-list > dt,
+dl.field-list dt.field-odd,
+dl.field-list dt.field-even {
+    font-weight: 700 !important;
+    color: var(--kf-api-text) !important;
+    font-size: 1rem !important;
+    text-transform: none !important;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+dl.field-list > dd,
+dl.field-list dd.field-odd,
+dl.field-list dd.field-even {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* Parameter list - use bullet points */
+dl.field-list dd ul {
+    list-style: disc !important;
+    padding-left: 1.5rem !important;
+    margin: 0.25rem 0 !important;
+}
+
+dl.field-list dd ul li {
+    padding: 0.2rem 0;
+    color: var(--kf-api-text) !important;
+}
+
+dl.field-list dd ul li::marker {
+    color: var(--kf-api-text) !important;
+}
+
+/* All text in parameter sections */
+dl.field-list dd,
+dl.field-list dd p,
+dl.field-list dd ul li,
+dl.field-list dd ul li p {
+    color: var(--kf-api-text) !important;
+    font-size: 1rem !important;
+    margin: 0.1rem 0 !important;
+}
+
+/* Parameter names - GREY */
+dl.field-list dd strong,
+dl.field-list dd p strong {
+    color: var(--kf-api-param) !important;
+    font-weight: 600 !important;
+}
+
+/* Type annotations */
+dl.field-list dd .sphinx_autodoc_typehints-type,
+dl.field-list dd .sphinx_autodoc_typehints-type code,
+dl.field-list dd code,
+dl.field-list dd .pre {
+    color: var(--kf-api-text) !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* Autosummary - display as simple list, no boxes */
+.table-wrapper.autosummary {
+    border: none !important;
+    overflow: visible;
+    background: transparent !important;
+}
+
+table.autosummary {
+    width: 100%;
+    border-collapse: collapse;
+    border: none !important;
+    margin: 0.25rem 0;
+    background: transparent !important;
+}
+
+table.autosummary tbody {
+    background: transparent !important;
+}
+
+table.autosummary tr {
+    border: none !important;
+    background: transparent !important;
+}
+
+table.autosummary td {
+    padding: 0.2rem 0;
+    padding-left: 1rem;
+    border: none !important;
+    vertical-align: top;
+    background: transparent !important;
+}
+
+/* Bullet point before each item */
+table.autosummary td:first-child::before {
+    content: "•";
+    color: var(--kf-blue);
+    margin-right: 0.5rem;
+}
+
+table.autosummary td:first-child {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-weight: 600;
+    padding-right: 1rem;
+    width: auto;
+}
+
+/* Remove ALL backgrounds and borders from code elements */
+table.autosummary code,
+table.autosummary .pre,
+table.autosummary td code,
+table.autosummary td .pre,
+table.autosummary code.xref,
+table.autosummary .docutils code,
+.autosummary code.xref,
+.autosummary .docutils code,
+.autosummary code.docutils,
+.autosummary .literal,
+.autosummary .notranslate {
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    color: var(--kf-blue-dark) !important;
+    font-size: 0.9rem;
+}
+
+table.autosummary td:last-child {
+    color: var(--kf-text);
+    font-size: 0.9rem;
+}
+
+/* Property/attribute styling */
+dl.py.property > dt.sig,
+dl.py.attribute > dt.sig {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.88rem;
+    padding: 0.5rem 0;
+}
+
+/* "Bases:" inheritance line styling */
+.class dd > p:first-child {
+    font-size: 0.85rem;
+    color: var(--kf-text-light);
+    margin-bottom: 1rem;
+}
+
+/* View source link */
+.viewcode-link {
+    float: right;
+    font-size: 0.8rem;
+    color: var(--kf-text-light) !important;
+    font-weight: normal;
+}
+
+.viewcode-link:hover {
+    color: var(--kf-blue) !important;
+}
+
+/* ============================================
+   CODE BLOCKS - Dark theme
+   ============================================ */
+
+pre {
+    border-radius: 8px;
+    border: none;
+    background: #1e1e1e !important;
+    padding: 1rem !important;
+}
+
+pre code {
+    color: #d4d4d4 !important;
+    background: transparent !important;
+}
+
+/* Syntax highlighting for dark theme */
+.highlight {
+    background: #1e1e1e !important;
+    border-radius: 8px;
+}
+
+/* Default text color for code */
+.highlight pre {
+    color: #d4d4d4 !important;
+}
+
+.highlight span {
+    color: #d4d4d4;
+}
+
+/* Bash/shell specific */
+.highlight-bash .highlight span,
+.highlight-shell .highlight span,
+.highlight-console .highlight span {
+    color: #d4d4d4 !important;
+}
+
+.highlight .k, .highlight .kn, .highlight .kd { color: #569cd6 !important; } /* keywords */
+.highlight .n, .highlight .nn { color: #d4d4d4 !important; } /* names */
+.highlight .s, .highlight .s1, .highlight .s2 { color: #ce9178 !important; } /* strings */
+.highlight .c, .highlight .c1, .highlight .cm { color: #6a9955 !important; } /* comments */
+.highlight .o { color: #d4d4d4 !important; } /* operators */
+.highlight .p { color: #d4d4d4 !important; } /* punctuation */
+.highlight .mi, .highlight .mf { color: #b5cea8 !important; } /* numbers */
+.highlight .nb, .highlight .bp { color: #4ec9b0 !important; } /* builtins */
+.highlight .nf, .highlight .fm { color: #dcdcaa !important; } /* functions */
+.highlight .nc { color: #4ec9b0 !important; } /* classes */
+.highlight .ow { color: #569cd6 !important; } /* operator word */
+.highlight .gp { color: #6a9955 !important; } /* prompt */
+.highlight .w { color: #d4d4d4 !important; } /* whitespace */
+
+/* Inline code - keep light */
+code {
+    color: var(--kf-heading);
+    background: var(--kf-bg-subtle);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+
+.sd-card {
+    border-radius: 8px;
+    border: 1px solid var(--kf-border);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.sd-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--kf-blue-light);
+}
+
+.sd-card-title {
+    color: var(--kf-heading);
+    font-weight: 600;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+
+table {
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--kf-border);
+}
+
+th {
+    background: var(--kf-bg-subtle);
+    color: var(--kf-text);
+    font-weight: 600;
+}
+
+
+/* ============================================
+   ADMONITIONS
+   ============================================ */
+
+.admonition {
+    border-radius: 6px;
+    border: none;
+    border-left: 3px solid var(--kf-blue);
+}
+
+.admonition.tip {
+    background: rgba(129, 230, 217, 0.15);
+    border-left-color: var(--kf-accent);
+}
+
+.admonition.note {
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.admonition.warning {
+    background: rgba(251, 211, 141, 0.2);
+    border-left-color: #f6ad55;
+}
+
+/* ============================================
+   MISC
+   ============================================ */
+
+hr {
+    border: none;
+    height: 1px;
+    background: var(--kf-border);
+    margin: 2rem 0;
+}
+
+p {
+    color: var(--kf-text);
+    line-height: 1.7;
+}
+
+li::marker {
+    color: var(--kf-blue);
+}
+
+/* ============================================
+   LANDING PAGE ENHANCEMENTS
+   ============================================ */
+
+/* Hero tagline styling */
+article > section > p:first-of-type {
+    font-size: 1.2rem;
+    color: var(--kf-text);
+}
+
+/* Section descriptions (italic text after h2) */
+h2 + p > em:only-child,
+section > p > em:only-child {
+    display: block;
+    font-size: 1rem;
+    color: var(--kf-text-light);
+    font-style: normal;
+    margin-bottom: 1.5rem;
+}
+
+/* Section dividers */
+hr {
+    margin: 1.5rem 0 !important;
+    opacity: 0.4;
+}
+
+/* Borderless cards for feature sections */
+.sd-card.sd-border-0 {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.sd-card.sd-border-0:hover {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Feature card titles (bold text in cards) */
+.sd-card-body strong {
+    color: var(--kf-heading);
+    font-size: 1.1rem;
+}
+
+/* Code blocks in cards - smaller */
+.sd-card .highlight {
+    font-size: 0.8rem;
+}
+
+/* Quick start section code blocks */
+.highlight-bash + .highlight-python {
+    margin-top: -0.5rem;
+}

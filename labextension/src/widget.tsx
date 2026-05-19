@@ -23,6 +23,8 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
+
 import { ReactWidget } from '@jupyterlab/apputils';
 
 import { Token } from '@lumino/coreutils';
@@ -38,20 +40,25 @@ import { executeRpc, globalUnhandledRejection } from './lib/RPCUtils';
 import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { LabIcon } from '@jupyterlab/ui-components';
-import { registerKaleCommands, setLeftPanelRef } from './commands/kaleToolbar';
+import { registerKaleCommands } from './commands/kaleToolbar';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
-  'kubeflow-kale-labextension:IKubeflowKale',
+  'jupyterlab-kubeflow-kale:IKubeflowKale',
 );
 
 export interface IKubeflowKale {
   widget: Widget;
 }
 
-export const KALE_PANEL_ID = 'kubeflow-kale-labextension/kubeflowDeployment';
+export const KALE_PANEL_ID = 'jupyterlab-kubeflow-kale/kubeflowDeployment';
 
-const id = 'kubeflow-kale-labextension:deploymentPanel';
+const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
+
+const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
+const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
+const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
+const OUTPUT_PATH_KEY = 'outputPath';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
 let kalePanelWidget: ReactWidget | undefined;
@@ -62,7 +69,13 @@ let kalePanelWidget: ReactWidget | undefined;
 export default {
   activate,
   id,
-  requires: [ILabShell, ILayoutRestorer, INotebookTracker, IDocumentManager],
+  requires: [
+    ILabShell,
+    ILayoutRestorer,
+    INotebookTracker,
+    IDocumentManager,
+    ISettingRegistry,
+  ],
   provides: IKubeflowKale,
   autoStart: true,
 } as JupyterFrontEndPlugin<IKubeflowKale>;
@@ -73,6 +86,7 @@ async function activate(
   restorer: ILayoutRestorer,
   tracker: INotebookTracker,
   docManager: IDocumentManager,
+  settingRegistry: ISettingRegistry,
 ): Promise<IKubeflowKale> {
   const kernel: Kernel.IKernelConnection =
     await NotebookUtils.createNewKernel();
@@ -105,6 +119,76 @@ async function activate(
     }
   }
 
+  // Load and react to Kale JupyterLab settings
+  const SettingsAwareLeftPanel = () => {
+    const [kaleSettings, setKaleSettings] = React.useState({
+      enableKaleByDefault: false,
+      autoSaveOnCompileOrRun: false,
+      outputPath: '',
+    });
+
+    React.useEffect(() => {
+      let disposed = false;
+      let setting: any | null = null;
+      let onSettingChanged: (() => void) | null = null;
+
+      settingRegistry
+        .load(KALE_SETTINGS_PLUGIN_ID)
+        .then(loadedSetting => {
+          setting = loadedSetting;
+
+          const read = () => ({
+            enableKaleByDefault:
+              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            autoSaveOnCompileOrRun:
+              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            outputPath:
+              (loadedSetting.get(OUTPUT_PATH_KEY).composite as
+                | string
+                | undefined) ?? '',
+          });
+
+          const update = () => {
+            if (disposed) {
+              return;
+            }
+            setKaleSettings(read());
+          };
+
+          update();
+          onSettingChanged = () => update();
+          (loadedSetting.changed as any).connect(onSettingChanged);
+        })
+        .catch(reason => {
+          console.error('Failed to load Kale settings:', reason);
+        });
+
+      return () => {
+        disposed = true;
+        if (setting && onSettingChanged) {
+          (setting.changed as any).disconnect(onSettingChanged);
+        }
+      };
+    }, []);
+
+    return (
+      <KubeflowKaleLeftPanel
+        lab={lab}
+        tracker={tracker}
+        docManager={docManager}
+        backend={backend}
+        kernel={kernel}
+        enableKaleByDefault={kaleSettings.enableKaleByDefault}
+        autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
+        outputPath={kaleSettings.outputPath}
+      />
+    );
+  };
+
   async function loadPanel() {
     let reveal_widget = undefined;
     if (backend) {
@@ -135,16 +219,7 @@ async function activate(
   lab.started.then(() => {
     // show list of commands in the commandRegistry
     // console.log(lab.commands.listCommands());
-    kalePanelWidget = ReactWidget.create(
-      <KubeflowKaleLeftPanel
-        ref={ref => setLeftPanelRef(ref)}
-        lab={lab}
-        tracker={tracker}
-        docManager={docManager}
-        backend={backend}
-        kernel={kernel}
-      />,
-    );
+    kalePanelWidget = ReactWidget.create(<SettingsAwareLeftPanel />);
     kalePanelWidget.id = KALE_PANEL_ID;
     kalePanelWidget!.title.icon = kaleIcon;
     kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
