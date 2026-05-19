@@ -198,15 +198,6 @@ export default class Commands {
     return validateNotebook;
   };
 
-  /**
-   * Analyse the current metadata and produce some warning to be shown
-   * under the compilation task
-   * @param metadata Notebook metadata
-   */
-  getCompileWarnings = (_metadata: IKaleNotebookMetadata) => {
-    return [];
-  };
-
   // todo: docManager needs to be passed to deploysProgress during init
   // todo: autosnapshot will become part of metadata
   // todo: deployDebugMessage will be removed (the "Debug" toggle is of no use
@@ -218,12 +209,7 @@ export default class Commands {
     deployDebugMessage: boolean,
     onUpdate: OnUpdateCallbak,
   ): Promise<ICompileNotebookResult> => {
-    // after parsing and validating the metadata, show warnings (if necessary)
-    const compileWarnings = this.getCompileWarnings(metadata);
     onUpdate({ showCompileProgress: true, docManager: docManager });
-    if (compileWarnings.length) {
-      onUpdate({ compileWarnings });
-    }
     const compileNotebookArgs: ICompileNotebookArgs = {
       source_notebook_path: notebookPath,
       notebook_metadata_overrides: metadata,
