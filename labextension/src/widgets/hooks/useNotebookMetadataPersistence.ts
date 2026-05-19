@@ -40,7 +40,8 @@ export function useNotebookMetadataPersistence({
       prevMetadataJsonRef.current = json;
       const notebook = tracker.currentWidget;
       if (notebook) {
-        NotebookUtils.setMetaData(notebook, metadataKey, metadata);
+        const { base_image: _baseImage, ...metadataToPersist } = metadata;
+        NotebookUtils.setMetaData(notebook, metadataKey, metadataToPersist);
       }
     }
   }, [metadata, tracker, metadataKey]);

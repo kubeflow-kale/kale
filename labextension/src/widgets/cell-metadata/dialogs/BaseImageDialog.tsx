@@ -21,14 +21,11 @@ import {
   DialogTitle,
 } from '@mui/material';
 import { Input } from '../../../components/Input';
-import { DEFAULT_BASE_IMAGE } from '../constants';
-
 interface IBaseImageDialogProps {
   open: boolean;
   onClose: () => void;
   baseImage?: string;
-  pipelineBaseImage?: string;
-  defaultBaseImage?: string;
+  resolvedDefaultBaseImage: string;
   onUpdateBaseImage: (value: string) => void;
 }
 
@@ -36,8 +33,7 @@ export const BaseImageDialog: React.FC<IBaseImageDialogProps> = ({
   open,
   onClose,
   baseImage,
-  pipelineBaseImage,
-  defaultBaseImage,
+  resolvedDefaultBaseImage,
   onUpdateBaseImage,
 }) => {
   return (
@@ -45,16 +41,14 @@ export const BaseImageDialog: React.FC<IBaseImageDialogProps> = ({
       <DialogTitle>Base Image for Step</DialogTitle>
       <DialogContent>
         <p style={{ margin: '8px 0' }}>
-          Default: <strong>{defaultBaseImage || DEFAULT_BASE_IMAGE}</strong>
+          Default: <strong>{resolvedDefaultBaseImage}</strong>
         </p>
         <Input
           variant="outlined"
           label="Custom Base Image"
           value={baseImage || ''}
           updateValue={(v: string) => onUpdateBaseImage(v)}
-          placeholder={
-            pipelineBaseImage || defaultBaseImage || DEFAULT_BASE_IMAGE
-          }
+          placeholder={resolvedDefaultBaseImage}
           style={{ width: '100%', marginTop: '8px' }}
         />
       </DialogContent>

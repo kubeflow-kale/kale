@@ -41,15 +41,17 @@ export {
   DEFAULT_BASE_IMAGE,
 } from './constants';
 
-export interface IProps {
+export interface ICellEditorData {
   notebook: NotebookPanel;
   stepName?: string;
   stepDependencies: string[];
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
-  pipelineBaseImage?: string;
-  defaultBaseImage?: string;
+}
+
+export interface IProps extends ICellEditorData {
+  resolvedDefaultBaseImage: string;
 }
 
 export const CellMetadataEditor: React.FC<IProps> = props => {
@@ -60,8 +62,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits = {},
     baseImage,
     enableCaching,
-    pipelineBaseImage,
-    defaultBaseImage,
+    resolvedDefaultBaseImage,
   } = props;
 
   const { activeCellIndex, isEditorVisible, onEditorVisibilityChange } =
@@ -273,8 +274,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
         open={baseImageDialogOpen}
         onClose={() => setBaseImageDialogOpen(false)}
         baseImage={baseImage}
-        pipelineBaseImage={pipelineBaseImage}
-        defaultBaseImage={defaultBaseImage}
+        resolvedDefaultBaseImage={resolvedDefaultBaseImage}
         onUpdateBaseImage={updateCellTags.updateBaseImage}
       />
 

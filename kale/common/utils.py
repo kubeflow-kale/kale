@@ -277,3 +277,16 @@ def compute_trusted_hosts() -> list[str]:
     if pip_trusted_hosts:
         trusted_hosts = [u.strip() for u in pip_trusted_hosts.split(",") if u.strip()]
     return trusted_hosts
+
+
+def get_default_base_image_from_env() -> str | None:
+    """Read the default base image from ``KALE_DEFAULT_BASE_IMAGE``.
+
+    Returns:
+        The image reference if the environment variable is set and non-empty,
+        otherwise ``None``.
+    """
+    value = os.getenv("KALE_DEFAULT_BASE_IMAGE")
+    if value and value.strip():
+        return value.strip()
+    return None

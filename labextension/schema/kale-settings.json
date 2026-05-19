@@ -16,6 +16,12 @@
       "description": "When enabled, Kale saves the notebook automatically before compile, run, or upload without prompting. When disabled, you are asked to save if there are unsaved changes.",
       "default": false
     },
+    "defaultBaseImage": {
+      "type": "string",
+      "title": "Default base image",
+      "description": "Default container image for pipeline steps. Leave empty to use the environment variableKALE_DEFAULT_BASE_IMAGE or the python:3.12.",
+      "default": ""
+    },
     "outputPath": {
       "type": "string",
       "title": "Pipeline output directory",

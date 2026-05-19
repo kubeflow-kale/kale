@@ -58,6 +58,7 @@ const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
+const DEFAULT_BASE_IMAGE_KEY = 'defaultBaseImage';
 const OUTPUT_PATH_KEY = 'outputPath';
 
 const kaleIcon = new LabIcon({ name: 'kale:logo', svgstr: kaleIconSvg });
@@ -124,8 +125,27 @@ async function activate(
     const [kaleSettings, setKaleSettings] = React.useState({
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
+      defaultBaseImage: '',
       outputPath: '',
     });
+    const [envOnlyBaseImage, setEnvOnlyBaseImage] = React.useState('');
+
+    React.useEffect(() => {
+      if (!backend) {
+        return;
+      }
+
+      executeRpc(kernel, 'nb.get_default_base_image_env')
+        .then((envOnly: string) => {
+          setEnvOnlyBaseImage(envOnly?.trim() ?? '');
+        })
+        .catch(error => {
+          console.warn(
+            'Failed to fetch default base image from backend:',
+            error,
+          );
+        });
+    }, [backend, kernel]);
 
     React.useEffect(() => {
       let disposed = false;
@@ -134,8 +154,23 @@ async function activate(
 
       settingRegistry
         .load(KALE_SETTINGS_PLUGIN_ID)
-        .then(loadedSetting => {
+        .then(async loadedSetting => {
           setting = loadedSetting;
+
+          const jlDefaultBaseImageSetting = loadedSetting.get(
+            DEFAULT_BASE_IMAGE_KEY,
+          );
+          if (
+            envOnlyBaseImage &&
+            jlDefaultBaseImageSetting.user === undefined
+          ) {
+            const currentComposite = jlDefaultBaseImageSetting.composite as
+              | string
+              | undefined;
+            if (!currentComposite?.trim()) {
+              await loadedSetting.set(DEFAULT_BASE_IMAGE_KEY, envOnlyBaseImage);
+            }
+          }
 
           const read = () => ({
             enableKaleByDefault:
@@ -146,6 +181,10 @@ async function activate(
               (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
                 | boolean
                 | undefined) ?? false,
+            defaultBaseImage:
+              (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
+                | string
+                | undefined) ?? '',
             outputPath:
               (loadedSetting.get(OUTPUT_PATH_KEY).composite as
                 | string
@@ -173,7 +212,7 @@ async function activate(
           (setting.changed as any).disconnect(onSettingChanged);
         }
       };
-    }, []);
+    }, [envOnlyBaseImage]);
 
     return (
       <KubeflowKaleLeftPanel
@@ -184,6 +223,8 @@ async function activate(
         kernel={kernel}
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
+        defaultBaseImageSetting={kaleSettings.defaultBaseImage}
+        envDefaultBaseImage={envOnlyBaseImage}
         outputPath={kaleSettings.outputPath}
       />
     );

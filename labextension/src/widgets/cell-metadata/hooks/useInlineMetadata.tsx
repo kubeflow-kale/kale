@@ -21,10 +21,10 @@ import { CodeCellModel, ICellModel, isCodeCellModel } from '@jupyterlab/cells';
 import CellUtils from '../../../lib/CellUtils';
 import TagsUtils from '../../../lib/TagsUtils';
 import { InlineMetadata } from '../InlineMetadata';
-import { IProps as EditorProps } from '../CellMetadataEditor';
+import { ICellEditorData } from '../CellMetadataEditor';
 import { createPortal } from 'react-dom';
 
-export type Editors = { [index: string]: EditorProps };
+export type Editors = { [index: string]: ICellEditorData };
 type SaveState = 'started' | 'completed' | 'failed';
 
 /** Keep inline labels below the cell metadata editor when it is mounted in the cell. */
@@ -43,8 +43,7 @@ function insertMetadataParent(
 }
 
 interface IUseInlineMetadataOptions {
-  pipelineBaseImage?: string;
-  defaultBaseImage?: string;
+  resolvedDefaultBaseImage?: string;
   /** Called when the active cell's metadata changes (e.g. user edits step name). */
   onActiveMetadataChange?: () => void;
   /** Called when cells are added, removed, or change type. */
@@ -70,10 +69,8 @@ export function useInlineMetadata(
   notebookRef.current = notebook;
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
-  const pipelineBaseImageRef = useRef(options.pipelineBaseImage);
-  pipelineBaseImageRef.current = options.pipelineBaseImage;
-  const defaultBaseImageRef = useRef(options.defaultBaseImage);
-  defaultBaseImageRef.current = options.defaultBaseImage;
+  const resolvedDefaultBaseImageRef = useRef(options.resolvedDefaultBaseImage);
+  resolvedDefaultBaseImageRef.current = options.resolvedDefaultBaseImage;
   const onActiveMetadataChangeRef = useRef(options.onActiveMetadataChange);
   onActiveMetadataChangeRef.current = options.onActiveMetadataChange;
   const onCellsChangedRef = useRef(options.onCellsChanged);
@@ -155,8 +152,9 @@ export function useInlineMetadata(
             enableCaching={tags.enableCaching}
             previousStepName={previousStepName}
             cellIndex={index}
-            pipelineBaseImage={pipelineBaseImageRef.current}
-            defaultBaseImage={defaultBaseImageRef.current}
+            resolvedDefaultBaseImage={
+              resolvedDefaultBaseImageRef.current ?? 'python:3.12'
+            }
           />,
           metadataParent,
         ),

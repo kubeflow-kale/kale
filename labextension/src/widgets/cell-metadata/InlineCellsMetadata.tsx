@@ -25,10 +25,7 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
-import {
-  CellMetadataEditor,
-  IProps as EditorProps,
-} from './CellMetadataEditor';
+import { CellMetadataEditor, ICellEditorData } from './CellMetadataEditor';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Switch } from '@mui/material';
 import NotebookUtils from '../../lib/NotebookUtils';
@@ -39,16 +36,14 @@ import { useInlineMetadata } from './hooks/useInlineMetadata';
 interface IProps {
   notebook: NotebookPanel;
   onMetadataEnable: (isEnabled: boolean) => void;
-  pipelineBaseImage?: string;
-  defaultBaseImage?: string;
+  resolvedDefaultBaseImage: string;
   initialChecked?: boolean;
 }
 
 export const InlineCellsMetadata: React.FC<IProps> = ({
   notebook,
   onMetadataEnable,
-  pipelineBaseImage,
-  defaultBaseImage,
+  resolvedDefaultBaseImage,
   initialChecked,
 }) => {
   const [checked, setChecked] = useState(false);
@@ -61,8 +56,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
     checked,
     activeCellIndex,
     {
-      pipelineBaseImage,
-      defaultBaseImage,
+      resolvedDefaultBaseImage,
       onActiveMetadataChange: () => setIsEditorVisible(true),
       onCellsChanged: () => setIsEditorVisible(false),
     },
@@ -123,7 +117,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
   }, []);
 
   const activeEditorData = editors[activeCellIndex];
-  const editorProps: EditorProps = activeEditorData
+  const editorProps: ICellEditorData = activeEditorData
     ? {
         notebook: activeEditorData.notebook,
         stepName: activeEditorData.stepName || '',
@@ -149,8 +143,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
       limits={editorProps.limits}
       baseImage={editorProps.baseImage}
       enableCaching={editorProps.enableCaching}
-      pipelineBaseImage={pipelineBaseImage}
-      defaultBaseImage={defaultBaseImage}
+      resolvedDefaultBaseImage={resolvedDefaultBaseImage}
     />,
     document.body,
   );

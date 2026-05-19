@@ -65,10 +65,22 @@ def resume_notebook_path(request, server_root=None):
 
 
 def get_default_base_image(request):
-    """Get the default base image used when no other image is specified."""
+    """Get the default base image from env vars or the hardcoded fallback.
+
+    JupyterLab settings are resolved on the frontend; this RPC exposes the
+    server-side default (``KALE_DEFAULT_BASE_IMAGE`` or ``python:3.12``).
+    """
+    from kale.common.utils import get_default_base_image_from_env
     from kale.pipeline import DEFAULT_BASE_IMAGE
 
-    return DEFAULT_BASE_IMAGE
+    return get_default_base_image_from_env() or DEFAULT_BASE_IMAGE
+
+
+def get_default_base_image_env(request):
+    """Get ``KALE_DEFAULT_BASE_IMAGE`` when set, or an empty string."""
+    from kale.common.utils import get_default_base_image_from_env
+
+    return get_default_base_image_from_env() or ""
 
 
 # fixme: Remove the debug argument from the labextension RPC call.

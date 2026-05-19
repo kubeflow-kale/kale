@@ -38,7 +38,7 @@ kale --nb path/to/notebook.ipynb \
 | `--pipeline_name`      | Override the pipeline name (default comes from notebook metadata). |
 | `--experiment_name`    | Override the KFP experiment (default `Kale-Pipeline-Experiment`). |
 | `--pipeline_description` | Set a pipeline description shown in the KFP UI.              |
-| `--docker_image`       | Override the default base image for all steps.                 |
+| `--docker_image`       | Override the default base image for all steps (highest priority). |
 | `--debug`              | Keep intermediate files and print verbose logs.                |
 
 See [CLI Reference](../api/cli.md) for the complete list.
@@ -49,8 +49,9 @@ Open your notebook in JupyterLab, click the Kale icon in the left sidebar,
 and toggle the Kale panel on. At the bottom of the panel you'll see:
 
 - **Pipeline Name** and **Experiment Name** — override notebook defaults.
-- **Docker Image** — base image used for every step that doesn't declare
-  its own via an `image:` tag.
+- **Default base image** — configure in JupyterLab Settings (**Kale** >
+  **Default base image**). Precedence for steps without an `image:` tag:
+  JupyterLab setting → `KALE_DEFAULT_BASE_IMAGE` → `python:3.12`.
 - **Compile and Save** — generate the KFP DSL only.
 - **Compile and Run** — generate, upload, and start a run.
 

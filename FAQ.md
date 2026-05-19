@@ -14,9 +14,10 @@ notebook in a Kubeflow's notebook server, means that you will be installing new
 packages or downloading and creating new data that are essential for the
 execution of your code. The dependencies now live inside the volume[s] mounted
 on the pod running your notebook server. When converting the notebook to a new
-pipeline, Kale sets the notebook server's image as the steps' base image (or a
-custom user-defined image), so all those incremental changes (e.g. new
-installations) will be lost.
+pipeline, Kale uses the configured default base image (JupyterLab setting,
+``KALE_DEFAULT_BASE_IMAGE``, or ``python:3.12``) unless a step declares its
+own ``image:`` tag, so incremental changes in the notebook server (e.g. new
+``pip install`` without baking an image) will be lost.
 
 You will notice this is not happening in our CodeLab because, when running in
 MiniKF, Kale integrates with Rok, a data management platform that takes care of

@@ -23,8 +23,6 @@ import copy
 import logging
 import os
 
-from kubernetes.client.rest import ApiException
-from kubernetes.config import ConfigException
 import networkx as nx
 
 from kale.common import graphutils, podutils, utils
@@ -142,15 +140,7 @@ class PipelineConfig(Config):
 
     def _set_base_image(self):
         if not self.base_image:
-            try:
-                self.base_image = podutils.get_docker_base_image()
-            except (ConfigException, RuntimeError, FileNotFoundError, ApiException):
-                # * ConfigException: no K8s config found
-                # * RuntimeError, FileNotFoundError: this is not running in a
-                #   pod
-                # * ApiException: K8s call to read pod raised exception;
-                # Use kfp default image
-                self.base_image = DEFAULT_BASE_IMAGE
+            self.base_image = utils.get_default_base_image_from_env() or DEFAULT_BASE_IMAGE
 
     def _set_volume_storage_class(self):
         if not self.storage_class_name:

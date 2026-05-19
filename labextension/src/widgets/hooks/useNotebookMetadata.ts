@@ -41,11 +41,9 @@ export interface INotebookMetadataState {
   isEnabled: boolean;
   namespace: string;
   kfpUiHost: string;
-  defaultBaseImage: string;
   updateExperiment: (experiment: IExperiment) => void;
   updatePipelineName: (name: string) => void;
   updatePipelineDescription: (desc: string) => void;
-  updateDockerImage: (name: string) => void;
   updateEnableCaching: (enabled: boolean) => void;
   setIsEnabled: (enabled: boolean) => void;
 }
@@ -57,7 +55,6 @@ export interface ILoaderSetters {
   setIsEnabled: Dispatch<SetStateAction<boolean>>;
   setNamespace: Dispatch<SetStateAction<string>>;
   setKfpUiHost: Dispatch<SetStateAction<string>>;
-  setDefaultBaseImage: Dispatch<SetStateAction<string>>;
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
   resetForNoNotebook: () => void;
@@ -89,7 +86,6 @@ export function useNotebookMetadata({
   const [isEnabled, setIsEnabled] = useState(false);
   const [namespace, setNamespace] = useState('');
   const [kfpUiHost, setKfpUiHost] = useState('');
-  const [defaultBaseImage, setDefaultBaseImage] = useState('');
 
   const metadataRef = useRef(metadata);
   metadataRef.current = metadata;
@@ -114,10 +110,6 @@ export function useNotebookMetadata({
     setMetadata(prev => ({ ...prev, pipeline_description: desc }));
   }, []);
 
-  const updateDockerImage = useCallback((name: string) => {
-    setMetadata(prev => ({ ...prev, base_image: name }));
-  }, []);
-
   const updateEnableCaching = useCallback((enabled: boolean) => {
     setMetadata(prev => ({ ...prev, enable_caching: enabled }));
   }, []);
@@ -129,7 +121,6 @@ export function useNotebookMetadata({
     setIsEnabled(false);
     setNamespace('');
     setKfpUiHost('');
-    setDefaultBaseImage('');
   }, []);
 
   // --- composed hooks ---
@@ -147,7 +138,6 @@ export function useNotebookMetadata({
       setIsEnabled,
       setNamespace,
       setKfpUiHost,
-      setDefaultBaseImage,
       metadataRef,
       experimentsRef,
       resetForNoNotebook,
@@ -173,11 +163,9 @@ export function useNotebookMetadata({
     isEnabled,
     namespace,
     kfpUiHost,
-    defaultBaseImage,
     updateExperiment,
     updatePipelineName,
     updatePipelineDescription,
-    updateDockerImage,
     updateEnableCaching,
     setIsEnabled,
   };

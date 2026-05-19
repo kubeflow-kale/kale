@@ -19,7 +19,6 @@ import ColorUtils from '../../lib/ColorUtils';
 import {
   RESERVED_CELL_NAMES,
   RESERVED_CELL_NAMES_HELP_TEXT,
-  DEFAULT_BASE_IMAGE,
 } from './CellMetadataEditor';
 import EditIcon from '@mui/icons-material/Edit';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
@@ -33,8 +32,7 @@ interface IProps {
   enableCaching?: boolean;
   cellElement: any;
   cellIndex: number;
-  pipelineBaseImage?: string;
-  defaultBaseImage?: string;
+  resolvedDefaultBaseImage: string;
 }
 
 function isDOMElement(obj: any): obj is HTMLElement {
@@ -63,8 +61,7 @@ export const InlineMetadata: React.FC<IProps> = ({
   enableCaching,
   cellElement,
   cellIndex,
-  pipelineBaseImage,
-  defaultBaseImage,
+  resolvedDefaultBaseImage,
 }) => {
   const context = useContext(CellMetadataContext);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -145,8 +142,7 @@ export const InlineMetadata: React.FC<IProps> = ({
 
   const baseImageText = baseImage ? (
     <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-      Base Image:{' '}
-      {baseImage || pipelineBaseImage || defaultBaseImage || DEFAULT_BASE_IMAGE}
+      Base Image: {baseImage}
     </p>
   ) : null;
 

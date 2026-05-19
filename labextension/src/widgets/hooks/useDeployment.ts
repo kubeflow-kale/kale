@@ -34,6 +34,7 @@ interface IUseDeploymentParams {
   docManager: IDocumentManager;
   autoSaveOnCompileOrRun: boolean;
   outputPath: string;
+  resolvedDefaultBaseImage: string;
 }
 
 export interface IDeploymentState {
@@ -61,6 +62,7 @@ export function useDeployment({
   docManager,
   autoSaveOnCompileOrRun,
   outputPath,
+  resolvedDefaultBaseImage,
 }: IUseDeploymentParams): IDeploymentState {
   const [runDeployment, setRunDeployment] = useState(false);
   const [deploys, setDeploys] = useState<{
@@ -157,9 +159,7 @@ export function useDeployment({
       JSON.stringify(metadataRef.current),
     );
 
-    if (metadata.base_image === '') {
-      metadata.base_image = DefaultState.metadata.base_image;
-    }
+    metadata.base_image = resolvedDefaultBaseImage;
 
     // outputPath comes from JupyterLab Settings; backend expects it as output_path.
     if (outputPath) {
@@ -245,6 +245,7 @@ export function useDeployment({
     docManager,
     autoSaveOnCompileOrRun,
     outputPath,
+    resolvedDefaultBaseImage,
     updateDeployProgress,
   ]);
 

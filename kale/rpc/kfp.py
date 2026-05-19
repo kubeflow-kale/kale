@@ -41,10 +41,8 @@ def list_experiments(request):
 
 
 def get_ui_host(request):
-    """Get a UI Host. If it does not exist return None."""
-    c = _get_client()
-    host = getattr(c, "_uihost", None) or getattr(c, "host", None)
-    return host
+    """Get KFP UI host from config/env without contacting the API server."""
+    return kfp_client_factory.get_kfp_ui_host()
 
 
 def get_experiment(request, experiment_name):
