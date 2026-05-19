@@ -81,15 +81,18 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
       panel.toolbar.addItem('kaleRun', runBtn);
 
       // initial state
-       const updateButtons = () => {
+      const updateButtons = () => {
         const enabled = leftPanelRef?.isKaleEnabled() ?? false;
         compileBtn.enabled = enabled;
         runBtn.enabled = enabled;
       };
+      
       // run once immediately
       updateButtons();
+
       // keep toolbar buttons updated
       const interval = setInterval(updateButtons, 500);
+
       panel.disposed.connect(() => clearInterval(interval));
       }
     }
