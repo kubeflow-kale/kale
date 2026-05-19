@@ -14,7 +14,6 @@
 
 """Factory for creating KFP client instances with configuration support."""
 
-import os
 from typing import TYPE_CHECKING
 
 import kfp
@@ -24,23 +23,6 @@ from kale.config import kfp_server_config
 
 if TYPE_CHECKING:
     from kfp import Client
-
-
-def get_kfp_ui_host(
-    host: str | None = None,
-    ui_host: str | None = None,
-) -> str | None:
-    """Resolve the KFP UI host without instantiating a client.
-
-    ``kfp.Client`` calls the healthz endpoint during initialization when the
-    namespace is unset, which blocks for a long time and raises if the API
-    server is down. This helper mirrors the client's host / UI resolution so
-    callers (e.g. ``kfp.get_ui_host`` RPC) can return a URL from config or env
-    vars without contacting KFP.
-    """
-    config = kfp_server_config.load_config()
-    host = host or config.host or os.environ.get("KF_PIPELINES_ENDPOINT")
-    return os.environ.get("KF_PIPELINES_UI_ENDPOINT") or ui_host or host
 
 
 def get_kfp_client(

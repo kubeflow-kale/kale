@@ -133,8 +133,6 @@ def main():
         for a in mt_overrides_group._group_actions
         if getattr(args, a.dest, None) is not None
     }
-    if mt_overrides_group_dict.get("docker_image") is not None:
-        mt_overrides_group_dict["base_image"] = mt_overrides_group_dict.pop("docker_image")
     processor = NotebookProcessor(args.nb, mt_overrides_group_dict)
     pipeline = processor.run()
     imports_and_functions = processor.get_imports_and_functions()

@@ -379,32 +379,6 @@ def test_get_kfp_client_all_parameters(mock_get_auth, mock_client, tmpdir):
     )
 
 
-def test_get_kfp_ui_host_from_config(tmpdir):
-    """UI host resolves from saved config without creating a KFP client."""
-    config_path = os.path.join(tmpdir, "kfp_server_config.json")
-    with open(config_path, "w") as f:
-        json.dump({"host": "http://api.example:8888"}, f)
-
-    with mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path):
-        assert kfp_client_factory.get_kfp_ui_host() == "http://api.example:8888"
-
-
-def test_get_kfp_ui_host_env_overrides(tmpdir):
-    """KF_PIPELINES_UI_ENDPOINT takes precedence over config host."""
-    config_path = os.path.join(tmpdir, "kfp_server_config.json")
-    with open(config_path, "w") as f:
-        json.dump({"host": "http://api.example:8888"}, f)
-
-    env = {
-        "KF_PIPELINES_UI_ENDPOINT": "http://ui.example:8080",
-    }
-    with (
-        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
-        mock.patch.dict(os.environ, env, clear=False),
-    ):
-        assert kfp_client_factory.get_kfp_ui_host() == "http://ui.example:8080"
-
-
 def test_save_config_rejects_direct_token(tmpdir):
     """Test that saving actual token in auth_config is rejected."""
     config_path = os.path.join(tmpdir, "kfp_server_config.json")

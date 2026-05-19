@@ -35,15 +35,8 @@ notebook's Kale metadata. If both are set, the CLI value wins.
 | `--experiment_name`       | KFP experiment name. Default: `Kale-Pipeline-Experiment`.    |
 | `--pipeline_name`         | Name of the deployed pipeline. Default: `kale-pipeline`.     |
 | `--pipeline_description`  | Description shown in the KFP UI.                             |
-| `--docker_image`          | Default base image for every step (overrides env and settings). |
+| `--docker_image`          | Default base image for every step.                           |
 | `--kfp_host`              | KFP API endpoint, as `<host>:<port>` or a full URL.          |
-
-### Environment variables
-
-| Variable | Description |
-| -------- | ----------- |
-| `KALE_DEFAULT_BASE_IMAGE` | Default container image for pipeline steps when no per-step `image:` tag is set and no JupyterLab setting overrides it. Falls back to `python:3.12`. |
-
 | `--storage-class-name`    | Storage class for pipeline-created volumes.                  |
 | `--volume-access-mode`    | Access mode for pipeline-created volumes.                    |
 
