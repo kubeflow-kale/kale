@@ -86,7 +86,7 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
         compileBtn.enabled = enabled;
         runBtn.enabled = enabled;
       };
-      
+
       // run once immediately
       updateButtons();
 
@@ -94,8 +94,11 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
       const interval = setInterval(updateButtons, 500);
 
       panel.disposed.connect(() => clearInterval(interval));
-      }
     }
+  }
 
-  app.docRegistry.addWidgetExtension('Notebook', new KaleToolbarExtension());
+  app.docRegistry.addWidgetExtension(
+    'Notebook',
+    new KaleToolbarExtension(),
+  );
 }
