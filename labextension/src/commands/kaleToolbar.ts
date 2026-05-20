@@ -97,8 +97,5 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
     }
   }
 
-  app.docRegistry.addWidgetExtension(
-    'Notebook',
-    new KaleToolbarExtension(),
-  );
+  app.docRegistry.addWidgetExtension('Notebook', new KaleToolbarExtension());
 }
