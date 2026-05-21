@@ -228,11 +228,6 @@ class PipelineConfig(Config):
         env_config = utils.get_security_context_from_env()
         if self.security_context is None:
             self.security_context = env_config
-        else:
-            for key, value in env_config.__dict__.items():
-                current = getattr(self.security_context, key, None)
-                if current is None or str(current) == "":
-                    setattr(self.security_context, key, value)
 
 
 class Pipeline(nx.DiGraph):

@@ -25,7 +25,6 @@ from typing import Any
 import urllib
 
 import __main__
-from kale.pipeline import SecurityContextConfig
 
 log = logging.getLogger(__name__)
 
@@ -280,7 +279,7 @@ def compute_trusted_hosts() -> list[str]:
     return trusted_hosts
 
 
-def get_security_context_from_env() -> SecurityContextConfig:
+def get_security_context_from_env():
     """Read security context configuration from KALE_ environment variables.
 
     Environment variables:
@@ -294,10 +293,10 @@ def get_security_context_from_env() -> SecurityContextConfig:
             Boolean-like flag (1/true/yes/on) to require non-root execution.
 
     Returns:
-        dict: Security context config values from environment. Only includes
-        keys that were explicitly set via env vars; missing keys mean the
-        caller should use defaults.
+        SecurityContextConfig: Security context with config values from environment.
+        Only includes keys that were explicitly set via env vars; missing keys mean the caller should use defaults.
     """
+    from kale.pipeline import SecurityContextConfig
 
     def parse_bool(val: str) -> bool:
         return val.lower() in {"1", "true", "yes", "on"}
@@ -312,9 +311,23 @@ def get_security_context_from_env() -> SecurityContextConfig:
     if enabled is not None:
         security_context.enabled = parse_bool(enabled)
     if run_as_user is not None:
-        security_context.run_as_user = int(run_as_user)
+        try:
+            security_context.run_as_user = int(run_as_user)
+        except ValueError:
+            log.warning(
+                "Invalid value for KALE_SECURITY_CONTEXT_RUN_AS_USER: '%s'. "
+                "Expected an integer. Ignoring this value.",
+                run_as_user,
+            )
     if run_as_group is not None:
-        security_context.run_as_group = int(run_as_group)
+        try:
+            security_context.run_as_group = int(run_as_group)
+        except ValueError:
+            log.warning(
+                "Invalid value for KALE_SECURITY_CONTEXT_RUN_AS_GROUP: '%s'. "
+                "Expected an integer. Ignoring this value.",
+                run_as_group,
+            )
     if run_as_non_root is not None:
         security_context.run_as_non_root = parse_bool(run_as_non_root)
     return security_context
