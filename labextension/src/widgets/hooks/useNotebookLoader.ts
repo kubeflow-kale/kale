@@ -183,10 +183,8 @@ export function useNotebookLoader({
 
         const defaultPipelineName = getNotebookFileName(notebook);
         const sanitized = sanitizePipelineName(defaultPipelineName);
-        const { base_image: _legacyBaseImage, ...notebookMetadataRest } =
-          notebookMetadata;
         setMetadata({
-          ...notebookMetadataRest,
+          ...notebookMetadata,
           experiment,
           experiment_name,
           pipeline_name:

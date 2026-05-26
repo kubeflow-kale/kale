@@ -40,6 +40,7 @@ export function useNotebookMetadataPersistence({
       prevMetadataJsonRef.current = json;
       const notebook = tracker.currentWidget;
       if (notebook) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { base_image: _baseImage, ...metadataToPersist } = metadata;
         NotebookUtils.setMetaData(notebook, metadataKey, metadataToPersist);
       }
