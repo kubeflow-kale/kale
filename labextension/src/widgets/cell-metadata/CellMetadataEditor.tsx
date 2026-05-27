@@ -38,7 +38,6 @@ export {
   RESERVED_CELL_NAMES,
   RESERVED_CELL_NAMES_HELP_TEXT,
   RESERVED_CELL_NAMES_CHIP_COLOR,
-  DEFAULT_BASE_IMAGE,
 } from './constants';
 
 export interface ICellEditorData {

@@ -51,7 +51,5 @@ export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
   functions: 'a32626',
 };
 
-export const DEFAULT_BASE_IMAGE = 'python:3.12';
-
 export const STEP_NAME_ERROR_MSG =
   "Step name must consist of lower case alphanumeric characters or '_', and can not start with a digit.";
