@@ -89,6 +89,19 @@ export default {
   autoStart: true,
 } as JupyterFrontEndPlugin<IKubeflowKale>;
 
+/**
+ * Detect if Kale is installed
+ */
+async function getBackend(kernel: Kernel.IKernelConnection): Promise<boolean> {
+  try {
+    await NotebookUtils.sendKernelRequest(kernel, 'import kale', {});
+  } catch (error) {
+    console.error(`Kale backend is not installed: ${error}`);
+    return false;
+  }
+  return true;
+}
+
 async function activate(
   lab: JupyterFrontEnd,
   labShell: ILabShell,
@@ -97,39 +110,41 @@ async function activate(
   docManager: IDocumentManager,
   settingRegistry: ISettingRegistry,
 ): Promise<IKubeflowKale> {
-  const kernel: Kernel.IKernelConnection =
-    await NotebookUtils.createNewKernel();
-  window.addEventListener('beforeunload', () => kernel.shutdown());
   window.addEventListener('unhandledrejection', globalUnhandledRejection);
 
-  /**
-   * Detect if Kale is installed
-   */
-  async function getBackend(kernel: Kernel.IKernelConnection) {
-    try {
-      await NotebookUtils.sendKernelRequest(kernel, 'import kale', {});
-    } catch (error) {
-      console.error(`Kale backend is not installed: ${error}`);
+  // Start kernel initialization in the background without blocking JupyterLab
+  // startup. The app shell (and its #main element) must appear before all async
+  // activate functions complete, so we defer heavy async work here and await it
+  // inside the post-startup callbacks below.
+  const initializationPromise: Promise<{
+    kernel: Kernel.IKernelConnection;
+    backend: boolean;
+  }> = (async () => {
+    const kernel = await NotebookUtils.createNewKernel();
+    window.addEventListener('beforeunload', () => kernel.shutdown());
 
-      return false;
+    // TODO: backend can become an Enum that indicates the type of
+    //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
+    const backend = await getBackend(kernel);
+    if (backend) {
+      try {
+        await executeRpc(kernel, 'log.setup_logging');
+      } catch (error) {
+        globalUnhandledRejection({ reason: error });
+      }
     }
-    return true;
-  }
+    return { kernel, backend };
+  })();
 
-  // TODO: backend can become an Enum that indicates the type of
-  //  env we are in (like Local Laptop, MiniKF, GCP, UI without Kale, ...)
-  const backend = await getBackend(kernel);
-  if (backend) {
-    try {
-      await executeRpc(kernel, 'log.setup_logging');
-    } catch (error) {
-      globalUnhandledRejection({ reason: error });
-      throw error;
-    }
-  }
-
-  // Load and react to Kale JupyterLab settings
+  // Load and react to Kale JupyterLab settings. The component subscribes to
+  // initializationPromise so it can render without blocking JupyterLab startup.
   const SettingsAwareLeftPanel = () => {
+    // Async kernel/backend state resolved after startup
+    const [initialized, setInitialized] = React.useState<{
+      kernel: Kernel.IKernelConnection;
+      backend: boolean;
+    } | null>(null);
+
     const [kaleSettings, setKaleSettings] = React.useState({
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
@@ -141,21 +156,43 @@ async function activate(
     const [backendSecurityContext, setBackendSecurityContext] =
       React.useState<ISecurityContextSettings | null>(null);
 
+    // Resolve kernel and backend asynchronously so the widget can be registered
+    // with the layout restorer immediately while initialization is in progress.
     React.useEffect(() => {
-      if (!backend) {
+      let cancelled = false;
+      initializationPromise
+        .then(result => {
+          if (!cancelled) {
+            setInitialized(result);
+          }
+        })
+        .catch(err => {
+          console.error('Kale kernel initialization failed:', err);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, []);
+
+    React.useEffect(() => {
+      if (!initialized?.backend) {
         return;
       }
 
-      executeRpc(kernel, 'nb.get_security_context_defaults')
+      executeRpc(initialized.kernel, 'nb.get_security_context_defaults')
         .then((result: ISecurityContextSettings) => {
           setBackendSecurityContext(result);
         })
         .catch(error => {
           console.warn('Failed to fetch security context defaults:', error);
         });
-    }, []);
+    }, [initialized]);
 
     React.useEffect(() => {
+      if (!initialized) {
+        return;
+      }
+
       let disposed = false;
       let setting: any | null = null;
       let onSettingChanged: (() => void) | null = null;
@@ -228,15 +265,19 @@ async function activate(
           (setting.changed as any).disconnect(onSettingChanged);
         }
       };
-    }, [backendSecurityContext]);
+    }, [backendSecurityContext, initialized]);
+
+    if (!initialized) {
+      return null;
+    }
 
     return (
       <KubeflowKaleLeftPanel
         lab={lab}
         tracker={tracker}
         docManager={docManager}
-        backend={backend}
-        kernel={kernel}
+        backend={initialized.backend}
+        kernel={initialized.kernel}
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
         securityContext={kaleSettings.securityContext}
@@ -245,7 +286,26 @@ async function activate(
     );
   };
 
-  async function loadPanel() {
+  // Creates the left side bar widget once the app has fully started.
+  // The widget is registered with the restorer immediately (before lab.restored)
+  // so that layout restoration works correctly across page reloads.
+  lab.started.then(() => {
+    // show list of commands in the commandRegistry
+    // console.log(lab.commands.listCommands());
+    kalePanelWidget = ReactWidget.create(<SettingsAwareLeftPanel />);
+    kalePanelWidget.id = KALE_PANEL_ID;
+    kalePanelWidget!.title.icon = kaleIcon;
+    kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
+    kalePanelWidget!.node.classList.add('kale-panel');
+
+    restorer.add(kalePanelWidget, kalePanelWidget.id);
+  });
+
+  // Initialize once the application shell has been restored
+  // and all the widgets have been added to the NotebookTracker
+  lab.restored.then(async () => {
+    const { kernel, backend } = await initializationPromise;
+
     let reveal_widget = undefined;
     if (backend) {
       // Check if KALE_NOTEBOOK_PATH env variable exists and if so load
@@ -269,26 +329,8 @@ async function activate(
       // open kale panel
       kalePanelWidget.activate();
     }
-  }
-
-  // Creates the left side bar widget once the app has fully started
-  lab.started.then(() => {
-    // show list of commands in the commandRegistry
-    // console.log(lab.commands.listCommands());
-    kalePanelWidget = ReactWidget.create(<SettingsAwareLeftPanel />);
-    kalePanelWidget.id = KALE_PANEL_ID;
-    kalePanelWidget!.title.icon = kaleIcon;
-    kalePanelWidget!.title.caption = 'Kubeflow Pipelines Deployment Panel';
-    kalePanelWidget!.node.classList.add('kale-panel');
-
-    restorer.add(kalePanelWidget, kalePanelWidget.id);
   });
 
-  // Initialize once the application shell has been restored
-  // and all the widgets have been added to the NotebookTracker
-  lab.restored.then(() => {
-    loadPanel();
-  });
   registerKaleCommands(lab, kaleIcon);
 
   return {
