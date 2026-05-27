@@ -22,12 +22,22 @@ export interface ILeftPanelHandle {
   triggerCompile: () => void;
   triggerRun: () => void;
   isKaleEnabled: () => boolean;
+  onKaleStateChange?: (enabled: boolean) => void;
 }
 
 let leftPanelRef: ILeftPanelHandle | null = null;
+let toolbarStateCallback: ((enabled: boolean) => void) | null = null;
 
 export const setLeftPanelCallbacks = (callbacks: ILeftPanelHandle | null) => {
   leftPanelRef = callbacks;
+
+  // Wire up reactive callback when panel becomes available
+  if (callbacks && toolbarStateCallback) {
+    callbacks.onKaleStateChange = toolbarStateCallback;
+
+    // Sync current state immediately
+    toolbarStateCallback(callbacks.isKaleEnabled());
+  }
 };
 
 function activateKalePanel(app: JupyterFrontEnd) {
@@ -80,20 +90,19 @@ export function registerKaleCommands(app: JupyterFrontEnd, kaleIcon: LabIcon) {
       panel.toolbar.addItem('kaleCompile', compileBtn);
       panel.toolbar.addItem('kaleRun', runBtn);
 
-      // initial state
-      const updateButtons = () => {
-        const enabled = leftPanelRef?.isKaleEnabled() ?? false;
+      // Register reactive updater
+      toolbarStateCallback = (enabled: boolean) => {
         compileBtn.enabled = enabled;
         runBtn.enabled = enabled;
       };
 
-      // run once immediately
-      updateButtons();
+      // Wire immediately if panel already exists
+      if (leftPanelRef) {
+        leftPanelRef.onKaleStateChange = toolbarStateCallback;
 
-      // keep toolbar buttons updated
-      const interval = setInterval(updateButtons, 500);
-
-      panel.disposed.connect(() => clearInterval(interval));
+        // Initial sync
+        toolbarStateCallback(leftPanelRef.isKaleEnabled());
+      }
     }
   }
 

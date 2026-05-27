@@ -107,6 +107,16 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     deployment.triggerRun,
     notebookMeta.isEnabled,
   ]);
+  // Notify toolbar when Kale enabled state changes
+  useEffect(() => {
+    if (notebookMeta.isEnabled !== undefined) {
+      setLeftPanelCallbacks({
+        triggerCompile: deployment.triggerCompile,
+        triggerRun: deployment.triggerRun,
+        isKaleEnabled: () => notebookMeta.isEnabled,
+      });
+    }
+  }, [notebookMeta.isEnabled]);
 
   // --- render logic ---
 
