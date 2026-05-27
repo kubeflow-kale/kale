@@ -21,6 +21,7 @@
       "title": "Default base image",
       "description": "Default container image for pipeline steps. Leave empty to use the environment variable KALE_DEFAULT_BASE_IMAGE or the python:3.12.",
       "default": ""
+    },
     "securityContext": {
       "type": "object",
       "title": "Security Context",

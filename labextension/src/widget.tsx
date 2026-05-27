@@ -200,24 +200,6 @@ async function activate(
             }
           }
 
-          const read = () => ({
-            enableKaleByDefault:
-              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
-                | boolean
-                | undefined) ?? false,
-            autoSaveOnCompileOrRun:
-              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
-                | boolean
-                | undefined) ?? false,
-            defaultBaseImage:
-              (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
-                | string
-                | undefined) ?? '',
-            outputPath:
-              (loadedSetting.get(OUTPUT_PATH_KEY).composite as
-                | string
-                | undefined) ?? '',
-          });
           // If backend env vars are available and user hasn't modified the setting,
           // programmatically set them so they appear in the Settings UI
           const jlSecurityContextSetting =
@@ -240,25 +222,28 @@ async function activate(
             );
           }
 
-          const read = () => {
-            return {
-              enableKaleByDefault:
-                (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
-                  | boolean
-                  | undefined) ?? false,
-              autoSaveOnCompileOrRun:
-                (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY)
-                  .composite as boolean | undefined) ?? false,
-              securityContext:
-                (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
-                  | ISecurityContextSettings
-                  | undefined) ?? {},
-              outputPath:
-                (loadedSetting.get(OUTPUT_PATH_KEY).composite as
-                  | string
-                  | undefined) ?? '',
-            };
-          };
+          const read = () => ({
+            enableKaleByDefault:
+              (loadedSetting.get(ENABLE_KALE_BY_DEFAULT_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            autoSaveOnCompileOrRun:
+              (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
+                | boolean
+                | undefined) ?? false,
+            defaultBaseImage:
+              (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
+                | string
+                | undefined) ?? '',
+            securityContext:
+              (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
+                | ISecurityContextSettings
+                | undefined) ?? {},
+            outputPath:
+              (loadedSetting.get(OUTPUT_PATH_KEY).composite as
+                | string
+                | undefined) ?? '',
+          });
 
           const update = () => {
             if (disposed) {
@@ -281,8 +266,7 @@ async function activate(
           (setting.changed as any).disconnect(onSettingChanged);
         }
       };
-    }, [envOnlyBaseImage]);
-    }, [backendSecurityContext]);
+    }, [envOnlyBaseImage, backendSecurityContext]);
 
     return (
       <KubeflowKaleLeftPanel
