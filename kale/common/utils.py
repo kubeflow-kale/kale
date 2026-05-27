@@ -290,6 +290,8 @@ def get_default_base_image_from_env() -> str | None:
     if value and value.strip():
         return value.strip()
     return None
+
+
 def get_security_context_from_env():
     """Read security context configuration from KALE_ environment variables.
 
