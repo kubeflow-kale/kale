@@ -162,6 +162,9 @@ export function useUpdateCellTags({
     },
     [notebook, activeCellIndex, stepName, stepDependencies, limits, baseImage],
   );
+  const clearCellMetadata = useCallback(() => {
+    TagsUtils.removeAllKaleTags(notebook, activeCellIndex);
+  }, [notebook, activeCellIndex]);
 
   return {
     updateCellType,
@@ -170,5 +173,6 @@ export function useUpdateCellTags({
     updateLimits,
     updateBaseImage,
     updateCaching,
+    clearCellMetadata,
   };
 }

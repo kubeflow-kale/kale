@@ -249,6 +249,41 @@ export default class TagsUtils {
       TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
     });
   }
+    public static removeAllKaleTags(
+    notebook: NotebookPanel,
+    activeCellIndex: number,
+  ) {
+    const currentTags: string[] =
+      CellUtils.getCellMetaData(
+        notebook.content,
+        activeCellIndex,
+        'tags',
+      ) || [];
+
+    const kaleTagPrefixes = [
+      'step:',
+      'prev:',
+      'limit:',
+      'image:',
+      'cache:',
+      'skip',
+      'imports',
+      'functions',
+      'pipeline-parameters',
+      'final',
+    ];
+
+    const filteredTags = currentTags.filter(
+      tag => !kaleTagPrefixes.some(prefix => tag.startsWith(prefix)),
+    );
+
+    CellUtils.setCellMetaData(
+      notebook,
+      activeCellIndex,
+      'tags',
+      filteredTags,
+    );
+  }
 
   public static cellsToArray(notebook: NotebookPanel) {
     const cells = notebook.model?.cells;

@@ -17,6 +17,7 @@ import { useCallback, useContext, useRef, useState } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../lib/TagsUtils';
 import CloseIcon from '@mui/icons-material/Close';
+import LayersClearIcon from '@mui/icons-material/LayersClear';
 import ColorUtils from '../../lib/ColorUtils';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
 import { Button, IconButton, Tooltip } from '@mui/material';
@@ -246,7 +247,19 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
               </>
             )}
 
-            <IconButton aria-label="delete" onMouseDown={closeEditor}>
+            {(hasStepName || RESERVED_CELL_NAMES.includes(stepName)) && (
+              <Tooltip title="Clear all cell metadata" placement="top" arrow>
+                <IconButton
+                  aria-label="clear metadata"
+                  onMouseDown={updateCellTags.clearCellMetadata}
+                  size="small"
+                >
+                  <LayersClearIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            <IconButton aria-label="close editor" onMouseDown={closeEditor}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </div>
