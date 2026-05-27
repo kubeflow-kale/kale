@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from kale.common import utils
+from kale.pipeline import SecurityContextConfig
 
 
 def test_comment_magic_commands():
@@ -125,3 +126,85 @@ def test_compute_pip_index_urls_override_beats_dev_mode(monkeypatch):
         "https://mirror.only/simple",
         "https://pypi.org/simple",
     ]
+
+
+def _clear_security_context_env(monkeypatch):
+    """Ensure security context env vars are unset for predictable tests."""
+    for key in (
+        "KALE_SECURITY_CONTEXT_ENABLED",
+        "KALE_SECURITY_CONTEXT_RUN_AS_USER",
+        "KALE_SECURITY_CONTEXT_RUN_AS_GROUP",
+        "KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_get_security_context_from_env_default(monkeypatch):
+    """When no env vars are set, the default values should be used"""
+    _clear_security_context_env(monkeypatch)
+
+    default_sc = SecurityContextConfig()
+    sc_from_config = utils.get_security_context_from_env()
+    assert sc_from_config == default_sc
+
+
+def test_get_security_context_from_env_enabled_true(monkeypatch):
+    """Test parsing of KALE_SECURITY_CONTEXT_ENABLED with various true values."""
+    _clear_security_context_env(monkeypatch)
+
+    for val in ("1", "true", "True", "TRUE", "yes", "YES", "on", "ON"):
+        monkeypatch.setenv("KALE_SECURITY_CONTEXT_ENABLED", val)
+        result = utils.get_security_context_from_env()
+        assert result.enabled is True, f"Expected True for '{val}'"
+
+
+def test_get_security_context_from_env_enabled_false(monkeypatch):
+    """Test parsing of KALE_SECURITY_CONTEXT_ENABLED with false values."""
+    _clear_security_context_env(monkeypatch)
+
+    for val in ("0", "false", "False", "FALSE", "no", "NO", "off", "OFF", ""):
+        monkeypatch.setenv("KALE_SECURITY_CONTEXT_ENABLED", val)
+        result = utils.get_security_context_from_env()
+        assert result.enabled is False, f"Expected False for '{val}'"
+
+
+def test_get_security_context_from_env_run_as_user(monkeypatch):
+    """Test parsing of KALE_SECURITY_CONTEXT_RUN_AS_USER."""
+    _clear_security_context_env(monkeypatch)
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_USER", "1000")
+
+    result = utils.get_security_context_from_env()
+    assert result.run_as_user == 1000
+
+
+def test_get_security_context_from_env_run_as_group(monkeypatch):
+    """Test parsing of KALE_SECURITY_CONTEXT_RUN_AS_GROUP."""
+    _clear_security_context_env(monkeypatch)
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_GROUP", "500")
+
+    result = utils.get_security_context_from_env()
+    assert result.run_as_group == 500
+
+
+def test_get_security_context_from_env_run_as_non_root(monkeypatch):
+    """Test parsing of KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT."""
+    _clear_security_context_env(monkeypatch)
+
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT", "true")
+    assert utils.get_security_context_from_env().run_as_non_root is True
+
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT", "false")
+    assert utils.get_security_context_from_env().run_as_non_root is False
+
+
+def test_get_security_context_from_env_all_set(monkeypatch):
+    """Test that all env vars are parsed correctly when set."""
+    _clear_security_context_env(monkeypatch)
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_ENABLED", "false")
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_USER", "1000")
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_GROUP", "1000")
+    monkeypatch.setenv("KALE_SECURITY_CONTEXT_RUN_AS_NON_ROOT", "false")
+
+    assert utils.get_security_context_from_env() == SecurityContextConfig(
+        enabled=False, run_as_user=1000, run_as_group=1000, run_as_non_root=False
+    )

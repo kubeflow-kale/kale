@@ -98,6 +98,29 @@ class KatibConfig(Config):
     parallelTrialCount = Field(type=int, default=3)
 
 
+class SecurityContextConfig(Config):
+    """Configuration for Kubernetes security context settings.
+
+    These settings control the security context applied to all pipeline steps.
+    Can be configured via JupyterLab settings or ``KALE_*`` environment variables.
+    """
+
+    enabled = Field(type=bool, default=True)
+    run_as_user = Field(type=int, default=65534)
+    run_as_group = Field(type=int, default=0)
+    run_as_non_root = Field(type=bool, default=True)
+
+    def __eq__(self, value):
+        if not isinstance(value, SecurityContextConfig):
+            return False
+        return (
+            self.enabled == value.enabled
+            and self.run_as_user == value.run_as_user
+            and self.run_as_group == value.run_as_group
+            and self.run_as_non_root == value.run_as_non_root
+        )
+
+
 class PipelineConfig(Config):
     """Main config class to validate the pipeline metadata."""
 
@@ -119,6 +142,7 @@ class PipelineConfig(Config):
         type=str, validators=[validators.IsLowerValidator, validators.VolumeAccessModeValidator]
     )
     timeout = Field(type=int, validators=[validators.PositiveIntegerValidator])
+    security_context = Field(type=SecurityContextConfig, default=None)
     output_path = Field(type=str, default="", validators=[validators.OutputPathValidator])
 
     @property
@@ -134,6 +158,7 @@ class PipelineConfig(Config):
         self._sort_volumes()
         self._set_abs_working_dir()
         self._set_marshal_path()
+        self._set_security_context()
 
     def _randomize_pipeline_name(self):
         self.pipeline_name = f"{self.pipeline_name}-{utils.random_string()}"
@@ -184,6 +209,15 @@ class PipelineConfig(Config):
             marshal_dir = f".{basename}.kale.marshal.dir"
             self.marshal_volume = False
             self.marshal_path = os.path.join(wd, marshal_dir)
+
+    def _set_security_context(self):
+        """Initialize security context from env vars if not set from metadata.
+
+        Precedence: JupyterLab metadata > env vars > defaults
+        """
+        env_config = utils.get_security_context_from_env()
+        if self.security_context is None:
+            self.security_context = env_config
 
 
 class Pipeline(nx.DiGraph):

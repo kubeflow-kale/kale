@@ -26,6 +26,15 @@ export const NEW_EXPERIMENT: IExperiment = {
   id: 'new',
 };
 
+// Security context settings for pipeline steps
+// Uses Python naming convention as it will be read by Kale backend
+export interface ISecurityContext {
+  enabled?: boolean;
+  run_as_user?: number;
+  run_as_group?: number;
+  run_as_non_root?: boolean;
+}
+
 // keep names with Python notation because they will be read
 // in python by Kale.
 export interface IKaleNotebookMetadata {
@@ -38,6 +47,7 @@ export interface IKaleNotebookMetadata {
 
   steps_defaults?: string[];
   storage_class_name?: string;
+  security_context?: ISecurityContext;
   output_path?: string;
 }
 
@@ -50,5 +60,11 @@ export const DefaultState = {
     base_image: '',
     enable_caching: true,
     steps_defaults: [] as string[],
+    security_context: {
+      enabled: true,
+      run_as_user: 65534,
+      run_as_group: 0,
+      run_as_non_root: true,
+    },
   } as IKaleNotebookMetadata,
 };

@@ -227,13 +227,32 @@ jobs:
           name: wheel
           path: dist/
 
+      - name: Read changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          CHANGELOG_FILE="CHANGELOG/CHANGELOG-${MAJOR}.${MINOR}.md"
+          if [ -f "$CHANGELOG_FILE" ]; then
+            {
+              echo "body<<CHANGELOG_EOF"
+              cat "$CHANGELOG_FILE"
+              echo "CHANGELOG_EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: ${{ needs.prepare.outputs.tag }}
           prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.body || '' }}
+          generate_release_notes: ${{ steps.changelog.outputs.found != 'true' }}
           files: dist/*
 
   bump-dev-version:

@@ -30,13 +30,14 @@ def auto_generated_pipeline(
         {%- endfor %}
     {%- endif %}
     )
-
+{% if security_context.enabled %}
     security_context.set_security_context(
         task={{ step.name }}_task,
-        run_as_user=65534,
-        run_as_group=0,
-        run_as_non_root=True
+        run_as_user={{ security_context.run_as_user }},
+        run_as_group={{ security_context.run_as_group }},
+        run_as_non_root={{ security_context.run_as_non_root }}
     )
+{%- endif %}
     {{ step.name }}_task.set_env_variable(name="HOME", value="/tmp")
 
     {% if loop.index0 > 0 %}
