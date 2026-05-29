@@ -257,7 +257,7 @@ export function useInlineMetadata(
     return () => {
       cellModel.metadataChanged.disconnect(onMetadataChange);
     };
-  }, [notebook, activeCellIndex, onMetadataChange]);
+  }, [enabled, notebook, activeCellIndex, onMetadataChange]);
 
   const prevEnabledRef = useRef(enabled);
   useEffect(() => {
