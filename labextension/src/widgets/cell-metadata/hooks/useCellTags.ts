@@ -45,14 +45,13 @@ export function useUpdateCellTags({
   const updateStepName = useCallback(
     (value: string) => {
       const oldStepName = stepName || '';
+      TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
       TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
         prevStepNames: stepDependencies,
         limits: limits || {},
         baseImage,
         enableCaching,
         stepName: value,
-      }).then(() => {
-        TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
       });
     },
     [
