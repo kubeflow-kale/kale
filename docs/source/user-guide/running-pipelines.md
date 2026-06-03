@@ -112,19 +112,12 @@ A few environment variables are useful when running Kale:
 
 The `KALE_UPLOAD_LINK` and `KALE_RUN_LINK` variables allow you to customize the
 URLs generated for viewing pipelines and runs. This is useful when using a
-different UI than the standard Kubeflow Pipelines UI (e.g., RHOAI/ODH Dashboard).
+different UI than the standard Kubeflow Pipelines UI.
 
 **Placeholders:**
 
 - `KALE_UPLOAD_LINK`: `{pipeline_id}`, `{version_id}`, `{namespace}`
 - `KALE_RUN_LINK`: `{run_id}`, `{namespace}`
-
-**Example for RHOAI:**
-
-```bash
-export KALE_UPLOAD_LINK="https://rhods-dashboard.apps.example.com/pipelines/{namespace}/pipeline/view/{pipeline_id}"
-export KALE_RUN_LINK="https://rhods-dashboard.apps.example.com/pipelineRuns/{namespace}/pipelineRun/view/{run_id}"
-```
 
 The `KALE_PIP_*` variables are most useful when testing an unpublished version of Kale
 against a local KFP cluster — see the "Testing with KFP Clusters" section
