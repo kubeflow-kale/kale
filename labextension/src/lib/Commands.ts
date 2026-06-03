@@ -158,6 +158,19 @@ export default class Commands {
     }
   };
 
+  getCustomLinks = async (): Promise<{ upload: string; run: string }> => {
+    try {
+      return await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'kfp.get_custom_links',
+      );
+    } catch (error) {
+      console.error('Failed to retrieve custom links', error);
+      return { upload: '', run: '' };
+    }
+  };
+
   pollRun(runPipeline: RunPipeline, onUpdate: OnUpdateCallbak) {
     _legacy_executeRpcAndShowRPCError(
       this._notebook,

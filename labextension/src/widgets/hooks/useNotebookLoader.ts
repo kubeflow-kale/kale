@@ -77,6 +77,7 @@ export function useNotebookLoader({
 }: IUseNotebookLoaderParams) {
   const {
     setKfpUiHost,
+    setCustomLinks,
     setNamespace,
     setGettingExperiments,
     metadataRef,
@@ -98,6 +99,9 @@ export function useNotebookLoader({
 
       const host = (await commands.getKfpUiHost()) || DEFAULT_UI_URL;
       setKfpUiHost(host);
+
+      const links = await commands.getCustomLinks();
+      setCustomLinks(links);
 
       const notebookMetadata = NotebookUtils.getMetaData(notebook, metadataKey);
 
@@ -214,6 +218,7 @@ export function useNotebookLoader({
       kernel,
       metadataKey,
       setKfpUiHost,
+      setCustomLinks,
       setNamespace,
       setGettingExperiments,
       metadataRef,

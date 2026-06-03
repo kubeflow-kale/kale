@@ -34,6 +34,11 @@ import { useEnableByDefaultEffect } from './useEnableByDefaultEffect';
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const defaultMetadata = DefaultState.metadata;
 
+export interface ICustomLinks {
+  upload: string;
+  run: string;
+}
+
 export interface INotebookMetadataState {
   metadata: IKaleNotebookMetadata;
   experiments: IExperiment[];
@@ -41,6 +46,7 @@ export interface INotebookMetadataState {
   isEnabled: boolean;
   namespace: string;
   kfpUiHost: string;
+  customLinks: ICustomLinks;
   updateExperiment: (experiment: IExperiment) => void;
   updatePipelineName: (name: string) => void;
   updatePipelineDescription: (desc: string) => void;
@@ -55,6 +61,7 @@ export interface ILoaderSetters {
   setIsEnabled: Dispatch<SetStateAction<boolean>>;
   setNamespace: Dispatch<SetStateAction<string>>;
   setKfpUiHost: Dispatch<SetStateAction<string>>;
+  setCustomLinks: Dispatch<SetStateAction<ICustomLinks>>;
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
   resetForNoNotebook: () => void;
@@ -86,6 +93,10 @@ export function useNotebookMetadata({
   const [isEnabled, setIsEnabled] = useState(false);
   const [namespace, setNamespace] = useState('');
   const [kfpUiHost, setKfpUiHost] = useState('');
+  const [customLinks, setCustomLinks] = useState<ICustomLinks>({
+    upload: '',
+    run: '',
+  });
 
   const metadataRef = useRef(metadata);
   metadataRef.current = metadata;
@@ -121,6 +132,7 @@ export function useNotebookMetadata({
     setIsEnabled(false);
     setNamespace('');
     setKfpUiHost('');
+    setCustomLinks({ upload: '', run: '' });
   }, []);
 
   // --- composed hooks ---
@@ -138,6 +150,7 @@ export function useNotebookMetadata({
       setIsEnabled,
       setNamespace,
       setKfpUiHost,
+      setCustomLinks,
       metadataRef,
       experimentsRef,
       resetForNoNotebook,
@@ -163,6 +176,7 @@ export function useNotebookMetadata({
     isEnabled,
     namespace,
     kfpUiHost,
+    customLinks,
     updateExperiment,
     updatePipelineName,
     updatePipelineDescription,

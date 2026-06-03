@@ -27,6 +27,11 @@ export type RunPipeline = {
   status: string | null;
 };
 
+export type CustomLinks = {
+  upload: string;
+  run: string;
+};
+
 export type DeployProgressState = {
   showValidationProgress?: boolean;
   notebookValidation?: boolean;
@@ -49,12 +54,14 @@ export type DeployProgressState = {
   namespace?: string;
   message?: string;
   kfpUiHost?: string;
+  customLinks?: CustomLinks;
 };
 
 interface IDeploysProgress {
   deploys: { [key: number]: DeployProgressState };
   onPanelRemove: (index: number) => void;
   kfpUiHost: string;
+  customLinks: CustomLinks;
 }
 
 export const DeploysProgress: React.FunctionComponent<
@@ -95,6 +102,7 @@ export const DeploysProgress: React.FunctionComponent<
             docManager={dpState.docManager}
             namespace={dpState.namespace}
             kfpUiHost={props.kfpUiHost}
+            customLinks={props.customLinks}
           />
         );
       });

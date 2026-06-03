@@ -102,10 +102,30 @@ A few environment variables are useful when running Kale:
 | Variable                 | Purpose                                                                                    |
 | ------------------------ | ------------------------------------------------------------------------------------------ |
 | `KF_PIPELINES_ENDPOINT`  | Default KFP API endpoint if `--kfp_host` is not set.                                       |
-| `KF_PIPELINES_UI_ENDPOINT` | KFP UI URL used when Kale renders run links.                                             |
+| `KF_PIPELINES_UI_ENDPOINT` | KFP UI URL used when Kale renders run links (standard KFP UI pattern).                   |
+| `KALE_UPLOAD_LINK`       | Custom URL for pipeline upload links. Overrides the default KFP UI pattern.                |
+| `KALE_RUN_LINK`          | Custom URL for pipeline run links. Overrides the default KFP UI pattern.                   |
 | `KALE_PIP_INDEX_URLS`    | Comma-separated pip index URLs baked into the generated components (used for local dev).  |
 | `KALE_PIP_TRUSTED_HOSTS` | Trusted hosts for HTTP pip index URLs.                                                     |
 
-The last two are most useful when testing an unpublished version of Kale
+### Custom links
+
+The `KALE_UPLOAD_LINK` and `KALE_RUN_LINK` variables allow you to customize the
+URLs generated for viewing pipelines and runs. This is useful when using a
+different UI than the standard Kubeflow Pipelines UI (e.g., RHOAI/ODH Dashboard).
+
+**Placeholders:**
+
+- `KALE_UPLOAD_LINK`: `{pipeline_id}`, `{version_id}`, `{namespace}`
+- `KALE_RUN_LINK`: `{run_id}`, `{namespace}`
+
+**Example for RHOAI:**
+
+```bash
+export KALE_UPLOAD_LINK="https://rhods-dashboard.apps.example.com/pipelines/{namespace}/pipeline/view/{pipeline_id}"
+export KALE_RUN_LINK="https://rhods-dashboard.apps.example.com/pipelineRuns/{namespace}/pipelineRun/view/{run_id}"
+```
+
+The `KALE_PIP_*` variables are most useful when testing an unpublished version of Kale
 against a local KFP cluster — see the "Testing with KFP Clusters" section
 of [Contributing](../contributing.md).
