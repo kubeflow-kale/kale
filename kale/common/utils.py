@@ -113,15 +113,15 @@ def rm_r(path, ignore_missing=True, silent=False):
             raise
 
 
-def remove_ansi_sequences(text: str) -> str:
+def remove_ansi_color_sequences(text):
     """
     Remove ANSI escape sequences from text.
 
     Args:
-        text (str): Input string possibly containing ANSI codes.
+        text: Input text containing ANSI escape sequences.
 
     Returns:
-        str: Cleaned string without ANSI sequences.
+        Text with ANSI escape sequences removed.
     """
     if not isinstance(text, str):
         return text
