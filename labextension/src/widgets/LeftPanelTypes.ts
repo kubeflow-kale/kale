@@ -60,11 +60,5 @@ export const DefaultState = {
     base_image: '',
     enable_caching: true,
     steps_defaults: [] as string[],
-    security_context: {
-      enabled: true,
-      run_as_user: 65534,
-      run_as_group: 0,
-      run_as_non_root: true,
-    },
   } as IKaleNotebookMetadata,
 };
