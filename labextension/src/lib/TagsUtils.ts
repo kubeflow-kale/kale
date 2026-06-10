@@ -15,6 +15,7 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
+import { KALE_TAG_PREFIXES } from '../widgets/cell-metadata/constants';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
@@ -249,7 +250,7 @@ export default class TagsUtils {
       TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
     });
   }
-    public static removeAllKaleTags(
+  public static removeAllKaleTags(
     notebook: NotebookPanel,
     activeCellIndex: number,
   ) {
@@ -260,18 +261,7 @@ export default class TagsUtils {
         'tags',
       ) || [];
 
-    const kaleTagPrefixes = [
-      'step:',
-      'prev:',
-      'limit:',
-      'image:',
-      'cache:',
-      'skip',
-      'imports',
-      'functions',
-      'pipeline-parameters',
-      'final',
-    ];
+    const kaleTagPrefixes = KALE_TAG_PREFIXES;
 
     const filteredTags = currentTags.filter(
       tag => !kaleTagPrefixes.some(prefix => tag.startsWith(prefix)),
