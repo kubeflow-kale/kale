@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Notebook → Pipeline conversion.
+
+:class:`NotebookProcessor` reads a Jupyter notebook, parses the Kale-specific
+cell tags and notebook metadata, resolves static data dependencies, and
+produces a ready-to-compile :class:`~kale.pipeline.Pipeline`.
+"""
 
 import logging
 import os
@@ -507,6 +513,13 @@ class NotebookProcessor:
                 )
             parsed_tags["annotations"] = cell_annotations
 
+        if cell_labels:
+            if missing_step_names:
+                raise ValueError(
+                    "A cell can not provide Pod labels in a cell that does not declare a step name."
+                )
+            parsed_tags["labels"] = cell_labels
+
         if cell_limits:
             if missing_step_names:
                 raise ValueError(
@@ -685,9 +698,9 @@ class NotebookProcessor:
                     )
                 )
                 anc_step.source.append(code)
-            # need to have a `metrics` flag set to true in order to set the
-            # metrics output artifact in the pipeline template
-            anc_step.metrics = True
+                # need to have a `metrics` flag set to true in order to set the
+                # metrics output artifact in the pipeline template
+                anc_step.metrics = True
 
         self.pipeline.remove_node(tmp_step_name)
 

@@ -8,6 +8,25 @@
   padding: 5px 0;
 }
 
+.kale-settings-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  color: var(--jp-ui-font-color2);
+  font-size: var(--jp-ui-font-size0);
+  background: var(--jp-layout-color2);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.kale-settings-notice-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--jp-ui-font-color2);
+}
+
 .kale-header {
   color: #477ef0;
   letter-spacing: 0.4px;

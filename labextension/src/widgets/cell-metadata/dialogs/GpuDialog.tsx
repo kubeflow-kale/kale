@@ -24,9 +24,15 @@ import {
   Switch,
   Box,
 } from '@mui/material';
-import ColorUtils from '../../lib/ColorUtils';
-import { Input } from '../../components/Input';
-import { Select } from '../../components/Select';
+import ColorUtils from '../../../lib/ColorUtils';
+import { Input } from '../../../components/Input';
+import { Select } from '../../../components/Select';
+
+const disabledFieldSx = {
+  '& .MuiInputBase-input.Mui-disabled': {
+    WebkitTextFillColor: 'rgba(255,255,255,0.38)',
+  },
+};
 
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },
@@ -40,7 +46,7 @@ export interface ILimitAction {
   limitValue?: string;
 }
 
-interface ICellMetadataEditorDialog {
+interface IGpuDialogProps {
   open: boolean;
   stepName: string;
   limits: { [id: string]: string };
@@ -48,9 +54,7 @@ interface ICellMetadataEditorDialog {
   toggleDialog: () => void;
 }
 
-export const CellMetadataEditorDialog: React.FunctionComponent<
-  ICellMetadataEditorDialog
-> = props => {
+export const GpuDialog: React.FC<IGpuDialogProps> = props => {
   const handleClose = () => {
     props.toggleDialog();
   };
@@ -169,6 +173,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
                 disabled={gpuType === undefined}
                 variant="outlined"
                 label="GPU Count"
+                sx={disabledFieldSx}
                 value={gpuCount || 1}
                 updateValue={(v: string) => {
                   if (gpuType) {
@@ -181,6 +186,7 @@ export const CellMetadataEditorDialog: React.FunctionComponent<
             <Grid size={{ xs: 6 }}>
               <Select
                 disabled={gpuType === undefined}
+                sx={disabledFieldSx}
                 updateValue={(v: string) => {
                   const actions = [];
                   if (gpuType) {

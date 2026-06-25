@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Pipeline step data model.
+
+Defines :class:`Step`, the unit of execution inside a Kale :class:`~kale.pipeline.Pipeline`,
+together with :class:`StepConfig` and the :class:`PipelineParam` / :class:`Artifact`
+named tuples used to describe step inputs and outputs.
+"""
 
 from collections.abc import Callable
 import logging
@@ -85,7 +91,7 @@ class Step:
         Artifact_type will be either 'Dataset', 'Model', 'HTML', 'Metrics',
         'ClassificationMetrics' or 'Artifact'.
         This will simplify tracking what should be an Input[Artifact]
-          or Output[Artifact].
+        or Output[Artifact].
 
         Args:
             artifact_name (str): Name of the artifact.

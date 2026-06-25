@@ -1,7 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
-from kfp.kubernetes import security_context
+from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
 
 
 @kfp_dsl.component(
@@ -304,6 +304,8 @@ def auto_generated_pipeline(
 
     load_transform_data_task.set_display_name("load-transform-data-step")
     load_transform_data_task.set_caching_options(enable_caching=False)
+    add_pod_label(task=load_transform_data_task,
+                  label_key="access-ml-pipeline", label_value="true")
 
     train_model_task = train_model_step(
         x_trn_input_artifact=load_transform_data_task.outputs["x_trn_output_artifact"],
@@ -325,6 +327,8 @@ def auto_generated_pipeline(
 
     train_model_task.set_display_name("train-model-step")
     train_model_task.set_caching_options(enable_caching=False)
+    add_pod_label(task=train_model_task,
+                  label_key="access-ml-pipeline", label_value="true")
 
     evaluate_model_task = evaluate_model_step(
         model_input_artifact=train_model_task.outputs["model_output_artifact"],
@@ -348,6 +352,8 @@ def auto_generated_pipeline(
 
     evaluate_model_task.set_display_name("evaluate-model-step")
     evaluate_model_task.set_caching_options(enable_caching=False)
+    add_pod_label(task=evaluate_model_task,
+                  label_key="access-ml-pipeline", label_value="true")
 
 
 if __name__ == "__main__":

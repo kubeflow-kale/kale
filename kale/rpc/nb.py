@@ -64,11 +64,11 @@ def resume_notebook_path(request, server_root=None):
         return p
 
 
-def get_default_base_image(request):
-    """Get the default base image used when no other image is specified."""
-    from kale.pipeline import DEFAULT_BASE_IMAGE
+def get_default_base_image_env(request):
+    """Get ``KALE_DEFAULT_BASE_IMAGE`` when set, or an empty string."""
+    from kale.common.utils import get_default_base_image_from_env
 
-    return DEFAULT_BASE_IMAGE
+    return get_default_base_image_from_env() or ""
 
 
 # fixme: Remove the debug argument from the labextension RPC call.
@@ -241,3 +241,16 @@ def get_namespace(request):
     namespace = podutils.get_namespace()
     request.log.info("Notebook's namespace is '%s'", namespace)
     return namespace
+
+
+def get_security_context_defaults(request):
+    """Get security context defaults from environment variables.
+
+    Returns a dict with security context settings read from KALE_SECURITY_CONTEXT_*
+    environment variables. Only includes keys that were explicitly set via env vars;
+    missing keys mean the caller should use their own defaults.
+    """
+    from kale.common.utils import get_security_context_from_env
+
+    security_context = get_security_context_from_env()
+    return security_context.to_dict()

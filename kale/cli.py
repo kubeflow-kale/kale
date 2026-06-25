@@ -106,6 +106,14 @@ def main():
     metadata_group.add_argument(
         "--volume-access-mode", type=str, help="The access mode for the created volumes"
     )
+    metadata_group.add_argument(
+        "--output_path",
+        type=str,
+        help=(
+            "Relative path (from the notebook directory) where the compiled "
+            "KFP DSL Python script will be saved. Defaults to '.kale/'."
+        ),
+    )
     args = parser.parse_args()
 
     if args.pip_index_urls:

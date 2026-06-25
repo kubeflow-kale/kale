@@ -67,6 +67,15 @@ dev = [
   "pytest-asyncio",
   "pytest-jupyter[server]>=0.6.0",
 ]
+docs = [
+  "sphinx>=9.0",
+  "furo>=2025.0",
+  "sphinx-autodoc-typehints>=2.0",
+  "sphinx-copybutton>=0.5",
+  "myst-parser>=3.0",
+  "sphinx-design>=0.6",
+  "linkify-it-py>=2.0",
+]
 
 [tool.hatch.version]
 path = "kale/__init__.py"

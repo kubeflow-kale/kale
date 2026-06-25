@@ -1,7 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
-from kfp.kubernetes import security_context
+from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
 
 {{ lightweight_components | join('\n\n') }}
 
@@ -30,13 +30,14 @@ def auto_generated_pipeline(
         {%- endfor %}
     {%- endif %}
     )
-
+{% if security_context.enabled %}
     security_context.set_security_context(
         task={{ step.name }}_task,
-        run_as_user=65534,
-        run_as_group=0,
-        run_as_non_root=True
+        run_as_user={{ security_context.run_as_user }},
+        run_as_group={{ security_context.run_as_group }},
+        run_as_non_root={{ security_context.run_as_non_root }}
     )
+{%- endif %}
     {{ step.name }}_task.set_env_variable(name="HOME", value="/tmp")
 
     {% if loop.index0 > 0 %}
@@ -62,6 +63,18 @@ def auto_generated_pipeline(
     {%- if limit_key in ['nvidia.com/gpu', 'amd.com/gpu'] %}
     {{ step.name }}_task.set_accelerator_type("{{ limit_key }}").set_accelerator_limit({{ limit_value }})
     {%- endif %}
+    {%- endfor %}
+    {%- endif %}
+
+    {%- if step.config.labels %}
+    {%- for label_key, label_value in step.config.labels.items() %}
+    add_pod_label(task={{ step.name }}_task, label_key="{{ label_key }}", label_value="{{ label_value }}")
+    {%- endfor %}
+    {%- endif %}
+
+    {%- if step.config.annotations %}
+    {%- for ann_key, ann_value in step.config.annotations.items() %}
+    add_pod_annotation(task={{ step.name }}_task, annotation_key="{{ ann_key }}", annotation_value="{{ ann_value }}")
     {%- endfor %}
     {%- endif %}
 

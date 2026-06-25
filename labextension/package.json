@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-kubeflow-kale",
-  "version": "2.0.0-rc.2",
+  "version": "2.1.0",
   "description": "Convert Notebooks to Kubeflow pipelines with Kale",
   "keywords": [
     "jupyter",
