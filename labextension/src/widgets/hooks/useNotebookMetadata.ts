@@ -24,6 +24,7 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import {
   DefaultState,
+  IDeployPanelCustomLinks,
   IExperiment,
   IKaleNotebookMetadata,
 } from '../LeftPanelTypes';
@@ -34,11 +35,6 @@ import { useEnableByDefaultEffect } from './useEnableByDefaultEffect';
 const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const defaultMetadata = DefaultState.metadata;
 
-export interface ICustomLinks {
-  upload: string;
-  run: string;
-}
-
 export interface INotebookMetadataState {
   metadata: IKaleNotebookMetadata;
   experiments: IExperiment[];
@@ -46,7 +42,7 @@ export interface INotebookMetadataState {
   isEnabled: boolean;
   namespace: string;
   kfpUiHost: string;
-  customLinks: ICustomLinks;
+  deployPanelCustomLinks: IDeployPanelCustomLinks;
   updateExperiment: (experiment: IExperiment) => void;
   updatePipelineName: (name: string) => void;
   updatePipelineDescription: (desc: string) => void;
@@ -61,7 +57,7 @@ export interface ILoaderSetters {
   setIsEnabled: Dispatch<SetStateAction<boolean>>;
   setNamespace: Dispatch<SetStateAction<string>>;
   setKfpUiHost: Dispatch<SetStateAction<string>>;
-  setCustomLinks: Dispatch<SetStateAction<ICustomLinks>>;
+  setDeployPanelCustomLinks: Dispatch<SetStateAction<IDeployPanelCustomLinks>>;
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
   resetForNoNotebook: () => void;
@@ -93,10 +89,11 @@ export function useNotebookMetadata({
   const [isEnabled, setIsEnabled] = useState(false);
   const [namespace, setNamespace] = useState('');
   const [kfpUiHost, setKfpUiHost] = useState('');
-  const [customLinks, setCustomLinks] = useState<ICustomLinks>({
-    upload: '',
-    run: '',
-  });
+  const [deployPanelCustomLinks, setDeployPanelCustomLinks] =
+    useState<IDeployPanelCustomLinks>({
+      upload: '',
+      run: '',
+    });
 
   const metadataRef = useRef(metadata);
   metadataRef.current = metadata;
@@ -132,7 +129,7 @@ export function useNotebookMetadata({
     setIsEnabled(false);
     setNamespace('');
     setKfpUiHost('');
-    setCustomLinks({ upload: '', run: '' });
+    setDeployPanelCustomLinks({ upload: '', run: '' });
   }, []);
 
   // --- composed hooks ---
@@ -150,7 +147,7 @@ export function useNotebookMetadata({
       setIsEnabled,
       setNamespace,
       setKfpUiHost,
-      setCustomLinks,
+      setDeployPanelCustomLinks,
       metadataRef,
       experimentsRef,
       resetForNoNotebook,
@@ -176,7 +173,7 @@ export function useNotebookMetadata({
     isEnabled,
     namespace,
     kfpUiHost,
-    customLinks,
+    deployPanelCustomLinks,
     updateExperiment,
     updatePipelineName,
     updatePipelineDescription,

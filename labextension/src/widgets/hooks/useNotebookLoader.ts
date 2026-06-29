@@ -77,7 +77,7 @@ export function useNotebookLoader({
 }: IUseNotebookLoaderParams) {
   const {
     setKfpUiHost,
-    setCustomLinks,
+    setDeployPanelCustomLinks,
     setNamespace,
     setGettingExperiments,
     metadataRef,
@@ -97,11 +97,12 @@ export function useNotebookLoader({
       const commands = new Commands(notebook, kernel);
       await notebook.sessionContext.ready;
 
-      const host = (await commands.getKfpUiHost()) || DEFAULT_UI_URL;
-      setKfpUiHost(host);
-
-      const links = await commands.getCustomLinks();
-      setCustomLinks(links);
+      const [kfpUiHost, deployPanelCustomLinks] = await Promise.all([
+        commands.getKfpUiHost(),
+        commands.getDeployPanelCustomLinks(),
+      ]);
+      setKfpUiHost(kfpUiHost || DEFAULT_UI_URL);
+      setDeployPanelCustomLinks(deployPanelCustomLinks);
 
       const notebookMetadata = NotebookUtils.getMetaData(notebook, metadataKey);
 
@@ -218,7 +219,7 @@ export function useNotebookLoader({
       kernel,
       metadataKey,
       setKfpUiHost,
-      setCustomLinks,
+      setDeployPanelCustomLinks,
       setNamespace,
       setGettingExperiments,
       metadataRef,

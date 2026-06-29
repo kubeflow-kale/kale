@@ -25,9 +25,13 @@ import GetAppIcon from '@mui/icons-material/GetApp';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
-import { DeployProgressState, CustomLinks } from './DeploysProgress';
+import {
+  DeployProgressState,
+  UploadPipelineResp,
+  RunPipeline,
+} from './DeploysProgress';
+import { IDeployPanelCustomLinks } from '../LeftPanelTypes';
 import DeployUtils from './DeployUtils';
-import { UploadPipelineResp, RunPipeline } from './DeploysProgress';
 import NotebookUtils from '../../lib/NotebookUtils';
 
 // From kubeflow/pipelines repo
@@ -43,8 +47,11 @@ enum PipelineStatus {
   UNKNOWN = 'UNKNOWN',
 }
 
-const logLinksHint = (kfpUiHost: string, customLinks?: CustomLinks) => {
-  if (customLinks?.upload || customLinks?.run) {
+const logLinksHint = (
+  kfpUiHost: string,
+  deployPanelCustomLinks?: IDeployPanelCustomLinks,
+) => {
+  if (deployPanelCustomLinks?.upload || deployPanelCustomLinks?.run) {
     console.info(
       'Using custom links from KALE_UPLOAD_LINK and/or KALE_RUN_LINK environment variables.',
     );
@@ -70,8 +77,8 @@ export const DeployProgress: React.FunctionComponent<
     }
 
     // Use custom link if available
-    if (props.customLinks?.upload) {
-      return props.customLinks.upload
+    if (props.deployPanelCustomLinks?.upload) {
+      return props.deployPanelCustomLinks.upload
         .replace('{pipeline_id}', pipeline.pipeline.pipelineid)
         .replace('{version_id}', pipeline.pipeline.versionid || '')
         .replace('{namespace}', props.namespace || '');
@@ -91,8 +98,8 @@ export const DeployProgress: React.FunctionComponent<
     }
 
     // Use custom link if available
-    if (props.customLinks?.run) {
-      return props.customLinks.run
+    if (props.deployPanelCustomLinks?.run) {
+      return props.deployPanelCustomLinks.run
         .replace('{run_id}', run.id)
         .replace('{namespace}', props.namespace || '');
     }
@@ -316,7 +323,7 @@ export const DeployProgress: React.FunctionComponent<
         </a>
       </React.Fragment>
     );
-    logLinksHint(props.kfpUiHost || '', props.customLinks);
+    logLinksHint(props.kfpUiHost || '', props.deployPanelCustomLinks);
   } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>

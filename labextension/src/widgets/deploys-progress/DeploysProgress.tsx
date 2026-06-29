@@ -15,6 +15,7 @@
 import * as React from 'react';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
+import { IDeployPanelCustomLinks } from '../LeftPanelTypes';
 import { DeployProgress } from './DeployProgress';
 
 export type UploadPipelineResp = {
@@ -25,11 +26,6 @@ export type RunPipeline = {
   id: string;
   name: string;
   status: string | null;
-};
-
-export type CustomLinks = {
-  upload: string;
-  run: string;
 };
 
 export type DeployProgressState = {
@@ -54,14 +50,14 @@ export type DeployProgressState = {
   namespace?: string;
   message?: string;
   kfpUiHost?: string;
-  customLinks?: CustomLinks;
+  deployPanelCustomLinks?: IDeployPanelCustomLinks;
 };
 
 interface IDeploysProgress {
   deploys: { [key: number]: DeployProgressState };
   onPanelRemove: (index: number) => void;
   kfpUiHost: string;
-  customLinks: CustomLinks;
+  deployPanelCustomLinks: IDeployPanelCustomLinks;
 }
 
 export const DeploysProgress: React.FunctionComponent<
@@ -102,7 +98,7 @@ export const DeploysProgress: React.FunctionComponent<
             docManager={dpState.docManager}
             namespace={dpState.namespace}
             kfpUiHost={props.kfpUiHost}
-            customLinks={props.customLinks}
+            deployPanelCustomLinks={props.deployPanelCustomLinks}
           />
         );
       });

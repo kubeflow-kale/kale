@@ -28,6 +28,7 @@ import {
   IKaleNotebookMetadata,
   NEW_EXPERIMENT,
 } from '../widgets/LeftPanel';
+import { IDeployPanelCustomLinks } from '../widgets/LeftPanelTypes';
 import NotebookUtils from './NotebookUtils';
 // import {
 //   SELECT_VOLUME_SIZE_TYPES,
@@ -158,7 +159,7 @@ export default class Commands {
     }
   };
 
-  getCustomLinks = async (): Promise<{ upload: string; run: string }> => {
+  getDeployPanelCustomLinks = async (): Promise<IDeployPanelCustomLinks> => {
     try {
       return await _legacy_executeRpc(
         this._notebook,
