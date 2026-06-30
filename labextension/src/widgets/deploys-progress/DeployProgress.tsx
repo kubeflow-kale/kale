@@ -30,7 +30,6 @@ import {
   UploadPipelineResp,
   RunPipeline,
 } from './DeploysProgress';
-import { IDeployPanelCustomLinks } from '../LeftPanelTypes';
 import DeployUtils from './DeployUtils';
 import NotebookUtils from '../../lib/NotebookUtils';
 
@@ -46,23 +45,6 @@ enum PipelineStatus {
   TERMINATED = 'TERMINATED',
   UNKNOWN = 'UNKNOWN',
 }
-
-const logLinksHint = (
-  kfpUiHost: string,
-  deployPanelCustomLinks?: IDeployPanelCustomLinks,
-) => {
-  if (deployPanelCustomLinks?.upload || deployPanelCustomLinks?.run) {
-    console.info(
-      'Using custom links from KALE_UPLOAD_LINK and/or KALE_RUN_LINK environment variables.',
-    );
-  } else {
-    console.info(
-      `default for upload and run links is ${kfpUiHost} ` +
-        'if your kfp ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable ' +
-        'or use KALE_UPLOAD_LINK and KALE_RUN_LINK for custom link patterns.',
-    );
-  }
-};
 
 interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
@@ -323,7 +305,6 @@ export const DeployProgress: React.FunctionComponent<
         </a>
       </React.Fragment>
     );
-    logLinksHint(props.kfpUiHost || '', props.deployPanelCustomLinks);
   } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>

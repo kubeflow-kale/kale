@@ -20,6 +20,7 @@ import NotebookUtils from '../../lib/NotebookUtils';
 import Commands from '../../lib/Commands';
 import { DefaultState, IExperiment, NEW_EXPERIMENT } from '../LeftPanelTypes';
 import { ILoaderSetters } from './useNotebookMetadata';
+import DeployUtils from '../deploys-progress/DeployUtils';
 
 const DEFAULT_UI_URL = 'http://localhost:8080';
 
@@ -101,8 +102,10 @@ export function useNotebookLoader({
         commands.getKfpUiHost(),
         commands.getDeployPanelCustomLinks(),
       ]);
-      setKfpUiHost(kfpUiHost || DEFAULT_UI_URL);
+      const resolvedKfpUiHost = kfpUiHost || DEFAULT_UI_URL;
+      setKfpUiHost(resolvedKfpUiHost);
       setDeployPanelCustomLinks(deployPanelCustomLinks);
+      DeployUtils.logLinksHint(resolvedKfpUiHost, deployPanelCustomLinks);
 
       const notebookMetadata = NotebookUtils.getMetaData(notebook, metadataKey);
 

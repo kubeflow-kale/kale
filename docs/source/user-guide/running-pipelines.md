@@ -114,6 +114,9 @@ The `KALE_UPLOAD_LINK` and `KALE_RUN_LINK` variables allow you to customize the
 URLs generated for viewing pipelines and runs. This is useful when using a
 different UI than the standard Kubeflow Pipelines UI.
 
+Values must start with `http://` or `https://`; if they don't, Kale will
+log a warning and fall back to the default KFP UI links.
+
 **Placeholders:**
 
 - `KALE_UPLOAD_LINK`: `{pipeline_id}`, `{version_id}`, `{namespace}`
