@@ -6,4 +6,4 @@ If you are using other Kubeflow components, consider adding your name as well to
 | Organization                       | Contact (GitHub User Name)              | Environment   | Description of Use                                                                 |
 |------------------------------------|----------------------------------------|---------------|------------------------------------------------------------------------------------|
 | [Red Hat](https://www.redhat.com)  | [@ederign](https://github.com/ederign) | Production    | Kale is part of [OpenShift AI](https://www.redhat.com/en/products/ai/openshift-ai) |
-| \<your organization\>              | \<your GitHub handle\>                 | \<your setup\>| \<brief description\>                                                              |
+| *your organization*                | *your GitHub handle*                   | *your setup*  | *brief description*                                                                |
