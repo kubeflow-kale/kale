@@ -1,0 +1,30 @@
+import json
+from typing import NamedTuple
+import kfp.dsl as kfp_dsl
+from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
+from kfp.kubernetes import security_context
+
+{{ sp.components | join('\n\n') }}
+
+
+@kfp_dsl.pipeline(name='{{ sp.display }}')
+def {{ sp.name }}_pipeline({% for p in sp.params %}{{ p.name }}: Input[{{ p.type }}]{% if not loop.last %}, {% endif %}{% endfor %}){% if sp.outputs|length == 1 %} -> {{ sp.outputs[0].type }}{% elif sp.outputs|length > 1 %} -> NamedTuple('Outputs', [{% for o in sp.outputs %}('{{ o.var }}', {{ o.type }}){% if not loop.last %}, {% endif %}{% endfor %}]){% endif %}:
+    """Sub-pipeline compiled from notebook '{{ sp.display }}'."""
+{% for t in sp.tasks %}
+    {{ t.task_var }} = {{ t.fn }}({% for inp in t.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
+    security_context.set_security_context(task={{ t.task_var }}, run_as_user=65534, run_as_group=0, run_as_non_root=True)
+    {{ t.task_var }}.set_env_variable(name="HOME", value="/tmp")
+    {{ t.task_var }}.set_display_name("{{ t.display }}")
+    {{ t.task_var }}.set_caching_options(enable_caching=False)
+{% for a in t.after %}    {{ t.task_var }}.after({{ a }})
+{% endfor %}
+{% endfor %}
+{% if sp.outputs|length == 1 %}    return {{ sp.outputs[0].ref }}
+{% elif sp.outputs|length > 1 %}    return NamedTuple('Outputs', [{% for o in sp.outputs %}('{{ o.var }}', {{ o.type }}){% if not loop.last %}, {% endif %}{% endfor %}])({% for o in sp.outputs %}{{ o.var }}={{ o.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
+{% endif %}
+
+if __name__ == "__main__":
+    from kfp import compiler
+
+    compiler.Compiler().compile({{ sp.name }}_pipeline, "{{ sp.display }}.yaml")
+    print("Sub-pipeline compiled to {{ sp.display }}.yaml")

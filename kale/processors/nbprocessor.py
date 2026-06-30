@@ -40,6 +40,12 @@ IMPORT_TAG = r"^imports$"
 FUNCTIONS_TAG = r"^functions$"
 PREV_TAG = r"^prev:[_a-z]([_a-z0-9]*)?$"
 STEP_TAG = r"^step:([_a-z]([_a-z0-9]*)?)?$"
+# A `notebook:<name>` cell references another notebook as a sub-pipeline. The
+# referenced path is carried in the cell metadata (`notebook_path`), not the tag.
+# The `step:notebook:<name>` form is also accepted: the Kale UI cell editor can
+# only write `step:` tags, and a colon is invalid in a step name, so the form is
+# unambiguous.
+NOTEBOOK_TAG = r"^(step:)?notebook:([_a-z]([_a-z0-9]*)?)?$"
 PIPELINE_PARAMETERS_TAG = r"^pipeline-parameters$"
 PIPELINE_METRICS_TAG = r"^pipeline-metrics$"
 # Annotations map to actual pod annotations that can be set via KFP SDK
@@ -65,6 +71,7 @@ _TAGS_LANGUAGE = [
     FUNCTIONS_TAG,
     PREV_TAG,
     STEP_TAG,
+    NOTEBOOK_TAG,
     PIPELINE_PARAMETERS_TAG,
     PIPELINE_METRICS_TAG,
     ANNOTATION_TAG,
@@ -423,6 +430,8 @@ class NotebookProcessor:
         # more than one Pipeline step.
         parsed_tags["step_names"] = []
         parsed_tags["prev_steps"] = []
+        # names of notebooks referenced by `notebook:` cells (sub-pipelines)
+        parsed_tags["notebook_names"] = []
         # define intermediate variables so that dicts are not added to a steps
         # when they are empty
         cell_annotations = {}
@@ -464,6 +473,13 @@ class NotebookProcessor:
             if t in special_tags:
                 parsed_tags["step_names"] = [t]
                 return parsed_tags
+
+            # A notebook reference is matched on the full tag (either form),
+            # before the split below could mistake `step:notebook:x` for a step.
+            if re.match(NOTEBOOK_TAG, t):
+                parsed_tags["notebook_names"].append(t.split("notebook:", 1)[1])
+                parsed_tags["notebook_path"] = metadata.get("notebook_path")
+                continue
 
             # now only `step` and `prev` tags remain to be parsed.
             tag_parts = t.split(":")

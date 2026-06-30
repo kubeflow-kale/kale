@@ -1,0 +1,30 @@
+import os
+import sys
+
+import kfp.dsl as kfp_dsl
+
+# The sub-notebook DSL modules are generated next to this file; make them
+# importable regardless of where this script is executed from. kfp is imported
+# above, before the path mutation, so no generated module can shadow it.
+_here = os.path.dirname(os.path.abspath(__file__))
+if _here not in sys.path:
+    sys.path.insert(0, _here)
+
+{% for m in modules %}from {{ m }} import {{ m }}_pipeline
+{% endfor %}
+
+@kfp_dsl.pipeline(name='{{ pipeline_name }}', description='{{ pipeline_description }}')
+def auto_generated_pipeline():
+    """Composed pipeline: each notebook is its own sub-pipeline (sub-DAG)."""
+{% for c in toplevel_calls %}
+    {{ c.task_var }} = {{ c.fn }}({% for inp in c.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
+    {{ c.task_var }}.set_display_name("{{ c.display }}")
+{% for a in c.after %}    {{ c.task_var }}.after({{ a }})
+{% endfor %}
+{% endfor %}
+
+if __name__ == "__main__":
+    from kfp import compiler
+
+    compiler.Compiler().compile(auto_generated_pipeline, "{{ pipeline_name }}.yaml")
+    print("Pipeline compiled to {{ pipeline_name }}.yaml")
