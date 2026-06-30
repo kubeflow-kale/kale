@@ -88,7 +88,6 @@ def rm_r(path, ignore_missing=True, silent=False):
         raise e
 
     log.info("Removing path `%s'", path)
-    log.debug("Attempting to remove path: %s", path)
 
     try:
         if os.path.isfile(path) or os.path.islink(path):
@@ -123,11 +122,9 @@ def remove_ansi_color_sequences(text):
     Returns:
         Text with ANSI escape sequences removed.
     """
-    if not isinstance(text, str):
-        return text
 
     ansi_escape = re.compile(
-        r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])"
+        r"\x1B\[[0-9;]*m"
     )
     return ansi_escape.sub("", text)
 
@@ -226,8 +223,7 @@ def shorten_long_string(obj: Any, chars: int = 75):
         str: Shortened string with ellipsis in the middle.
     """
     str_input = str(obj)
-    if len(str_input) <= chars * 2:
-        return str_input
+    
     return str_input[:chars] + " ..... " + str_input[-chars:]
 
 
