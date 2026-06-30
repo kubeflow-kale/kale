@@ -330,6 +330,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
             deploys={deployment.deploys}
             onPanelRemove={deployment.onPanelRemove}
             kfpUiHost={notebookMeta.kfpUiHost}
+            deployPanelCustomLinks={notebookMeta.deployPanelCustomLinks}
           />
           <SplitDeployButton
             running={deployment.runDeployment}

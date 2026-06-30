@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import os
 
 from kale.common import kfp_client_factory, kfputils
+
+log = logging.getLogger(__name__)
+
+KALE_UPLOAD_LINK_ENV = "KALE_UPLOAD_LINK"
+KALE_RUN_LINK_ENV = "KALE_RUN_LINK"
 
 
 def _get_client(host=None):
@@ -45,6 +52,37 @@ def get_ui_host(request):
     c = _get_client()
     host = getattr(c, "_uihost", None) or getattr(c, "host", None)
     return host
+
+
+def _validate_link(value, env_var):
+    """Return value if it starts with http:// or https://, otherwise warns and return ''."""
+    if not value:
+        return ""
+    if not value.startswith(("http://", "https://")):
+        log.warning(
+            "%s is set but does not start with http:// or https:// "
+            "(got: %r) — ignoring and using the default KFP UI links.",
+            env_var,
+            value,
+        )
+        return ""
+    return value
+
+
+def get_custom_links(request):
+    """Get custom link patterns from environment variables.
+
+    Returns a dict with 'upload' and 'run' keys. Values are the URL
+    patterns if set and valid, or empty strings if not configured or invalid.
+
+    Placeholders:
+    - Upload: {pipeline_id}, {version_id}, {namespace}
+    - Run: {run_id}, {namespace}
+    """
+    return {
+        "upload": _validate_link(os.environ.get(KALE_UPLOAD_LINK_ENV, ""), KALE_UPLOAD_LINK_ENV),
+        "run": _validate_link(os.environ.get(KALE_RUN_LINK_ENV, ""), KALE_RUN_LINK_ENV),
+    }
 
 
 def get_experiment(request, experiment_name):

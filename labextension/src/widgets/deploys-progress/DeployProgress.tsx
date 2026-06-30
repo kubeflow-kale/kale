@@ -25,9 +25,12 @@ import GetAppIcon from '@mui/icons-material/GetApp';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
-import { DeployProgressState } from './DeploysProgress';
+import {
+  DeployProgressState,
+  UploadPipelineResp,
+  RunPipeline,
+} from './DeploysProgress';
 import DeployUtils from './DeployUtils';
-import { UploadPipelineResp, RunPipeline } from './DeploysProgress';
 import NotebookUtils from '../../lib/NotebookUtils';
 
 // From kubeflow/pipelines repo
@@ -43,13 +46,6 @@ enum PipelineStatus {
   UNKNOWN = 'UNKNOWN',
 }
 
-const logLinksHint = (kfpUiHost: string) => {
-  console.info(
-    `default for upload and run links is ${kfpUiHost} ` +
-      'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.',
-  );
-};
-
 interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
 }
@@ -61,6 +57,16 @@ export const DeployProgress: React.FunctionComponent<
     if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
       return '#';
     }
+
+    // Use custom link if available
+    if (props.deployPanelCustomLinks?.upload) {
+      return props.deployPanelCustomLinks.upload
+        .replace('{pipeline_id}', pipeline.pipeline.pipelineid)
+        .replace('{version_id}', pipeline.pipeline.versionid || '')
+        .replace('{namespace}', props.namespace || '');
+    }
+
+    // Default KFP UI link pattern
     const base = props.kfpUiHost;
     const link = `${base}/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
     return props.namespace
@@ -72,6 +78,15 @@ export const DeployProgress: React.FunctionComponent<
     if (!run.id) {
       return '#';
     }
+
+    // Use custom link if available
+    if (props.deployPanelCustomLinks?.run) {
+      return props.deployPanelCustomLinks.run
+        .replace('{run_id}', run.id)
+        .replace('{namespace}', props.namespace || '');
+    }
+
+    // Default KFP UI link pattern
     const base = props.kfpUiHost;
     const link = `${base}/#/runs/details/${run.id}`;
     return props.namespace
@@ -290,7 +305,6 @@ export const DeployProgress: React.FunctionComponent<
         </a>
       </React.Fragment>
     );
-    logLinksHint(props.kfpUiHost || '');
   } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>

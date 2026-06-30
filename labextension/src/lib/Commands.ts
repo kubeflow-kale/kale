@@ -28,6 +28,7 @@ import {
   IKaleNotebookMetadata,
   NEW_EXPERIMENT,
 } from '../widgets/LeftPanel';
+import { IDeployPanelCustomLinks } from '../widgets/LeftPanelTypes';
 import NotebookUtils from './NotebookUtils';
 // import {
 //   SELECT_VOLUME_SIZE_TYPES,
@@ -155,6 +156,19 @@ export default class Commands {
     } catch (error) {
       console.error('Failed to retrieve KFP UI host', error);
       return '';
+    }
+  };
+
+  getDeployPanelCustomLinks = async (): Promise<IDeployPanelCustomLinks> => {
+    try {
+      return await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'kfp.get_custom_links',
+      );
+    } catch (error) {
+      console.error('Failed to retrieve custom links', error);
+      return { upload: '', run: '' };
     }
   };
 

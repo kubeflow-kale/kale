@@ -24,6 +24,7 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import {
   DefaultState,
+  IDeployPanelCustomLinks,
   IExperiment,
   IKaleNotebookMetadata,
 } from '../LeftPanelTypes';
@@ -41,6 +42,7 @@ export interface INotebookMetadataState {
   isEnabled: boolean;
   namespace: string;
   kfpUiHost: string;
+  deployPanelCustomLinks: IDeployPanelCustomLinks;
   updateExperiment: (experiment: IExperiment) => void;
   updatePipelineName: (name: string) => void;
   updatePipelineDescription: (desc: string) => void;
@@ -55,6 +57,7 @@ export interface ILoaderSetters {
   setIsEnabled: Dispatch<SetStateAction<boolean>>;
   setNamespace: Dispatch<SetStateAction<string>>;
   setKfpUiHost: Dispatch<SetStateAction<string>>;
+  setDeployPanelCustomLinks: Dispatch<SetStateAction<IDeployPanelCustomLinks>>;
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
   resetForNoNotebook: () => void;
@@ -86,6 +89,11 @@ export function useNotebookMetadata({
   const [isEnabled, setIsEnabled] = useState(false);
   const [namespace, setNamespace] = useState('');
   const [kfpUiHost, setKfpUiHost] = useState('');
+  const [deployPanelCustomLinks, setDeployPanelCustomLinks] =
+    useState<IDeployPanelCustomLinks>({
+      upload: '',
+      run: '',
+    });
 
   const metadataRef = useRef(metadata);
   metadataRef.current = metadata;
@@ -121,6 +129,7 @@ export function useNotebookMetadata({
     setIsEnabled(false);
     setNamespace('');
     setKfpUiHost('');
+    setDeployPanelCustomLinks({ upload: '', run: '' });
   }, []);
 
   // --- composed hooks ---
@@ -138,6 +147,7 @@ export function useNotebookMetadata({
       setIsEnabled,
       setNamespace,
       setKfpUiHost,
+      setDeployPanelCustomLinks,
       metadataRef,
       experimentsRef,
       resetForNoNotebook,
@@ -163,6 +173,7 @@ export function useNotebookMetadata({
     isEnabled,
     namespace,
     kfpUiHost,
+    deployPanelCustomLinks,
     updateExperiment,
     updatePipelineName,
     updatePipelineDescription,

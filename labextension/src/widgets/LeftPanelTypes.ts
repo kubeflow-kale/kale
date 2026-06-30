@@ -21,6 +21,11 @@ export interface IExperiment {
   name: string;
 }
 
+export interface IDeployPanelCustomLinks {
+  upload: string;
+  run: string;
+}
+
 export const NEW_EXPERIMENT: IExperiment = {
   name: '+ New Experiment',
   id: 'new',

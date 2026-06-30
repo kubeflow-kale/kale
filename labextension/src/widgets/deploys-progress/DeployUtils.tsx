@@ -17,6 +17,9 @@ import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 
 import NotebookUtils from '../../lib/NotebookUtils';
+import { IDeployPanelCustomLinks } from '../LeftPanelTypes';
+
+let _linksHintLogged = false;
 
 export default class DeployUtils {
   static color = {
@@ -49,6 +52,29 @@ export default class DeployUtils {
     // From Rok repo
     canceled: '#ff992a',
   };
+
+  public static logLinksHint(
+    kfpUiHost: string,
+    deployPanelCustomLinks?: IDeployPanelCustomLinks,
+  ) {
+    if (_linksHintLogged) {
+      return;
+    }
+    _linksHintLogged = true;
+    if (deployPanelCustomLinks?.upload || deployPanelCustomLinks?.run) {
+      console.info(
+        'Using custom links from KALE_UPLOAD_LINK and/or KALE_RUN_LINK environment variables. ' +
+          'Values must start with http:// or https://, otherwise they are ignored.',
+      );
+    } else {
+      console.info(
+        `Default for upload and run links is ${kfpUiHost}. ` +
+          'To override, set KF_PIPELINES_UI_ENDPOINT (for the KFP UI host) ' +
+          'or KALE_UPLOAD_LINK / KALE_RUN_LINK (for custom link patterns). ' +
+          'Custom link values must start with http:// or https://.',
+      );
+    }
+  }
 
   public static getInfoBadge(title: string, content: string[]) {
     return (

@@ -72,7 +72,9 @@ A few environment variables affect `kale`:
 | Variable                  | Effect                                                                                 |
 | ------------------------- | -------------------------------------------------------------------------------------- |
 | `KF_PIPELINES_ENDPOINT`   | Default KFP API endpoint when `--kfp_host` is not provided.                            |
-| `KF_PIPELINES_UI_ENDPOINT` | KFP UI URL used when rendering run links.                                             |
+| `KF_PIPELINES_UI_ENDPOINT` | KFP UI URL used when rendering run links (standard KFP UI).                           |
+| `KALE_UPLOAD_LINK`        | Custom URL for pipeline links (placeholders: `{pipeline_id}`, `{version_id}`, `{namespace}`). |
+| `KALE_RUN_LINK`           | Custom URL for run links (placeholders: `{run_id}`, `{namespace}`).                    |
 | `KALE_PIP_INDEX_URLS`     | Comma-separated list of pip indexes baked into generated components.                   |
 | `KALE_PIP_TRUSTED_HOSTS`  | Trusted hosts for HTTP pip indexes (required when using HTTP URLs).                    |
 | `KALE_DEV_MODE`           | Equivalent to passing `--dev`.                                                         |
