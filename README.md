@@ -14,10 +14,15 @@
   <b>No pipeline code. No SDK learning curve. Just tag your cells and deploy.</b>
 </p>
 
+<p>
+  📍 <a href="./docs/source/roadmap.md">See our Roadmap</a> for what's coming next.
+</p>
+
 ---
 
 Latest News 🔥
 
+- [2026/06] Kubeflow Kale v2.1 is released!
 - [2026/04] Kubeflow Kale v2.0 is officially released with support for Kubeflow Pipelines 2.16.0!
 - [2026/04] The new Kubeflow Kale [docs](./docs) is now available!
 
@@ -151,6 +156,7 @@ We'd love to have you!
 
 - **Questions?** Join [#kubeflow](https://www.kubeflow.org/docs/about/community/#kubeflow-slack-channels) on Slack
 - **Found a bug?** [Open an issue](https://github.com/kubeflow-kale/kale/issues)
+- **New here?** Check out our [good first issues](https://github.com/kubeflow/kale/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) — a great way to start contributing!
 - **Want to contribute?** See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Learn More
