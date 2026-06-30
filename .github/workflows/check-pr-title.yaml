@@ -38,6 +38,7 @@ jobs:
             docs
             deps
             examples
+            release
             test
           requireScope: false
           ignoreLabels: |
