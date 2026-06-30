@@ -81,6 +81,93 @@ pipeline IR that can be manually uploaded to the KFP UI without using Kale's
 - Edit it to experiment with changes before committing them to the
   notebook.
 
+## Compile to Kubernetes manifests for GitOps
+
+If your KFP deployment uses the Kubernetes-native pipeline store — where
+`Pipeline` and `PipelineVersion` custom resources in git are the source of
+truth, applied via `kubectl apply -f` or a GitOps controller like Argo CD or
+Flux — use `--kubernetes-manifest-format` instead of `--upload_pipeline`:
+
+```bash
+kale --nb pipelines/train.ipynb \
+     --kubernetes-manifest-format \
+     --kubernetes-namespace kubeflow \
+     --pipeline_name weekly-churn \
+     --pipeline-display-name "Weekly churn training" \
+     --pipeline-version-name weekly-churn-v1
+```
+
+This compiles the notebook entirely offline — no KFP API server or
+credentials required — and writes
+`.kale/weekly-churn.pipeline.k8s.yaml` next to the generated DSL. The file
+contains the `Pipeline` and `PipelineVersion` manifests:
+
+```yaml
+apiVersion: pipelines.kubeflow.org/v2beta1
+kind: Pipeline
+metadata:
+  name: weekly-churn
+  namespace: kubeflow
+spec:
+  displayName: Weekly churn training
+---
+apiVersion: pipelines.kubeflow.org/v2beta1
+kind: PipelineVersion
+metadata:
+  name: weekly-churn-v1
+  namespace: kubeflow
+spec:
+  ...
+```
+
+Commit the manifest to git and let your existing cluster tooling apply it:
+
+```bash
+git add .kale/weekly-churn.pipeline.k8s.yaml
+git commit -m "Compile weekly-churn pipeline"
+kubectl apply -f .kale/weekly-churn.pipeline.k8s.yaml
+```
+
+Pass `--no-include-pipeline-manifest` if you only want the `PipelineVersion`
+(and workload) manifests — useful when the `Pipeline` resource already
+exists on the cluster and you're only publishing a new version.
+
+`--kubernetes-manifest-format` cannot be combined with `--upload_pipeline`
+or `--run_pipeline` — those upload to a live KFP API server, which defeats
+the point of an offline, GitOps-friendly artifact. Kale rejects the
+combination with an error telling you to deploy via `kubectl apply -f` or a
+GitOps controller instead.
+
+### Minimal CI job
+
+A typical CI step (GitHub Actions, GitLab CI, or similar) just needs Kale
+installed and no cluster credentials:
+
+```yaml
+# .github/workflows/compile-pipeline.yml
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install kubeflow-kale
+      - run: |
+          kale --nb pipelines/train.ipynb \
+               --kubernetes-manifest-format \
+               --kubernetes-namespace kubeflow \
+               --pipeline_name weekly-churn \
+               --pipeline-version-name weekly-churn-v1
+      - run: |
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@example.com"
+          git add .kale/weekly-churn.pipeline.k8s.yaml
+          git commit -m "Compile weekly-churn pipeline" || echo "no changes"
+          git push
+```
+
+A downstream GitOps controller (or a follow-up `kubectl apply -f` step)
+picks up the committed manifest and reconciles the cluster.
+
 ## Monitoring runs
 
 Once a run is submitted, open the KFP UI and navigate to **Runs**. You can:

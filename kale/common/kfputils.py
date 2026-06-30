@@ -92,8 +92,8 @@ def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = Non
     return version_id
 
 
-def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
-    """Read in the generated python script and compile it to a KFP package."""
+def _import_dsl_module(pipeline_source: str):
+    """Import the generated KFP DSL python script as a module."""
     # create a tmp folder
     tmp_dir = tempfile.mkdtemp()
     # copy generated script to temp dir
@@ -101,15 +101,56 @@ def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
 
     path = tmp_dir + "/" + "pipeline_code.py"
     spec = importlib.util.spec_from_file_location(tmp_dir.split("/")[-1], path)
-    foo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(foo)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
+
+def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
+    """Read in the generated python script and compile it to a KFP package."""
+    foo = _import_dsl_module(pipeline_source)
     # path to generated pipeline package
     pipeline_package = os.path.join(
         os.path.dirname(pipeline_source), pipeline_name + ".pipeline.yaml"
     )
     kfp.compiler.Compiler().compile(foo.auto_generated_pipeline, pipeline_package)
     return pipeline_package
+
+
+def compile_pipeline_to_manifests(
+    pipeline_source: str,
+    pipeline_name: str,
+    manifest_options: "kfp.compiler.KubernetesManifestOptions",
+    output_path: str = None,
+) -> str:
+    """Compile the generated DSL script into native Kubernetes manifests.
+
+    Args:
+        pipeline_source: path to the generated KFP DSL python script
+        pipeline_name: name of the pipeline
+        manifest_options: KubernetesManifestOptions controlling namespace,
+            pipeline/version naming, and whether to include the Pipeline CR
+        output_path: where to write the manifest YAML. Defaults to
+            '<dirname(pipeline_source)>/<pipeline_name>.pipeline.k8s.yaml'
+
+    Returns:
+        Path to the generated manifest YAML file.
+    """
+    foo = _import_dsl_module(pipeline_source)
+    if output_path is None:
+        output_path = os.path.join(
+            os.path.dirname(pipeline_source), pipeline_name + ".pipeline.k8s.yaml"
+        )
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+    kfp.compiler.Compiler().compile(
+        foo.auto_generated_pipeline,
+        output_path,
+        kubernetes_manifest_format=True,
+        kubernetes_manifest_options=manifest_options,
+    )
+    return output_path
 
 
 def upload_pipeline(

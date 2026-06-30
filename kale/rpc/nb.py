@@ -16,6 +16,7 @@ import logging
 import os
 import shutil
 
+import kfp
 from tabulate import tabulate
 
 from kale import Compiler, NotebookProcessor, marshal
@@ -71,31 +72,19 @@ def get_default_base_image_env(request):
     return get_default_base_image_from_env() or ""
 
 
-# fixme: Remove the debug argument from the labextension RPC call.
-def compile_notebook(request, source_notebook_path, notebook_metadata_overrides=None, debug=False):
-    """Compile the notebook to KFP DSL."""
+def _compile_dsl_then(request, source_notebook_path, notebook_metadata_overrides, finalize):
+    """Process+compile the notebook to DSL, then call finalize(pipeline, script_path).
+
+    Shared by compile_notebook and compile_into_native: both need the same
+    notebook processing and error handling, but differ in how they turn the
+    generated DSL into a final artifact (KFP package vs. Kubernetes manifests).
+    """
     try:
         processor = NotebookProcessor(source_notebook_path, notebook_metadata_overrides)
         pipeline = processor.run()
         imports_and_functions = processor.get_imports_and_functions()
         script_path = Compiler(pipeline, imports_and_functions).compile()
-
-        """FIXME: Why were we tapping into the Kale logger?
-        instance = Kale(source_notebook_path,
-        notebook_metadata_overrides, debug)
-        instance.logger = request.log if
-        hasattr(request, "log") else logger"""
-
-        package_path = kfputils.compile_pipeline(script_path, pipeline.config.pipeline_name)
-
-        with open(script_path) as f:
-            script_content = f.read()
-
-        return {
-            "pipeline_package_path": os.path.relpath(package_path),
-            "pipeline_metadata": pipeline.config.to_dict(),
-            "script_content": script_content,
-        }
+        return finalize(pipeline, script_path)
     except ValueError as e:
         msg = str(e)
         request.log.exception("ValueError during notebook compilation: %s", msg)
@@ -115,6 +104,63 @@ def compile_notebook(request, source_notebook_path, notebook_metadata_overrides=
         # but log for debug purposes.
         request.log.exception("Unexpected error during notebook compilation: %s", e)
         raise
+
+
+# fixme: Remove the debug argument from the labextension RPC call.
+def compile_notebook(request, source_notebook_path, notebook_metadata_overrides=None, debug=False):
+    """Compile the notebook to KFP DSL."""
+
+    def finalize(pipeline, script_path):
+        package_path = kfputils.compile_pipeline(script_path, pipeline.config.pipeline_name)
+        with open(script_path) as f:
+            script_content = f.read()
+        return {
+            "pipeline_package_path": os.path.relpath(package_path),
+            "pipeline_metadata": pipeline.config.to_dict(),
+            "script_content": script_content,
+        }
+
+    return _compile_dsl_then(request, source_notebook_path, notebook_metadata_overrides, finalize)
+
+
+def compile_into_native(
+    request,
+    source_notebook_path,
+    notebook_metadata_overrides=None,
+    namespace=None,
+    pipeline_display_name=None,
+    pipeline_version_name=None,
+    pipeline_version_display_name=None,
+    include_pipeline_manifest=True,
+):
+    """Compile the notebook into native Kubernetes manifests for GitOps.
+
+    Mirrors the CLI's --kubernetes-manifest-format mode: produces
+    Pipeline/PipelineVersion manifests instead of a KFP IR package for
+    upload, so the JupyterLab extension and the CLI behave the same way.
+    """
+
+    def finalize(pipeline, script_path):
+        manifest_options = kfp.compiler.KubernetesManifestOptions(
+            pipeline_name=pipeline.config.pipeline_name,
+            pipeline_display_name=pipeline_display_name,
+            pipeline_version_name=pipeline_version_name,
+            pipeline_version_display_name=pipeline_version_display_name,
+            namespace=namespace,
+            include_pipeline_manifest=include_pipeline_manifest,
+        )
+        manifest_path = kfputils.compile_pipeline_to_manifests(
+            script_path, pipeline.config.pipeline_name, manifest_options
+        )
+        with open(script_path) as f:
+            script_content = f.read()
+        return {
+            "manifest_path": os.path.relpath(manifest_path),
+            "pipeline_metadata": pipeline.config.to_dict(),
+            "script_content": script_content,
+        }
+
+    return _compile_dsl_then(request, source_notebook_path, notebook_metadata_overrides, finalize)
 
 
 def validate_notebook(request, source_notebook_path, notebook_metadata_overrides=None):

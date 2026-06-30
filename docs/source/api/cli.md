@@ -20,6 +20,14 @@ kale --nb path/to/notebook.ipynb [options]
 | `--nb`                | str    | Path to the source notebook. **Required.**                           |
 | `--upload_pipeline`   | flag   | Upload the compiled pipeline to KFP.                                 |
 | `--run_pipeline`      | flag   | Upload and then create a KFP run.                                    |
+| `--kubernetes-manifest-format` | flag | Compile to native Kubernetes manifests (Pipeline/PipelineVersion CRs) instead of a KFP IR package. Cannot be combined with `--upload_pipeline`/`--run_pipeline`. |
+| `--kubernetes-namespace` | str | Namespace set on the generated manifests.                            |
+| `--pipeline-display-name` | str | Display name for the Pipeline manifest.                            |
+| `--pipeline-version-name` | str | Name for the PipelineVersion manifest.                             |
+| `--pipeline-version-display-name` | str | Display name for the PipelineVersion manifest.              |
+| `--no-include-pipeline-manifest` | flag | Emit only the PipelineVersion manifest, omitting the Pipeline manifest. |
+| `--output`            | str    | Path to write the manifest YAML to. Only valid with `--kubernetes-manifest-format`; cannot combine with `--stdout`. |
+| `--stdout`             | flag   | Print the manifest YAML to stdout instead of writing a file. Only valid with `--kubernetes-manifest-format`; cannot combine with `--output`. |
 | `--debug`             | flag   | Enable verbose logging.                                              |
 | `--dev`               | flag   | Bake a local devpi index URL into generated components.              |
 | `--pip-index-urls`    | str    | Comma-separated PEP 503 simple indexes baked into components.        |
@@ -64,6 +72,23 @@ kale --nb notebooks/my_pipeline.ipynb \
      --experiment_name "production" \
      --run_pipeline --kfp_host http://127.0.0.1:8080
 ```
+
+Compile to Kubernetes manifests for GitOps (no KFP API access needed):
+
+```bash
+kale --nb pipelines/train.ipynb \
+     --kubernetes-manifest-format \
+     --kubernetes-namespace kubeflow \
+     --pipeline_name weekly-churn \
+     --pipeline-display-name "Weekly churn training" \
+     --pipeline-version-name weekly-churn-v1
+```
+
+This writes `.kale/weekly-churn.pipeline.k8s.yaml`, containing `Pipeline`
+and `PipelineVersion` custom resources you can review, commit, and apply
+with `kubectl apply -f` or a GitOps controller. See
+[Compile to Kubernetes manifests for GitOps](../user-guide/running-pipelines.md#compile-to-kubernetes-manifests-for-gitops)
+for the full walkthrough.
 
 ## Environment variables
 

@@ -15,6 +15,10 @@
 import argparse
 from argparse import RawTextHelpFormatter
 import os
+import sys
+import tempfile
+
+import kfp
 
 from kale.common import kfputils
 from kale.compiler import Compiler
@@ -55,6 +59,64 @@ def main():
     # False in case the flag is missing
     general_group.add_argument("--upload_pipeline", action="store_const", const=True)
     general_group.add_argument("--run_pipeline", action="store_const", const=True)
+    general_group.add_argument(
+        "--kubernetes-manifest-format",
+        action="store_const",
+        const=True,
+        help=(
+            "Compile to native Kubernetes manifests (Pipeline/PipelineVersion "
+            "CRs) instead of a KFP IR package for upload. Cannot be combined "
+            "with --upload_pipeline/--run_pipeline."
+        ),
+    )
+    general_group.add_argument(
+        "--kubernetes-namespace",
+        type=str,
+        help="Namespace to set on the generated Kubernetes manifests.",
+    )
+    general_group.add_argument(
+        "--pipeline-display-name",
+        type=str,
+        help="Display name for the Pipeline manifest.",
+    )
+    general_group.add_argument(
+        "--pipeline-version-name",
+        type=str,
+        help="Name for the PipelineVersion manifest.",
+    )
+    general_group.add_argument(
+        "--pipeline-version-display-name",
+        type=str,
+        help="Display name for the PipelineVersion manifest.",
+    )
+    general_group.add_argument(
+        "--no-include-pipeline-manifest",
+        action="store_const",
+        const=True,
+        help=(
+            "Emit only the PipelineVersion (and workload) manifests, "
+            "omitting the Pipeline manifest."
+        ),
+    )
+    general_group.add_argument(
+        "--output",
+        type=str,
+        help=(
+            "Path to write the Kubernetes manifest YAML to. Only valid with "
+            "--kubernetes-manifest-format. Defaults to "
+            "'.kale/<pipeline_name>.pipeline.k8s.yaml'."
+        ),
+    )
+    general_group.add_argument(
+        "--stdout",
+        action="store_const",
+        const=True,
+        help=(
+            "Print the Kubernetes manifest YAML to stdout instead of "
+            "writing it to disk. Only valid with --kubernetes-manifest-format, "
+            "and cannot be combined with --output."
+        ),
+    )
     general_group.add_argument("--debug", action="store_true")
     general_group.add_argument(
         "--dev",
@@ -116,6 +178,22 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.kubernetes_manifest_format and (args.upload_pipeline or args.run_pipeline):
+        parser.error(
+            "--kubernetes-manifest-format cannot be combined with "
+            "--upload_pipeline/--run_pipeline. Deploy the manifest with "
+            "`kubectl apply -f` or a GitOps controller instead."
+        )
+
+    if args.output and not args.kubernetes_manifest_format:
+        parser.error("--output is only valid with --kubernetes-manifest-format.")
+
+    if args.stdout and not args.kubernetes_manifest_format:
+        parser.error("--stdout is only valid with --kubernetes-manifest-format.")
+
+    if args.stdout and args.output:
+        parser.error("--stdout cannot be combined with --output.")
+
     if args.pip_index_urls:
         os.environ["KALE_PIP_INDEX_URLS"] = args.pip_index_urls
     elif args.dev:
@@ -138,7 +216,38 @@ def main():
     imports_and_functions = processor.get_imports_and_functions()
     dsl_script_path = Compiler(pipeline, imports_and_functions).compile()
     pipeline_name = pipeline.config.pipeline_name
-    print(f"dsl_script_path: {dsl_script_path}")
+    # In --stdout mode, only the manifest YAML may go to stdout so it can be
+    # piped/redirected cleanly by CI; route diagnostics to stderr instead.
+    diag_stream = sys.stderr if (args.kubernetes_manifest_format and args.stdout) else sys.stdout
+    print(f"dsl_script_path: {dsl_script_path}", file=diag_stream)
+
+    if args.kubernetes_manifest_format:
+        manifest_options = kfp.compiler.KubernetesManifestOptions(
+            pipeline_name=pipeline_name,
+            pipeline_display_name=args.pipeline_display_name,
+            pipeline_version_name=args.pipeline_version_name,
+            pipeline_version_display_name=args.pipeline_version_display_name,
+            namespace=args.kubernetes_namespace,
+            include_pipeline_manifest=not args.no_include_pipeline_manifest,
+        )
+        if args.stdout:
+            fd, tmp_manifest_path = tempfile.mkstemp(suffix=".pipeline.k8s.yaml")
+            os.close(fd)
+            try:
+                kfputils.compile_pipeline_to_manifests(
+                    dsl_script_path, pipeline_name, manifest_options, output_path=tmp_manifest_path
+                )
+                with open(tmp_manifest_path) as manifest_file:
+                    print(manifest_file.read(), end="")
+            finally:
+                os.remove(tmp_manifest_path)
+            return
+
+        manifest_path = kfputils.compile_pipeline_to_manifests(
+            dsl_script_path, pipeline_name, manifest_options, output_path=args.output
+        )
+        print(f"manifest_path: {manifest_path}")
+        return
 
     pipeline_package_path = kfputils.compile_pipeline(dsl_script_path, pipeline_name)
     if args.upload_pipeline or args.run_pipeline:
