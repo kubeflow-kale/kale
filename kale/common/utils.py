@@ -226,10 +226,10 @@ def shorten_long_string(obj: Any, chars: int = 75):
  Returns:
     str: Shortened string with ellipsis in the middle.
  """
-    str_input = str(obj)
-    if len(str_input) <= chars * 2:
-        return str_input
-    return str_input[:chars] + " ..... " + str_input[-chars:]
+str_input = str(obj)
+if len(str_input) <= chars * 2:
+    return str_input
+return str_input[:chars] + " ..... " + str_input[-chars:]
 
 
 def dedent(text: str):
@@ -243,10 +243,10 @@ def dedent(text: str):
   Returns:
       str: Dedented string with normalized indentation.
   """
-    matches = re.findall(r"(?m)^\s+", text)
-    if len(matches) < len(text.splitlines()):
-        return text
-    return re.sub(r"(?m)^.{%d}" % min(map(len, matches)), "", text)
+matches = re.findall(r"(?m)^\s+", text)
+if len(matches) < len(text.splitlines()):
+    return text
+return re.sub(r"(?m)^.{%d}" % min(map(len, matches)), "", text)
 
 
 def compute_pip_index_urls() -> list[str]:
