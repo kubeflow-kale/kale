@@ -212,7 +212,7 @@ def compute_pip_index_urls() -> list[str]:
         return a list with the devpi simple URL (`KALE_DEVPI_SIMPLE_URL`) or
         its default value.
         3. Otherwise, return the production default:
-        ["https://pypi.org/simple"].
+        [`KALE_PYPI_PROD_URL`] (defaults to ["https://pypi.org/simple"]).
 
     Environment variables:
         KALE_PIP_INDEX_URLS:
@@ -222,12 +222,16 @@ def compute_pip_index_urls() -> list[str]:
             Boolean-like flag enabling dev mode (interprets 1/true/yes/on).
         KALE_DEVPI_SIMPLE_URL:
             Devpi “simple” index URL used when dev mode is enabled.
+        KALE_PYPI_PROD_URL:
+            Production pip simple index URL. Defaults to
+            "https://pypi.org/simple". Useful for air-gapped or
+            mirror-only deployments that can't reach public PyPI.
 
     Returns:
         list[str]: Index URLs suitable for the `pip_index_urls` parameter in
         `@kfp_dsl.component`.
     """
-    pypi_prod_url = "https://pypi.org/simple"
+    pypi_prod_url = os.getenv("KALE_PYPI_PROD_URL", "https://pypi.org/simple")
     urls: list[str]
 
     # explicit override wins

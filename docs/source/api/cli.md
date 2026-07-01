@@ -79,6 +79,7 @@ A few environment variables affect `kale`:
 | `KALE_PIP_TRUSTED_HOSTS`  | Trusted hosts for HTTP pip indexes (required when using HTTP URLs).                    |
 | `KALE_DEV_MODE`           | Equivalent to passing `--dev`.                                                         |
 | `KALE_DEVPI_SIMPLE_URL`   | Equivalent to `--devpi-simple-url` when `--dev` is set.                                |
+| `KALE_PYPI_PROD_URL`      | Production pip index URL baked into generated components. Defaults to `https://pypi.org/simple`. |
 
 See [Running Pipelines](../user-guide/running-pipelines.md) for concrete scenarios where
 these are useful.
