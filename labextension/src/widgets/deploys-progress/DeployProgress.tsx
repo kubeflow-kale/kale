@@ -25,13 +25,42 @@ import GetAppIcon from '@mui/icons-material/GetApp';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
-import {
-  DeployProgressState,
-  UploadPipelineResp,
-  RunPipeline,
-} from './DeploysProgress';
 import DeployUtils from './DeployUtils';
 import NotebookUtils from '../../lib/NotebookUtils';
+import { IDocumentManager } from '@jupyterlab/docmanager';
+import { IDeployPanelCustomLinks } from '../LeftPanelTypes';
+
+export type UploadPipelineResp = {
+  pipeline: { pipelineid: string; versionid: string; name: string };
+};
+
+export type RunPipeline = {
+  id: string;
+  name: string;
+  status: string | null;
+};
+
+export type DeployProgressState = {
+  showValidationProgress?: boolean;
+  notebookValidation?: boolean;
+  validationWarnings?: string[];
+  task?: Record<string, unknown>;
+  showCompileProgress?: boolean;
+  compiledPath?: string;
+  compiledContent?: string;
+  compileWarnings?: string[];
+  showUploadProgress?: boolean;
+  pipeline?: boolean | UploadPipelineResp;
+  uploadWarnings?: string[];
+  showRunProgress?: boolean;
+  runPipeline?: boolean | RunPipeline;
+  runWarnings?: string[];
+  docManager?: IDocumentManager;
+  namespace?: string;
+  message?: string;
+  kfpUiHost?: string;
+  deployPanelCustomLinks?: IDeployPanelCustomLinks;
+};
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {

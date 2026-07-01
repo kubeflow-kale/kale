@@ -19,7 +19,7 @@ import { InlineCellsMetadata } from './cell-metadata/InlineCellsMetadata';
 import { SplitDeployButton } from '../components/DeployButton';
 import { Kernel } from '@jupyterlab/services';
 import { ExperimentInput } from '../components/ExperimentInput';
-import { DeploysProgress } from './deploys-progress/DeploysProgress';
+import { DeployProgress } from './deploys-progress/DeployProgress';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ThemeProvider } from '@mui/material/styles';
@@ -326,12 +326,14 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
           className={notebookMeta.isEnabled && activeNotebook ? '' : 'hidden'}
           style={{ marginTop: 'auto' }}
         >
-          <DeploysProgress
-            deploys={deployment.deploys}
-            onPanelRemove={deployment.onPanelRemove}
-            kfpUiHost={notebookMeta.kfpUiHost}
-            deployPanelCustomLinks={notebookMeta.deployPanelCustomLinks}
-          />
+          {deployment.deployProgress && (
+            <DeployProgress
+              {...deployment.deployProgress}
+              onRemove={deployment.onPanelRemove}
+              kfpUiHost={notebookMeta.kfpUiHost}
+              deployPanelCustomLinks={notebookMeta.deployPanelCustomLinks}
+            />
+          )}
           <SplitDeployButton
             running={deployment.runDeployment}
             handleClick={deployment.activateRunDeployState}

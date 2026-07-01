@@ -17,7 +17,7 @@ import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { PageConfig } from '@jupyterlab/coreutils';
-import { DeployProgressState } from '../deploys-progress/DeploysProgress';
+import { DeployProgressState } from '../deploys-progress/DeployProgress';
 import {
   DefaultState,
   DeployType,
@@ -25,8 +25,6 @@ import {
 } from '../LeftPanelTypes';
 import Commands from '../../lib/Commands';
 import NotebookUtils from '../../lib/NotebookUtils';
-
-let deployIndex = 0;
 
 interface IUseDeploymentParams {
   tracker: INotebookTracker;
@@ -39,9 +37,9 @@ interface IUseDeploymentParams {
 
 export interface IDeploymentState {
   runDeployment: boolean;
-  deploys: { [index: number]: DeployProgressState };
+  deployProgress: DeployProgressState | null;
   activateRunDeployState: (type: DeployType) => void;
-  onPanelRemove: (index: number) => void;
+  onPanelRemove: () => void;
   triggerCompile: () => void;
   triggerRun: () => void;
   syncRefs: (
@@ -53,8 +51,8 @@ export interface IDeploymentState {
 
 /**
  * Hook that manages the full compile/upload/run deploy lifecycle: triggering
- * deploys, tracking progress per deploy index, and exposing callbacks for
- * the toolbar and deploy button.
+ * deploys, tracking progress, and exposing callbacks for the toolbar and
+ * deploy button.
  */
 export function useDeployment({
   tracker,
@@ -65,9 +63,8 @@ export function useDeployment({
   resolvedDefaultBaseImage,
 }: IUseDeploymentParams): IDeploymentState {
   const [runDeployment, setRunDeployment] = useState(false);
-  const [deploys, setDeploys] = useState<{
-    [index: number]: DeployProgressState;
-  }>({});
+  const [deployProgress, setDeployProgress] =
+    useState<DeployProgressState | null>(null);
 
   const runDeploymentRef = useRef(false);
   runDeploymentRef.current = runDeployment;
@@ -90,25 +87,12 @@ export function useDeployment({
     [],
   );
 
-  const updateDeployProgress = useCallback(
-    (index: number, progress: DeployProgressState) => {
-      setDeploys(prev => {
-        const existing = prev[index];
-        const entry = existing ? { ...existing, ...progress } : progress;
-        return { ...prev, [index]: entry };
-      });
-    },
-    [],
-  );
+  const updateDeployProgress = useCallback((progress: DeployProgressState) => {
+    setDeployProgress(prev => (prev ? { ...prev, ...progress } : progress));
+  }, []);
 
-  const onPanelRemove = useCallback((index: number) => {
-    setDeploys(prev => {
-      const deploy = prev[index];
-      if (deploy === null) {
-        return prev;
-      }
-      return { ...prev, [index]: { ...deploy, deleted: true } };
-    });
+  const onPanelRemove = useCallback(() => {
+    setDeployProgress(null);
   }, []);
 
   const getActiveNotebook = useCallback(
@@ -147,12 +131,8 @@ export function useDeployment({
     }
 
     const commands = new Commands(activeNotebook, kernel);
-    const currentDeployIndex = ++deployIndex;
     const progressCallback = (x: DeployProgressState) => {
-      updateDeployProgress(currentDeployIndex, {
-        ...x,
-        namespace: namespaceRef.current,
-      });
+      updateDeployProgress({ ...x, namespace: namespaceRef.current });
     };
 
     const metadata: IKaleNotebookMetadata = JSON.parse(
@@ -254,7 +234,7 @@ export function useDeployment({
       if (!runDeploymentRef.current) {
         deploymentTypeRef.current = type;
         setRunDeployment(true);
-        setDeploys({});
+        setDeployProgress(null);
         runDeploymentCommand();
       }
     },
@@ -271,7 +251,7 @@ export function useDeployment({
 
   return {
     runDeployment,
-    deploys,
+    deployProgress,
     activateRunDeployState,
     onPanelRemove,
     triggerCompile,
