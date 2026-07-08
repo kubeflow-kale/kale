@@ -56,14 +56,27 @@ export interface IKaleNotebookMetadata {
   output_path?: string;
 }
 
-export const DefaultState = {
-  metadata: {
+// Every consumer must get its own copy: sharing one mutable object between
+// the React state of different notebooks leaks values across them (#643).
+export function createDefaultMetadata(): IKaleNotebookMetadata {
+  return {
     experiment: { id: '', name: '' },
     experiment_name: '',
     pipeline_name: '',
     pipeline_description: '',
     base_image: '',
     enable_caching: true,
-    steps_defaults: [] as string[],
-  } as IKaleNotebookMetadata,
-};
+    steps_defaults: [],
+  };
+}
+
+const frozenMetadata = createDefaultMetadata();
+Object.freeze(frozenMetadata.experiment);
+Object.freeze(frozenMetadata.steps_defaults);
+Object.freeze(frozenMetadata);
+
+// Frozen so an accidental in-place write throws instead of silently
+// leaking into every open notebook.
+export const DefaultState = Object.freeze({
+  metadata: frozenMetadata,
+});
