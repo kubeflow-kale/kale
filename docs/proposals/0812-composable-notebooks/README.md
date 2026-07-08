@@ -376,7 +376,7 @@ If Option A (`@dsl.notebook_component`) had been chosen, this would have been th
 
 4. **Type inference uses name heuristics.** KFP artifact types are inferred from variable names using Kale's existing type map (`model`→Model, `dataset`→Dataset, `metrics`→Metrics, etc.). Future work may add explicit type annotations.
 
-5. **`notebook` cells break the code merge chain.** In Kale, untagged cells merge into the previous step. A `notebook:` cell is a reference to another notebook, not executable code — subsequent untagged cells must NOT be merged into it. The `notebook` type must be treated as a boundary (like `imports`, `skip`, `pipeline-parameters`) that stops the merge. Untagged cells after a `notebook:` cell should belong to the next explicit `step:` cell, not to the notebook reference.
+5. **`notebook` cells break the code merge chain.** In Kale, untagged cells merge into the previous step. A `notebook:` cell is a reference to another notebook, not executable code — subsequent untagged cells must NOT be merged into it. This requires a new merge rule: the parser must reset the merge target so that following untagged cells belong to the next explicit `step:` cell, not to the notebook reference or to any previous step.
 
 ### Risks and Mitigations
 
