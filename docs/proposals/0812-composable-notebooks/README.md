@@ -508,3 +508,7 @@ Require every notebook to declare its outputs via a `notebook-outputs` cell tag 
 4. **Fan-out connections**: Can one notebook output connect to multiple notebook/step inputs? The automatic inference supports this naturally (multiple consumers of the same variable), but it needs explicit testing.
 
 5. **Relative vs absolute paths**: Should `notebook_path` in cell metadata be relative to the parent notebook's directory, relative to the workspace root, or absolute? Relative-to-parent is most portable.
+
+6. **KFP terminology**: The KEP uses "sub-pipeline" as shorthand. The underlying KFP mechanism is a `@dsl.pipeline`-decorated function called as a task inside another pipeline, which creates a `GraphComponent`. We should clarify this mapping so users can find the relevant KFP documentation.
+
+7. **Configuration inheritance**: When a sub-notebook has no configuration (base image, cache, accelerators), should it inherit settings from the parent notebook's PipelineConfig, or use defaults? Should sub-notebooks support the same configuration options as steps?
