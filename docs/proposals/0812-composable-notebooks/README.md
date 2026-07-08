@@ -277,7 +277,7 @@ Add a `notebook-outputs` cell tag alongside the existing `pipeline-parameters` t
 | Friction | Requires users to maintain output declarations in sync with code |
 | Use case | Necessary for "reusable component" story (Story 2 at scale) |
 
-**Deferred to post-MVP**: Explicit declarations add friction without benefit when the composition is authored by the same person who wrote the notebooks. Needed later for the reusable-component story where different people author and compose notebooks.
+**Deferred to post-MVP**: Explicit declarations add friction without benefit when the composition is authored by the same person who wrote the notebooks. Needed later for the reusable-component story where different people author and compose notebooks. One possible follow-up is a `notebook-inputs` tag (paired with `notebook-outputs`) that would let sub-notebooks define stub values for local testing that the compiler replaces with upstream artifacts when composed, resolving the standalone vs. composable tension described in the caveats section.
 
 #### Option B: Notebook Metadata — Deferred
 
@@ -377,6 +377,8 @@ If Option A (`@dsl.notebook_component`) had been chosen, this would have been th
 4. **Type inference uses name heuristics.** KFP artifact types are inferred from variable names using Kale's existing type map (`model`→Model, `dataset`→Dataset, `metrics`→Metrics, etc.). Future work may add explicit type annotations.
 
 5. **`notebook` cells break the code merge chain.** In Kale, untagged cells merge into the previous step. A `notebook:` cell is a reference to another notebook, not executable code — subsequent untagged cells must NOT be merged into it. This requires a new merge rule: the parser must reset the merge target so that following untagged cells belong to the next explicit `step:` cell, not to the notebook reference or to any previous step.
+
+6. **Sub-notebooks cannot run standalone in v1.** Automatic inference detects a sub-notebook's inputs as undefined variables (via PyFlakes). If the sub-notebook defines those variables — even as stubs for testing — they are no longer undefined, inference stops detecting them as inputs, and upstream values silently never arrive. This means sub-notebooks used in a composition cannot also run independently. This is an accepted limitation of the zero-friction automatic inference approach (Decision 2, Option D). Post-MVP, explicit input/output declarations (see Decision 2, Option A) could resolve this by letting sub-notebooks define stub values that the compiler replaces with upstream artifacts when composed.
 
 ### Risks and Mitigations
 
