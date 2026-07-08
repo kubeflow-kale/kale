@@ -248,6 +248,8 @@ Key finding: `@dsl.pipeline` creates a `GraphComponent` (`kfp/dsl/graph_componen
 
 **Chosen because**: Preserves cell-level visibility in the KFP UI. Reuses 100% of existing Kale infrastructure (NotebookProcessor, Compiler, marshal system). Makes Decision 4 (output marshaling) a non-issue. The composition layer is purely additive. This approach was validated by Yash's GSoC POC, which successfully compiled multi-notebook compositions into KFP-valid pipeline YAML using this pattern.
 
+**DSL file structure**: Rather than generating a single monolithic DSL file, each notebook should produce its own independent `.py` DSL file. The orchestrating DSL file imports the sub-notebook DSL files as dependencies. This mirrors the recursive nature of the processing — each notebook is an independent module that can be imported without circular references — and gives each notebook natural ownership of its own configuration (base image, cache, accelerators).
+
 #### Option C: Kale-Owned Notebook-as-Component — Rejected
 
 Generate a regular `@dsl.component` that embeds and executes the notebook using Kale's own marshal infrastructure for I/O (no Papermill).
