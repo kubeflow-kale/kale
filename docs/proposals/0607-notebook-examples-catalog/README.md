@@ -19,6 +19,7 @@
 - [Design Details](#design-details)
   - [Catalog YAML Schema](#catalog-yaml-schema)
   - [Directory Layout](#directory-layout)
+  - [Packaging and Installation](#packaging-and-installation)
   - [Discovery and Priority](#discovery-and-priority)
   - [Materialization](#materialization)
   - [Frontend Components](#frontend-components)
@@ -193,10 +194,11 @@ items:
 #### Validation Rules
 
 - `id`, `title`, `description`, `assets.source`, and `entrypoint.notebook` are required.
-- `assets.source` and `entrypoint.notebook` are validated against path traversal (`..`) and absolute paths.
+- `id` must not contain path separators (`/`, `\`) or `..`, as it is used as the materialization directory name.
+- `assets.source` and `entrypoint.notebook` are validated against path traversal (`..`) and absolute paths, but may contain forward slashes for subdirectory paths.
 - The sample directory `<data_dir>/kale/samples/<assets.source>/` must exist.
 - `difficulty` must be one of the three accepted values if provided.
-- Files with `kind` other than `ExamplesCatalog` are silently skipped.
+- Files with `kind` other than `ExamplesCatalog` are skipped with a warning.
 - Invalid entries are skipped with a warning; valid entries in the same file still load.
 
 ### Directory Layout
@@ -217,6 +219,26 @@ examples/
 
 Each sample lives in its own directory under `examples/`. The `catalog/` subdirectory contains YAML files that register samples as catalog entries.
 
+### Packaging and Installation
+
+The built-in catalog and sample files are installed into Jupyter data directories through three mechanisms depending on context:
+
+**1. Wheel install (`pip install`).** Kale's `pyproject.toml` uses `[tool.hatch.build.targets.wheel.shared-data]` — the same mechanism that installs the JupyterLab extension. Each sample directory is mapped explicitly:
+
+```toml
+[tool.hatch.build.targets.wheel.shared-data]
+"examples/catalog" = "share/jupyter/kale/catalog"
+"examples/base" = "share/jupyter/kale/samples/base"
+"examples/titanic-ml-dataset" = "share/jupyter/kale/samples/titanic-ml-dataset"
+# ... one entry per sample directory
+```
+
+Each new sample must be added here explicitly — the wheel build does not support globs.
+
+**2. Development (`make dev`).** The Makefile symlinks catalog and sample directories into the first Jupyter data directory (via `jupyter_core.paths.jupyter_path()[0]`), using globs so new samples are picked up automatically without editing the Makefile.
+
+**3. Container images.** The Dockerfile `COPY`s the `examples/` directory and installs catalog YAML and sample directories into `/opt/conda/share/jupyter/kale/`, also using globs.
+
 ### Discovery and Priority
 
 The loader scans all directories returned by `jupyter_core.paths.jupyter_path()`, typically:
@@ -227,9 +249,9 @@ The loader scans all directories returned by `jupyter_core.paths.jupyter_path()`
 /usr/share/jupyter/           # system-wide (lowest priority)
 ```
 
-Within each data directory, the loader looks for `kale/catalog/*.yaml` files and `kale/samples/<name>/` directories.
+Within each data directory, the loader looks for `kale/catalog/*.yaml` files and `kale/samples/<name>/` directories. YAML files are processed in alphabetical order; if two files in the same directory define entries with the same `id`, the alphabetically later file wins.
 
-When the same `id` appears in multiple Jupyter data directories, **later directories in the `jupyter_path()` list take precedence**. This allows user-level overrides of system-level examples.
+When the same `id` appears in multiple Jupyter data directories, **earlier directories in the `jupyter_path()` list take precedence** (per-user overrides system-wide). This allows user-level overrides of system-level examples.
 
 ### Materialization
 
@@ -243,7 +265,7 @@ When a user clicks a sample card:
 6. The backend returns the notebook path relative to `server_root`
 7. The frontend opens the notebook via `docManager.openOrReveal(path)`
 
-The materialization directory name defaults to `kale-samples` and can be overridden with the `KALE_MATERIALIZATION_DIR` environment variable.
+The materialization directory name defaults to `kale-samples` and can be overridden with the `KALE_MATERIALIZATION_DIR` environment variable. When `server_root` is not provided, the materialization base directory defaults to the user's home directory (`~`).
 
 Materialization is **idempotent**: if the destination directory already exists, `copytree` is skipped (only the provenance stamp is updated). To get a fresh copy, the user must choose "Recreate" in the conflict dialog.
 
@@ -280,7 +302,7 @@ All colors use JupyterLab CSS tokens (`--jp-success-color1`, `--jp-warn-color1`,
 
 A simple MUI Dialog with three buttons:
 - **Cancel** — dismisses both dialogs
-- **Open Existing** — materializes without recreating (skips `copytree`, opens existing notebook)
+- **Open Existing** — calls `load_example` without recreating (skips `copytree`, updates provenance stamp, opens existing notebook)
 - **Recreate** — deletes the existing copy and creates a fresh one
 
 #### Sidebar Empty State Link
@@ -302,7 +324,7 @@ The `KaleEmptyState` component accepts an optional `onOpenExamples` callback. Wh
 | Risk | Mitigation |
 |------|------------|
 | Users modify materialized samples, then "Recreate" loses their work | Conflict dialog gives the choice; "Recreate" is clearly destructive |
-| Catalog YAML schema changes break existing deployments | Versioned `apiVersion` field; loader skips files with unrecognized `kind` |
+| Catalog YAML schema changes break existing deployments | Loader skips files with unrecognized `kind` |
 | Custom examples in system data dirs are overwritten by pip upgrades | User-level data dir has higher priority; document the override mechanism |
 
 ### Test Plan
