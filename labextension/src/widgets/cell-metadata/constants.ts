@@ -38,7 +38,6 @@ export const KALE_TAG_PREFIXES = [
   'imports',
   'functions',
   'pipeline-parameters',
-  'final',
 ];
 
 export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {

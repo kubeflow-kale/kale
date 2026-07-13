@@ -261,10 +261,13 @@ export default class TagsUtils {
         'tags',
       ) || [];
 
-    const kaleTagPrefixes = KALE_TAG_PREFIXES;
+    // Extract the step name from 'step:<name>' tag before wiping
+    const stepTag = currentTags.find(tag => tag.startsWith('step:'));
+    const clearedStepName = stepTag ? stepTag.replace('step:', '') : null;
 
+    // Clear all Kale tags from the active cell
     const filteredTags = currentTags.filter(
-      tag => !kaleTagPrefixes.some(prefix => tag.startsWith(prefix)),
+      tag => !KALE_TAG_PREFIXES.some(prefix => tag.startsWith(prefix)),
     );
 
     CellUtils.setCellMetaData(
@@ -272,7 +275,13 @@ export default class TagsUtils {
       activeCellIndex,
       'tags',
       filteredTags,
-    );
+    ).then(() => {
+      // If this cell had a step name, remove all prev:<stepName> refs
+      // from dependent cells using the existing updateKaleCellsTags
+      if (clearedStepName) {
+        TagsUtils.updateKaleCellsTags(notebook, clearedStepName, '');
+      }
+    });
   }
 
   public static cellsToArray(notebook: NotebookPanel) {
