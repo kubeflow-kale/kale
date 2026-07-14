@@ -1,7 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
-from kfp.kubernetes import security_context
+from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
 
 
 @kfp_dsl.component(

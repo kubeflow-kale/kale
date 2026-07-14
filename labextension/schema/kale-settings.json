@@ -15,6 +15,56 @@
       "title": "Auto-save the notebook when compiling or running",
       "description": "When enabled, Kale saves the notebook automatically before compile, run, or upload without prompting. When disabled, you are asked to save if there are unsaved changes.",
       "default": false
+    },
+    "defaultBaseImage": {
+      "type": "string",
+      "title": "Default base image",
+      "description": "Default container image for pipeline steps. Leave empty to use the environment variable KALE_DEFAULT_BASE_IMAGE or the python:3.12.",
+      "default": ""
+    },
+    "securityContext": {
+      "type": "object",
+      "title": "Security Context",
+      "description": "Kubernetes security context settings for pipeline steps. These settings control how containers run in the cluster.",
+      "default": {
+        "enabled": true,
+        "run_as_user": 65534,
+        "run_as_group": 0,
+        "run_as_non_root": true
+      },
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable Security Context",
+          "description": "When enabled, applies security context to all pipeline steps.",
+          "default": true
+        },
+        "run_as_user": {
+          "type": "integer",
+          "title": "Run As User",
+          "description": "The UID to run containers as (default: 65534 = nobody).",
+          "default": 65534
+        },
+        "run_as_group": {
+          "type": "integer",
+          "title": "Run As Group",
+          "description": "The GID to run containers as (default: 0 = root group).",
+          "default": 0
+        },
+        "run_as_non_root": {
+          "type": "boolean",
+          "title": "Run As Non-Root",
+          "description": "Require containers to run as a non-root user.",
+          "default": true
+        }
+      }
+    },
+    "outputPath": {
+      "type": "string",
+      "title": "Pipeline output directory",
+      "description": "Relative path (from the notebook directory) where the compiled pipeline is saved. Leave empty to use the default '.kale/' directory.",
+      "default": ".kale",
+      "pattern": "^$|\\S"
     }
   },
   "additionalProperties": false,

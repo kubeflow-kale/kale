@@ -17,19 +17,18 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import {
   _legacy_executeRpc,
   _legacy_executeRpcAndShowRPCError,
-  RPCError,
 } from './RPCUtils';
 
-import { DeployProgressState, RunPipeline } from '../widgets/deploys-progress/DeploysProgress';
+import { DeployProgressState, RunPipeline } from '../widgets/deploys-progress/DeployProgress';
 
 type OnUpdateCallbak = (params: Partial<DeployProgressState>) => void;
 
 import {
-  DefaultState,
   IExperiment,
   IKaleNotebookMetadata,
   NEW_EXPERIMENT,
 } from '../widgets/LeftPanel';
+import { IDeployPanelCustomLinks } from '../widgets/LeftPanelTypes';
 import NotebookUtils from './NotebookUtils';
 // import {
 //   SELECT_VOLUME_SIZE_TYPES,
@@ -88,26 +87,8 @@ export default class Commands {
     const cmd: string =
       'from kale.rpc.nb import unmarshal_data as __kale_rpc_unmarshal_data\n' +
       `locals().update(__kale_rpc_unmarshal_data("${nbFileName}"))`;
-    console.log('Executing command: ' + cmd);
+    console.debug('Executing command: ' + cmd);
     await NotebookUtils.sendKernelRequestFromNotebook(this._notebook, cmd, {});
-  };
-
-  getBaseImage = async () => {
-    let baseImage: string | null = null;
-    try {
-      baseImage = await _legacy_executeRpc(
-        this._notebook,
-        this._kernel,
-        'nb.get_base_image',
-      );
-    } catch (error) {
-      if (error instanceof RPCError) {
-        console.warn('Kale is not running in a Notebook Server', error.error);
-      } else {
-        throw error;
-      }
-    }
-    return baseImage;
   };
 
   getDefaultBaseImage = async (): Promise<string> => {
@@ -178,6 +159,19 @@ export default class Commands {
     }
   };
 
+  getDeployPanelCustomLinks = async (): Promise<IDeployPanelCustomLinks> => {
+    try {
+      return await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'kfp.get_custom_links',
+      );
+    } catch (error) {
+      console.error('Failed to retrieve custom links', error);
+      return { upload: '', run: '' };
+    }
+  };
+
   pollRun(runPipeline: RunPipeline, onUpdate: OnUpdateCallbak) {
     _legacy_executeRpcAndShowRPCError(
       this._notebook,
@@ -218,39 +212,6 @@ export default class Commands {
     return validateNotebook;
   };
 
-  /**
-   * Analyse the current metadata and produce some warning to be shown
-   * under the compilation task
-   * @param metadata Notebook metadata
-   */
-  getCompileWarnings = (metadata: IKaleNotebookMetadata) => {
-    const warningContent = [];
-
-    // in case the notebook's docker base image is different than the default
-    // one (e.g. the one detected in the Notebook Server), alert the user
-    if (
-      DefaultState.metadata.base_image !== '' &&
-      metadata.base_image !== DefaultState.metadata.base_image
-    ) {
-      warningContent.push(
-        'The image you used to create the notebook server is different ' +
-        'from the image you have selected for your pipeline.',
-        '',
-        'Your Kubeflow pipeline will use the following image: <pre><b>' +
-        metadata.base_image +
-        '</b></pre>',
-        'You created the notebook server using the following image: <pre><b>' +
-        DefaultState.metadata.base_image +
-        '</b></pre>',
-        '',
-        "To use this notebook server's image as base image" +
-        ' for the pipeline steps, delete the existing docker image' +
-        ' from the Advanced Settings section.',
-      );
-    }
-    return warningContent;
-  };
-
   // todo: docManager needs to be passed to deploysProgress during init
   // todo: autosnapshot will become part of metadata
   // todo: deployDebugMessage will be removed (the "Debug" toggle is of no use
@@ -262,12 +223,7 @@ export default class Commands {
     deployDebugMessage: boolean,
     onUpdate: OnUpdateCallbak,
   ): Promise<ICompileNotebookResult> => {
-    // after parsing and validating the metadata, show warnings (if necessary)
-    const compileWarnings = this.getCompileWarnings(metadata);
     onUpdate({ showCompileProgress: true, docManager: docManager });
-    if (compileWarnings.length) {
-      onUpdate({ compileWarnings });
-    }
     const compileNotebookArgs: ICompileNotebookArgs = {
       source_notebook_path: notebookPath,
       notebook_metadata_overrides: metadata,
@@ -435,7 +391,10 @@ export default class Commands {
         'nb.get_namespace',
       );
     } catch (error) {
-      console.error("Failed to retrieve notebook's namespace");
+      console.warn(
+        "Could not detect the notebook's namespace. " +
+        'Pipeline and run links may not include the correct namespace parameter.'
+      );
       return '';
     }
   };

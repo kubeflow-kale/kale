@@ -151,7 +151,7 @@ export const executeRpc = async (
     `__kale_rpc_result = __kale_rpc_run("${func}", '${serialize(
       kwargs
     )}', '${serialize(ctx)}')`;
-  console.log('Executing command: ' + cmd);
+  console.debug('Executing command: ' + cmd);
   const expressions = { result: '__kale_rpc_result' };
   let output: any = null;
   try {

@@ -11,14 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Pipeline data model.
+
+Defines :class:`Pipeline` — a :class:`networkx.DiGraph` of :class:`~kale.step.Step`
+nodes — along with the configuration classes that describe pipeline-level
+settings such as the pipeline name, KFP host, volumes, and Katib experiments.
+"""
 
 from collections.abc import Iterable
 import copy
 import logging
 import os
 
-from kubernetes.client.rest import ApiException
-from kubernetes.config import ConfigException
 import networkx as nx
 
 from kale.common import graphutils, podutils, utils
@@ -94,6 +98,29 @@ class KatibConfig(Config):
     parallelTrialCount = Field(type=int, default=3)
 
 
+class SecurityContextConfig(Config):
+    """Configuration for Kubernetes security context settings.
+
+    These settings control the security context applied to all pipeline steps.
+    Can be configured via JupyterLab settings or ``KALE_*`` environment variables.
+    """
+
+    enabled = Field(type=bool, default=True)
+    run_as_user = Field(type=int, default=65534)
+    run_as_group = Field(type=int, default=0)
+    run_as_non_root = Field(type=bool, default=True)
+
+    def __eq__(self, value):
+        if not isinstance(value, SecurityContextConfig):
+            return False
+        return (
+            self.enabled == value.enabled
+            and self.run_as_user == value.run_as_user
+            and self.run_as_group == value.run_as_group
+            and self.run_as_non_root == value.run_as_non_root
+        )
+
+
 class PipelineConfig(Config):
     """Main config class to validate the pipeline metadata."""
 
@@ -115,6 +142,8 @@ class PipelineConfig(Config):
         type=str, validators=[validators.IsLowerValidator, validators.VolumeAccessModeValidator]
     )
     timeout = Field(type=int, validators=[validators.PositiveIntegerValidator])
+    security_context = Field(type=SecurityContextConfig, default=None)
+    output_path = Field(type=str, default="", validators=[validators.OutputPathValidator])
 
     @property
     def source_path(self):
@@ -129,21 +158,14 @@ class PipelineConfig(Config):
         self._sort_volumes()
         self._set_abs_working_dir()
         self._set_marshal_path()
+        self._set_security_context()
 
     def _randomize_pipeline_name(self):
         self.pipeline_name = f"{self.pipeline_name}-{utils.random_string()}"
 
     def _set_base_image(self):
         if not self.base_image:
-            try:
-                self.base_image = podutils.get_docker_base_image()
-            except (ConfigException, RuntimeError, FileNotFoundError, ApiException):
-                # * ConfigException: no K8s config found
-                # * RuntimeError, FileNotFoundError: this is not running in a
-                #   pod
-                # * ApiException: K8s call to read pod raised exception;
-                # Use kfp default image
-                self.base_image = DEFAULT_BASE_IMAGE
+            self.base_image = utils.get_default_base_image_from_env() or DEFAULT_BASE_IMAGE
 
     def _set_volume_storage_class(self):
         if not self.storage_class_name:
@@ -187,6 +209,15 @@ class PipelineConfig(Config):
             marshal_dir = f".{basename}.kale.marshal.dir"
             self.marshal_volume = False
             self.marshal_path = os.path.join(wd, marshal_dir)
+
+    def _set_security_context(self):
+        """Initialize security context from env vars if not set from metadata.
+
+        Precedence: JupyterLab metadata > env vars > defaults
+        """
+        env_config = utils.get_security_context_from_env()
+        if self.security_context is None:
+            self.security_context = env_config
 
 
 class Pipeline(nx.DiGraph):

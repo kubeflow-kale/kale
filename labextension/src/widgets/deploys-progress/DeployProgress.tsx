@@ -25,10 +25,42 @@ import GetAppIcon from '@mui/icons-material/GetApp';
 
 import StatusRunning from '../../icons/statusRunning';
 import TerminatedIcon from '../../icons/statusTerminated';
-import { DeployProgressState } from './DeploysProgress';
 import DeployUtils from './DeployUtils';
-import { UploadPipelineResp, RunPipeline } from './DeploysProgress';
 import NotebookUtils from '../../lib/NotebookUtils';
+import { IDocumentManager } from '@jupyterlab/docmanager';
+import { IDeployPanelCustomLinks } from '../LeftPanelTypes';
+
+export type UploadPipelineResp = {
+  pipeline: { pipelineid: string; versionid: string; name: string };
+};
+
+export type RunPipeline = {
+  id: string;
+  name: string;
+  status: string | null;
+};
+
+export type DeployProgressState = {
+  showValidationProgress?: boolean;
+  notebookValidation?: boolean;
+  validationWarnings?: string[];
+  task?: Record<string, unknown>;
+  showCompileProgress?: boolean;
+  compiledPath?: string;
+  compiledContent?: string;
+  compileWarnings?: string[];
+  showUploadProgress?: boolean;
+  pipeline?: boolean | UploadPipelineResp;
+  uploadWarnings?: string[];
+  showRunProgress?: boolean;
+  runPipeline?: boolean | RunPipeline;
+  runWarnings?: string[];
+  docManager?: IDocumentManager;
+  namespace?: string;
+  message?: string;
+  kfpUiHost?: string;
+  deployPanelCustomLinks?: IDeployPanelCustomLinks;
+};
 
 // From kubeflow/pipelines repo
 enum PipelineStatus {
@@ -43,13 +75,6 @@ enum PipelineStatus {
   UNKNOWN = 'UNKNOWN',
 }
 
-const logLinksHint = (kfpUiHost: string) => {
-  console.info(
-    `default for upload and run links is ${kfpUiHost} ` +
-      'if your kpf ui is running somewhere else, set the KF_PIPELINES_UI_ENDPOINT environment variable.',
-  );
-};
-
 interface IDeployProgressProps extends DeployProgressState {
   onRemove?: () => void;
 }
@@ -61,6 +86,16 @@ export const DeployProgress: React.FunctionComponent<
     if (!pipeline.pipeline || !pipeline.pipeline.pipelineid) {
       return '#';
     }
+
+    // Use custom link if available
+    if (props.deployPanelCustomLinks?.upload) {
+      return props.deployPanelCustomLinks.upload
+        .replace('{pipeline_id}', pipeline.pipeline.pipelineid)
+        .replace('{version_id}', pipeline.pipeline.versionid || '')
+        .replace('{namespace}', props.namespace || '');
+    }
+
+    // Default KFP UI link pattern
     const base = props.kfpUiHost;
     const link = `${base}/#/pipelines/details/${pipeline.pipeline.pipelineid}/version/${pipeline.pipeline.versionid}`;
     return props.namespace
@@ -72,6 +107,15 @@ export const DeployProgress: React.FunctionComponent<
     if (!run.id) {
       return '#';
     }
+
+    // Use custom link if available
+    if (props.deployPanelCustomLinks?.run) {
+      return props.deployPanelCustomLinks.run
+        .replace('{run_id}', run.id)
+        .replace('{namespace}', props.namespace || '');
+    }
+
+    // Default KFP UI link pattern
     const base = props.kfpUiHost;
     const link = `${base}/#/runs/details/${run.id}`;
     return props.namespace
@@ -290,7 +334,6 @@ export const DeployProgress: React.FunctionComponent<
         </a>
       </React.Fragment>
     );
-    logLinksHint(props.kfpUiHost || '');
   } else if (props.runPipeline === false) {
     runTpl = (
       <React.Fragment>
