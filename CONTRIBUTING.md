@@ -8,7 +8,7 @@ to the project.
 - **Python 3.12+**
 - **uv** - Installed automatically by `make`, or manually: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - **Node.js 22+** and **jlpm** (for frontend development only - jlpm comes with JupyterLab)
-- **Kubernetes cluster** (optional, for KFP testing only) - [minikube](https://minikube.sigs.k8s.io/) or [kind](https://kind.sigs.k8s.io/)
+- **Kubernetes cluster** (optional, for KFP testing only) - [minikube](https://minikube.sigs.k8s.io/), [kind](https://kind.sigs.k8s.io/), or [k3d](https://k3d.io/) (lightest option, see [Local Dev Cluster (k3d)](#local-dev-cluster-k3d) below)
 
 ## Quick Start
 
@@ -45,6 +45,12 @@ Run `make help` to see all available commands.
 | `make kfp-serve` | Serve local wheel for KFP testing |
 | `make kfp-compile NB=...` | Compile notebook with local wheel |
 | `make kfp-run NB=... KFP_HOST=...` | Compile and run on KFP |
+| `make kfp-dev-setup` | Create local k3d cluster + install KFP standalone (first time only) |
+| `make kfp-dev-start` | Start existing k3d cluster and port-forward KFP UI to localhost:8080 |
+| `make kfp-dev-stop` | Stop port-forward and pause the k3d cluster (keeps data) |
+| `make kfp-dev-delete` | Delete the k3d cluster and free all resources |
+| `make kfp-dev-status` | Show k3d cluster and KFP pod status |
+| `make kfp-dev-upgrade` | Upgrade KFP on the existing k3d cluster |
 | `make jupyter` | Start JupyterLab |
 | `make jupyter-kfp` | Start JupyterLab with KFP dev env vars |
 | `make watch-labextension` | Watch labextension for changes |
@@ -117,6 +123,34 @@ jupyter lab
 
 When testing compiled pipelines on a KFP cluster (e.g., Kind or Docker Desktop),
 you need to serve your local wheel so the cluster can install it.
+
+### Local Dev Cluster (k3d)
+
+If you don't already have a KFP cluster to test against, the fastest way to get
+one locally is [k3d](https://k3d.io/) (k3s in Docker) — about half the resource
+footprint of minikube. Requires Docker and kubectl; k3d itself is installed
+automatically if missing.
+
+```bash
+# 1. First time only (~5 min): creates the cluster and installs KFP
+make kfp-dev-setup
+
+# 2. Start the cluster and port-forward
+make kfp-dev-start
+
+# 3. In the same terminal, start the dev environment and JupyterLab
+make dev
+make jupyter
+```
+
+The KFP UI and API are then available at `http://localhost:8080`, compatible
+with `make kfp-run` and the extension workflow described below.
+
+When you're done for the day, run `make kfp-dev-stop` to pause the cluster
+(pipeline data is preserved). Use `make kfp-dev-delete` to wipe it entirely,
+`make kfp-dev-status` to check on cluster/pod health, and
+`make kfp-dev-upgrade KFP_PIPELINE_VERSION=X.Y.Z` to bump the KFP version on
+an existing cluster.
 
 ### Docker Host Configuration
 
