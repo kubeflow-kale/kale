@@ -125,6 +125,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
         limits: activeEditorData.limits || {},
         baseImage: activeEditorData.baseImage,
         enableCaching: activeEditorData.enableCaching,
+        notebookPath: activeEditorData.notebookPath,
       }
     : {
         notebook: notebook,
@@ -133,6 +134,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
         limits: {},
         baseImage: undefined,
         enableCaching: undefined,
+        notebookPath: undefined,
       };
 
   const cellMetadataEditor = createPortal(
@@ -143,6 +145,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
       limits={editorProps.limits}
       baseImage={editorProps.baseImage}
       enableCaching={editorProps.enableCaching}
+      notebookPath={editorProps.notebookPath}
       resolvedDefaultBaseImage={resolvedDefaultBaseImage}
     />,
     document.body,

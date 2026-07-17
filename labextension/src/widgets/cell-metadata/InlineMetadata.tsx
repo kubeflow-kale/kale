@@ -68,6 +68,10 @@ export const InlineMetadata: React.FC<IProps> = ({
 
   const isMergedCell = !stepName;
   const isReserved = RESERVED_CELL_NAMES.includes(stepName);
+  const isNotebookRef = stepName.startsWith('notebook:');
+  const notebookRefName = isNotebookRef
+    ? stepName.replace('notebook:', '')
+    : '';
   const cellTypeClass = isReserved ? 'kale-reserved-cell' : '';
   const name = stepName || previousStepName;
   const color = name ? ColorUtils.getColor(name) : '';
@@ -153,17 +157,18 @@ export const InlineMetadata: React.FC<IProps> = ({
       </p>
     ) : null;
 
-  const details = isReserved ? null : (
-    <>
-      {dependencies.length > 0 ? (
-        <p style={{ fontStyle: 'italic', margin: '0 5px' }}>depends on: </p>
-      ) : null}
-      {dependencies}
-      {limitsText}
-      {baseImageText}
-      {cacheText}
-    </>
-  );
+  const details =
+    isReserved || isNotebookRef ? null : (
+      <>
+        {dependencies.length > 0 ? (
+          <p style={{ fontStyle: 'italic', margin: '0 5px' }}>depends on: </p>
+        ) : null}
+        {dependencies}
+        {limitsText}
+        {baseImageText}
+        {cacheText}
+      </>
+    );
 
   return (
     <div ref={wrapperRef} className={'kale-inline-cell-metadata-container'}>
@@ -175,7 +180,9 @@ export const InlineMetadata: React.FC<IProps> = ({
         {isReserved ? (
           ''
         ) : (
-          <p style={{ fontStyle: 'italic', marginRight: '5px' }}>step: </p>
+          <p style={{ fontStyle: 'italic', marginRight: '5px' }}>
+            {isNotebookRef ? 'notebook: ' : 'step: '}
+          </p>
         )}
 
         <Tooltip
@@ -184,14 +191,17 @@ export const InlineMetadata: React.FC<IProps> = ({
           title={
             isReserved
               ? RESERVED_CELL_NAMES_HELP_TEXT[stepName]
-              : 'This cell starts the pipeline step: ' + stepName
+              : isNotebookRef
+                ? 'This cell references another notebook as a sub-pipeline: ' +
+                  notebookRefName
+                : 'This cell starts the pipeline step: ' + stepName
           }
         >
           <Chip
             className={`kale-chip ${cellTypeClass}`}
             style={{ backgroundColor: `#${color}` }}
             key={stepName}
-            label={stepName}
+            label={isNotebookRef ? notebookRefName : stepName}
           />
         </Tooltip>
 

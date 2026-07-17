@@ -21,12 +21,16 @@ const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
 const CACHE_ENABLED_VALUE = 'enabled';
 
+const NOTEBOOK_PREFIX = 'notebook:';
+
 interface IKaleCellTags {
   stepName: string;
   prevStepNames: string[];
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  // set when the cell is a `notebook:` reference (stepName = 'notebook:<name>')
+  notebookPath?: string;
 }
 
 /** Contains utility functions for manipulating/handling Kale cell tags. */
@@ -46,7 +50,13 @@ export default class TagsUtils {
     for (const idx of Array(toCell).keys()) {
       // get the tags of the current cell
       const mt = this.getKaleCellTags(notebook, idx);
-      if (mt && mt.stepName && mt.stepName !== '') {
+      if (
+        mt &&
+        mt.stepName &&
+        mt.stepName !== '' &&
+        // notebook references are not steps: they cannot be `prev:` targets
+        !mt.stepName.startsWith(NOTEBOOK_PREFIX)
+      ) {
         steps.add(mt.stepName);
       }
     }
@@ -63,6 +73,11 @@ export default class TagsUtils {
   public static getPreviousStep(notebook: Notebook, current: number): string | undefined {
     for (let i = current - 1; i >= 0; i--) {
       const mt = this.getKaleCellTags(notebook, i);
+      // a `notebook:` reference breaks the merge chain: untagged cells after it
+      // belong to the NEXT step, never to a step above the reference
+      if (mt && mt.stepName.startsWith(NOTEBOOK_PREFIX)) {
+        return undefined;
+      }
       if (
         mt &&
         mt.stepName &&
@@ -89,6 +104,15 @@ export default class TagsUtils {
     if (tags) {
       const b_name = tags.map(v => {
         if (RESERVED_CELL_NAMES.includes(v)) {
+          return v;
+        }
+        // both reference forms normalize to 'notebook:<name>' (the
+        // `step:notebook:<name>` form is what this editor itself writes,
+        // since the backend accepts either)
+        if (v.startsWith('step:' + NOTEBOOK_PREFIX)) {
+          return v.replace('step:', '');
+        }
+        if (v.startsWith(NOTEBOOK_PREFIX)) {
           return v;
         }
         if (v.startsWith('step:')) {
@@ -129,12 +153,24 @@ export default class TagsUtils {
         enableCaching = cacheValue === CACHE_ENABLED_VALUE ? true : false;
       }
 
+      const stepName = b_name[0] || '';
+      let notebookPath: string | undefined;
+      if (stepName.startsWith(NOTEBOOK_PREFIX)) {
+        notebookPath =
+          (CellUtils.getCellMetaData(
+            notebook,
+            index,
+            'notebook_path',
+          ) as unknown as string) || undefined;
+      }
+
       return {
-        stepName: b_name[0] || '',
+        stepName: stepName,
         prevStepNames: prevs,
         limits: limits,
         baseImage: baseImage,
         enableCaching: enableCaching,
+        notebookPath: notebookPath,
       };
     }
     return null;
@@ -154,8 +190,11 @@ export default class TagsUtils {
   ): Promise<any> {
     // make the dict to save to tags
     let nb = metadata.stepName;
-    // not a reserved name
-    if (!RESERVED_CELL_NAMES.includes(metadata.stepName)) {
+    // not a reserved name or a notebook reference (written as-is)
+    if (
+      !RESERVED_CELL_NAMES.includes(metadata.stepName) &&
+      !metadata.stepName.startsWith(NOTEBOOK_PREFIX)
+    ) {
       nb = 'step:' + nb;
     }
     const stepDependencies = metadata.prevStepNames || [];
@@ -175,6 +214,20 @@ export default class TagsUtils {
     // Add cache tag if specified
     if (metadata.enableCaching !== undefined) {
       tags.push(CACHE_TAG + (metadata.enableCaching ? 'enabled' : 'disabled'));
+    }
+
+    // A notebook reference carries its target's path in the cell metadata
+    // (`notebook_path`), which the backend resolves relative to this notebook.
+    if (
+      metadata.stepName.startsWith(NOTEBOOK_PREFIX) &&
+      metadata.notebookPath !== undefined
+    ) {
+      CellUtils.setCellMetaData(
+        notebookPanel,
+        index,
+        'notebook_path',
+        metadata.notebookPath,
+      );
     }
 
     return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags);

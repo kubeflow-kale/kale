@@ -31,6 +31,7 @@ import { useUpdateCellTags } from './hooks/useCellTags';
 import { useEditorPosition } from './hooks/useEditorPosition';
 import {
   CELL_TYPES,
+  NOTEBOOK_PATH_ERROR_MSG,
   RESERVED_CELL_NAMES,
   STEP_NAME_ERROR_MSG,
 } from './constants';
@@ -48,6 +49,7 @@ export interface ICellEditorData {
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  notebookPath?: string;
 }
 
 export interface IProps extends ICellEditorData {
@@ -62,6 +64,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits = {},
     baseImage,
     enableCaching,
+    notebookPath,
     resolvedDefaultBaseImage,
   } = props;
 
@@ -77,6 +80,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits,
     baseImage,
     enableCaching,
+    notebookPath,
   });
 
   useEditorPosition(editorRef, notebook);
@@ -99,7 +103,12 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     [notebook, activeCellIndex, stepName],
   );
 
-  const cellType = RESERVED_CELL_NAMES.includes(stepName) ? stepName : 'step';
+  const isNotebookRef = stepName.startsWith('notebook:');
+  const cellType = isNotebookRef
+    ? 'notebook'
+    : RESERVED_CELL_NAMES.includes(stepName)
+      ? stepName
+      : 'step';
   const cellColor = stepName
     ? `#${ColorUtils.getColor(stepName)}`
     : 'transparent';
@@ -163,6 +172,18 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
               variant="outlined"
               style={{ width: '30%' }}
             />
+
+            {isNotebookRef && (
+              <Input
+                label={'Notebook path'}
+                updateValue={updateCellTags.updateNotebookPath}
+                value={notebookPath || ''}
+                regex={'^.*\\.ipynb$'}
+                regexErrorMsg={NOTEBOOK_PATH_ERROR_MSG}
+                variant="outlined"
+                style={{ width: '60%' }}
+              />
+            )}
 
             {isStep && (
               <>

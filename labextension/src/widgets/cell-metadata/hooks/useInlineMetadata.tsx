@@ -119,6 +119,7 @@ export function useInlineMetadata(
         limits: tags.limits || {},
         baseImage: tags.baseImage,
         enableCaching: tags.enableCaching,
+        notebookPath: tags.notebookPath,
       };
 
       const cellElement = nb.content.widgets[index].node as HTMLElement;

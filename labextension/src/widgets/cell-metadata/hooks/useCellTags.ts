@@ -25,6 +25,25 @@ interface IUseCellTagsParams {
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  notebookPath?: string;
+}
+
+/**
+ * Derive the reference name for a `notebook:<name>` tag from the referenced
+ * notebook's file name, sanitized the same way the backend derives module
+ * names (lowercase, separators to '_', must not start with a digit).
+ */
+export function notebookRefNameFromPath(path: string): string {
+  const base = path.split('/').pop() || '';
+  let name = base
+    .replace(/\.ipynb$/, '')
+    .toLowerCase()
+    .replace(/[-\s]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '');
+  if (name && !/^[_a-z]/.test(name)) {
+    name = 'nb_' + name;
+  }
+  return name;
 }
 
 /**
@@ -39,6 +58,7 @@ export function useUpdateCellTags({
   limits,
   baseImage,
   enableCaching,
+  notebookPath,
 }: IUseCellTagsParams) {
   const { activeCellIndex } = useContext(CellMetadataContext);
 
@@ -51,6 +71,7 @@ export function useUpdateCellTags({
         limits: limits || {},
         baseImage,
         enableCaching,
+        notebookPath,
         stepName: value,
       });
     },
@@ -62,6 +83,7 @@ export function useUpdateCellTags({
       limits,
       baseImage,
       enableCaching,
+      notebookPath,
     ],
   );
 
@@ -69,11 +91,28 @@ export function useUpdateCellTags({
     (value: string) => {
       if (RESERVED_CELL_NAMES.includes(value)) {
         updateStepName(value);
+      } else if (value === 'notebook') {
+        // an empty reference; the name is derived once the path is entered
+        updateStepName('notebook:');
       } else {
         TagsUtils.resetCell(notebook, activeCellIndex, stepName || '');
       }
     },
     [notebook, activeCellIndex, stepName, updateStepName],
+  );
+
+  const updateNotebookPath = useCallback(
+    (value: string) => {
+      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
+        stepName: 'notebook:' + notebookRefNameFromPath(value),
+        prevStepNames: [],
+        limits: {},
+        baseImage: undefined,
+        enableCaching: undefined,
+        notebookPath: value,
+      });
+    },
+    [notebook, activeCellIndex],
   );
 
   const updateDependencies = useCallback(
@@ -168,6 +207,7 @@ export function useUpdateCellTags({
   return {
     updateCellType,
     updateStepName,
+    updateNotebookPath,
     updateDependencies,
     updateLimits,
     updateBaseImage,

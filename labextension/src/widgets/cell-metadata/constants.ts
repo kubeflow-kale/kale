@@ -18,6 +18,7 @@ export const CELL_TYPES = [
   { value: 'pipeline-parameters', label: 'Pipeline Parameters' },
   { value: 'pipeline-metrics', label: 'Pipeline Metrics' },
   { value: 'step', label: 'Pipeline Step' },
+  { value: 'notebook', label: 'Notebook' },
   { value: 'skip', label: 'Skip Cell' },
 ];
 
@@ -65,3 +66,6 @@ export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
 
 export const STEP_NAME_ERROR_MSG =
   "Step name must consist of lower case alphanumeric characters or '_', and can not start with a digit.";
+
+export const NOTEBOOK_PATH_ERROR_MSG =
+  'Path to a .ipynb file, relative to this notebook.';
