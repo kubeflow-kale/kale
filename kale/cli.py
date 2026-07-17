@@ -58,8 +58,8 @@ def _compile_composition(args):
     )
 
     # A ValueError here is a problem in how the user tagged or wired the
-    # notebooks (missing path, mixed cells, name collision, cycle), so show the
-    # message alone instead of a traceback.
+    # notebooks (missing notebook path, code in a reference cell, orphaned code,
+    # name collision, cycle), so show the message alone instead of a traceback.
     try:
         notebook_refs = extract_notebook_references(args.nb)
         if not notebook_refs:
@@ -73,6 +73,7 @@ def _compile_composition(args):
             experiment_name=args.experiment_name,
             base_image=args.docker_image or "",
             pipeline_description=args.pipeline_description,
+            parent_path=args.nb,
         )
     except ValueError as err:
         raise SystemExit(f"Error: {err}") from err

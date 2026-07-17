@@ -336,31 +336,143 @@ def _write_composition_nb(path, extra_cells):
     nbf.write(nb, str(path))
 
 
-def test_mixed_code_cell_in_composition_raises(tmp_path):
-    """A composition notebook carrying real code (a mixed step:/notebook:
-    notebook) must raise instead of silently dropping the code."""
+def _write_mixed_nb(path, name, cells):
+    """A notebook mixing step:, notebook: and untagged cells.
+
+    ``cells`` items are ``(tags, source)`` or ``(tags, source, extra_metadata)``.
+    """
+    nb = nbf.v4.new_notebook()
+    nb.metadata["kubeflow_notebook"] = {
+        "pipeline_name": name,
+        "experiment_name": "test",
+        "volumes": [],
+    }
+    for spec in cells:
+        cell = nbf.v4.new_code_cell(source=spec[1])
+        cell.metadata["tags"] = spec[0]
+        if len(spec) > 2:
+            cell.metadata.update(spec[2])
+        nb.cells.append(cell)
+    nbf.write(nb, str(path))
+
+
+def test_story2_mixed_steps_and_notebook(tmp_path, monkeypatch):
+    """The KEP-0812 Story 2 example: the composition notebook's own steps
+    become top-level components wired around the sub-pipeline, with data
+    crossing the step/notebook boundary like any step/step boundary."""
+    trainer = tmp_path / "trainer.ipynb"
+    _write_nb(trainer, "trainer", [(["step:fit"], "model = sum(dataset)")])
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "mixed",
+        [
+            (["step:preprocess"], "dataset = [1, 2, 3]"),
+            (["notebook:trainer"], "", {"notebook_path": "./trainer.ipynb"}),
+            (["step:evaluate"], "result = model + 1\nprint(result)"),
+        ],
+    )
+
+    monkeypatch.chdir(tmp_path)
+    dsl_path, order = compose_notebooks_as_subpipelines(
+        [str(trainer)], pipeline_name="mixed", parent_path=str(main)
+    )
+
+    assert order == ["preprocess", "trainer", "evaluate"]
+    dsl = open(dsl_path).read()
+    # parent steps are components in the orchestrator itself
+    assert "def preprocess_step(" in dsl
+    assert "def evaluate_step(" in dsl
+    # step -> notebook: the sub-pipeline consumes the component's artifact
+    assert 'dataset_input_artifact=preprocess_task.outputs["dataset_output_artifact"]' in dsl
+    # notebook -> step: the component consumes the sub-pipeline's output
+    assert "model_input_artifact=trainer_task.output" in dsl
+    # top-level component tasks get the same runtime config as sub-DAG tasks
+    assert "security_context.set_security_context(task=preprocess_task" in dsl
+    # the referenced notebook still gets its own module
+    assert "def trainer_pipeline(" in _module(tmp_path, "trainer")
+
+
+def test_untagged_after_reference_attaches_to_next_step(tmp_path):
+    """KEP-0812 caveat #5: a notebook: cell breaks the merge chain, so a
+    following untagged cell belongs to the NEXT step, not the previous one."""
+    from kale.processors import NotebookProcessor
+
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "merge-rule",
+        [
+            (["step:first"], "x = 1"),
+            (["notebook:sub"], "", {"notebook_path": "./sub.ipynb"}),
+            ([], 'note = "held"'),
+            (["step:second"], "print(note)"),
+        ],
+    )
+
+    pipeline = NotebookProcessor(
+        str(main), {"pipeline_name": "merge-rule", "experiment_name": "t"}
+    ).run()
+    assert "note = " not in "\n".join(pipeline.get_step("first").source)
+    assert 'note = "held"' in "\n".join(pipeline.get_step("second").source)
+
+
+def test_orphan_code_after_reference_raises(tmp_path):
+    """Untagged code after a notebook: cell with no step to own it would be
+    silently dropped; the parser must refuse it."""
     import pytest
 
-    step = nbf.v4.new_code_cell(source="extra_result = 42")
-    step.metadata["tags"] = ["step:extra_work"]
-    main = tmp_path / "main.ipynb"
-    _write_composition_nb(main, [step])
+    from kale.processors import NotebookProcessor
 
-    with pytest.raises(ValueError, match="cannot mix"):
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "orphan",
+        [
+            (["step:first"], "x = 1"),
+            (["notebook:sub"], "", {"notebook_path": "./sub.ipynb"}),
+            ([], "y = 2"),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="must be followed by"):
+        NotebookProcessor(str(main), {"pipeline_name": "orphan", "experiment_name": "t"}).run()
+
+
+def test_reference_cell_with_code_raises(tmp_path):
+    """Code inside a notebook: reference cell never executes, so it is an
+    error, not a silent drop."""
+    import pytest
+
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(main, "m", [(["notebook:nb_a"], "x = 1", {"notebook_path": "./nb_a.ipynb"})])
+
+    with pytest.raises(ValueError, match="must be empty"):
         extract_notebook_references(str(main))
 
 
-def test_untagged_code_cell_in_composition_raises(tmp_path):
-    """Untagged code in a composition notebook would also be dropped, so it
-    raises too; the error names the offending cell as untagged."""
+def test_parent_step_name_collides_with_notebook_raises(tmp_path, monkeypatch):
+    """A parent step named like a referenced notebook would collide on task
+    variable names; reject it."""
     import pytest
 
-    scratch = nbf.v4.new_code_cell(source="print('scratch')")
+    trainer = tmp_path / "trainer.ipynb"
+    _write_nb(trainer, "trainer", [(["step:fit"], "model = sum(dataset)")])
     main = tmp_path / "main.ipynb"
-    _write_composition_nb(main, [scratch])
+    _write_mixed_nb(
+        main,
+        "clash",
+        [
+            (["step:trainer"], "dataset = [1]"),
+            (["notebook:trainer"], "", {"notebook_path": "./trainer.ipynb"}),
+        ],
+    )
 
-    with pytest.raises(ValueError, match="untagged"):
-        extract_notebook_references(str(main))
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="same name"):
+        compose_notebooks_as_subpipelines(
+            [str(trainer)], pipeline_name="clash", parent_path=str(main)
+        )
 
 
 def test_skip_tagged_code_cell_in_composition_is_allowed(tmp_path):
@@ -373,3 +485,110 @@ def test_skip_tagged_code_cell_in_composition_is_allowed(tmp_path):
 
     refs = extract_notebook_references(str(main))
     assert [name for name, _ in refs] == ["nb_a"]
+
+
+def test_mixed_units_run_in_notebook_order(tmp_path, monkeypatch):
+    """A mixed composition runs the way it reads: parent steps act as barriers,
+    ordering units by cell position even when no data flows between them."""
+    sub = tmp_path / "sub.ipynb"
+    _write_nb(sub, "sub", [(["step:work"], "result = 42\nprint(result)")])
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "order",
+        [
+            (["step:prepare"], "print('preparing')"),
+            (["notebook:sub"], "", {"notebook_path": "./sub.ipynb"}),
+            (["step:report"], "print('reporting done')"),
+        ],
+    )
+
+    monkeypatch.chdir(tmp_path)
+    dsl_path, order = compose_notebooks_as_subpipelines(
+        [str(sub)], pipeline_name="order", parent_path=str(main)
+    )
+
+    assert order == ["prepare", "sub", "report"]
+    dsl = open(dsl_path).read()
+    assert "sub_task.after(prepare_task)" in dsl
+    assert "report_task.after(sub_task)" in dsl
+
+
+def test_barriers_keep_unrelated_notebooks_parallel(tmp_path, monkeypatch):
+    """Reference-only pairs get no positional edge: independent notebooks
+    between barriers still run in parallel (Story 1 semantics preserved)."""
+    a = tmp_path / "notebook_a.ipynb"
+    b = tmp_path / "notebook_b.ipynb"
+    _write_nb(a, "notebook-a", [(["step:ga"], "alpha = 1")])
+    _write_nb(b, "notebook-b", [(["step:gb"], "beta = 2")])
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "par",
+        [
+            (["notebook:notebook_a"], "", {"notebook_path": "./notebook_a.ipynb"}),
+            (["notebook:notebook_b"], "", {"notebook_path": "./notebook_b.ipynb"}),
+            (["step:last"], "print('after both')"),
+        ],
+    )
+
+    monkeypatch.chdir(tmp_path)
+    dsl_path, _ = compose_notebooks_as_subpipelines(
+        [str(a), str(b)], pipeline_name="par", parent_path=str(main)
+    )
+
+    dsl = open(dsl_path).read()
+    # no positional edge between the two references
+    assert "notebook_b_task.after(notebook_a_task)" not in dsl
+    assert "notebook_a_task.after(notebook_b_task)" not in dsl
+    # but the trailing step waits for both
+    assert "last_task.after(notebook_a_task)" in dsl
+    assert "last_task.after(notebook_b_task)" in dsl
+
+
+def test_step_above_its_producer_raises_cycle(tmp_path, monkeypatch):
+    """A parent step placed above the reference whose output it consumes is a
+    contradiction between reading order and data flow, and must raise."""
+    import pytest
+
+    sub = tmp_path / "sub.ipynb"
+    _write_nb(sub, "sub", [(["step:work"], "result = 42")])
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "cyc",
+        [
+            (["step:use"], "y = result + 1"),
+            (["notebook:sub"], "", {"notebook_path": "./sub.ipynb"}),
+        ],
+    )
+
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="Cycle"):
+        compose_notebooks_as_subpipelines([str(sub)], pipeline_name="cyc", parent_path=str(main))
+
+
+def test_variables_pass_between_parent_steps(tmp_path, monkeypatch):
+    """Two parent steps share a variable across an intervening reference: the
+    value is wired step-to-step as a top-level artifact."""
+    sub = tmp_path / "sub.ipynb"
+    _write_nb(sub, "sub", [(["step:work"], "result = 42")])
+    main = tmp_path / "main.ipynb"
+    _write_mixed_nb(
+        main,
+        "sts",
+        [
+            (["step:one"], "x = 1"),
+            (["notebook:sub"], "", {"notebook_path": "./sub.ipynb"}),
+            (["step:two"], "print(x)"),
+        ],
+    )
+
+    monkeypatch.chdir(tmp_path)
+    dsl_path, order = compose_notebooks_as_subpipelines(
+        [str(sub)], pipeline_name="sts", parent_path=str(main)
+    )
+
+    assert order == ["one", "sub", "two"]
+    dsl = open(dsl_path).read()
+    assert 'x_input_artifact=one_task.outputs["x_output_artifact"]' in dsl

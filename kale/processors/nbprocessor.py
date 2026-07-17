@@ -293,6 +293,13 @@ class NotebookProcessor:
         # will be assigned at the end of each for loop
         prev_step_name = None
 
+        # A `notebook:` cell is a reference, not code, so it breaks the merge
+        # chain (KEP-0812 caveat #5): untagged cells that follow it are held
+        # here and attached to the NEXT explicit `step:` cell, never merged
+        # backwards into a previous step.
+        pending_sources = []
+        merge_forward = False
+
         # All the code cells that have to be pre-pended to every pipeline step
         # (i.e., imports and functions) are merged here
         imports_block = []
@@ -320,6 +327,19 @@ class NotebookProcessor:
             # get the step name from the tags
             step_name = tags["step_names"][0] if len(tags["step_names"]) > 0 else None
 
+            if tags["notebook_names"]:
+                # a `notebook:` reference: reset the merge target so following
+                # untagged cells cannot merge into a previous step
+                if pending_sources:
+                    raise ValueError(
+                        "Untagged code after a `notebook:` cell must be followed by"
+                        " a `step:` cell that owns it (found another `notebook:`"
+                        " cell first)."
+                    )
+                prev_step_name = None
+                merge_forward = True
+                continue
+
             if step_name == "skip":
                 # when the cell is skipped, don't store `skip` as the previous
                 # active cell
@@ -327,18 +347,22 @@ class NotebookProcessor:
             if step_name == "pipeline-parameters":
                 pipeline_parameters.append(c.source)
                 prev_step_name = step_name
+                merge_forward = False
                 continue
             if step_name == "imports":
                 imports_block.append(c.source)
                 prev_step_name = step_name
+                merge_forward = False
                 continue
             if step_name == "functions":
                 functions_block.append(c.source)
                 prev_step_name = step_name
+                merge_forward = False
                 continue
             if step_name == "pipeline-metrics":
                 pipeline_metrics.append(c.source)
                 prev_step_name = step_name
+                merge_forward = False
                 continue
 
             # if none of the above apply, then we are parsing a code cell with
@@ -347,7 +371,10 @@ class NotebookProcessor:
             # if the cell was not tagged with a step name,
             # add the code to the previous cell
             if not step_name:
-                if prev_step_name == "imports":
+                if merge_forward:
+                    # held until the next `step:` cell (see KEP-0812 caveat #5)
+                    pending_sources.append(c.source)
+                elif prev_step_name == "imports":
                     imports_block.append(c.source)
                 elif prev_step_name == "functions":
                     functions_block.append(c.source)
@@ -373,10 +400,11 @@ class NotebookProcessor:
                         " and not of single steps."
                     )
                 # add node to DAG, adding tags and source code of notebook cell
+                # (prepending any cells held since the last `notebook:` cell)
                 if step_name not in self.pipeline.nodes:
                     step = Step(
                         name=step_name,
-                        source=[c.source],
+                        source=pending_sources + [c.source],
                         ins=[],
                         outs=[],
                         limits=tags.get("limits", {}),
@@ -396,9 +424,19 @@ class NotebookProcessor:
                             )
                         self.pipeline.add_edge(_prev_step, step_name)
                 else:
+                    for pending in pending_sources:
+                        self.pipeline.get_step(step_name).merge_code(pending)
                     self.pipeline.get_step(step_name).merge_code(c.source)
 
+                pending_sources = []
+                merge_forward = False
                 prev_step_name = step_name
+
+        if pending_sources:
+            raise ValueError(
+                "Untagged code after a `notebook:` cell must be followed by a"
+                " `step:` cell that owns it (reached the end of the notebook)."
+            )
 
         # Prepend any `imports` and `functions` cells to every Pipeline step
         for step in self.pipeline.steps:

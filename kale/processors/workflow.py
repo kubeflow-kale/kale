@@ -80,7 +80,11 @@ def _topo_sort(nodes, edges):
             if indeg[child] == 0:
                 queue.append(child)
     if len(order) != len(nodes):
-        raise ValueError("Cycle detected in the notebook dependency graph.")
+        raise ValueError(
+            "Cycle detected in the composition graph. If the composition notebook "
+            "mixes step: and notebook: cells, each cell must appear below the "
+            "cells that produce the variables it uses."
+        )
     return order
 
 
@@ -140,11 +144,10 @@ def extract_notebook_references(parent_path):
     single-notebook path. Both tag forms are accepted (``notebook:<name>`` and
     the UI-written ``step:notebook:<name>``, see ``NOTEBOOK_TAG``).
 
-    A composition notebook cannot also carry executable code: mixed
-    ``step:``/``notebook:`` compositions are not supported yet, and dropping the
-    code silently would compile a pipeline that is missing user code. Any
-    non-empty code cell that is not a ``notebook:`` reference (and not tagged
-    ``skip``) raises.
+    The composition notebook may also carry its own ``step:``/``imports``/
+    ``functions`` cells (KEP-0812 Story 2); those are handled by the normal
+    NotebookProcessor pass over the parent. A reference cell itself must stay
+    empty: its code would never execute, so it raises instead of being dropped.
     """
     import re
 
@@ -154,13 +157,14 @@ def extract_notebook_references(parent_path):
 
     parent_dir = os.path.dirname(os.path.abspath(parent_path))
     refs = []
-    stray_cells = []
     for cell in nbformat.read(parent_path, 4).cells:
         if cell.get("cell_type") != "code":
             continue
         tags = cell.get("metadata", {}).get("tags", [])
+        is_ref = False
         for tag in tags:
             if re.match(NOTEBOOK_TAG, tag):
+                is_ref = True
                 name = tag.split("notebook:", 1)[1]
                 if not name:
                     raise ValueError(
@@ -172,17 +176,45 @@ def extract_notebook_references(parent_path):
                         f"`notebook:{name}` cell is missing a 'notebook_path' in its cell metadata."
                     )
                 refs.append((name, os.path.normpath(os.path.join(parent_dir, rel))))
-        if "skip" in tags:
-            continue
-        if "".join(cell.get("source") or "").strip():
-            stray_cells.append(f"`{tags[0]}`" if tags else "untagged")
-    if refs and stray_cells:
-        raise ValueError(
-            "A composition notebook cannot mix code cells with `notebook:` references "
-            f"yet (found code in {len(stray_cells)} cell(s): {', '.join(stray_cells)}). "
-            "Move the code into a referenced notebook, or tag the cell with `skip`."
-        )
+        if is_ref and "".join(cell.get("source") or "").strip():
+            raise ValueError(
+                f"A `notebook:` reference cell must be empty (found code in the "
+                f"`{tags[0]}` cell). Move the code to its own `step:` cell or "
+                f"into the referenced notebook."
+            )
     return refs
+
+
+def _composition_spine(parent_path):
+    """The composition notebook's units in cell order: ``(kind, name)`` pairs.
+
+    ``kind`` is ``"step"`` for the notebook's own ``step:`` cells and
+    ``"notebook"`` for its references. Cell position is what makes a mixed
+    composition run the way it reads (see the reading-order barriers below).
+    """
+    import re
+
+    import nbformat
+
+    from kale.processors.nbprocessor import NOTEBOOK_TAG, STEP_TAG
+
+    spine = []
+    for cell in nbformat.read(parent_path, 4).cells:
+        if cell.get("cell_type") != "code":
+            continue
+        for tag in cell.get("metadata", {}).get("tags", []):
+            if re.match(NOTEBOOK_TAG, tag):
+                rel = cell.get("metadata", {}).get("notebook_path")
+                if rel:
+                    spine.append(("notebook", _notebook_name(rel)))
+                break
+            if re.match(STEP_TAG, tag):
+                name = tag.split(":", 1)[1]
+                # a repeated step: tag merges into the first occurrence
+                if name and ("step", name) not in spine:
+                    spine.append(("step", name))
+                break
+    return spine
 
 
 def compose_notebooks_as_subpipelines(
@@ -191,6 +223,7 @@ def compose_notebooks_as_subpipelines(
     experiment_name="Kale-Workflow-Experiment",
     base_image="",
     pipeline_description=None,
+    parent_path=None,
 ):
     """Compose notebooks into one pipeline, each notebook a KFP sub-pipeline.
 
@@ -198,9 +231,17 @@ def compose_notebooks_as_subpipelines(
     internal steps form a nested sub-DAG, then wires the sub-pipelines together
     by matching the data each notebook produces and consumes.
 
+    When ``parent_path`` is given and that notebook carries its own ``step:``
+    cells around the ``notebook:`` references (KEP-0812 Story 2), each such
+    step becomes a top-level component, participating in the same name-based
+    inference as the referenced notebooks: variables cross the step/notebook
+    boundary the same way they cross step/step boundaries.
+
     Writes one DSL module per notebook (``.kale/<name>.py``) plus the
-    orchestrating DSL script that imports them. Returns ``(dsl_script_path,
-    order)`` where ``dsl_script_path`` is the orchestrator.
+    orchestrating DSL script that imports them (and holds the composition
+    notebook's own components, if any). Returns ``(dsl_script_path, order)``
+    where ``dsl_script_path`` is the orchestrator and ``order`` interleaves
+    notebook and step units in inferred topological order.
     """
     import autopep8
 
@@ -246,27 +287,73 @@ def compose_notebooks_as_subpipelines(
             "display": name.replace("_", "-"),
         }
 
-    # var -> every notebook that defines it, so an ambiguous producer is caught
-    # instead of being resolved silently to whichever notebook came first.
+    # Story 2 (KEP-0812): the composition notebook may carry its own `step:`
+    # cells around the `notebook:` references. Each such step is a unit of its
+    # own in the inference below (one unit for the whole parent would deadlock:
+    # a step can run before one referenced notebook and after another).
+    parent_steps = {}
+    parent_compiler = None
+    parent_edges = []
+    if parent_path:
+        parent_proc = NotebookProcessor(parent_path, {**overrides, "pipeline_name": pipeline_name})
+        parent_pipeline = parent_proc.run()
+        for step in parent_pipeline.steps:
+            if step.name in notebooks:
+                raise ValueError(
+                    f"Step '{step.name}' in the composition notebook has the same "
+                    f"name as a referenced notebook. Rename one of them."
+                )
+            code = "\n".join(step.source)
+            parent_steps[step.name] = {
+                "step": step,
+                "defined": _defined_names(code),
+                "needed": set(flakeutils.pyflakes_report(code)),
+            }
+        # explicit `prev:` edges between parent steps order them even when no
+        # data flows between them
+        parent_edges = list(parent_pipeline.edges)
+        if parent_steps:
+            parent_compiler = Compiler(parent_pipeline, parent_proc.get_imports_and_functions())
+
+    # var -> every unit (notebook or parent step) that defines it, so an
+    # ambiguous producer is caught instead of resolved silently to whichever
+    # unit came first.
+    units = {**notebooks, **parent_steps}
+
+    # Reading-order barriers: a parent step waits for every unit above it in
+    # the composition notebook and blocks every unit below it, so a mixed
+    # composition runs the way it reads. Reference-only pairs get no edge,
+    # which keeps Story 1's parallelism between independent notebooks intact.
+    barrier_edges = []
+    if parent_steps:
+        spine = [(kind, name) for kind, name in _composition_spine(parent_path) if name in units]
+        for i, (kind_i, name_i) in enumerate(spine):
+            for kind_j, name_j in spine[i + 1 :]:
+                if "step" in (kind_i, kind_j):
+                    barrier_edges.append((name_i, name_j))
+    barrier_preds = {}
+    for src, dst in barrier_edges:
+        barrier_preds.setdefault(dst, set()).add(src)
+
     producers = {}
-    for name, nb in notebooks.items():
-        for var in nb["defined"]:
+    for name, unit in units.items():
+        for var in unit["defined"]:
             producers.setdefault(var, []).append(name)
 
     producer = {}
-    boundary_needs = {name: [] for name in notebooks}
-    boundary_provides = {name: [] for name in notebooks}
-    edges = []
-    for name, nb in notebooks.items():
-        for var in sorted(nb["needed"]):
+    boundary_needs = {name: [] for name in units}
+    boundary_provides = {name: [] for name in units}
+    edges = list(parent_edges) + barrier_edges
+    for name, unit in units.items():
+        for var in sorted(unit["needed"]):
             sources = [s for s in producers.get(var, []) if s != name]
             if not sources:
                 continue
             if len(sources) > 1:
                 raise ValueError(
-                    f"Notebook '{name}' consumes '{var}', but it is defined in "
-                    f"multiple notebooks ({', '.join(sorted(sources))}). Rename it "
-                    f"so a single notebook produces the value."
+                    f"'{name}' consumes '{var}', but it is defined in multiple "
+                    f"notebooks/steps ({', '.join(sorted(sources))}). Rename it "
+                    f"so a single unit produces the value."
                 )
             src = sources[0]
             producer[var] = src
@@ -275,7 +362,7 @@ def compose_notebooks_as_subpipelines(
                 boundary_provides[src].append(var)
             edges.append((src, name))
 
-    order = _topo_sort(list(notebooks), edges)
+    order = _topo_sort(list(units), edges)
 
     # Mark each boundary variable on its producing/consuming step so Kale's
     # component generator exposes it as an input/output artifact.
@@ -291,9 +378,18 @@ def compose_notebooks_as_subpipelines(
             for step in _using_steps(steps, var) or [steps[0]]:
                 if var not in step.ins:
                     step.ins.append(var)
+    for name, ps in parent_steps.items():
+        for var in boundary_provides[name]:
+            if var not in ps["step"].outs:
+                ps["step"].outs.append(var)
+        for var in boundary_needs[name]:
+            if var not in ps["step"].ins:
+                ps["step"].ins.append(var)
 
     subpipelines = []
     for name in order:
+        if name in parent_steps:
+            continue
         nb = notebooks[name]
         steps = list(nb["pipeline"].steps)
         compiler = Compiler(nb["pipeline"], nb["imports_and_functions"])
@@ -347,21 +443,61 @@ def compose_notebooks_as_subpipelines(
             }
         )
 
+    def _toplevel_ref(var):
+        """(producing unit, task-output reference) for a boundary variable."""
+        # The producer map covers AST-visible assignments; the outs fallback
+        # covers flows Kale's own dependency detection wired between parent
+        # steps (e.g. function objects, which are not assignments).
+        src = producer.get(var) or next(
+            (n for n, ps in parent_steps.items() if var in ps["step"].outs), None
+        )
+        if src is None:
+            raise ValueError(f"Cannot resolve the producer of '{var}' at the top level.")
+        if src in parent_steps:
+            # a component task exposes each output artifact by parameter name
+            return src, f'{src}_task.outputs["{var}_output_artifact"]'
+        # One sub-pipeline output is reachable as `.output`; several become a
+        # NamedTuple addressed by field name.
+        if len(boundary_provides[src]) > 1:
+            return src, f'{src}_task.outputs["{var}"]'
+        return src, f"{src}_task.output"
+
+    parent_components = []
     toplevel_calls = []
     for name in order:
         inputs, after = [], []
+        if name in parent_steps:
+            step = parent_steps[name]["step"]
+            # Capture the wiring first: generate_lightweight_component mutates
+            # step.source. step.ins covers both cross-unit boundaries (injected
+            # above) and flows wired by the parent's own `prev:` dependencies.
+            for var in sorted(step.ins):
+                src, ref = _toplevel_ref(var)
+                inputs.append({"arg": f"{var}_input_artifact", "ref": ref})
+                after.append(f"{src}_task")
+            after.extend(f"{p}_task" for p in barrier_preds.get(name, ()))
+            toplevel_calls.append(
+                {
+                    "kind": "step",
+                    "task_var": f"{name}_task",
+                    "fn": f"{name}_step",
+                    "inputs": inputs,
+                    "after": sorted(set(after)),
+                    "display": name,
+                }
+            )
+            parent_components.append(
+                autopep8.fix_code(parent_compiler.generate_lightweight_component(step))
+            )
+            continue
         for var in sorted(boundary_needs[name]):
-            src = producer[var]
-            # One boundary output is reachable as `.output`; several become a
-            # NamedTuple addressed by field name.
-            if len(boundary_provides[src]) > 1:
-                ref = f'{src}_task.outputs["{var}"]'
-            else:
-                ref = f"{src}_task.output"
+            src, ref = _toplevel_ref(var)
             inputs.append({"arg": f"{var}_input_artifact", "ref": ref})
             after.append(f"{src}_task")
+        after.extend(f"{p}_task" for p in barrier_preds.get(name, ()))
         toplevel_calls.append(
             {
+                "kind": "pipeline",
                 "task_var": f"{name}_task",
                 "fn": f"{name}_pipeline",
                 "inputs": inputs,
@@ -370,7 +506,7 @@ def compose_notebooks_as_subpipelines(
             }
         )
 
-    env = Compiler(notebooks[order[0]]["pipeline"], "")._get_templating_env()
+    env = Compiler(next(iter(notebooks.values()))["pipeline"], "")._get_templating_env()
     out_dir = os.path.join(os.getcwd(), ".kale")
     os.makedirs(out_dir, exist_ok=True)
 
@@ -387,7 +523,8 @@ def compose_notebooks_as_subpipelines(
     # bootstrap that makes them resolvable. The orchestrator is fully
     # template-controlled (no embedded user code), so it needs no reformatting.
     dsl = env.get_template("workflow_template.jinja2").render(
-        modules=order,
+        modules=[name for name in order if name in notebooks],
+        components=parent_components,
         toplevel_calls=toplevel_calls,
         pipeline_name=pipeline_name,
         pipeline_description=(

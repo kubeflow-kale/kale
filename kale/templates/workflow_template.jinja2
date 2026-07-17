@@ -2,7 +2,11 @@ import os
 import sys
 
 import kfp.dsl as kfp_dsl
-
+{% if components %}import json
+from typing import NamedTuple
+from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
+from kfp.kubernetes import security_context
+{% endif %}
 # The sub-notebook DSL modules are generated next to this file; make them
 # importable regardless of where this script is executed from. kfp is imported
 # above, before the path mutation, so no generated module can shadow it.
@@ -11,14 +15,20 @@ if _here not in sys.path:
     sys.path.insert(0, _here)
 
 {% for m in modules %}from {{ m }} import {{ m }}_pipeline
-{% endfor %}
+{% endfor %}{% if components %}
+{{ components | join('\n\n') }}
+{% endif %}
 
 @kfp_dsl.pipeline(name='{{ pipeline_name }}', description='{{ pipeline_description }}')
 def auto_generated_pipeline():
-    """Composed pipeline: each notebook is its own sub-pipeline (sub-DAG)."""
+    """Composed pipeline: each referenced notebook is its own sub-pipeline
+    (sub-DAG); the composition notebook's own steps are top-level components."""
 {% for c in toplevel_calls %}
     {{ c.task_var }} = {{ c.fn }}({% for inp in c.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
-    {{ c.task_var }}.set_display_name("{{ c.display }}")
+{% if c.kind == 'step' %}    security_context.set_security_context(task={{ c.task_var }}, run_as_user=65534, run_as_group=0, run_as_non_root=True)
+    {{ c.task_var }}.set_env_variable(name="HOME", value="/tmp")
+    {{ c.task_var }}.set_caching_options(enable_caching=False)
+{% endif %}    {{ c.task_var }}.set_display_name("{{ c.display }}")
 {% for a in c.after %}    {{ c.task_var }}.after({{ a }})
 {% endfor %}
 {% endfor %}
