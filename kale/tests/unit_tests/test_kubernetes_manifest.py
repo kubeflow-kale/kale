@@ -95,7 +95,8 @@ def test_manifest_options_are_applied(dsl_script):
     )
     result = kfputils.compile_pipeline_to_manifests(dsl_script, "weekly-churn", options)
 
-    docs = list(yaml.safe_load_all(open(result)))
+    with open(result) as f:
+        docs = list(yaml.safe_load_all(f))
     kinds = {d["kind"] for d in docs}
     assert "Pipeline" in kinds
     assert "PipelineVersion" in kinds
@@ -116,7 +117,15 @@ def test_include_pipeline_manifest_false_omits_pipeline_cr(dsl_script):
     )
     result = kfputils.compile_pipeline_to_manifests(dsl_script, "weekly-churn", options)
 
-    docs = list(yaml.safe_load_all(open(result)))
+    with open(result) as f:
+        docs = list(yaml.safe_load_all(f))
     kinds = {d["kind"] for d in docs}
     assert "Pipeline" not in kinds
     assert "PipelineVersion" in kinds
+
+
+def test_mismatched_pipeline_name_raises(dsl_script):
+    """A pipeline_name that disagrees with manifest_options is rejected."""
+    options = KubernetesManifestOptions(pipeline_name="from-options")
+    with pytest.raises(ValueError, match="does not match"):
+        kfputils.compile_pipeline_to_manifests(dsl_script, "from-arg", options)

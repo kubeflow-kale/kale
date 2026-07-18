@@ -14,6 +14,7 @@
 
 import argparse
 from argparse import RawTextHelpFormatter
+import contextlib
 import os
 import sys
 import tempfile
@@ -240,7 +241,9 @@ def main():
                 with open(tmp_manifest_path) as manifest_file:
                     print(manifest_file.read(), end="")
             finally:
-                os.remove(tmp_manifest_path)
+                # Never let cleanup mask a compilation/read error above.
+                with contextlib.suppress(FileNotFoundError):
+                    os.remove(tmp_manifest_path)
             return
 
         manifest_path = kfputils.compile_pipeline_to_manifests(

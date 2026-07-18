@@ -94,16 +94,19 @@ def get_pipeline_version_id(version_name: str, pipeline_id: str, host: str = Non
 
 def _import_dsl_module(pipeline_source: str):
     """Import the generated KFP DSL python script as a module."""
-    # create a tmp folder
-    tmp_dir = tempfile.mkdtemp()
-    # copy generated script to temp dir
-    copyfile(pipeline_source, tmp_dir + "/" + "pipeline_code.py")
+    # copy the generated script into a temp dir that is cleaned up once the
+    # module has been executed (exec_module fully runs the file, so the source
+    # is no longer needed afterwards).
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        path = os.path.join(tmp_dir, "pipeline_code.py")
+        copyfile(pipeline_source, path)
 
-    path = tmp_dir + "/" + "pipeline_code.py"
-    spec = importlib.util.spec_from_file_location(tmp_dir.split("/")[-1], path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+        spec = importlib.util.spec_from_file_location(os.path.basename(tmp_dir), path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not load the generated DSL module from '{pipeline_source}'.")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
 
 def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
@@ -136,6 +139,16 @@ def compile_pipeline_to_manifests(
     Returns:
         Path to the generated manifest YAML file.
     """
+    if (
+        manifest_options.pipeline_name is not None
+        and manifest_options.pipeline_name != pipeline_name
+    ):
+        raise ValueError(
+            f"pipeline_name '{pipeline_name}' does not match "
+            f"manifest_options.pipeline_name '{manifest_options.pipeline_name}'. "
+            "They must be identical so the manifest contents and the output "
+            "filename stay consistent."
+        )
     foo = _import_dsl_module(pipeline_source)
     if output_path is None:
         output_path = os.path.join(
