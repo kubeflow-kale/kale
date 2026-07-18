@@ -158,6 +158,31 @@ def test_compute_pip_index_urls_prod_url_override_with_explicit_indexes(monkeypa
     ]
 
 
+def test_compute_pip_index_urls_prod_url_deduped_when_in_override(monkeypatch):
+    """KALE_PYPI_PROD_URL is not duplicated if already present in the override."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("KALE_PYPI_PROD_URL", "https://pypi.internal.example.com/simple")
+    monkeypatch.setenv(
+        "KALE_PIP_INDEX_URLS",
+        "https://mirror.one/simple, https://pypi.internal.example.com/simple, "
+        "https://mirror.two/simple",
+    )
+
+    assert utils.compute_pip_index_urls() == [
+        "https://mirror.one/simple",
+        "https://mirror.two/simple",
+        "https://pypi.internal.example.com/simple",
+    ]
+
+
+def test_compute_pip_index_urls_prod_url_whitespace_falls_back_to_default(monkeypatch):
+    """A whitespace-only KALE_PYPI_PROD_URL is treated as unset."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("KALE_PYPI_PROD_URL", "   ")
+
+    assert utils.compute_pip_index_urls() == ["https://pypi.org/simple"]
+
+
 def _clear_security_context_env(monkeypatch):
     """Ensure security context env vars are unset for predictable tests."""
     for key in (
