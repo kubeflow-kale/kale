@@ -57,10 +57,10 @@ class KFPServerConfig(Config):
     - file_path: Path to file containing the credential
     - token_path: Path to K8s service account token (for SA auth)
 
-    The ``namespace`` field defaults to ``None`` here so that ``load_config``
-    can tell "the user did not set a namespace" apart from "the user explicitly
-    chose the canonical default". When it is left unset, ``load_config`` fills
-    it in via :func:`get_default_namespace` (which honours ``KALE_KFP_NAMESPACE``).
+    The ``namespace`` field defaults to ``None`` so that a value coming from the
+    JSON config file is left untouched, while an unset namespace is resolved in
+    ``_postprocess`` via :func:`get_default_namespace` (which honours
+    ``KALE_KFP_NAMESPACE`` before falling back to the canonical default).
     """
 
     host = Field(type=str, default=None)
@@ -68,6 +68,17 @@ class KFPServerConfig(Config):
     auth_config = Field(type=dict, default=None)
     namespace = Field(type=str, default=None)
     ssl_ca_cert = Field(type=str, default=None)
+
+    def _postprocess(self):
+        """Resolve the default namespace when the user did not set one.
+
+        Runs after validation on every construction, so callers (``load_config``,
+        ``get_kfp_client``, direct instantiation) all get a concrete namespace
+        without repeating the fallback logic. A namespace from the config file or
+        an explicit argument is already set and left untouched.
+        """
+        if self.namespace is None:
+            self.namespace = get_default_namespace()
 
 
 def get_config_path() -> str:
@@ -84,18 +95,6 @@ def get_config_path() -> str:
     return os.path.join(kale_dir, "kfp_server_config.json")
 
 
-def _apply_default_namespace(config: KFPServerConfig) -> KFPServerConfig:
-    """Fill in the default namespace if the config didn't specify one.
-
-    A namespace coming from the JSON config file is left untouched (config file
-    wins over the env var / in-code default). Only when it is unset do we fall
-    back to :func:`get_default_namespace`, which honours ``KALE_KFP_NAMESPACE``.
-    """
-    if config.namespace is None:
-        config.namespace = get_default_namespace()
-    return config
-
-
 def load_config() -> KFPServerConfig:
     """Load KFP server configuration from disk.
 
@@ -108,16 +107,16 @@ def load_config() -> KFPServerConfig:
     config_path = get_config_path()
     if not os.path.exists(config_path):
         log.debug("No KFP server config found at %s, using defaults", config_path)
-        return _apply_default_namespace(KFPServerConfig())
+        return KFPServerConfig()
 
     try:
         with open(config_path) as f:
             config_dict = json.load(f)
         log.info("Loaded KFP server config from %s", config_path)
-        return _apply_default_namespace(KFPServerConfig(**config_dict))
+        return KFPServerConfig(**config_dict)
     except (json.JSONDecodeError, OSError, RuntimeError) as e:
         log.warning("Failed to load KFP server config from %s: %s. Using defaults.", config_path, e)
-        return _apply_default_namespace(KFPServerConfig())
+        return KFPServerConfig()
 
 
 def _validate_auth_config(auth_type: str, auth_config: dict | None) -> None:
