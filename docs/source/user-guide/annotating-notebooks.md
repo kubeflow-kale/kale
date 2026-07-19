@@ -136,8 +136,8 @@ b = a + 1      # an assignment
 The variable must be defined in the step (or an ancestor), must not be a
 pipeline parameter, and is not duplicated if the step already outputs it.
 See the [RAG example notebook](https://github.com/kubeflow/kale/tree/main/examples/rag)
-for this in action: its final step ends with a bare `md5_hash`, which shows
-up as a downloadable artifact in the KFP UI.
+for this in action: its `create_vector_database` step ends with a bare
+`chroma_db`, which shows up as a downloadable artifact in the KFP UI.
 
 ## Organising a notebook for Kale
 
