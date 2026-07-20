@@ -34,6 +34,7 @@ export const KALE_TAG_PREFIXES = [
   'limit:',
   'image:',
   'cache:',
+  'report:',
   'skip',
   'imports',
   'functions',
