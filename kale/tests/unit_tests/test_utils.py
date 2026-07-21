@@ -128,6 +128,21 @@ def test_compute_pip_index_urls_override_beats_dev_mode(monkeypatch):
     ]
 
 
+def test_compute_pip_index_urls_override_includes_pypi(monkeypatch):
+    """PyPI is not duplicated when the user's override already contains it."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv(
+        "KALE_PIP_INDEX_URLS",
+        "https://pypi.org/simple, https://mirror.one/simple",
+    )
+
+    # PyPI keeps the user-specified position and appears exactly once.
+    assert utils.compute_pip_index_urls() == [
+        "https://pypi.org/simple",
+        "https://mirror.one/simple",
+    ]
+
+
 def _clear_security_context_env(monkeypatch):
     """Ensure security context env vars are unset for predictable tests."""
     for key in (

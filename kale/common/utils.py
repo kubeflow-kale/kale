@@ -250,11 +250,9 @@ def compute_pip_index_urls() -> list[str]:
                 )
             )
 
-    # important to keep the prod url at the end to preserve package
-    # resolution order.
-    urls.append(pypi_prod_url)
-
-    # remove duplicates while keeping order
+    # Keep the prod url at the end to preserve package resolution order, but
+    # only add it when the user hasn't already included it, so it is not
+    # duplicated in the resulting list.
     if pypi_prod_url not in urls:
         urls.append(pypi_prod_url)
     return urls
