@@ -206,13 +206,16 @@ def compute_pip_index_urls() -> list[str]:
     developement with an unpublished version of Kale.
 
     Precedence:
-        1. If `KALE_PIP_INDEX_URLS` is set, split its comma-separated value and
-        return that list (order preserved).
+        1. If `KALE_PIP_INDEX_URLS` is set, split its comma-separated value
+        (order preserved) and use it as the base list.
         2. Else, if `KALE_DEV_MODE` is truthy (`1`, `true`, `yes`, or `on`),
-        return a list with the devpi simple URL (`KALE_DEVPI_SIMPLE_URL`) or
-        its default value.
-        3. Otherwise, return the production default:
-        ["https://pypi.org/simple"].
+        use a base list containing the devpi simple URL
+        (`KALE_DEVPI_SIMPLE_URL`) or its default value.
+        3. Otherwise, the base list is empty.
+
+        In every case, the production index (`KALE_PYPI_PROD_URL`, defaulting
+        to "https://pypi.org/simple") is appended last, de-duplicated if it's
+        already present in the base list.
 
     Environment variables:
         KALE_PIP_INDEX_URLS:
@@ -222,12 +225,16 @@ def compute_pip_index_urls() -> list[str]:
             Boolean-like flag enabling dev mode (interprets 1/true/yes/on).
         KALE_DEVPI_SIMPLE_URL:
             Devpi “simple” index URL used when dev mode is enabled.
+        KALE_PYPI_PROD_URL:
+            Production pip simple index URL. Defaults to
+            "https://pypi.org/simple". Useful for air-gapped or
+            mirror-only deployments that can't reach public PyPI.
 
     Returns:
         list[str]: Index URLs suitable for the `pip_index_urls` parameter in
         `@kfp_dsl.component`.
     """
-    pypi_prod_url = "https://pypi.org/simple"
+    pypi_prod_url = os.getenv("KALE_PYPI_PROD_URL", "").strip() or "https://pypi.org/simple"
     urls: list[str]
 
     # explicit override wins
@@ -250,13 +257,10 @@ def compute_pip_index_urls() -> list[str]:
                 )
             )
 
-    # important to keep the prod url at the end to preserve package
-    # resolution order.
+    # keep the production url last (for package resolution order) and
+    # de-duplicated, even if it's already present in the base list.
+    urls = [u for u in urls if u != pypi_prod_url]
     urls.append(pypi_prod_url)
-
-    # remove duplicates while keeping order
-    if pypi_prod_url not in urls:
-        urls.append(pypi_prod_url)
     return urls
 
 
