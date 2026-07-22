@@ -15,6 +15,7 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
+import { KALE_TAG_PREFIXES } from '../widgets/cell-metadata/constants';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
@@ -247,6 +248,39 @@ export default class TagsUtils {
       cellMetadata
     ).then(oldValue => {
       TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
+    });
+  }
+  public static removeAllKaleTags(
+    notebook: NotebookPanel,
+    activeCellIndex: number,
+  ) {
+    const currentTags: string[] =
+      CellUtils.getCellMetaData(
+        notebook.content,
+        activeCellIndex,
+        'tags',
+      ) || [];
+
+    // Extract the step name from 'step:<name>' tag before wiping
+    const stepTag = currentTags.find(tag => tag.startsWith('step:'));
+    const clearedStepName = stepTag ? stepTag.replace('step:', '') : null;
+
+    // Clear all Kale tags from the active cell
+    const filteredTags = currentTags.filter(
+      tag => !KALE_TAG_PREFIXES.some(prefix => tag.startsWith(prefix)),
+    );
+
+    CellUtils.setCellMetaData(
+      notebook,
+      activeCellIndex,
+      'tags',
+      filteredTags,
+    ).then(() => {
+      // If this cell had a step name, remove all prev:<stepName> refs
+      // from dependent cells using the existing updateKaleCellsTags
+      if (clearedStepName) {
+        TagsUtils.updateKaleCellsTags(notebook, clearedStepName, '');
+      }
     });
   }
 
