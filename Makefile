@@ -24,6 +24,8 @@ ifeq ($(OS),Windows_NT)
 endif
 # jlpm is a yarn wrapper provided by JupyterLab - use it for extension development
 JLPM := $(UV) run jlpm
+# Location of the uv-managed virtualenv (override if using a non-default path)
+VENV_DIR ?= .venv
 
 # Colors for output
 BLUE := \033[0;34m
@@ -63,7 +65,7 @@ dev: check-uv ## Set up development environment
 	cd labextension && $(JLPM) clean:lib
 	cd labextension && $(JLPM) build
 	@$(if $(filter Windows_NT,$(OS)), \
-		powershell -NoProfile -Command "New-Item -ItemType Directory -Path .venv\share\jupyter\labextensions -Force | Out-Null; Remove-Item -Path .venv\share\jupyter\labextensions\jupyterlab-kubeflow-kale -Recurse -Force -ErrorAction SilentlyContinue; cmd /c mklink /J .venv\share\jupyter\labextensions\jupyterlab-kubeflow-kale jupyterlab_kubeflow_kale\labextension", \
+		powershell -NoProfile -Command "New-Item -ItemType Directory -Path $(VENV_DIR)\share\jupyter\labextensions -Force | Out-Null; Remove-Item -Path $(VENV_DIR)\share\jupyter\labextensions\jupyterlab-kubeflow-kale -Recurse -Force -ErrorAction SilentlyContinue; cmd /c mklink /J $(VENV_DIR)\share\jupyter\labextensions\jupyterlab-kubeflow-kale jupyterlab_kubeflow_kale\labextension", \
 		$(UV) run jupyter labextension develop --overwrite . \
 	)
 	@$(if $(filter Windows_NT,$(OS)), \

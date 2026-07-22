@@ -126,22 +126,38 @@ def get_existing_clusters():
 
 
 def fix_kubeconfig_host_docker_internal(cluster_name):
-    env_kc = os.environ.get("KUBECONFIG")
-    paths = env_kc.split(os.pathsep) if env_kc else [os.path.expanduser("~/.kube/config")]
+    # host.docker.internal doesn't resolve for kubectl running natively on
+    # Windows (it only resolves from inside a container/WSL), so k3d's
+    # default API server address is unreachable there. Linux/macOS don't
+    # have this problem, so leave their kubeconfig untouched.
+    if sys.platform != "win32":
+        return
 
-    for path in paths:
-        if os.path.exists(path):
-            try:
-                with open(path, encoding="utf-8") as f:
-                    content = f.read()
+    context_name = f"k3d-{cluster_name}"
+    try:
+        res = subprocess.run(
+            [
+                "kubectl",
+                "config",
+                "view",
+                "-o",
+                f'jsonpath={{.clusters[?(@.name=="{context_name}")].cluster.server}}',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        server = res.stdout.strip()
+        if res.returncode != 0 or "host.docker.internal" not in server:
+            return
 
-                if "host.docker.internal" in content:
-                    new_content = content.replace("host.docker.internal", "127.0.0.1")
-                    with open(path, "w", encoding="utf-8") as f:
-                        f.write(new_content)
-                    ok(f"Fixed host.docker.internal in kubeconfig: {path}")
-            except Exception as e:
-                warn(f"Failed to fix host.docker.internal in kubeconfig {path}: {e}")
+        new_server = server.replace("host.docker.internal", "127.0.0.1")
+        subprocess.run(
+            ["kubectl", "config", "set-cluster", context_name, f"--server={new_server}"],
+            check=True,
+        )
+        ok(f"Fixed host.docker.internal for kubeconfig cluster '{context_name}'")
+    except Exception as e:
+        warn(f"Failed to fix host.docker.internal for kubeconfig cluster '{context_name}': {e}")
 
 
 def create_cluster(cluster_name):
