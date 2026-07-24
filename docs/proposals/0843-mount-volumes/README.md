@@ -63,9 +63,6 @@ PVC would avoid entirely:
 - **Large datasets and models** — serializing and deserializing gigabyte-scale
   objects between steps is slow and often runs out of memory or artifact store
   quota.
-- **Non-serializable Python objects** — database connections, file handles, and
-  certain framework objects (e.g. some model classes) cannot be pickled at all;
-  passing them via a shared path sidesteps the problem.
 - **Ephemeral shared state** — scratch space written by one step and consumed
   by the next (e.g. a temporary data store or checkpoint directory) has no
   natural representation as a KFP artifact.
@@ -82,9 +79,19 @@ volumes feature using the current `kfp-kubernetes` extension library.
 3. Have the Kale compiler emit `kubernetes.mount_pvc(...)` for every step in
    the generated KFP v2 pipeline.
 4. Optionally pre-fill volumes from the PVCs already mounted on the running
-   notebook Pod ("use this notebook's volumes").
+   notebook Pod ("use this notebook's volumes") via a checklist dialog with a
+   "Select all" shortcut and per-volume checkboxes.
 5. Show a combobox of available PVCs in the namespace (with suggestions from the
    cluster) alongside free-text input, always accessible regardless of API availability.
+6. Optionally expose each volume's mount path as a Kale-managed environment
+   variable (e.g. `KALE_VOLUME_MY_DATA`) so notebook code can reference paths
+   symbolically instead of hardcoding strings.
+7. Warn users when a configured PVC has `accessMode: ReadWriteOnce` (RWO) —
+   in the UI if the access mode can be read from the cluster, and always at
+   pipeline runtime via a logged warning at the start of each step.
+8. Delete the deprecated `--storage-class-name` and `--volume-access-mode`
+   CLI flags — they only apply to PVC creation which is out of scope, and
+   leaving them in place causes confusion.
 
 ### Non-Goals
 
@@ -96,6 +103,15 @@ volumes feature using the current `kfp-kubernetes` extension library.
   artifacts.
 - Making PVC existence a hard compiler requirement — offline/CI compile must
   still work.
+- Native K8s volume snapshots — letting users mount a PVC
+  from a snapshot of their local volumes (or any other PVC), so each pipeline
+  run operates on an isolated, point-in-time copy.
+- Node affinity pinning for RWO volumes — automatically constraining all steps
+  to the node where an RWO PVC is already bound, to prevent parallel steps
+  from hanging when scheduled on different nodes.
+- Runtime pre-flight PVC check — a dedicated first step or init container that
+  verifies all configured PVCs exist before compute steps run; useful but adds
+  complexity and latency, and would need a UI toggle for opt-in behaviour.
 
 ---
 
@@ -109,9 +125,11 @@ When they compile a Kale pipeline, the step Pods do not have `/data` mounted
 and the pipeline fails.
 
 With this feature, the user clicks "Use notebook volumes" in the Volumes panel.
-Kale calls the existing `nb.list_volumes` RPC, detects that `my-data` is
-mounted at `/data`, and pre-populates a volume entry. All pipeline steps then
-get `my-data` mounted at `/data`.
+Kale calls the existing `nb.list_volumes` RPC and opens a selection dialog
+listing all PVCs currently mounted on the notebook Pod. The dialog provides a "Select all" shortcut alongside per-volume checkboxes,
+so the user can include all or any subset of the available volumes. The
+user checks `my-data` and confirms. Kale pre-populates a volume entry for
+each selected PVC. All pipeline steps then get `my-data` mounted at `/data`.
 
 ### Story 2: Mount an arbitrary PVC
 
@@ -121,7 +139,25 @@ select `training-data` from the PVC dropdown (or type it manually), set mount
 path `/data`, and compile. All pipeline steps get `training-data` mounted at
 `/data`.
 
-### Story 3: Multiple volumes on all steps
+### Story 3: Portable notebook with env var mount paths
+
+A user maintains a notebook used both in a dev cluster (PVC `raw-data` mounted
+at `/mnt/raw`) and a prod cluster (same PVC mounted at `/datasets`). They tick
+"Expose as env var" on the `raw-data` volume entry. Kale shows the derived
+name `KALE_VOLUME_RAW_DATA`. The user writes their notebook against that
+variable:
+
+```python
+import os
+RAW = os.environ["KALE_VOLUME_RAW_DATA"]
+df  = pd.read_csv(f"{RAW}/train.csv")
+```
+
+In dev they compile with mount path `/mnt/raw`; in prod they change it to
+`/datasets`. The notebook code is identical in both environments. Kale injects
+the correct env var value into every step Pod at compile time.
+
+### Story 4: Multiple volumes on all steps
 
 A user needs datasets at `/data` (PVC `datasets`) and wants to write model
 checkpoints to `/models` (PVC `model-store`). They add two volume entries. Both
@@ -228,10 +264,22 @@ Pipeline Metadata.
 ```
 Kale Deployment Panel
 ├── Pipeline Metadata  (experiment, name, description, docker image)
-├── Volumes                                    ← NEW
+├── Volumes                                                          ← NEW
 │   ├── [ + Add Volume ]
+│   │   └── (inline add-form, opens on click)
+│   │       ├── [ "Select from notebook" button ]
+│   │       │   └── Checklist of PVCs mounted on the notebook Pod
+│   │       │       ├── [ Select all ]
+│   │       │       ├── ☑ my-data      /data
+│   │       │       ├── ☐ model-store  /models
+│   │       │       └── [ Cancel ]  [ Add selected ]
+│   │       ├── [ PVC dropdown/input            ] [ mount path ]
+│   │       ├── ☐ Expose as env var
+│   │       └── [ Cancel ]  [ Add volume ]
 │   ├── Volume 1: [ PVC dropdown/input ] [ /data   ] [×]
+│   │             ☑ Expose as env var → KALE_VOLUME_MY_DATA  [copy]
 │   └── Volume 2: [ PVC dropdown/input ] [ /models ] [×]
+│                 ☐ Expose as env var
 └── Deploy button / progress
 ```
 
@@ -241,14 +289,21 @@ Kale Deployment Panel
 |--------|-----------|
 | Add Volume | Appends a blank `{ name: '', mount_point: '' }` entry to `metadata.volumes` |
 | Remove (×) | Drops that entry from the list |
+| "+ Add Volume" | Opens the inline add-form; does not commit anything until "Add volume" is confirmed |
+| "Select from notebook" | Calls `nb.list_volumes` RPC and shows a checklist of PVCs currently mounted on the notebook Pod with a "Select all" shortcut and per-volume checkboxes; confirming with "Add selected" bulk-adds one entry per checked volume, bypassing the single-volume form |
 | PVC field | Combobox — free-text input with suggestions populated from `list_pvcs` RPC; suggestions are shown when available but typing a name manually always works |
 | Mount path | Free-text; must be unique across entries |
-| "Use notebook volumes" button | Calls the existing `nb.list_volumes` RPC and pre-fills entries from the notebook Pod's own PVC mounts; logs each added volume (name + mount point) to the browser console so the user can see exactly what was detected |
+| "Expose as env var" checkbox | When checked, Kale derives an env var name from the PVC name (`KALE_VOLUME_<SCREAMING_SNAKE_CASE>`, e.g. `raw-data` → `KALE_VOLUME_RAW_DATA`) and shows it read-only next to the checkbox with a copy button; the compiler injects this variable into every step Pod with the mount path as its value |
+| "Add volume" | Commits the new entry to `metadata.volumes` |
+| "Cancel" | Closes the form without adding anything |
+| Remove (×) | Drops an existing volume entry from the list |
 
 **Light UI validation (warn, never block compile):**
 - Duplicate mount paths across entries
 - PVC name not found in the combobox suggestions
 - Empty PVC name or mount path when the other field is set
+- PVC has `accessMode: ReadWriteOnce` — shown only when the access mode can
+  be read from the cluster via `list_pvcs`; silently omitted otherwise
 
 Volumes are stored in `metadata.volumes` and saved to notebook metadata on
 every change, matching the pattern used by other pipeline metadata fields.
@@ -265,14 +320,18 @@ every change, matching the pattern used by other pipeline metadata fields.
   "kubeflow_notebook": {
     "pipeline_name": "my-pipeline",
     "volumes": [
-      { "name": "my-data-pvc",   "mount_point": "/data",   "type": "pvc" },
-      { "name": "my-models-pvc", "mount_point": "/models", "type": "pvc" }
+      { "name": "my-data-pvc",   "mount_point": "/data",   "type": "pvc", "env_var": true },
+      { "name": "my-models-pvc", "mount_point": "/models", "type": "pvc", "env_var": false }
     ]
   }
 }
 ```
 
-The template renders a `kubernetes.mount_pvc(...)` call for every step task:
+The template renders a `kubernetes.mount_pvc(...)` call for every step task,
+and a `kubernetes.add_env_variable(...)` call for each volume that has
+`env_var: true`. The env var name is derived at compile time by uppercasing the
+PVC name and replacing non-alphanumeric characters with underscores, prefixed
+with `KALE_VOLUME_`:
 
 ```python
 from kfp import dsl, kubernetes
@@ -282,11 +341,28 @@ def auto_generated_pipeline():
     task1 = step_one_step(...)
     kubernetes.mount_pvc(task1, pvc_name="my-data-pvc",   mount_path="/data")
     kubernetes.mount_pvc(task1, pvc_name="my-models-pvc", mount_path="/models")
+    kubernetes.add_env_variable(task1, name="KALE_VOLUME_MY_DATA_PVC", value="/data")
 
     task2 = step_two_step(...)
     kubernetes.mount_pvc(task2, pvc_name="my-data-pvc",   mount_path="/data")
     kubernetes.mount_pvc(task2, pvc_name="my-models-pvc", mount_path="/models")
+    kubernetes.add_env_variable(task2, name="KALE_VOLUME_MY_DATA_PVC", value="/data")
 ```
+
+For each configured volume, the compiled pipeline also includes a helper call
+at the start of every step function. When the step pod actually runs, that
+call queries the Kubernetes API for the PVC's access mode and logs a prominent
+warning if it is `ReadWriteOnce`:
+
+```
+[KALE WARNING] PVC "my-data" has accessMode ReadWriteOnce.
+If parallel steps are scheduled on different nodes, pods waiting
+to attach this volume will hang. Consider using an RWX storage
+class or ensure all steps run on the same node.
+```
+
+The check is best-effort — if the pod's service account lacks permission to
+`get` the PVC, it is silently skipped and the step proceeds normally.
 
 `PipelineConfig.volumes` is wired through `nbprocessor.py` into the compiler
 path. Today this field is populated from notebook metadata but is never passed
@@ -325,9 +401,9 @@ the UI:
 kale --nb my_notebook.ipynb
 ```
 
-The existing `--storage-class-name` and `--volume-access-mode` flags are
-deferred — they only apply to PVC creation, which
-is out of scope for v1.
+The existing `--storage-class-name` and `--volume-access-mode` flags will be
+deleted — they only apply to PVC creation, which is out of scope, and leaving
+dead flags in place causes confusion.
 
 ### Notes/Constraints/Caveats
 
@@ -528,31 +604,4 @@ running notebook is a known limitation, documented in the caveats.
 
 ## Open Questions
 
-1. **Should deprecated volume-creation flags be deleted?**
-   The `--storage-class-name` and `--volume-access-mode` flags are currently
-   deferred as out of scope for v1 (they only apply to PVC creation). Should
-   they be removed from the codebase now to avoid confusion, or left in place
-   in case PVC creation support is added in a future version?
-
-2. **Should there be a runtime pre-flight PVC check?**
-   Currently a missing or wrong-namespace PVC would only surface as a Kubernetes
-   mount error when the step Pod is scheduled — the error message is not
-   user-friendly. A runtime check could give a clearer error earlier. Two
-   approaches are possible:
-   - A **dedicated first step** in the generated pipeline that calls the
-     Kubernetes API to verify all configured PVCs exist before any compute
-     steps run.
-   - An **init container** injected into every step Pod via `kfp-kubernetes`
-     that checks its own mounts before the main container starts.
-   Is the improved error message worth the added complexity and latency?
-
-3. **Should Kale warn users about RWO volumes and parallel steps?**
-   If a user configures a `ReadWriteOnce` PVC and the pipeline has parallel
-   steps, there is a risk that two Pods land on different nodes and one fails
-   to attach the volume. Kale can detect this situation at compile time (it
-   knows which steps are parallel and that a PVC is configured). Should it
-   emit a warning — and if so, where? Options:
-   - A compile-time warning printed to the console / surfaced in the UI.
-   - A UI warning in the Volumes panel when parallel steps are present.
-   - No warning; document the caveat and rely on the user to choose the right
-     storage class.
+None.
