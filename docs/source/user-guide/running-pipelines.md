@@ -120,6 +120,12 @@ spec:
   ...
 ```
 
+If `KALE_PIP_INDEX_URLS`/`--pip-index-urls` (or `KALE_PYPI_PROD_URL`) points at
+a mirror with embedded credentials (e.g. `https://user:pass@mirror/simple`),
+those credentials are baked into the manifest's pip install commands in
+plaintext. Use a credential-free URL plus a separate pip auth mechanism
+(`.netrc`, trusted hosts) if you're committing the manifest to git.
+
 Commit the manifest to git and let your existing cluster tooling apply it:
 
 ```bash

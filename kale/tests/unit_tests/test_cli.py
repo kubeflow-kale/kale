@@ -117,13 +117,13 @@ def test_no_include_pipeline_manifest_flag():
 
 
 def test_output_flag_passed_to_helper():
-    """--output overrides the default manifest output path."""
+    """--manifest-output overrides the default manifest output path."""
     mocks = _run_cli(
         [
             "--nb",
             "notebook.ipynb",
             "--kubernetes-manifest-format",
-            "--output",
+            "--manifest-output",
             "custom/manifest.yaml",
         ]
     )
@@ -133,15 +133,49 @@ def test_output_flag_passed_to_helper():
 
 
 def test_output_flag_without_manifest_format_rejected(capsys):
-    """--output without --kubernetes-manifest-format is rejected."""
+    """--manifest-output without --kubernetes-manifest-format is rejected."""
     with (
-        patch.object(sys, "argv", ["kale", "--nb", "notebook.ipynb", "--output", "out.yaml"]),
+        patch.object(
+            sys, "argv", ["kale", "--nb", "notebook.ipynb", "--manifest-output", "out.yaml"]
+        ),
         pytest.raises(SystemExit) as exc_info,
     ):
         cli.main()
 
     assert exc_info.value.code == 2
-    assert "--output is only valid with --kubernetes-manifest-format" in capsys.readouterr().err
+    assert (
+        "--manifest-output is only valid with --kubernetes-manifest-format"
+        in capsys.readouterr().err
+    )
+
+
+def test_output_path_flag_still_resolves_to_notebook_output_path():
+    """--output still abbreviates --output_path, not --manifest-output.
+
+    Before the --output/--manifest-output rename, --output_path was the only
+    --out* flag, so argparse's abbreviation matching let --output (and --out)
+    stand in for it. Renaming --output to --manifest-output must not break
+    that existing abbreviation.
+    """
+    mock_pipeline = MagicMock()
+    mock_pipeline.config.pipeline_name = "kale-pipeline"
+    mock_pipeline.config.kfp_host = None
+    mock_pipeline.config.experiment_name = "test-experiment"
+    mock_processor = MagicMock()
+    mock_processor.run.return_value = mock_pipeline
+    mock_processor.get_imports_and_functions.return_value = ""
+
+    with (
+        patch.object(sys, "argv", ["kale", "--nb", "notebook.ipynb", "--output", "custom/dsl/"]),
+        patch("kale.cli.NotebookProcessor", return_value=mock_processor) as mock_processor_cls,
+        patch("kale.cli.Compiler") as mock_compiler_cls,
+        patch("kale.cli.kfputils.compile_pipeline"),
+    ):
+        mock_compiler_cls.return_value.compile.return_value = "/tmp/dsl_script.py"
+        cli.main()
+
+    _, overrides = mock_processor_cls.call_args[0]
+    assert overrides["output_path"] == "custom/dsl/"
 
 
 def test_stdout_flag_prints_yaml_and_leaves_no_file(capsys):
@@ -188,7 +222,7 @@ def test_stdout_without_manifest_format_rejected(capsys):
 
 
 def test_stdout_and_output_mutually_exclusive(capsys):
-    """--stdout and --output cannot be combined."""
+    """--stdout and --manifest-output cannot be combined."""
     with (
         patch.object(
             sys,
@@ -199,7 +233,7 @@ def test_stdout_and_output_mutually_exclusive(capsys):
                 "notebook.ipynb",
                 "--kubernetes-manifest-format",
                 "--stdout",
-                "--output",
+                "--manifest-output",
                 "out.yaml",
             ],
         ),
@@ -208,7 +242,7 @@ def test_stdout_and_output_mutually_exclusive(capsys):
         cli.main()
 
     assert exc_info.value.code == 2
-    assert "--stdout cannot be combined with --output" in capsys.readouterr().err
+    assert "--stdout cannot be combined with --manifest-output" in capsys.readouterr().err
 
 
 def test_default_mode_unaffected(capsys):

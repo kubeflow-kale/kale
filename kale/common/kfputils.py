@@ -111,12 +111,12 @@ def _import_dsl_module(pipeline_source: str):
 
 def compile_pipeline(pipeline_source: str, pipeline_name: str) -> str:
     """Read in the generated python script and compile it to a KFP package."""
-    foo = _import_dsl_module(pipeline_source)
+    module = _import_dsl_module(pipeline_source)
     # path to generated pipeline package
     pipeline_package = os.path.join(
         os.path.dirname(pipeline_source), pipeline_name + ".pipeline.yaml"
     )
-    kfp.compiler.Compiler().compile(foo.auto_generated_pipeline, pipeline_package)
+    kfp.compiler.Compiler().compile(module.auto_generated_pipeline, pipeline_package)
     return pipeline_package
 
 
@@ -149,7 +149,7 @@ def compile_pipeline_to_manifests(
             "They must be identical so the manifest contents and the output "
             "filename stay consistent."
         )
-    foo = _import_dsl_module(pipeline_source)
+    module = _import_dsl_module(pipeline_source)
     if output_path is None:
         output_path = os.path.join(
             os.path.dirname(pipeline_source), pipeline_name + ".pipeline.k8s.yaml"
@@ -158,7 +158,7 @@ def compile_pipeline_to_manifests(
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
     kfp.compiler.Compiler().compile(
-        foo.auto_generated_pipeline,
+        module.auto_generated_pipeline,
         output_path,
         kubernetes_manifest_format=True,
         kubernetes_manifest_options=manifest_options,

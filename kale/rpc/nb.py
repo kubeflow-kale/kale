@@ -137,7 +137,13 @@ def compile_into_native(
 
     Mirrors the CLI's --kubernetes-manifest-format mode: produces
     Pipeline/PipelineVersion manifests instead of a KFP IR package for
-    upload, so the JupyterLab extension and the CLI behave the same way.
+    upload, using the same backend compilation flow as the CLI.
+
+    Not yet called from the JupyterLab extension's frontend — see
+    https://github.com/kubeflow/kale/issues/905 for the proposed UI
+    integration (an opt-in setting plus a "Compile and Save as Manifest"
+    entry in the deploy dropdown). This RPC exists so that follow-up can
+    reuse the backend without further changes here.
     """
 
     def finalize(pipeline, script_path):

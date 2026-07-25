@@ -100,7 +100,7 @@ def main():
         ),
     )
     general_group.add_argument(
-        "--output",
+        "--manifest-output",
         type=str,
         help=(
             "Path to write the Kubernetes manifest YAML to. Only valid with "
@@ -115,7 +115,7 @@ def main():
         help=(
             "Print the Kubernetes manifest YAML to stdout instead of "
             "writing it to disk. Only valid with --kubernetes-manifest-format, "
-            "and cannot be combined with --output."
+            "and cannot be combined with --manifest-output."
         ),
     )
     general_group.add_argument("--debug", action="store_true")
@@ -186,14 +186,14 @@ def main():
             "`kubectl apply -f` or a GitOps controller instead."
         )
 
-    if args.output and not args.kubernetes_manifest_format:
-        parser.error("--output is only valid with --kubernetes-manifest-format.")
+    if args.manifest_output and not args.kubernetes_manifest_format:
+        parser.error("--manifest-output is only valid with --kubernetes-manifest-format.")
 
     if args.stdout and not args.kubernetes_manifest_format:
         parser.error("--stdout is only valid with --kubernetes-manifest-format.")
 
-    if args.stdout and args.output:
-        parser.error("--stdout cannot be combined with --output.")
+    if args.stdout and args.manifest_output:
+        parser.error("--stdout cannot be combined with --manifest-output.")
 
     if not args.kubernetes_manifest_format:
         manifest_only_flags = {
@@ -259,7 +259,7 @@ def main():
             return
 
         manifest_path = kfputils.compile_pipeline_to_manifests(
-            dsl_script_path, pipeline_name, manifest_options, output_path=args.output
+            dsl_script_path, pipeline_name, manifest_options, output_path=args.manifest_output
         )
         print(f"manifest_path: {manifest_path}")
         return

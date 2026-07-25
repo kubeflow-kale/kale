@@ -26,8 +26,8 @@ kale --nb path/to/notebook.ipynb [options]
 | `--pipeline-version-name` | str | Name for the PipelineVersion manifest.                             |
 | `--pipeline-version-display-name` | str | Display name for the PipelineVersion manifest.              |
 | `--no-include-pipeline-manifest` | flag | Emit only the PipelineVersion manifest, omitting the Pipeline manifest. |
-| `--output`            | str    | Path to write the manifest YAML to. Only valid with `--kubernetes-manifest-format`; cannot combine with `--stdout`. |
-| `--stdout`             | flag   | Print the manifest YAML to stdout instead of writing a file. Only valid with `--kubernetes-manifest-format`; cannot combine with `--output`. |
+| `--manifest-output`   | str    | Path to write the manifest YAML to. Only valid with `--kubernetes-manifest-format`; cannot combine with `--stdout`. |
+| `--stdout`             | flag   | Print the manifest YAML to stdout instead of writing a file. Only valid with `--kubernetes-manifest-format`; cannot combine with `--manifest-output`. |
 | `--debug`             | flag   | Enable verbose logging.                                              |
 | `--dev`               | flag   | Bake a local devpi index URL into generated components.              |
 | `--pip-index-urls`    | str    | Comma-separated PEP 503 simple indexes baked into components.        |
