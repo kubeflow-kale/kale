@@ -237,3 +237,41 @@ def test_rejects_manifest_format_with_upload_or_run(conflicting_flag, capsys):
 
     assert exc_info.value.code == 2
     assert "cannot be combined" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "flag,value",
+    [
+        ("--kubernetes-namespace", "kubeflow"),
+        ("--pipeline-display-name", "Weekly churn training"),
+        ("--pipeline-version-name", "weekly-churn-v1"),
+        ("--pipeline-version-display-name", "Weekly churn training v1"),
+    ],
+)
+def test_rejects_manifest_only_value_flag_without_manifest_format(flag, value, capsys):
+    """Manifest-only flags with a value are rejected without --kubernetes-manifest-format."""
+    with (
+        patch.object(sys, "argv", ["kale", "--nb", "notebook.ipynb", flag, value]),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        cli.main()
+
+    assert exc_info.value.code == 2
+    assert f"{flag} is only valid with --kubernetes-manifest-format" in capsys.readouterr().err
+
+
+def test_rejects_no_include_pipeline_manifest_without_manifest_format(capsys):
+    """--no-include-pipeline-manifest is rejected without --kubernetes-manifest-format."""
+    with (
+        patch.object(
+            sys, "argv", ["kale", "--nb", "notebook.ipynb", "--no-include-pipeline-manifest"]
+        ),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        cli.main()
+
+    assert exc_info.value.code == 2
+    assert (
+        "--no-include-pipeline-manifest is only valid with --kubernetes-manifest-format"
+        in capsys.readouterr().err
+    )

@@ -195,6 +195,18 @@ def main():
     if args.stdout and args.output:
         parser.error("--stdout cannot be combined with --output.")
 
+    if not args.kubernetes_manifest_format:
+        manifest_only_flags = {
+            "--kubernetes-namespace": args.kubernetes_namespace,
+            "--pipeline-display-name": args.pipeline_display_name,
+            "--pipeline-version-name": args.pipeline_version_name,
+            "--pipeline-version-display-name": args.pipeline_version_display_name,
+            "--no-include-pipeline-manifest": args.no_include_pipeline_manifest,
+        }
+        for flag, value in manifest_only_flags.items():
+            if value is not None:
+                parser.error(f"{flag} is only valid with --kubernetes-manifest-format.")
+
     if args.pip_index_urls:
         os.environ["KALE_PIP_INDEX_URLS"] = args.pip_index_urls
     elif args.dev:
