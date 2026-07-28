@@ -75,12 +75,47 @@ def test_parse_metadata_success(notebook_processor, metadata, target):
         ({"tags": ["random_value"]}),
         ({"tags": [0]}),
         ({"tags": ["prev:step2"]}),
+        # secret tags require a step name
+        ({"tags": ["secret:db-credentials:password:DB_PASSWORD"]}),
+        # malformed secret tags (wrong number of parts / invalid names)
+        ({"tags": ["step:test", "secret:db-credentials:password"]}),
+        ({"tags": ["step:test", "secret:DB-creds:password:DB_PASSWORD"]}),
+        ({"tags": ["step:test", "secret:db-credentials:password:1_INVALID"]}),
     ],
 )
 def test_parse_metadata_exc(notebook_processor, metadata):
     """Test parse_metadata exception cases."""
     with pytest.raises(ValueError):
         notebook_processor.parse_cell_metadata(metadata)
+
+
+def test_parse_metadata_secret_tag(notebook_processor):
+    """Test that a well-formed secret tag is parsed into the secrets dict."""
+    tags = notebook_processor.parse_cell_metadata(
+        {"tags": ["step:test", "secret:db-credentials:password:DB_PASSWORD"]}
+    )
+
+    assert tags["secrets"] == {
+        "DB_PASSWORD": {"secret_name": "db-credentials", "secret_key": "password"}
+    }
+
+
+def test_parse_metadata_multiple_secret_tags(notebook_processor):
+    """Test that multiple secret tags on the same cell are all captured."""
+    tags = notebook_processor.parse_cell_metadata(
+        {
+            "tags": [
+                "step:test",
+                "secret:db-credentials:password:DB_PASSWORD",
+                "secret:api-credentials:token:API_TOKEN",
+            ]
+        }
+    )
+
+    assert tags["secrets"] == {
+        "DB_PASSWORD": {"secret_name": "db-credentials", "secret_key": "password"},
+        "API_TOKEN": {"secret_name": "api-credentials", "secret_key": "token"},
+    }
 
 
 def test_get_pipeline_parameters_source_simple(notebook_processor):

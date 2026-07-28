@@ -23,10 +23,12 @@ import {
   Tab,
   Tabs,
 } from '@mui/material';
+import { ISecretRef } from '../../../lib/TagsUtils';
 import { BaseImageSection } from './sections/BaseImageSection';
 import { GpuSection, ILimitAction } from './sections/GpuSection';
 import { CacheSection } from './sections/CacheSection';
 import { ReportSection } from './sections/ReportSection';
+import { SecretsSection } from './sections/SecretsSection';
 
 interface IStepConfigDialogProps {
   open: boolean;
@@ -45,6 +47,9 @@ interface IStepConfigDialogProps {
   // HTML report
   generateHtmlReport?: boolean;
   onUpdateHtmlReport: (value: boolean | undefined) => void;
+  // Secrets
+  secrets: { [envName: string]: ISecretRef };
+  updateSecrets: (secrets: { [envName: string]: ISecretRef }) => void;
 }
 
 /**
@@ -103,6 +108,15 @@ export const StepConfigDialog: React.FC<IStepConfigDialogProps> = props => {
         />
       ),
     },
+    {
+      label: 'Secrets',
+      render: () => (
+        <SecretsSection
+          secrets={props.secrets}
+          updateSecrets={props.updateSecrets}
+        />
+      ),
+    },
   ];
 
   return (
@@ -110,7 +124,7 @@ export const StepConfigDialog: React.FC<IStepConfigDialogProps> = props => {
       open={props.open}
       onClose={props.onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="md"
       scroll="paper"
       aria-labelledby="step-config-dialog-title"
       aria-describedby="step-config-dialog-description"

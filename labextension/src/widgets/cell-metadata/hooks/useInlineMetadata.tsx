@@ -117,6 +117,7 @@ export function useInlineMetadata(
         stepName: tags.stepName || '',
         stepDependencies: tags.prevStepNames || [],
         limits: tags.limits || {},
+        secrets: tags.secrets || {},
         baseImage: tags.baseImage,
         enableCaching: tags.enableCaching,
         generateHtmlReport: tags.generateHtmlReport,

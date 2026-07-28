@@ -180,6 +180,47 @@ class K8sLabelsValidator(DictValidator):
     value_validator = TypeValidator(str)
 
 
+class EnvVarNameValidator(RegexValidator):
+    """Validates an environment variable name."""
+
+    regex = r"^[a-zA-Z_][a-zA-Z0-9_]*$"
+    error_message = "Not a valid environment variable name"
+
+
+class K8sSecretNameValidator(K8sNameValidator):
+    """Validates the name of a K8s Secret."""
+
+    error_message = "Not a valid K8s Secret name"
+
+
+class K8sSecretKeyValidator(RegexValidator):
+    """Validates a key inside a K8s Secret's data."""
+
+    regex = r"^[-._a-zA-Z0-9]+$"
+    error_message = "Not a valid K8s Secret key"
+
+
+class K8sSecretRefValidator(Validator):
+    """Validates a single `{secret_name, secret_key}` mapping."""
+
+    def _validate(self, value: dict):
+        if not isinstance(value, dict) or set(value) != {"secret_name", "secret_key"}:
+            raise ValueError(
+                "Secret reference must be a dict with 'secret_name' and 'secret_key' keys"
+            )
+        K8sSecretNameValidator()(value["secret_name"])
+        K8sSecretKeyValidator()(value["secret_key"])
+
+
+class K8sSecretsValidator(DictValidator):
+    """Validates a K8s secrets dictionary (env var name -> secret reference)."""
+
+    # NOTE: instantiated (not a bare class) so the key is actually checked -
+    # see DictValidator._validate, which calls key_validator(k) directly.
+    key_validator = EnvVarNameValidator()
+    value_validator = K8sSecretRefValidator()
+
+
 class VolumeTypeValidator(EnumValidator):
     """Validates the type of a Volume."""
 

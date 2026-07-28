@@ -32,6 +32,7 @@ export const KALE_TAG_PREFIXES = [
   'step:',
   'prev:',
   'limit:',
+  'secret:',
   'image:',
   'cache:',
   'report:',

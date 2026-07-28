@@ -1,7 +1,7 @@
 import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
-from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
+from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context, use_secret_as_env
 
 {{ lightweight_components | join('\n\n') }}
 
@@ -75,6 +75,12 @@ def auto_generated_pipeline(
     {%- if step.config.annotations %}
     {%- for ann_key, ann_value in step.config.annotations.items() %}
     add_pod_annotation(task={{ step.name }}_task, annotation_key="{{ ann_key }}", annotation_value="{{ ann_value }}")
+    {%- endfor %}
+    {%- endif %}
+
+    {%- if step.config.secrets %}
+    {%- for env_name, secret in step.config.secrets.items() %}
+    use_secret_as_env(task={{ step.name }}_task, secret_name="{{ secret.secret_name }}", secret_key_to_env={"{{ secret.secret_key }}": "{{ env_name }}"})
     {%- endfor %}
     {%- endif %}
 

@@ -15,7 +15,7 @@
 import * as React from 'react';
 import { useCallback, useContext, useRef, useState } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
-import TagsUtils from '../../lib/TagsUtils';
+import TagsUtils, { ISecretRef } from '../../lib/TagsUtils';
 import CloseIcon from '@mui/icons-material/Close';
 import LayersClearIcon from '@mui/icons-material/LayersClear';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -45,6 +45,7 @@ export interface ICellEditorData {
   stepName?: string;
   stepDependencies: string[];
   limits?: { [id: string]: string };
+  secrets?: { [envName: string]: ISecretRef };
   baseImage?: string;
   enableCaching?: boolean;
   generateHtmlReport?: boolean;
@@ -60,6 +61,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     stepName = '',
     stepDependencies,
     limits = {},
+    secrets = {},
     baseImage,
     enableCaching,
     generateHtmlReport,
@@ -76,6 +78,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     stepName,
     stepDependencies,
     limits,
+    secrets,
     baseImage,
     enableCaching,
     generateHtmlReport,
@@ -251,6 +254,8 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
         stepName={stepName}
         limits={limits}
         updateLimits={updateCellTags.updateLimits}
+        secrets={secrets}
+        updateSecrets={updateCellTags.updateSecrets}
         baseImage={baseImage}
         resolvedDefaultBaseImage={resolvedDefaultBaseImage}
         onUpdateBaseImage={updateCellTags.updateBaseImage}
