@@ -18,15 +18,14 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../lib/TagsUtils';
 import CloseIcon from '@mui/icons-material/Close';
 import LayersClearIcon from '@mui/icons-material/LayersClear';
+import SettingsIcon from '@mui/icons-material/Settings';
 import ColorUtils from '../../lib/ColorUtils';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
-import { Button, IconButton, Tooltip } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { SelectMulti } from '../../components/SelectMulti';
-import { GpuDialog } from './dialogs/GpuDialog';
-import { BaseImageDialog } from './dialogs/BaseImageDialog';
-import { CacheDialog } from './dialogs/CacheDialog';
+import { StepConfigDialog } from './dialogs/StepConfigDialog';
 import { useUpdateCellTags } from './hooks/useCellTags';
 import { useEditorPosition } from './hooks/useEditorPosition';
 import {
@@ -129,9 +128,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     [notebook, stepName],
   );
 
-  const [gpuDialogOpen, setGpuDialogOpen] = useState(false);
-  const [baseImageDialogOpen, setBaseImageDialogOpen] = useState(false);
-  const [cacheDialogOpen, setCacheDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
 
   const closeEditor = useCallback(() => {
     onEditorVisibilityChange(false);
@@ -203,47 +200,18 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
                   </div>
                 </Tooltip>
 
-                <div style={{ padding: 0, marginRight: '4px' }}>
-                  <Button
-                    disabled={!hasStepName}
-                    color="primary"
-                    variant="contained"
-                    size="small"
-                    title="Base Image"
-                    onClick={() => setBaseImageDialogOpen(true)}
-                    style={{ width: '5%' }}
-                  >
-                    IMAGE
-                  </Button>
-                </div>
-
-                <div style={{ padding: 0, marginRight: '4px' }}>
-                  <Button
-                    disabled={!hasStepName}
-                    color="primary"
-                    variant="contained"
-                    size="small"
-                    title="GPU"
-                    onClick={() => setGpuDialogOpen(true)}
-                    style={{ width: '5%' }}
-                  >
-                    GPU
-                  </Button>
-                </div>
-
-                <div style={{ padding: 0 }}>
-                  <Button
-                    disabled={!hasStepName}
-                    color="primary"
-                    variant="contained"
-                    size="small"
-                    title="Caching"
-                    onClick={() => setCacheDialogOpen(true)}
-                    style={{ width: '5%' }}
-                  >
-                    CACHE
-                  </Button>
-                </div>
+                <Tooltip title="Configure step" placement="top" arrow>
+                  <span>
+                    <IconButton
+                      aria-label="Configure step"
+                      disabled={!hasStepName}
+                      onClick={() => setConfigDialogOpen(true)}
+                      size="small"
+                    >
+                      <SettingsIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
               </>
             )}
 
@@ -274,25 +242,15 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
         </div>
       </div>
 
-      <GpuDialog
-        open={gpuDialogOpen}
-        toggleDialog={() => setGpuDialogOpen(prev => !prev)}
+      <StepConfigDialog
+        open={configDialogOpen}
+        onClose={() => setConfigDialogOpen(false)}
         stepName={stepName}
         limits={limits}
         updateLimits={updateCellTags.updateLimits}
-      />
-
-      <BaseImageDialog
-        open={baseImageDialogOpen}
-        onClose={() => setBaseImageDialogOpen(false)}
         baseImage={baseImage}
         resolvedDefaultBaseImage={resolvedDefaultBaseImage}
         onUpdateBaseImage={updateCellTags.updateBaseImage}
-      />
-
-      <CacheDialog
-        open={cacheDialogOpen}
-        onClose={() => setCacheDialogOpen(false)}
         enableCaching={enableCaching}
         onUpdateCaching={updateCellTags.updateCaching}
       />
