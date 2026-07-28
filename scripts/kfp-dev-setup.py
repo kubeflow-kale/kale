@@ -317,7 +317,9 @@ def stop_port_forward(pid_file, local_port):
 
     # Cleanup stale kubectl processes on the same port
     if sys.platform == "win32":
-        filter_str = "Name='kubectl.exe' and CommandLine like '%port-forward%ml-pipeline-ui%'"
+        filter_str = (
+            f"Name='kubectl.exe' and CommandLine like '%port-forward%ml-pipeline-ui%{local_port}%'"
+        )
         subprocess.run(
             [
                 "powershell",
@@ -465,10 +467,10 @@ def status_cluster(cluster_name):
     print()
     info("KFP pods (kubeflow namespace):")
     try:
-        subprocess.run(["kubectl", "get", "pods", "-n", "kubeflow"])
+        subprocess.run(["kubectl", "get", "pods", "-n", "kubeflow"], check=True)
     except FileNotFoundError:
         warn("kubectl not installed")
-    except Exception:
+    except subprocess.CalledProcessError:
         warn("Cluster not running or unreachable")
 
 
@@ -529,4 +531,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except subprocess.CalledProcessError as e:
+        die(f"Command failed: {' '.join(e.cmd)} (exit code {e.returncode})")

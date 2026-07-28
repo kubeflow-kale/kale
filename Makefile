@@ -26,6 +26,13 @@ endif
 JLPM := $(UV) run jlpm
 # Location of the uv-managed virtualenv (override if using a non-default path)
 VENV_DIR ?= .venv
+# `python` on macOS/Debian may not exist (or be Python 2); `python3` on Windows
+# may resolve to the Microsoft Store app-execution alias instead of a real
+# interpreter. Pick the name that actually works per platform.
+PYTHON := python3
+ifeq ($(OS),Windows_NT)
+    PYTHON := python
+endif
 
 # Colors for output
 BLUE := \033[0;34m
@@ -69,7 +76,7 @@ dev: check-uv ## Set up development environment
 		$(UV) run jupyter labextension develop --overwrite . \
 	)
 	@$(if $(filter Windows_NT,$(OS)), \
-		$(UV) run pre-commit install 2>nul || echo Note: pre-commit hooks not installed (core.hooksPath is set globally). To enable, run: git config --unset core.hooksPath, \
+		$(UV) run pre-commit install 2>nul || echo Note: pre-commit hooks not installed (core.hooksPath is set globally). To enable run: git config --unset core.hooksPath, \
 		$(UV) run pre-commit install 2>/dev/null || { \
 			printf "$(YELLOW)Note: pre-commit hooks not installed (core.hooksPath is set globally).\n$(NC)"; \
 			printf "$(YELLOW)To enable pre-commit hooks, run: git config --unset core.hooksPath\n$(NC)"; \
@@ -180,22 +187,22 @@ KFP_LOCAL_PORT ?= 8080
 KFP_PID_FILE := $(CURDIR)/.kfp-dev-pf.pid
 
 kfp-dev-setup: ## Create k3d cluster + install KFP standalone (~5 min, first time only)
-	@python scripts/kfp-dev-setup.py setup "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py setup "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-upgrade: ## Upgrade KFP on existing cluster (usage: make kfp-dev-upgrade KFP_PIPELINE_VERSION=2.17.0)
-	@python scripts/kfp-dev-setup.py upgrade "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py upgrade "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-start: ## Start existing cluster and port-forward KFP UI to localhost:8080
-	@python scripts/kfp-dev-setup.py start "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py start "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-stop: ## Stop port-forward and pause cluster (preserves all data)
-	@python scripts/kfp-dev-setup.py stop "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py stop "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-delete: ## Delete cluster and free all resources (irreversible)
-	@python scripts/kfp-dev-setup.py delete "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py delete "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-status: ## Show cluster and KFP pod status
-	@python scripts/kfp-dev-setup.py status "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py status "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 ##@ Cleanup
 
