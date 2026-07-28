@@ -18,28 +18,16 @@ from kale import NotebookConfig
 
 
 @pytest.mark.parametrize(
-    "args,target",
+    "args",
     [
-        ((None, []), (True, "/tmp/marshal")),
-        # ---
-        (
-            ("/users", [{"name": "test", "type": "pvc", "mount_point": "/root"}]),
-            (True, "/tmp/marshal"),
-        ),
-        # ---
-        (
-            ("/user/kale/test", [{"name": "test", "type": "pvc", "mount_point": "/user/kale"}]),
-            (False, "/user/kale/test/.mynb.ipynb.kale.marshal.dir"),
-        ),
-        # ---
-        (
-            ("/user/kale/", [{"name": "test", "type": "pvc", "mount_point": "/user/kale/test"}]),
-            (True, "/tmp/marshal"),
-        ),
+        (None, []),
+        ("/users", [{"name": "test", "type": "pvc", "mount_point": "/root"}]),
+        ("/user/kale/test", [{"name": "test", "type": "pvc", "mount_point": "/user/kale"}]),
+        ("/user/kale/", [{"name": "test", "type": "pvc", "mount_point": "/user/kale/test"}]),
     ],
 )
-def test_get_marshal_data(dummy_nb_config, args, target):
-    """Test that marshal volume path is correctly computed."""
+def test_get_marshal_data(dummy_nb_config, args):
+    """Test that marshal_path is always the default /tmp/marshal regardless of volumes."""
     config = NotebookConfig(
         **{
             **dummy_nb_config,
@@ -48,8 +36,7 @@ def test_get_marshal_data(dummy_nb_config, args, target):
             "notebook_path": "/user/kale/test/mynb.ipynb",
         }
     )
-    assert target[0] == config.marshal_volume
-    assert target[1] == config.marshal_path
+    assert config.marshal_path == "/tmp/marshal"
 
 
 @pytest.mark.parametrize(

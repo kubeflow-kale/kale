@@ -200,14 +200,6 @@ textarea {
   line-height: normal;
 }
 
-.volume-container {
-  border-top: 2px solid var(--jp-layout-color2);
-}
-
-.volume-container:last-child {
-  border-bottom: 2px solid var(--jp-layout-color2);
-}
-
 /* https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Aligning_Items_in_a_Flex_Container */
 .toolbar {
   display: flex;
@@ -235,10 +227,6 @@ textarea {
 
 .minimal-toolbar-button:hover {
   background-color: var(--jp-layout-color2);
-}
-
-.volumes-select {
-  width: 80%;
 }
 
 .react-select-container {

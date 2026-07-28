@@ -30,10 +30,6 @@ import {
 } from '../widgets/LeftPanel';
 import { IDeployPanelCustomLinks } from '../widgets/LeftPanelTypes';
 import NotebookUtils from './NotebookUtils';
-// import {
-//   SELECT_VOLUME_SIZE_TYPES,
-//   SELECT_VOLUME_TYPES,
-// } from '../widgets/VolumesPanel';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import CellUtils from './CellUtils';
 
