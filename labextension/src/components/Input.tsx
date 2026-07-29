@@ -65,6 +65,7 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
     variant = 'outlined',
     updateValue,
     onBeforeUpdate,
+    sx,
     ...rest
   } = props;
 
@@ -131,14 +132,18 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
       variant={variant}
       className={className}
       error={error}
+      // Callers only ever pass a plain style object (never the function/array
+      // forms of `sx`), so a shallow spread is enough to merge in the error
+      // colors without discarding the caller's own overrides.
       sx={
         error
           ? {
+              ...sx,
               '& .MuiInputLabel-root': { color: 'error.main' },
               '& .MuiInputBase-input': { color: 'error.main' },
               '& .MuiFormHelperText-root': { color: 'error.main' },
             }
-          : undefined
+          : sx
       }
       value={value}
       margin="dense"
