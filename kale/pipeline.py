@@ -57,6 +57,10 @@ class VolumeConfig(Config):
     volume_access_mode = Field(
         type=str, validators=[validators.IsLowerValidator, validators.VolumeAccessModeValidator]
     )
+    # When True the compiler injects a KALE_VOLUME_<NAME> env var into every
+    # pipeline step alongside the mount_pvc call, making the mount path
+    # discoverable at runtime without hard-coding it.
+    expose_as_env_var = Field(type=bool, default=False)
 
     def _parse_annotations(self):
         # Convert annotations to a {k: v} dictionary
