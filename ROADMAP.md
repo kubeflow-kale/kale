@@ -10,6 +10,7 @@
 - Support KFP control flow: conditions, loops, and exit handlers: https://github.com/kubeflow/kale/issues/857
 - Better notebook validation: https://github.com/kubeflow/kale/issues/560
 - Auto include output parameters on a step if the last parameter is a variable: https://github.com/kubeflow/kale/issues/783
+- Allow users to hide the HTML Report https://github.com/kubeflow/kale/issues/885
 
 ### Kubeflow SDK Integration
 
