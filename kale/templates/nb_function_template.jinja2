@@ -70,7 +70,9 @@ def {{ step.name }}_step({{ component_signature_args }}):
         f.write(_kale_html_artifact)
 {%- else %}
     _kale_run_code(_kale_blocks)
-{%- endif %}{%- if step.outs|length > 0 %}
+{%- endif %}
+
+{%- if step.outs|length > 0 %}
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("{{ marshal_path }}")

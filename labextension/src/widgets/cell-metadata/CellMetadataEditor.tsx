@@ -260,7 +260,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
                     onClick={() => setHtmlReportDialogOpen(true)}
                     style={{ width: '5%' }}
                   >
-                    REPORT
+                    HTML REPORT
                   </Button>
                 </div>
               </>

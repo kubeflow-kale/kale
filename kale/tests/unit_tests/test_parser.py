@@ -171,3 +171,81 @@ def test_get_pipeline_metrics_source_raises(notebook_processor):
     ):
         notebook_processor.notebook = notebook
         notebook_processor.get_pipeline_metrics_source()
+
+
+@pytest.mark.parametrize(
+    "metadata,expected_report_value",
+    [
+        ({"tags": ["step:test", "report:enabled"]}, True),
+        ({"tags": ["step:test", "report:disabled"]}, False),
+        ({"tags": ["step:test"]}, None),  # No report tag means None (use default)
+    ],
+)
+def test_parse_report_tag(notebook_processor, metadata, expected_report_value):
+    """Test that report:enabled and report:disabled tags are parsed correctly."""
+    result = notebook_processor.parse_cell_metadata(metadata)
+    assert result.get("generate_html_report") == expected_report_value
+
+
+def test_report_tag_requires_step(notebook_processor):
+    """Test that report tag raises an error when used without a step tag."""
+    metadata = {"tags": ["report:disabled"]}
+    with pytest.raises(
+        ValueError,
+        match=r"A cell can not provide HTML report control in a"
+        r" cell that does not declare a step name\.",
+    ):
+        notebook_processor.parse_cell_metadata(metadata)
+
+
+def test_compiler_includes_html_report_by_default():
+    """Test that HTML report output is included when generate_html_report is not disabled."""
+    from kale.compiler import Compiler
+    from kale.pipeline import Pipeline, PipelineConfig
+
+    config = PipelineConfig(pipeline_name="test", experiment_name="test")
+    pipeline = Pipeline(config)
+    step = Step(name="my_step", source=["x = 1"])
+    pipeline.add_step(step)
+
+    compiler = Compiler(pipeline, imports_and_functions="")
+    component_code = compiler.generate_lightweight_component(step)
+
+    assert "my_step_html_report: Output[HTML]" in component_code
+    assert "_kale_html_artifact = _kale_run_code(_kale_blocks)" in component_code
+
+
+def test_compiler_excludes_html_report_when_disabled():
+    """Test that HTML report output is excluded when generate_html_report=False."""
+    from kale.compiler import Compiler
+    from kale.pipeline import Pipeline, PipelineConfig
+
+    config = PipelineConfig(pipeline_name="test", experiment_name="test")
+    pipeline = Pipeline(config)
+    step = Step(name="my_step", source=["x = 1"], generate_html_report=False)
+    pipeline.add_step(step)
+
+    compiler = Compiler(pipeline, imports_and_functions="")
+    component_code = compiler.generate_lightweight_component(step)
+
+    assert "my_step_html_report: Output[HTML]" not in component_code
+    assert "_kale_html_artifact = _kale_run_code(_kale_blocks)" not in component_code
+    # Should still call _kale_run_code, just without capturing the artifact
+    assert "_kale_run_code(_kale_blocks)" in component_code
+
+
+def test_compiler_includes_html_report_when_explicitly_enabled():
+    """Test that HTML report output is included when generate_html_report=True."""
+    from kale.compiler import Compiler
+    from kale.pipeline import Pipeline, PipelineConfig
+
+    config = PipelineConfig(pipeline_name="test", experiment_name="test")
+    pipeline = Pipeline(config)
+    step = Step(name="my_step", source=["x = 1"], generate_html_report=True)
+    pipeline.add_step(step)
+
+    compiler = Compiler(pipeline, imports_and_functions="")
+    component_code = compiler.generate_lightweight_component(step)
+
+    assert "my_step_html_report: Output[HTML]" in component_code
+    assert "_kale_html_artifact = _kale_run_code(_kale_blocks)" in component_code
