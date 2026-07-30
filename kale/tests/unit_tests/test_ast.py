@@ -273,12 +273,12 @@ def test_parse_assignments_expressions_exc_none():
         ("data = load()\n# trailing comment\ndata  ", "data"),
         ("def f():\n    return 1\nf", "f"),
         ("model = train()\nprint(model)", None),  # print, not a bare name
-        ("df = load()\ndf.head()", None),         # method call
-        ("obj = get()\nobj.attr", None),          # attribute access
-        ("a = 1\nb = a + 1", None),               # assignment last
+        ("df = load()\ndf.head()", None),  # method call
+        ("obj = get()\nobj.attr", None),  # attribute access
+        ("a = 1\nb = a + 1", None),  # assignment last
         ("", None),
         ("   \n   ", None),
-        ("x = (", None),                          # syntax error -> None
+        ("x = (", None),  # syntax error -> None
     ],
 )
 def test_get_trailing_variable(code, target):
