@@ -930,6 +930,27 @@ class NotebookProcessor:
                 # finalize bookkeeping for this step
                 step.fns_free_variables = fns_free_vars
 
+            # Terminal output artifacts -------------------------------------
+            # If the last logical line of the step is a bare variable (the
+            # idiomatic Jupyter way of surfacing a value, e.g. a trailing
+            # `chroma_db`), promote it to an output artifact even though no
+            # descendant step consumes it. Without this, such "result"
+            # variables are silently dropped. See kubeflow/kale#783.
+            trailing_var = astutils.get_trailing_variable(step_source)
+            if (
+                trailing_var
+                and trailing_var not in step.outs
+                and trailing_var in astutils.get_marshal_candidates(step_source)
+                and trailing_var not in self.pipeline.pipeline_parameters
+            ):
+                inferred_type = "Artifact"
+                for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
+                    if key in trailing_var.lower():
+                        inferred_type = kfp_type
+                        break
+                step.outs.append(trailing_var)
+                step.add_artifact(trailing_var, inferred_type, is_input=False)
+
     def _detect_in_dependencies(self, source_code: str, pipeline_parameters: dict | None = None):
         """Detect missing names from one pipeline step source code.
 
