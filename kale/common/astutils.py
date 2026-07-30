@@ -326,6 +326,43 @@ def parse_metrics_print_statements(code):
     return {re.sub("_", "-", v): v for v in variables}
 
 
+def get_trailing_variable(code):
+    """Return the variable name auto-displayed on the last line of a cell.
+
+    Kale marshals a step's ``outs`` only when a *descendant* step consumes
+    them. A variable that a user leaves on the final line of a cell -- the
+    idiomatic Jupyter way of "returning" a value (e.g. a bare ``chroma_db``)
+    -- is therefore lost, because no downstream step reads it. This helper
+    detects that pattern so the processor can promote such a variable to a
+    terminal output artifact.
+
+    In ``ast`` terms, the final statement of the cell must be an ``ast.Expr``
+    whose value is a plain ``ast.Name``. Anything else (an assignment, a
+    ``print(...)`` call, a method call like ``df.head()``, an attribute
+    access, a subscript, etc.) returns ``None``.
+
+    Args:
+        code: Multiline string representing the Python source of a cell.
+
+    Returns:
+        The variable name (str) if the last logical line is a bare name,
+        otherwise ``None``.
+    """
+    code = code.strip()
+    if not code:
+        return None
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None
+    if not tree.body:
+        return None
+    last = tree.body[-1]
+    if isinstance(last, ast.Expr) and isinstance(last.value, ast.Name):
+        return last.value.id
+    return None
+
+
 def get_function_source(fn: Callable, strip_signature=True) -> str:
     """Get the source code of a function object.
 
