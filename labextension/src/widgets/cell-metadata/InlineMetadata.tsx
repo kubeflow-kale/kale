@@ -30,6 +30,7 @@ interface IProps {
   limits: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  generateHtmlReport?: boolean;
   cellElement: any;
   cellIndex: number;
   resolvedDefaultBaseImage: string;
@@ -59,6 +60,7 @@ export const InlineMetadata: React.FC<IProps> = ({
   limits,
   baseImage,
   enableCaching,
+  generateHtmlReport,
   cellElement,
   cellIndex,
   resolvedDefaultBaseImage,
@@ -153,6 +155,13 @@ export const InlineMetadata: React.FC<IProps> = ({
       </p>
     ) : null;
 
+  const reportText =
+    generateHtmlReport === false ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        HTML Report: disabled
+      </p>
+    ) : null;
+
   const details = isReserved ? null : (
     <>
       {dependencies.length > 0 ? (
@@ -162,6 +171,7 @@ export const InlineMetadata: React.FC<IProps> = ({
       {limitsText}
       {baseImageText}
       {cacheText}
+      {reportText}
     </>
   );
 

@@ -27,6 +27,7 @@ import { SelectMulti } from '../../components/SelectMulti';
 import { GpuDialog } from './dialogs/GpuDialog';
 import { BaseImageDialog } from './dialogs/BaseImageDialog';
 import { CacheDialog } from './dialogs/CacheDialog';
+import { HtmlReportDialog } from './dialogs/HtmlReportDialog';
 import { useUpdateCellTags } from './hooks/useCellTags';
 import { useEditorPosition } from './hooks/useEditorPosition';
 import {
@@ -48,6 +49,7 @@ export interface ICellEditorData {
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  generateHtmlReport?: boolean;
 }
 
 export interface IProps extends ICellEditorData {
@@ -62,6 +64,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits = {},
     baseImage,
     enableCaching,
+    generateHtmlReport,
     resolvedDefaultBaseImage,
   } = props;
 
@@ -77,6 +80,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits,
     baseImage,
     enableCaching,
+    generateHtmlReport,
   });
 
   useEditorPosition(editorRef, notebook);
@@ -132,6 +136,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
   const [gpuDialogOpen, setGpuDialogOpen] = useState(false);
   const [baseImageDialogOpen, setBaseImageDialogOpen] = useState(false);
   const [cacheDialogOpen, setCacheDialogOpen] = useState(false);
+  const [htmlReportDialogOpen, setHtmlReportDialogOpen] = useState(false);
 
   const closeEditor = useCallback(() => {
     onEditorVisibilityChange(false);
@@ -231,7 +236,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
                   </Button>
                 </div>
 
-                <div style={{ padding: 0 }}>
+                <div style={{ padding: 0, marginRight: '4px' }}>
                   <Button
                     disabled={!hasStepName}
                     color="primary"
@@ -242,6 +247,20 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
                     style={{ width: '5%' }}
                   >
                     CACHE
+                  </Button>
+                </div>
+
+                <div style={{ padding: 0 }}>
+                  <Button
+                    disabled={!hasStepName}
+                    color="primary"
+                    variant="contained"
+                    size="small"
+                    title="HTML Report"
+                    onClick={() => setHtmlReportDialogOpen(true)}
+                    style={{ width: '5%' }}
+                  >
+                    HTML REPORT
                   </Button>
                 </div>
               </>
@@ -295,6 +314,13 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
         onClose={() => setCacheDialogOpen(false)}
         enableCaching={enableCaching}
         onUpdateCaching={updateCellTags.updateCaching}
+      />
+
+      <HtmlReportDialog
+        open={htmlReportDialogOpen}
+        onClose={() => setHtmlReportDialogOpen(false)}
+        generateHtmlReport={generateHtmlReport}
+        onUpdateHtmlReport={updateCellTags.updateHtmlReport}
       />
     </>
   );

@@ -58,6 +58,11 @@ IMAGE_TAG = r"^image:(.+)$"
 CACHE_ENABLED = "enabled"
 CACHE_DISABLED = "disabled"
 CACHE_TAG = rf"^cache:({CACHE_ENABLED}|{CACHE_DISABLED})$"
+# Report tag for per-step HTML report generation control
+# E.g.: report:enabled or report:disabled
+REPORT_ENABLED = "enabled"
+REPORT_DISABLED = "disabled"
+REPORT_TAG = rf"^report:({REPORT_ENABLED}|{REPORT_DISABLED})$"
 
 _TAGS_LANGUAGE = [
     SKIP_TAG,
@@ -72,9 +77,10 @@ _TAGS_LANGUAGE = [
     LIMITS_TAG,
     IMAGE_TAG,
     CACHE_TAG,
+    REPORT_TAG,
 ]
 # These tags are applied to every step of the pipeline
-_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG, CACHE_TAG]
+_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG, CACHE_TAG, REPORT_TAG]
 
 
 METRICS_TEMPLATE = """\
@@ -176,6 +182,11 @@ class NotebookConfig(PipelineConfig):
                 # Cache value is 'enabled' or 'disabled'
                 cache_value = parts.pop(0)
                 result["enable_caching"] = cache_value == CACHE_ENABLED
+
+            if conf_type == "report":
+                # Report value is 'enabled' or 'disabled'
+                report_value = parts.pop(0)
+                result["generate_html_report"] = report_value == REPORT_ENABLED
         return result
 
 
@@ -377,6 +388,7 @@ class NotebookProcessor:
                         annotations=tags.get("annotations", {}),
                         base_image=tags.get("base_image", ""),
                         enable_caching=tags.get("enable_caching"),
+                        generate_html_report=tags.get("generate_html_report"),
                     )
                     self.pipeline.add_step(step)
                     for _prev_step in tags["prev_steps"]:
@@ -430,6 +442,7 @@ class NotebookProcessor:
         cell_limits = {}
         cell_base_image = None
         cell_enable_caching = None
+        cell_generate_html_report = None
 
         # the notebook cell was not tagged
         if "tags" not in metadata or len(metadata["tags"]) == 0:
@@ -490,6 +503,11 @@ class NotebookProcessor:
                 cache_value = tag_parts.pop(0)
                 cell_enable_caching = cache_value == CACHE_ENABLED
 
+            if tag_name == "report":
+                # Report value is 'enabled' or 'disabled'
+                report_value = tag_parts.pop(0)
+                cell_generate_html_report = report_value == REPORT_ENABLED
+
             # name of the future Pipeline step
             if tag_name in ["step"]:
                 step_name = tag_parts.pop(0)
@@ -543,6 +561,14 @@ class NotebookProcessor:
                     " cell that does not declare a step name."
                 )
             parsed_tags["enable_caching"] = cell_enable_caching
+
+        if cell_generate_html_report is not None:
+            if missing_step_names:
+                raise ValueError(
+                    "A cell can not provide HTML report control in a"
+                    " cell that does not declare a step name."
+                )
+            parsed_tags["generate_html_report"] = cell_generate_html_report
         return parsed_tags
 
     def get_pipeline_parameters_source(self):
