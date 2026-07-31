@@ -26,6 +26,7 @@ import {
 import { BaseImageSection } from './sections/BaseImageSection';
 import { GpuSection, ILimitAction } from './sections/GpuSection';
 import { CacheSection } from './sections/CacheSection';
+import { ReportSection } from './sections/ReportSection';
 
 interface IStepConfigDialogProps {
   open: boolean;
@@ -41,6 +42,9 @@ interface IStepConfigDialogProps {
   // Caching
   enableCaching?: boolean;
   onUpdateCaching: (value: boolean | undefined) => void;
+  // HTML report
+  generateHtmlReport?: boolean;
+  onUpdateHtmlReport: (value: boolean | undefined) => void;
 }
 
 /**
@@ -87,6 +91,15 @@ export const StepConfigDialog: React.FC<IStepConfigDialogProps> = props => {
         <CacheSection
           enableCaching={props.enableCaching}
           onUpdateCaching={props.onUpdateCaching}
+        />
+      ),
+    },
+    {
+      label: 'Report',
+      render: () => (
+        <ReportSection
+          generateHtmlReport={props.generateHtmlReport}
+          onUpdateHtmlReport={props.onUpdateHtmlReport}
         />
       ),
     },

@@ -262,3 +262,24 @@ def test_parse_assignments_expressions_exc_none():
     with pytest.raises(ValueError) as exec:
         kale_ast.parse_assignments_expressions("a = None")
     assert "`None` value None is not supported in pipeline parameters" in str(exec.value)
+
+
+@pytest.mark.parametrize(
+    "code,target",
+    [
+        ("chroma_db = build_db()\nchroma_db", "chroma_db"),
+        ("x = 1\ny = 2\ny", "y"),
+        ("result", "result"),
+        ("data = load()\n# trailing comment\ndata  ", "data"),
+        ("def f():\n    return 1\nf", "f"),
+        ("model = train()\nprint(model)", None),  # print, not a bare name
+        ("df = load()\ndf.head()", None),  # method call
+        ("obj = get()\nobj.attr", None),  # attribute access
+        ("a = 1\nb = a + 1", None),  # assignment last
+        ("", None),
+        ("   \n   ", None),
+        ("x = (", None),  # syntax error -> None
+    ],
+)
+def test_get_trailing_variable(code, target):
+    assert kale_ast.get_trailing_variable(code) == target

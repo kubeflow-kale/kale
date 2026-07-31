@@ -25,6 +25,7 @@ interface IUseCellTagsParams {
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  generateHtmlReport?: boolean;
 }
 
 /**
@@ -39,6 +40,7 @@ export function useUpdateCellTags({
   limits,
   baseImage,
   enableCaching,
+  generateHtmlReport,
 }: IUseCellTagsParams) {
   const { activeCellIndex } = useContext(CellMetadataContext);
 
@@ -51,6 +53,7 @@ export function useUpdateCellTags({
         limits: limits || {},
         baseImage,
         enableCaching,
+        generateHtmlReport,
         stepName: value,
       });
     },
@@ -62,6 +65,7 @@ export function useUpdateCellTags({
       limits,
       baseImage,
       enableCaching,
+      generateHtmlReport,
     ],
   );
 
@@ -83,10 +87,19 @@ export function useUpdateCellTags({
         limits: limits || {},
         baseImage,
         enableCaching,
+        generateHtmlReport,
         prevStepNames: previousSteps,
       });
     },
-    [notebook, activeCellIndex, stepName, limits, baseImage, enableCaching],
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      limits,
+      baseImage,
+      enableCaching,
+      generateHtmlReport,
+    ],
   );
 
   const updateLimits = useCallback(
@@ -116,6 +129,74 @@ export function useUpdateCellTags({
         limits: newLimits,
         baseImage,
         enableCaching,
+        generateHtmlReport,
+      });
+    },
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      stepDependencies,
+      limits,
+      baseImage,
+      enableCaching,
+      generateHtmlReport,
+    ],
+  );
+
+  const updateBaseImage = useCallback(
+    (value: string) => {
+      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
+        stepName: stepName || '',
+        prevStepNames: stepDependencies,
+        limits: limits || {},
+        baseImage: value || undefined,
+        enableCaching,
+        generateHtmlReport,
+      });
+    },
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      stepDependencies,
+      limits,
+      enableCaching,
+      generateHtmlReport,
+    ],
+  );
+
+  const updateCaching = useCallback(
+    (value: boolean | undefined) => {
+      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
+        stepName: stepName || '',
+        prevStepNames: stepDependencies,
+        limits: limits || {},
+        baseImage,
+        enableCaching: value,
+        generateHtmlReport,
+      });
+    },
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      stepDependencies,
+      limits,
+      baseImage,
+      generateHtmlReport,
+    ],
+  );
+
+  const updateHtmlReport = useCallback(
+    (value: boolean | undefined) => {
+      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
+        stepName: stepName || '',
+        prevStepNames: stepDependencies,
+        limits: limits || {},
+        baseImage,
+        enableCaching,
+        generateHtmlReport: value,
       });
     },
     [
@@ -128,39 +209,6 @@ export function useUpdateCellTags({
       enableCaching,
     ],
   );
-
-  const updateBaseImage = useCallback(
-    (value: string) => {
-      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
-        stepName: stepName || '',
-        prevStepNames: stepDependencies,
-        limits: limits || {},
-        baseImage: value || undefined,
-        enableCaching,
-      });
-    },
-    [
-      notebook,
-      activeCellIndex,
-      stepName,
-      stepDependencies,
-      limits,
-      enableCaching,
-    ],
-  );
-
-  const updateCaching = useCallback(
-    (value: boolean | undefined) => {
-      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
-        stepName: stepName || '',
-        prevStepNames: stepDependencies,
-        limits: limits || {},
-        baseImage,
-        enableCaching: value,
-      });
-    },
-    [notebook, activeCellIndex, stepName, stepDependencies, limits, baseImage],
-  );
   const clearCellMetadata = useCallback(() => {
     TagsUtils.removeAllKaleTags(notebook, activeCellIndex);
   }, [notebook, activeCellIndex]);
@@ -172,6 +220,7 @@ export function useUpdateCellTags({
     updateLimits,
     updateBaseImage,
     updateCaching,
+    updateHtmlReport,
     clearCellMetadata,
   };
 }

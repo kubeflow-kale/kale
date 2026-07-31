@@ -137,7 +137,11 @@ class Compiler:
         template = self._get_templating_env().get_template(NB_FN_TEMPLATE)
 
         # Separate parameters with and without defaults for proper ordering
-        params_without_defaults = [f"{step.name}_html_report: Output[HTML]"]
+        params_without_defaults = []
+
+        # Add HTML report output only if not explicitly disabled
+        if step.config.generate_html_report is not False:
+            params_without_defaults.append(f"{step.name}_html_report: Output[HTML]")
 
         if hasattr(step, "metrics") and step.metrics:
             params_without_defaults.append("kale_metrics_artifact: Output[Metrics]")
