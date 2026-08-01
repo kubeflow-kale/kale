@@ -16,7 +16,8 @@
 import nbformat as nbf
 
 from kale.processors.workflow import (
-    _defined_names,
+    _missing_names,
+    _provided_names,
     _topo_sort,
     _type_for,
     compose_notebooks_as_subpipelines,
@@ -150,16 +151,31 @@ def test_untagged_cell_is_not_treated_as_a_boundary_variable(tmp_path, monkeypat
     assert "dataset_output_artifact" in _module(tmp_path, "notebook_a")
 
 
-def test_defined_names_ignores_function_and_class_bodies():
-    """Only module-top-level assignments are boundary variables; names bound
-    inside a def or class body must not leak out."""
+def test_provided_names_ignores_function_and_class_bodies():
+    """Names bound inside a def or class body are local and must not leak out
+    as boundary variables; the function and class themselves can be marshalled."""
     code = "dataset = [1]\ndef f():\n    local = 1\nclass C:\n    attr = 2\n"
-    assert _defined_names(code) == {"dataset"}
+    provided = _provided_names(code, _missing_names(code))
+    assert {"dataset", "f", "C"} <= provided
+    assert "local" not in provided
+    assert "attr" not in provided
 
 
-def test_defined_names_handles_tuple_unpacking():
+def test_provided_names_handles_tuple_unpacking():
     """Tuple/list unpacking targets are all captured."""
-    assert _defined_names("a, b = 1, 2") == {"a", "b"}
+    code = "a, b = 1, 2"
+    assert {"a", "b"} <= _provided_names(code, _missing_names(code))
+
+
+def test_provided_names_excludes_what_the_unit_consumes():
+    """A name the unit is itself missing is not one it provides. This
+    subtraction is what orients an edge between two units."""
+    code = "model = sum(dataset)"
+    missing = _missing_names(code)
+    assert missing == {"dataset"}
+    provided = _provided_names(code, missing)
+    assert "model" in provided
+    assert "dataset" not in provided
 
 
 def test_name_collision_across_notebooks_raises(tmp_path, monkeypatch):

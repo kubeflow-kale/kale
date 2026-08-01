@@ -25,42 +25,33 @@ imports those modules as dependencies. This mirrors the recursive shape of the
 processing and gives every notebook ownership of its own configuration.
 """
 
-import ast
 from collections import deque
 import keyword
 import os
 import sys
 
-from kale.common import flakeutils
+from kale.common import astutils, flakeutils
 
 
-def _names_in_target(target):
-    """Assignment target names, descending into tuple/list unpacking."""
-    if isinstance(target, ast.Name):
-        return {target.id}
-    if isinstance(target, (ast.Tuple, ast.List)):
-        names = set()
-        for elt in target.elts:
-            names |= _names_in_target(elt)
-        return names
-    return set()
+def _missing_names(code):
+    """Names the code uses but does not define, via PyFlakes.
 
-
-def _defined_names(code):
-    """Names bound at module top level, not inside function or class bodies.
-
-    Only ``ast.parse(code).body`` is scanned (not ``ast.walk``), so a name
-    assigned inside a ``def`` or ``class`` does not leak out as a boundary
-    variable. This matches how Kale detects cell-to-cell dependencies.
+    The same detection ``dependencies_detection`` runs between cells, here
+    applied to a whole unit (a notebook's step code, or a single step of the
+    root notebook).
     """
-    names = set()
-    for node in ast.parse(code).body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                names |= _names_in_target(target)
-        elif isinstance(node, (ast.AugAssign, ast.AnnAssign)) and isinstance(node.target, ast.Name):
-            names.add(node.target.id)
-    return names
+    return set(flakeutils.pyflakes_report(code=code))
+
+
+def _provided_names(code, missing):
+    """Names a unit can hand to another unit.
+
+    Kale's own :func:`astutils.get_marshal_candidates`, the scanner the
+    cell-level dependency detection uses to pick what an ancestor marshals out,
+    minus the names the unit is itself missing. The subtraction is what orients
+    an edge: a variable a unit consumes is not one it provides.
+    """
+    return set(astutils.get_marshal_candidates(code)) - missing
 
 
 def _topo_sort(nodes, edges):
@@ -105,33 +96,50 @@ def _type_for(var_name):
     return "Model" if "model" in var_name else "Dataset"
 
 
-def _defining_step(steps, var):
-    """Last step (in order) whose code defines ``var``."""
+def _defining_step(steps, var, unit):
+    """Last step (in order) of a notebook whose code provides ``var``."""
     found = None
     for step in steps:
-        if var in _defined_names("\n".join(step.source)):
+        code = "\n".join(step.source)
+        if var in _provided_names(code, _missing_names(code)):
             found = step
-    return found or steps[-1]
+    if found is None:
+        raise ValueError(
+            f"'{unit}' was resolved as the producer of '{var}', but none of its "
+            f"steps provides it. This is a bug in Kale's boundary detection."
+        )
+    return found
 
 
-def _using_steps(steps, var):
-    """Every step whose code references ``var`` without defining it.
+def _using_steps(steps, var, unit):
+    """Every step of a notebook that references ``var`` without defining it.
 
     Returns all consumers (not just the first) so a boundary variable used by
     more than one step in a notebook is wired into each of them.
     """
-    return [step for step in steps if var in flakeutils.pyflakes_report("\n".join(step.source))]
+    consumers = [step for step in steps if var in _missing_names("\n".join(step.source))]
+    if not consumers:
+        raise ValueError(
+            f"'{unit}' was resolved as a consumer of '{var}', but none of its "
+            f"steps requires it. This is a bug in Kale's boundary detection."
+        )
+    return consumers
 
 
 def _producer_step(steps, var, consumer):
-    """Upstream step that lists ``var`` among its outputs."""
+    """Upstream step of the same notebook that lists ``var`` among its outputs."""
     producer = None
     for step in steps:
         if step.name == consumer.name:
             break
         if var in step.outs:
             producer = step
-    return producer or consumer
+    if producer is None:
+        raise ValueError(
+            f"Step '{consumer.name}' requires '{var}', but no earlier step in the "
+            f"same notebook produces it. This is a bug in Kale's boundary detection."
+        )
+    return producer
 
 
 def extract_notebook_references(parent_path):
@@ -279,11 +287,12 @@ def compose_notebooks_as_subpipelines(
         # Only code that runs as a step counts. Untagged cells never become a
         # step, so scanning raw cells would invent variables no step produces.
         step_code = "\n".join("\n".join(s.source) for s in pipeline.steps)
+        missing = _missing_names(step_code)
         notebooks[name] = {
             "pipeline": pipeline,
             "imports_and_functions": proc.get_imports_and_functions(),
-            "defined": _defined_names(step_code),
-            "needed": flakeutils.pyflakes_report(step_code),
+            "defined": _provided_names(step_code, missing),
+            "needed": missing,
             "display": name.replace("_", "-"),
         }
 
@@ -308,10 +317,11 @@ def compose_notebooks_as_subpipelines(
                     f"name as a referenced notebook. Rename one of them."
                 )
             code = "\n".join(step.source)
+            missing = _missing_names(code)
             parent_steps[step.name] = {
                 "step": step,
-                "defined": _defined_names(code),
-                "needed": set(flakeutils.pyflakes_report(code)),
+                "defined": _provided_names(code, missing),
+                "needed": missing,
             }
         # explicit `prev:` edges between parent steps order them even when no
         # data flows between them
@@ -374,12 +384,12 @@ def compose_notebooks_as_subpipelines(
     for name, nb in notebooks.items():
         steps = list(nb["pipeline"].steps)
         for var in boundary_provides[name]:
-            step = _defining_step(steps, var)
+            step = _defining_step(steps, var, name)
             if var not in step.outs:
                 step.outs.append(var)
             produces_var[(name, var)] = step.name
         for var in boundary_needs[name]:
-            for step in _using_steps(steps, var) or [steps[0]]:
+            for step in _using_steps(steps, var, name):
                 if var not in step.ins:
                     step.ins.append(var)
     for name, ps in parent_steps.items():
@@ -449,14 +459,12 @@ def compose_notebooks_as_subpipelines(
 
     def _toplevel_ref(var):
         """(producing unit, task-output reference) for a boundary variable."""
-        # The producer map covers AST-visible assignments; the outs fallback
-        # covers flows Kale's own dependency detection wired between parent
-        # steps (e.g. function objects, which are not assignments).
-        src = producer.get(var) or next(
-            (n for n, ps in parent_steps.items() if var in ps["step"].outs), None
-        )
+        src = producer.get(var)
         if src is None:
-            raise ValueError(f"Cannot resolve the producer of '{var}' at the top level.")
+            raise ValueError(
+                f"Cannot resolve the producer of '{var}' at the top level. This is "
+                f"a bug in Kale's boundary detection."
+            )
         if src in parent_steps:
             # a component task exposes each output artifact by parameter name
             return src, f'{src}_task.outputs["{var}_output_artifact"]'
