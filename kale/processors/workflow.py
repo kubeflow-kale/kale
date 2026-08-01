@@ -149,8 +149,7 @@ def extract_notebook_references(parent_path):
     is read from the cell's ``notebook_path`` metadata and resolved relative to
     the parent notebook's directory. Returns ``[]`` for a regular notebook with
     no ``notebook:`` cells, which is how the CLI tells composition apart from the
-    single-notebook path. Both tag forms are accepted (``notebook:<name>`` and
-    the UI-written ``step:notebook:<name>``, see ``NOTEBOOK_TAG``).
+    single-notebook path.
 
     The composition notebook may also carry its own ``step:``/``imports``/
     ``functions`` cells (KEP-0812 Story 2); those are handled by the normal
@@ -173,7 +172,7 @@ def extract_notebook_references(parent_path):
         for tag in tags:
             if re.match(NOTEBOOK_TAG, tag):
                 is_ref = True
-                name = tag.split("notebook:", 1)[1]
+                name = tag.split(":", 1)[1]
                 if not name:
                     raise ValueError(
                         f"`{tag}` cell is missing the notebook name; use `notebook:<name>`."

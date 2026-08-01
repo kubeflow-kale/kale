@@ -317,16 +317,15 @@ def test_two_notebooks_with_the_same_name_raise(tmp_path, monkeypatch):
         compose_notebooks_as_subpipelines([str(a), str(b)], pipeline_name="dup")
 
 
-def test_extract_references_accepts_both_tag_forms(tmp_path):
-    """`notebook:<name>` and the UI-written `step:notebook:<name>` are both
-    notebook references; a plain step tag is not."""
+def test_extract_references_reads_notebook_tags_only(tmp_path):
+    """`notebook:<name>` cells are references, in cell order; a `step:` cell is
+    not one, and `step:notebook:<name>` is not a valid tag at all."""
+    import pytest
+
     main = tmp_path / "main.ipynb"
     nb = nbf.v4.new_notebook()
     nb.metadata["kubeflow_notebook"] = {"pipeline_name": "m", "volumes": []}
-    for tag, path in [
-        ("notebook:nb_a", "./nb_a.ipynb"),
-        ("step:notebook:nb_b", "./nb_b.ipynb"),  # what the Kale UI cell editor writes
-    ]:
+    for tag, path in [("notebook:nb_a", "./nb_a.ipynb"), ("notebook:nb_b", "./nb_b.ipynb")]:
         c = nbf.v4.new_code_cell(source="")
         c.metadata["tags"] = [tag]
         c.metadata["notebook_path"] = path
@@ -339,6 +338,15 @@ def test_extract_references_accepts_both_tag_forms(tmp_path):
     refs = extract_notebook_references(str(main))
     assert [name for name, _ in refs] == ["nb_a", "nb_b"]
     assert all(p.endswith(".ipynb") for _, p in refs)
+
+    # the old dual form is gone: the tag language no longer recognizes it
+    from kale.processors import NotebookProcessor
+
+    dual = tmp_path / "dual.ipynb"
+    _write_mixed_nb(dual, "dual", [(["step:notebook:nb_a"], "", {"notebook_path": "./a.ipynb"})])
+    assert extract_notebook_references(str(dual)) == []
+    with pytest.raises(ValueError, match="Unrecognized tag"):
+        NotebookProcessor(str(dual), {"pipeline_name": "d", "experiment_name": "t"}).run()
 
 
 def _write_composition_nb(path, extra_cells):

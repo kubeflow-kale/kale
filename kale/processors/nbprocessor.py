@@ -42,10 +42,7 @@ PREV_TAG = r"^prev:[_a-z]([_a-z0-9]*)?$"
 STEP_TAG = r"^step:([_a-z]([_a-z0-9]*)?)?$"
 # A `notebook:<name>` cell references another notebook as a sub-pipeline. The
 # referenced path is carried in the cell metadata (`notebook_path`), not the tag.
-# The `step:notebook:<name>` form is also accepted: the Kale UI cell editor can
-# only write `step:` tags, and a colon is invalid in a step name, so the form is
-# unambiguous.
-NOTEBOOK_TAG = r"^(step:)?notebook:([_a-z]([_a-z0-9]*)?)?$"
+NOTEBOOK_TAG = r"^notebook:([_a-z]([_a-z0-9]*)?)?$"
 PIPELINE_PARAMETERS_TAG = r"^pipeline-parameters$"
 PIPELINE_METRICS_TAG = r"^pipeline-metrics$"
 # Annotations map to actual pod annotations that can be set via KFP SDK
@@ -542,13 +539,6 @@ class NotebookProcessor:
                 parsed_tags["step_names"] = [t]
                 return parsed_tags
 
-            # A notebook reference is matched on the full tag (either form),
-            # before the split below could mistake `step:notebook:x` for a step.
-            if re.match(NOTEBOOK_TAG, t):
-                parsed_tags["notebook_names"].append(t.split("notebook:", 1)[1])
-                parsed_tags["notebook_path"] = metadata.get("notebook_path")
-                continue
-
             # now only `step` and `prev` tags remain to be parsed.
             tag_parts = t.split(":")
             tag_name = tag_parts.pop(0)
@@ -578,6 +568,12 @@ class NotebookProcessor:
                 # Report value is 'enabled' or 'disabled'
                 report_value = tag_parts.pop(0)
                 cell_generate_html_report = report_value == REPORT_ENABLED
+
+            # name of the referenced notebook, compiled as a sub-pipeline. Its
+            # path comes from the cell metadata, not from the tag.
+            if tag_name == "notebook":
+                parsed_tags["notebook_names"].append(tag_parts.pop(0))
+                parsed_tags["notebook_path"] = metadata.get("notebook_path")
 
             # name of the future Pipeline step
             if tag_name in ["step"]:

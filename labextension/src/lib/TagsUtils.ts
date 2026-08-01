@@ -109,12 +109,8 @@ export default class TagsUtils {
         if (RESERVED_CELL_NAMES.includes(v)) {
           return v;
         }
-        // both reference forms normalize to 'notebook:<name>' (the
-        // `step:notebook:<name>` form is what this editor itself writes,
-        // since the backend accepts either)
-        if (v.startsWith('step:' + NOTEBOOK_PREFIX)) {
-          return v.replace('step:', '');
-        }
+        // a `notebook:<name>` reference is kept whole, so that the cell type
+        // can be told apart from a step by its prefix
         if (v.startsWith(NOTEBOOK_PREFIX)) {
           return v;
         }
