@@ -120,6 +120,7 @@ export function useInlineMetadata(
         baseImage: tags.baseImage,
         enableCaching: tags.enableCaching,
         notebookPath: tags.notebookPath,
+        generateHtmlReport: tags.generateHtmlReport,
       };
 
       const cellElement = nb.content.widgets[index].node as HTMLElement;
@@ -151,6 +152,7 @@ export function useInlineMetadata(
             limits={tags.limits || {}}
             baseImage={tags.baseImage}
             enableCaching={tags.enableCaching}
+            generateHtmlReport={tags.generateHtmlReport}
             previousStepName={previousStepName}
             cellIndex={index}
             resolvedDefaultBaseImage={

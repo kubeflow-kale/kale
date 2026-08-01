@@ -95,6 +95,50 @@ Pipeline-level Kale settings live on the notebook (not on a cell) under the
 `metadata.kubeflow_notebook` key — these are the same fields the side panel
 exposes.
 
+## Output artifacts
+
+Kale passes a variable from one step to the next only when a later step
+actually uses it. A variable that nothing downstream consumes is normally
+dropped — including the "result" you leave on the last line of a cell, the
+idiomatic Jupyter way of displaying a value.
+
+Kale recognises that pattern: **if the last line of a step is a bare
+variable name, the variable is automatically promoted to a KFP output
+artifact**, even though no later step consumes it. You can then inspect and
+download it from the run's step details in the KFP UI.
+
+```python
+model = train(dataset)
+print(f"Training finished, accuracy={acc:.3f}")
+model          # <- bare trailing variable: becomes a KFP output artifact
+```
+
+The artifact type is inferred from the variable name:
+
+| Name contains        | KFP artifact type       |
+| -------------------- | ----------------------- |
+| `model`              | `Model`                 |
+| `dataset` or `data`  | `Dataset`               |
+| `metrics`            | `Metrics`               |
+| `classification`     | `ClassificationMetrics` |
+| anything else        | `Artifact`              |
+
+Only a *bare name* on the last line triggers the promotion. These do
+**not** create an artifact:
+
+```python
+print(model)   # a call, not a bare name
+df.head()      # a method call
+obj.attr       # an attribute access
+b = a + 1      # an assignment
+```
+
+The variable must be defined in the step (or an ancestor), must not be a
+pipeline parameter, and is not duplicated if the step already outputs it.
+See the [RAG example notebook](https://github.com/kubeflow/kale/tree/main/examples/rag)
+for this in action: its `create_vector_database` step ends with a bare
+`chroma_db`, which shows up as a downloadable artifact in the KFP UI.
+
 ## Organising a notebook for Kale
 
 A notebook that compiles well with Kale usually follows this order:

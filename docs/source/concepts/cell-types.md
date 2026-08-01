@@ -23,6 +23,7 @@ editing the notebook JSON directly.
 | `limit:<resource>:<value>`  | `limit:nvidia.com/gpu:1`        | Adds a Kubernetes resource limit to the step's pod.                    |
 | `image:<image>`             | `image:pytorch/pytorch:2.0`     | Overrides the base image for this step only.                           |
 | `cache:enabled` / `cache:disabled` | `cache:disabled`         | Opts the step into or out of KFP's built-in caching.                   |
+| `report:enabled` / `report:disabled` | `report:disabled`      | Enables or disables HTML report generation for this step.              |
 
 
 ## Per-cell-type details
@@ -128,7 +129,8 @@ A step cell can carry additional tags to customize its pod spec:
 #       limit:nvidia.com/gpu:1,
 #       annotation:team:ml,
 #       label:env:prod,
-#       cache:disabled
+#       cache:disabled,
+#       report:disabled
 ```
 
 - **`image:<image>`** — use a custom base image for just this step.
@@ -139,6 +141,10 @@ A step cell can carry additional tags to customize its pod spec:
   integration with observability tooling.
 - **`cache:disabled`** — opt the step out of KFP's caching. Use `cache:enabled`
   to force caching when it's been disabled globally.
+- **`report:disabled`** — disable HTML report generation for this step. By
+  default, each step produces an HTML artifact containing the rendered output
+  of its notebook cells. Use this tag to skip report generation when you don't
+  need it, reducing artifact storage overhead.
 
 ### `skip`
 

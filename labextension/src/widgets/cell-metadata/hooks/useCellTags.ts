@@ -26,6 +26,7 @@ interface IUseCellTagsParams {
   baseImage?: string;
   enableCaching?: boolean;
   notebookPath?: string;
+  generateHtmlReport?: boolean;
 }
 
 /**
@@ -59,6 +60,7 @@ export function useUpdateCellTags({
   baseImage,
   enableCaching,
   notebookPath,
+  generateHtmlReport,
 }: IUseCellTagsParams) {
   const { activeCellIndex } = useContext(CellMetadataContext);
 
@@ -72,6 +74,7 @@ export function useUpdateCellTags({
         baseImage,
         enableCaching,
         notebookPath,
+        generateHtmlReport,
         stepName: value,
       });
     },
@@ -84,6 +87,7 @@ export function useUpdateCellTags({
       baseImage,
       enableCaching,
       notebookPath,
+      generateHtmlReport,
     ],
   );
 
@@ -122,10 +126,19 @@ export function useUpdateCellTags({
         limits: limits || {},
         baseImage,
         enableCaching,
+        generateHtmlReport,
         prevStepNames: previousSteps,
       });
     },
-    [notebook, activeCellIndex, stepName, limits, baseImage, enableCaching],
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      limits,
+      baseImage,
+      enableCaching,
+      generateHtmlReport,
+    ],
   );
 
   const updateLimits = useCallback(
@@ -155,6 +168,7 @@ export function useUpdateCellTags({
         limits: newLimits,
         baseImage,
         enableCaching,
+        generateHtmlReport,
       });
     },
     [
@@ -165,6 +179,7 @@ export function useUpdateCellTags({
       limits,
       baseImage,
       enableCaching,
+      generateHtmlReport,
     ],
   );
 
@@ -176,6 +191,7 @@ export function useUpdateCellTags({
         limits: limits || {},
         baseImage: value || undefined,
         enableCaching,
+        generateHtmlReport,
       });
     },
     [
@@ -185,6 +201,7 @@ export function useUpdateCellTags({
       stepDependencies,
       limits,
       enableCaching,
+      generateHtmlReport,
     ],
   );
 
@@ -196,9 +213,40 @@ export function useUpdateCellTags({
         limits: limits || {},
         baseImage,
         enableCaching: value,
+        generateHtmlReport,
       });
     },
-    [notebook, activeCellIndex, stepName, stepDependencies, limits, baseImage],
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      stepDependencies,
+      limits,
+      baseImage,
+      generateHtmlReport,
+    ],
+  );
+
+  const updateHtmlReport = useCallback(
+    (value: boolean | undefined) => {
+      TagsUtils.setKaleCellTags(notebook, activeCellIndex, {
+        stepName: stepName || '',
+        prevStepNames: stepDependencies,
+        limits: limits || {},
+        baseImage,
+        enableCaching,
+        generateHtmlReport: value,
+      });
+    },
+    [
+      notebook,
+      activeCellIndex,
+      stepName,
+      stepDependencies,
+      limits,
+      baseImage,
+      enableCaching,
+    ],
   );
   const clearCellMetadata = useCallback(() => {
     TagsUtils.removeAllKaleTags(notebook, activeCellIndex);
@@ -212,6 +260,7 @@ export function useUpdateCellTags({
     updateLimits,
     updateBaseImage,
     updateCaching,
+    updateHtmlReport,
     clearCellMetadata,
   };
 }

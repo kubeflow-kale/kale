@@ -126,6 +126,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
         baseImage: activeEditorData.baseImage,
         enableCaching: activeEditorData.enableCaching,
         notebookPath: activeEditorData.notebookPath,
+        generateHtmlReport: activeEditorData.generateHtmlReport,
       }
     : {
         notebook: notebook,
@@ -135,6 +136,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
         baseImage: undefined,
         enableCaching: undefined,
         notebookPath: undefined,
+        generateHtmlReport: undefined,
       };
 
   const cellMetadataEditor = createPortal(
@@ -146,6 +148,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
       baseImage={editorProps.baseImage}
       enableCaching={editorProps.enableCaching}
       notebookPath={editorProps.notebookPath}
+      generateHtmlReport={editorProps.generateHtmlReport}
       resolvedDefaultBaseImage={resolvedDefaultBaseImage}
     />,
     document.body,

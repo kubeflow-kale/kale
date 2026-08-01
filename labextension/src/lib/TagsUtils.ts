@@ -20,6 +20,8 @@ import { KALE_TAG_PREFIXES } from '../widgets/cell-metadata/constants';
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
 const CACHE_ENABLED_VALUE = 'enabled';
+const REPORT_TAG = 'report:';
+const REPORT_ENABLED_VALUE = 'enabled';
 
 const NOTEBOOK_PREFIX = 'notebook:';
 
@@ -31,6 +33,7 @@ interface IKaleCellTags {
   enableCaching?: boolean;
   // set when the cell is a `notebook:` reference (stepName = 'notebook:<name>')
   notebookPath?: string;
+  generateHtmlReport?: boolean;
 }
 
 /** Contains utility functions for manipulating/handling Kale cell tags. */
@@ -153,6 +156,14 @@ export default class TagsUtils {
         enableCaching = cacheValue === CACHE_ENABLED_VALUE ? true : false;
       }
 
+      // Parse report tag
+      let generateHtmlReport: boolean | undefined;
+      const reportTag = tags.find(v => v.startsWith(REPORT_TAG));
+      if (reportTag) {
+        const reportValue = reportTag.substring(REPORT_TAG.length);
+        generateHtmlReport = reportValue === REPORT_ENABLED_VALUE ? true : false;
+      }
+
       const stepName = b_name[0] || '';
       let notebookPath: string | undefined;
       if (stepName.startsWith(NOTEBOOK_PREFIX)) {
@@ -171,6 +182,7 @@ export default class TagsUtils {
         baseImage: baseImage,
         enableCaching: enableCaching,
         notebookPath: notebookPath,
+        generateHtmlReport: generateHtmlReport,
       };
     }
     return null;
@@ -214,6 +226,11 @@ export default class TagsUtils {
     // Add cache tag if specified
     if (metadata.enableCaching !== undefined) {
       tags.push(CACHE_TAG + (metadata.enableCaching ? 'enabled' : 'disabled'));
+    }
+
+    // Add report tag if specified
+    if (metadata.generateHtmlReport !== undefined) {
+      tags.push(REPORT_TAG + (metadata.generateHtmlReport ? 'enabled' : 'disabled'));
     }
 
     // A notebook reference carries its target's path in the cell metadata

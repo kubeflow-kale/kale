@@ -107,6 +107,7 @@ A few environment variables are useful when running Kale:
 | `KALE_RUN_LINK`          | Custom URL for pipeline run links. Overrides the default KFP UI pattern.                   |
 | `KALE_PIP_INDEX_URLS`    | Comma-separated pip index URLs baked into the generated components (used for local dev).  |
 | `KALE_PIP_TRUSTED_HOSTS` | Trusted hosts for HTTP pip index URLs.                                                     |
+| `KALE_PYPI_PROD_URL`     | Production pip index URL baked into generated components. Defaults to `https://pypi.org/simple`. |
 
 ### Custom links
 

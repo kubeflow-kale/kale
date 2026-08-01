@@ -30,6 +30,7 @@ interface IProps {
   limits: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  generateHtmlReport?: boolean;
   cellElement: any;
   cellIndex: number;
   resolvedDefaultBaseImage: string;
@@ -59,6 +60,7 @@ export const InlineMetadata: React.FC<IProps> = ({
   limits,
   baseImage,
   enableCaching,
+  generateHtmlReport,
   cellElement,
   cellIndex,
   resolvedDefaultBaseImage,
@@ -157,6 +159,14 @@ export const InlineMetadata: React.FC<IProps> = ({
       </p>
     ) : null;
 
+  const reportText =
+    generateHtmlReport === false ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        HTML Report: disabled
+      </p>
+    ) : null;
+
+  // a `notebook:` reference has no step details to show
   const details =
     isReserved || isNotebookRef ? null : (
       <>
@@ -167,6 +177,7 @@ export const InlineMetadata: React.FC<IProps> = ({
         {limitsText}
         {baseImageText}
         {cacheText}
+        {reportText}
       </>
     );
 
