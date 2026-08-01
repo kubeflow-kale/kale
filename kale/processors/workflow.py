@@ -295,7 +295,11 @@ def compose_notebooks_as_subpipelines(
     parent_compiler = None
     parent_edges = []
     if parent_path:
-        parent_proc = NotebookProcessor(parent_path, {**overrides, "pipeline_name": pipeline_name})
+        parent_proc = NotebookProcessor(
+            parent_path,
+            {**overrides, "pipeline_name": pipeline_name},
+            allow_notebook_references=True,
+        )
         parent_pipeline = parent_proc.run()
         for step in parent_pipeline.steps:
             if step.name in notebooks:

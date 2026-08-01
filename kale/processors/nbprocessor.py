@@ -197,6 +197,7 @@ class NotebookProcessor:
         nb_metadata_overrides: dict[str, Any] | None = None,
         config: NotebookConfig | None = None,
         skip_validation: bool = False,
+        allow_notebook_references: bool = False,
         **kwargs,
     ):
         """Instantiate a new NotebookProcessor.
@@ -210,7 +211,14 @@ class NotebookProcessor:
                 NotebookProcessor is used to parse a part of the notebook
                 (e.g., retrieve pipeline metrics) and the notebook config (for
                 pipeline generation) might still be invalid.
+            allow_notebook_references: Set to True when this processor runs as
+                part of the composition flow, which understands ``notebook:``
+                reference cells. With the default False, encountering a
+                reference cell raises: any other compile path would silently
+                drop the referenced notebooks.
         """
+        self.skip_validation = skip_validation
+        self.allow_notebook_references = allow_notebook_references
         self.nb_path = os.path.expanduser(nb_path)
         self.notebook = self._read_notebook()
 
@@ -328,6 +336,15 @@ class NotebookProcessor:
             step_name = tags["step_names"][0] if len(tags["step_names"]) > 0 else None
 
             if tags["notebook_names"]:
+                if not (self.allow_notebook_references or self.skip_validation):
+                    raise ValueError(
+                        "This notebook contains `notebook:` reference cells, which "
+                        "this compile path does not support: the referenced "
+                        "notebooks would be silently dropped. Compile the root "
+                        "notebook with `kale --nb` to compose them. (Nested "
+                        "references inside referenced notebooks are not supported "
+                        "yet.)"
+                    )
                 # a `notebook:` reference: reset the merge target so following
                 # untagged cells cannot merge into a previous step
                 if pending_sources:

@@ -411,7 +411,9 @@ def test_untagged_after_reference_attaches_to_next_step(tmp_path):
     )
 
     pipeline = NotebookProcessor(
-        str(main), {"pipeline_name": "merge-rule", "experiment_name": "t"}
+        str(main),
+        {"pipeline_name": "merge-rule", "experiment_name": "t"},
+        allow_notebook_references=True,
     ).run()
     assert "note = " not in "\n".join(pipeline.get_step("first").source)
     assert 'note = "held"' in "\n".join(pipeline.get_step("second").source)
@@ -436,7 +438,11 @@ def test_orphan_code_after_reference_raises(tmp_path):
     )
 
     with pytest.raises(ValueError, match="must be followed by"):
-        NotebookProcessor(str(main), {"pipeline_name": "orphan", "experiment_name": "t"}).run()
+        NotebookProcessor(
+            str(main),
+            {"pipeline_name": "orphan", "experiment_name": "t"},
+            allow_notebook_references=True,
+        ).run()
 
 
 def test_reference_cell_with_code_raises(tmp_path):
@@ -592,3 +598,116 @@ def test_variables_pass_between_parent_steps(tmp_path, monkeypatch):
     assert order == ["one", "sub", "two"]
     dsl = open(dsl_path).read()
     assert 'x_input_artifact=one_task.outputs["x_output_artifact"]' in dsl
+
+
+def test_single_notebook_path_raises_on_references(tmp_path):
+    """R1 (kubeflow/kale#867 review): the RPC/UI compile path goes through
+    NotebookProcessor directly. It must raise on `notebook:` cells instead of
+    silently dropping the referenced notebooks."""
+    import pytest
+
+    from kale.processors import NotebookProcessor
+
+    sub = tmp_path / "sub.ipynb"
+    _write_nb(sub, "sub", [(["step:work"], "result = 42")])
+    story1 = tmp_path / "root.ipynb"
+    _write_mixed_nb(story1, "root", [(["notebook:sub"], "", {"notebook_path": "./sub.ipynb"})])
+    story2 = tmp_path / "root_mixed.ipynb"
+    _write_mixed_nb(
+        story2,
+        "root-mixed",
+        [
+            (["notebook:sub"], "", {"notebook_path": "./sub.ipynb"}),
+            (["step:final"], "print(result)"),
+        ],
+    )
+
+    for root in (story1, story2):
+        with pytest.raises(ValueError, match="silently dropped"):
+            NotebookProcessor(str(root), {"pipeline_name": "r1", "experiment_name": "t"}).run()
+
+
+def test_nested_reference_raises(tmp_path, monkeypatch):
+    """A `notebook:` cell inside a referenced notebook is not supported and
+    must raise instead of being ignored."""
+    import pytest
+
+    inner = tmp_path / "inner.ipynb"
+    _write_nb(inner, "inner", [(["step:work"], "x = 1")])
+    middle = tmp_path / "middle.ipynb"
+    _write_mixed_nb(
+        middle,
+        "middle",
+        [
+            (["notebook:inner"], "", {"notebook_path": "./inner.ipynb"}),
+            (["step:use"], "print(x)"),
+        ],
+    )
+    root = tmp_path / "outer_root.ipynb"
+    _write_mixed_nb(root, "outer", [(["notebook:middle"], "", {"notebook_path": "./middle.ipynb"})])
+
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="reference cells"):
+        compose_notebooks_as_subpipelines(
+            [str(middle)], pipeline_name="outer", parent_path=str(root)
+        )
+
+
+def test_story1_compiles_with_kfp_compiler(tmp_path, monkeypatch):
+    """The generated DSL for a notebook sequence must compile with the real
+    KFP compiler, producing a root DAG of nested sub-pipelines."""
+    import yaml
+
+    from kale.common import kfputils
+
+    producer = tmp_path / "producer.ipynb"
+    consumer = tmp_path / "consumer.ipynb"
+    _write_nb(producer, "producer", [(["step:load"], "dataset = [1, 2, 3]")])
+    _write_nb(consumer, "consumer", [(["step:consume"], "print(sum(dataset))")])
+
+    monkeypatch.chdir(tmp_path)
+    dsl_path, order = compose_notebooks_as_subpipelines(
+        [str(producer), str(consumer)], pipeline_name="seq-compile"
+    )
+    assert order == ["producer", "consumer"]
+
+    package = kfputils.compile_pipeline(dsl_path, "seq-compile")
+    spec = next(yaml.safe_load_all(open(package)))
+    assert set(spec["root"]["dag"]["tasks"]) == {"producer", "consumer"}
+    # each notebook is a nested sub-DAG, not an opaque leaf
+    assert "dag" in spec["components"]["comp-producer"]
+    assert "dag" in spec["components"]["comp-consumer"]
+
+
+def test_story2_compiles_with_kfp_compiler(tmp_path, monkeypatch):
+    """The generated DSL for a mixed root must compile with the real KFP
+    compiler: the root's own step appears as a root-level container task next
+    to the sub-pipeline."""
+    import yaml
+
+    from kale.common import kfputils
+
+    loader = tmp_path / "loader.ipynb"
+    _write_nb(loader, "loader", [(["step:load"], "value = 41")])
+    root = tmp_path / "mixed_root.ipynb"
+    _write_mixed_nb(
+        root,
+        "mixed-compile",
+        [
+            (["notebook:loader"], "", {"notebook_path": "./loader.ipynb"}),
+            (["step:report"], "print(value + 1)"),
+        ],
+    )
+
+    monkeypatch.chdir(tmp_path)
+    dsl_path, order = compose_notebooks_as_subpipelines(
+        [str(loader)], pipeline_name="mixed-compile", parent_path=str(root)
+    )
+    assert order == ["loader", "report"]
+
+    package = kfputils.compile_pipeline(dsl_path, "mixed-compile")
+    spec = next(yaml.safe_load_all(open(package)))
+    assert set(spec["root"]["dag"]["tasks"]) == {"loader", "report-step"}
+    assert "dag" in spec["components"]["comp-loader"]
+    # the root's own step is a container component, not a sub-DAG
+    assert "dag" not in spec["components"]["comp-report-step"]
