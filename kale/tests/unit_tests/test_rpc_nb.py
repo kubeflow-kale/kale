@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from unittest.mock import MagicMock, patch
 
 import nbformat
 import pytest
@@ -70,6 +71,65 @@ def test_get_pipeline_parameters_source_skip(tmpdir, _rpc_request):
     nbformat.write(notebook, notebook_path, nbformat.NO_CONVERT)
     target = [["a", "int", 1], ["b", "int", 2], ["c", "int", 3]]
     assert nb.get_pipeline_parameters(_rpc_request, notebook_path) == target
+
+
+def test_list_pvcs_returns_sorted_names(_rpc_request):
+    """list_pvcs returns a sorted list of PVC names from the cluster."""
+
+    def _make_pvc(name):
+        pvc = MagicMock()
+        pvc.metadata.name = name
+        return pvc
+
+    mock_v1 = MagicMock()
+    mock_v1.list_namespaced_persistent_volume_claim.return_value = MagicMock(
+        items=[_make_pvc("zebra-pvc"), _make_pvc("alpha-pvc"), _make_pvc("beta-pvc")]
+    )
+
+    with (
+        patch("kale.rpc.nb.podutils.get_namespace", return_value="test-ns"),
+        patch("kale.rpc.nb.k8sutils.get_v1_client", return_value=mock_v1),
+    ):
+        result = nb.list_pvcs(_rpc_request)
+
+    assert result == ["alpha-pvc", "beta-pvc", "zebra-pvc"]
+    mock_v1.list_namespaced_persistent_volume_claim.assert_called_once_with("test-ns")
+
+
+def test_list_pvcs_returns_empty_list_on_namespace_error(_rpc_request):
+    """list_pvcs returns [] when the namespace cannot be read (no cluster access)."""
+    with patch("kale.rpc.nb.podutils.get_namespace", side_effect=FileNotFoundError("no token")):
+        result = nb.list_pvcs(_rpc_request)
+
+    assert result == []
+
+
+def test_list_pvcs_returns_empty_list_on_k8s_error(_rpc_request):
+    """list_pvcs returns [] when the Kubernetes API call fails."""
+    mock_v1 = MagicMock()
+    mock_v1.list_namespaced_persistent_volume_claim.side_effect = Exception("API error")
+
+    with (
+        patch("kale.rpc.nb.podutils.get_namespace", return_value="test-ns"),
+        patch("kale.rpc.nb.k8sutils.get_v1_client", return_value=mock_v1),
+    ):
+        result = nb.list_pvcs(_rpc_request)
+
+    assert result == []
+
+
+def test_list_pvcs_empty_namespace(_rpc_request):
+    """list_pvcs returns an empty list when the namespace has no PVCs."""
+    mock_v1 = MagicMock()
+    mock_v1.list_namespaced_persistent_volume_claim.return_value = MagicMock(items=[])
+
+    with (
+        patch("kale.rpc.nb.podutils.get_namespace", return_value="test-ns"),
+        patch("kale.rpc.nb.k8sutils.get_v1_client", return_value=mock_v1),
+    ):
+        result = nb.list_pvcs(_rpc_request)
+
+    assert result == []
 
 
 def test_get_pipeline_metrics(tmpdir, _rpc_request):

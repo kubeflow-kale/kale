@@ -19,7 +19,7 @@ import shutil
 from tabulate import tabulate
 
 from kale import Compiler, NotebookProcessor, marshal
-from kale.common import astutils, kfputils, kfutils, podutils
+from kale.common import astutils, k8sutils, kfputils, kfutils, podutils
 from kale.rpc.errors import RPCInternalError, RPCUnhandledError
 from kale.rpc.log import create_adapter
 
@@ -230,6 +230,25 @@ def get_namespace(request):
     namespace = podutils.get_namespace()
     request.log.info("Notebook's namespace is '%s'", namespace)
     return namespace
+
+
+def list_pvcs(request):
+    """List PersistentVolumeClaims available in the current namespace.
+
+    Returns a sorted list of PVC names. On any exception (e.g. no cluster
+    access, missing service-account token) returns an empty list so the UI
+    combobox degrades gracefully without surfacing an error to the user.
+    """
+    log = request.log if hasattr(request, "log") else logger
+    try:
+        namespace = podutils.get_namespace()
+        pvc_list = k8sutils.get_v1_client().list_namespaced_persistent_volume_claim(namespace)
+        names = sorted(pvc.metadata.name for pvc in pvc_list.items)
+        log.info("Found %d PVC(s) in namespace '%s'", len(names), namespace)
+        return names
+    except Exception as e:
+        log.warning("Could not list PVCs, returning empty list. Reason: %s", e)
+        return []
 
 
 def get_security_context_defaults(request):
