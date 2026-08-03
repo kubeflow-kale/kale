@@ -26,11 +26,13 @@ processing and gives every notebook ownership of its own configuration.
 """
 
 from collections import deque
-import keyword
 import os
-import sys
+import re
 
 from kale.common import astutils, flakeutils
+
+# Generated DSL modules are named after their notebook, behind this prefix.
+MODULE_PREFIX = "kale_notebook_"
 
 
 def _missing_names(code):
@@ -80,8 +82,20 @@ def _topo_sort(nodes, edges):
 
 
 def _notebook_name(path):
-    base = os.path.splitext(os.path.basename(path))[0]
-    return base.replace("-", "_").lower()
+    """Unit name for a referenced notebook, derived from its file name."""
+    base = os.path.splitext(os.path.basename(path))[0].lower()
+    return re.sub(r"[^a-z0-9_]", "_", base)
+
+
+def _module_name(name):
+    """Name of the DSL module generated for a notebook.
+
+    The prefix is what makes the name safe to import: it cannot shadow a
+    standard-library module (a notebook named ``json.ipynb``), collide with
+    ``kfp``/``kale``, be a keyword, or start with a digit, so none of those
+    need to be rejected as errors.
+    """
+    return MODULE_PREFIX + name
 
 
 def _type_for(var_name):
@@ -262,24 +276,12 @@ def compose_notebooks_as_subpipelines(
     notebooks = {}
     for path in notebook_paths:
         name = _notebook_name(path)
-        # Each notebook becomes an importable DSL module named after it, so the
-        # names must be unique and must not shadow a standard-library module
-        # (the generated code itself imports from the standard library).
+        # Each notebook becomes its own DSL module, so two notebooks resolving
+        # to the same name would overwrite each other's file.
         if name in notebooks:
             raise ValueError(
                 f"Two notebooks share the name '{name}'. Rename one of them: each "
                 f"notebook becomes its own DSL module."
-            )
-        if not name.isidentifier() or keyword.iskeyword(name):
-            raise ValueError(
-                f"Notebook name '{name}' is not a valid Python module name. Rename "
-                f"the notebook: each notebook becomes its own importable DSL module."
-            )
-        if name in sys.stdlib_module_names or name in ("kfp", "kale"):
-            raise ValueError(
-                f"Notebook name '{name}' collides with a reserved module name "
-                f"(Python standard-library, 'kfp' or 'kale'). Rename the notebook: "
-                f"each notebook becomes its own importable DSL module."
             )
         proc = NotebookProcessor(path, {**overrides, "pipeline_name": name.replace("_", "-")})
         pipeline = proc.run()
@@ -293,6 +295,7 @@ def compose_notebooks_as_subpipelines(
             "defined": _provided_names(step_code, missing),
             "needed": missing,
             "display": name.replace("_", "-"),
+            "module": _module_name(name),
         }
 
     # Story 2 (KEP-0812): the composition notebook may carry its own `step:`
@@ -448,6 +451,7 @@ def compose_notebooks_as_subpipelines(
         subpipelines.append(
             {
                 "name": name,
+                "module": nb["module"],
                 "display": nb["display"],
                 "params": params,
                 "outputs": outputs,
@@ -455,6 +459,18 @@ def compose_notebooks_as_subpipelines(
                 "components": components,
             }
         )
+
+    def _task_var(unit):
+        """Task variable of a unit in the orchestrator.
+
+        A referenced notebook uses its module name, so that a notebook whose
+        file name is not a valid Python identifier still yields valid code.
+        A step of the root notebook uses its own name, already constrained by
+        the ``step:`` tag language.
+        """
+        if unit in notebooks:
+            return f"{notebooks[unit]['module']}_task"
+        return f"{unit}_task"
 
     def _toplevel_ref(var):
         """(producing unit, task-output reference) for a boundary variable."""
@@ -464,14 +480,15 @@ def compose_notebooks_as_subpipelines(
                 f"Cannot resolve the producer of '{var}' at the top level. This is "
                 f"a bug in Kale's boundary detection."
             )
+        task = _task_var(src)
         if src in parent_steps:
             # a component task exposes each output artifact by parameter name
-            return src, f'{src}_task.outputs["{var}_output_artifact"]'
+            return src, f'{task}.outputs["{var}_output_artifact"]'
         # One sub-pipeline output is reachable as `.output`; several become a
         # NamedTuple addressed by field name.
         if len(boundary_provides[src]) > 1:
-            return src, f'{src}_task.outputs["{var}"]'
-        return src, f"{src}_task.output"
+            return src, f'{task}.outputs["{var}"]'
+        return src, f"{task}.output"
 
     parent_components = []
     toplevel_calls = []
@@ -485,12 +502,12 @@ def compose_notebooks_as_subpipelines(
             for var in sorted(step.ins):
                 src, ref = _toplevel_ref(var)
                 inputs.append({"arg": f"{var}_input_artifact", "ref": ref})
-                after.append(f"{src}_task")
-            after.extend(f"{p}_task" for p in barrier_preds.get(name, ()))
+                after.append(_task_var(src))
+            after.extend(_task_var(p) for p in barrier_preds.get(name, ()))
             toplevel_calls.append(
                 {
                     "kind": "step",
-                    "task_var": f"{name}_task",
+                    "task_var": _task_var(name),
                     "fn": f"{name}_step",
                     "inputs": inputs,
                     "after": sorted(set(after)),
@@ -504,13 +521,13 @@ def compose_notebooks_as_subpipelines(
         for var in sorted(boundary_needs[name]):
             src, ref = _toplevel_ref(var)
             inputs.append({"arg": f"{var}_input_artifact", "ref": ref})
-            after.append(f"{src}_task")
-        after.extend(f"{p}_task" for p in barrier_preds.get(name, ()))
+            after.append(_task_var(src))
+        after.extend(_task_var(p) for p in barrier_preds.get(name, ()))
         toplevel_calls.append(
             {
                 "kind": "pipeline",
-                "task_var": f"{name}_task",
-                "fn": f"{name}_pipeline",
+                "task_var": _task_var(name),
+                "fn": f"{notebooks[name]['module']}_pipeline",
                 "inputs": inputs,
                 "after": sorted(set(after)),
                 "display": notebooks[name]["display"],
@@ -527,14 +544,14 @@ def compose_notebooks_as_subpipelines(
         module_code = autopep8.fix_code(
             env.get_template("subpipeline_template.jinja2").render(sp=sp)
         )
-        with open(os.path.join(out_dir, f"{sp['name']}.py"), "w") as f:
+        with open(os.path.join(out_dir, f"{sp['module']}.py"), "w") as f:
             f.write(module_code)
 
     # No autopep8 here: it would hoist the module imports above the sys.path
     # bootstrap that makes them resolvable. The orchestrator is fully
     # template-controlled (no embedded user code), so it needs no reformatting.
     dsl = env.get_template("workflow_template.jinja2").render(
-        modules=[name for name in order if name in notebooks],
+        modules=[notebooks[name]["module"] for name in order if name in notebooks],
         components=parent_components,
         toplevel_calls=toplevel_calls,
         pipeline_name=pipeline_name,

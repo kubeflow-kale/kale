@@ -16,6 +16,7 @@
 import nbformat as nbf
 
 from kale.processors.workflow import (
+    MODULE_PREFIX,
     _missing_names,
     _provided_names,
     _topo_sort,
@@ -41,7 +42,7 @@ def _write_nb(path, name, cells):
 
 def _module(tmp_path, name):
     """Source of the generated per-notebook DSL module."""
-    return open(tmp_path / ".kale" / f"{name}.py").read()
+    return open(tmp_path / ".kale" / f"{MODULE_PREFIX}{name}.py").read()
 
 
 def test_topo_sort_orders_by_dependency():
@@ -85,23 +86,23 @@ def test_compose_infers_order_and_builds_subpipelines(tmp_path, monkeypatch):
 
     # One independent DSL module per notebook, with the inferred typed
     # boundary I/O in its sub-pipeline signature.
-    assert "def notebook_a_pipeline(" in _module(tmp_path, "notebook_a")
+    assert f"def {MODULE_PREFIX}notebook_a_pipeline(" in _module(tmp_path, "notebook_a")
     nb_b = _module(tmp_path, "notebook_b")
-    assert "def notebook_b_pipeline(" in nb_b
+    assert f"def {MODULE_PREFIX}notebook_b_pipeline(" in nb_b
     assert "dataset_input_artifact: Input[Dataset]" in nb_b
     nb_c = _module(tmp_path, "notebook_c")
-    assert "def notebook_c_pipeline(" in nb_c
+    assert f"def {MODULE_PREFIX}notebook_c_pipeline(" in nb_c
     assert "model_input_artifact: Input[Model]" in nb_c
 
     # The orchestrator imports the modules and wires each producer's output to
     # the next consumer.
     dsl = open(dsl_path).read()
-    assert "from notebook_a import notebook_a_pipeline" in dsl
-    assert "from notebook_b import notebook_b_pipeline" in dsl
-    assert "from notebook_c import notebook_c_pipeline" in dsl
+    assert f"from {MODULE_PREFIX}notebook_a import {MODULE_PREFIX}notebook_a_pipeline" in dsl
+    assert f"from {MODULE_PREFIX}notebook_b import {MODULE_PREFIX}notebook_b_pipeline" in dsl
+    assert f"from {MODULE_PREFIX}notebook_c import {MODULE_PREFIX}notebook_c_pipeline" in dsl
     assert "def auto_generated_pipeline(" in dsl
-    assert "dataset_input_artifact=notebook_a_task.output" in dsl
-    assert "model_input_artifact=notebook_b_task.output" in dsl
+    assert f"dataset_input_artifact={MODULE_PREFIX}notebook_a_task.output" in dsl
+    assert f"model_input_artifact={MODULE_PREFIX}notebook_b_task.output" in dsl
 
 
 def test_compose_handles_multiple_outputs_from_one_notebook(tmp_path, monkeypatch):
@@ -122,8 +123,8 @@ def test_compose_handles_multiple_outputs_from_one_notebook(tmp_path, monkeypatc
     assert "return NamedTuple('Outputs'" in nb_a
     # the orchestrator references each output by name (not the ambiguous `.output`)
     dsl = open(dsl_path).read()
-    assert 'notebook_a_task.outputs["dataset"]' in dsl
-    assert 'notebook_a_task.outputs["model"]' in dsl
+    assert f'{MODULE_PREFIX}notebook_a_task.outputs["dataset"]' in dsl
+    assert f'{MODULE_PREFIX}notebook_a_task.outputs["model"]' in dsl
 
 
 def test_untagged_cell_is_not_treated_as_a_boundary_variable(tmp_path, monkeypatch):
@@ -229,27 +230,43 @@ def test_each_notebook_gets_an_independent_dsl_module(tmp_path, monkeypatch):
         module = _module(tmp_path, name)
         # component code lives in the module, standalone-compilable
         assert "@kfp_dsl.component(" in module
-        assert f"compiler.Compiler().compile({name}_pipeline" in module
+        assert f"compiler.Compiler().compile({MODULE_PREFIX}{name}_pipeline" in module
     # the orchestrator holds no component code, only imports and wiring
     dsl = open(dsl_path).read()
     assert "@kfp_dsl.component(" not in dsl
-    assert "from notebook_a import notebook_a_pipeline" in dsl
+    assert f"from {MODULE_PREFIX}notebook_a import {MODULE_PREFIX}notebook_a_pipeline" in dsl
     assert "sys.path" in dsl  # modules resolve relative to the orchestrator
 
 
-def test_notebook_named_like_a_stdlib_module_raises(tmp_path, monkeypatch):
-    """A notebook whose module name would shadow the standard library (which
-    the generated code imports) is rejected with a rename hint."""
-    import pytest
+def test_reserved_and_invalid_notebook_names_are_prefixed(tmp_path, monkeypatch):
+    """The module prefix makes any notebook name safe to import: names that
+    shadow the standard library, collide with kfp/kale, are keywords or start
+    with a digit compile instead of being rejected."""
+    import yaml
 
-    a = tmp_path / "json.ipynb"
-    b = tmp_path / "notebook_b.ipynb"
-    _write_nb(a, "json-nb", [(["step:gen"], "dataset = [1]")])
-    _write_nb(b, "notebook-b", [(["step:use"], "total = sum(dataset)")])
+    from kale.common import kfputils
+
+    producer = tmp_path / "json.ipynb"  # shadows a stdlib module
+    consumer = tmp_path / "2kfp.ipynb"  # starts with a digit, and reserved
+    _write_nb(producer, "json-nb", [(["step:gen"], "dataset = [1]")])
+    _write_nb(consumer, "kfp-nb", [(["step:use"], "total = sum(dataset)")])
 
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(ValueError, match="standard-library"):
-        compose_notebooks_as_subpipelines([str(a), str(b)], pipeline_name="std")
+    dsl_path, order = compose_notebooks_as_subpipelines(
+        [str(producer), str(consumer)], pipeline_name="prefixed"
+    )
+    assert order == ["json", "2kfp"]
+
+    # the generated modules carry the prefix, so nothing is shadowed
+    assert (tmp_path / ".kale" / f"{MODULE_PREFIX}json.py").exists()
+    assert (tmp_path / ".kale" / f"{MODULE_PREFIX}2kfp.py").exists()
+    dsl = open(dsl_path).read()
+    assert f"from {MODULE_PREFIX}json import {MODULE_PREFIX}json_pipeline" in dsl
+
+    # and the result is a valid pipeline
+    package = kfputils.compile_pipeline(dsl_path, "prefixed")
+    spec = next(yaml.safe_load_all(open(package)))
+    assert set(spec["root"]["dag"]["tasks"]) == {"json", "2kfp"}
 
 
 def test_bare_notebook_tag_without_name_raises(tmp_path):
@@ -268,36 +285,6 @@ def test_bare_notebook_tag_without_name_raises(tmp_path):
 
     with pytest.raises(ValueError, match="missing the notebook name"):
         extract_notebook_references(str(main))
-
-
-def test_notebook_name_not_a_valid_identifier_raises(tmp_path, monkeypatch):
-    """A filename that is not a valid Python module name (here: leading digit)
-    cannot become a DSL module and must be rejected up front."""
-    import pytest
-
-    a = tmp_path / "2train.ipynb"
-    b = tmp_path / "notebook_b.ipynb"
-    _write_nb(a, "two-train", [(["step:gen"], "dataset = [1]")])
-    _write_nb(b, "notebook-b", [(["step:use"], "total = sum(dataset)")])
-
-    monkeypatch.chdir(tmp_path)
-    with pytest.raises(ValueError, match="valid Python module name"):
-        compose_notebooks_as_subpipelines([str(a), str(b)], pipeline_name="ident")
-
-
-def test_notebook_named_kfp_raises(tmp_path, monkeypatch):
-    """A notebook named after a package the generated DSL imports (kfp) would
-    shadow it once the output directory is on sys.path; reject it."""
-    import pytest
-
-    a = tmp_path / "kfp.ipynb"
-    b = tmp_path / "notebook_b.ipynb"
-    _write_nb(a, "kfp-nb", [(["step:gen"], "dataset = [1]")])
-    _write_nb(b, "notebook-b", [(["step:use"], "total = sum(dataset)")])
-
-    monkeypatch.chdir(tmp_path)
-    with pytest.raises(ValueError, match="reserved module name"):
-        compose_notebooks_as_subpipelines([str(a), str(b)], pipeline_name="shadow")
 
 
 def test_two_notebooks_with_the_same_name_raise(tmp_path, monkeypatch):
@@ -410,11 +397,11 @@ def test_story2_mixed_steps_and_notebook(tmp_path, monkeypatch):
     # step -> notebook: the sub-pipeline consumes the component's artifact
     assert 'dataset_input_artifact=preprocess_task.outputs["dataset_output_artifact"]' in dsl
     # notebook -> step: the component consumes the sub-pipeline's output
-    assert "model_input_artifact=trainer_task.output" in dsl
+    assert f"model_input_artifact={MODULE_PREFIX}trainer_task.output" in dsl
     # top-level component tasks get the same runtime config as sub-DAG tasks
     assert "security_context.set_security_context(task=preprocess_task" in dsl
     # the referenced notebook still gets its own module
-    assert "def trainer_pipeline(" in _module(tmp_path, "trainer")
+    assert f"def {MODULE_PREFIX}trainer_pipeline(" in _module(tmp_path, "trainer")
 
 
 def test_untagged_after_reference_attaches_to_next_step(tmp_path):
@@ -540,8 +527,8 @@ def test_mixed_units_run_in_notebook_order(tmp_path, monkeypatch):
 
     assert order == ["prepare", "sub", "report"]
     dsl = open(dsl_path).read()
-    assert "sub_task.after(prepare_task)" in dsl
-    assert "report_task.after(sub_task)" in dsl
+    assert f"{MODULE_PREFIX}sub_task.after(prepare_task)" in dsl
+    assert f"report_task.after({MODULE_PREFIX}sub_task)" in dsl
 
 
 def test_barriers_keep_unrelated_notebooks_parallel(tmp_path, monkeypatch):
@@ -569,11 +556,11 @@ def test_barriers_keep_unrelated_notebooks_parallel(tmp_path, monkeypatch):
 
     dsl = open(dsl_path).read()
     # no positional edge between the two references
-    assert "notebook_b_task.after(notebook_a_task)" not in dsl
-    assert "notebook_a_task.after(notebook_b_task)" not in dsl
+    assert f"{MODULE_PREFIX}notebook_b_task.after({MODULE_PREFIX}notebook_a_task)" not in dsl
+    assert f"{MODULE_PREFIX}notebook_a_task.after({MODULE_PREFIX}notebook_b_task)" not in dsl
     # but the trailing step waits for both
-    assert "last_task.after(notebook_a_task)" in dsl
-    assert "last_task.after(notebook_b_task)" in dsl
+    assert f"last_task.after({MODULE_PREFIX}notebook_a_task)" in dsl
+    assert f"last_task.after({MODULE_PREFIX}notebook_b_task)" in dsl
 
 
 def test_step_above_its_producer_raises_cycle(tmp_path, monkeypatch):
