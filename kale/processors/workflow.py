@@ -13,16 +13,42 @@
 # limitations under the License.
 """Compose multiple notebooks into a single Kubeflow pipeline.
 
-Each notebook is compiled into its own KFP sub-pipeline by reusing Kale's
-per-notebook processing and component generation. The sub-pipelines are wired
-together by matching the variables one notebook defines to those another
-consumes, the same name-based detection Kale uses between cells, one level up.
-The single-notebook path is untouched.
+A root notebook references others through ``notebook:`` cells, and may carry
+its own ``step:`` cells around them. Each referenced notebook is compiled into
+its own KFP sub-pipeline by reusing Kale's per-notebook processing and
+component generation; each step of the root notebook becomes a top-level
+component. Units are wired together by matching the variables one defines to
+those another consumes, the same name-based detection Kale runs between cells,
+one level up. The single-notebook path is untouched.
 
-Each notebook produces its own independent DSL module (``.kale/<name>.py``,
-importable and independently compilable), and the orchestrating DSL file
-imports those modules as dependencies. This mirrors the recursive shape of the
-processing and gives every notebook ownership of its own configuration.
+Given this root notebook::
+
+    root.ipynb
+    +--------------------------+
+    | [step:prepare]           |   dataset = load()
+    | [notebook:train]         |   -> train.ipynb
+    | [step:report]            |   print(model)
+    +--------------------------+
+
+the composition compiles to::
+
+    auto_generated_pipeline
+    +-------------------------------------------------------+
+    |  prepare        train (sub-DAG)          report       |
+    |  (component) -> +-------------------+ -> (component)  |
+    |     dataset     | fit -> package    |     model       |
+    |                 +-------------------+                 |
+    +-------------------------------------------------------+
+
+``dataset`` and ``model`` cross the step/notebook boundary as KFP artifacts,
+the same way they would cross a step/step boundary inside one notebook.
+Ordering follows the data, plus reading order around the root's own steps.
+
+Each notebook produces its own independent DSL module
+(``.kale/kale_notebook_<name>.py``, importable and independently compilable),
+and the orchestrating DSL file imports those modules as dependencies. This
+mirrors the recursive shape of the processing and gives every notebook
+ownership of its own configuration.
 """
 
 from collections import deque
@@ -74,7 +100,7 @@ def _topo_sort(nodes, edges):
                 queue.append(child)
     if len(order) != len(nodes):
         raise ValueError(
-            "Cycle detected in the composition graph. If the composition notebook "
+            "Cycle detected in the composition graph. If the root notebook "
             "mixes step: and notebook: cells, each cell must appear below the "
             "cells that produce the variables it uses."
         )
@@ -161,14 +187,14 @@ def extract_notebook_references(parent_path):
 
     A ``notebook:`` cell references another notebook as a sub-pipeline. Its path
     is read from the cell's ``notebook_path`` metadata and resolved relative to
-    the parent notebook's directory. Returns ``[]`` for a regular notebook with
+    the root notebook's directory. Returns ``[]`` for a regular notebook with
     no ``notebook:`` cells, which is how the CLI tells composition apart from the
     single-notebook path.
 
-    The composition notebook may also carry its own ``step:``/``imports``/
-    ``functions`` cells (KEP-0812 Story 2); those are handled by the normal
-    NotebookProcessor pass over the parent. A reference cell itself must stay
-    empty: its code would never execute, so it raises instead of being dropped.
+    The root notebook may also carry its own ``step:``/``imports``/``functions``
+    cells; those are handled by the normal NotebookProcessor pass over it. A
+    reference cell itself must stay empty: its code would never execute, so it
+    raises instead of being dropped.
     """
     import re
 
@@ -207,7 +233,7 @@ def extract_notebook_references(parent_path):
 
 
 def _composition_spine(parent_path):
-    """The composition notebook's units in cell order: ``(kind, name)`` pairs.
+    """The root notebook's units in cell order: ``(kind, name)`` pairs.
 
     ``kind`` is ``"step"`` for the notebook's own ``step:`` cells and
     ``"notebook"`` for its references. Cell position is what makes a mixed
@@ -253,10 +279,10 @@ def compose_notebooks_as_subpipelines(
     by matching the data each notebook produces and consumes.
 
     When ``parent_path`` is given and that notebook carries its own ``step:``
-    cells around the ``notebook:`` references (KEP-0812 Story 2), each such
-    step becomes a top-level component, participating in the same name-based
-    inference as the referenced notebooks: variables cross the step/notebook
-    boundary the same way they cross step/step boundaries.
+    cells around the ``notebook:`` references, each such step becomes a
+    top-level component, participating in the same name-based inference as
+    the referenced notebooks: variables cross the step/notebook boundary the
+    same way they cross step/step boundaries.
 
     Writes one DSL module per notebook (``.kale/<name>.py``) plus the
     orchestrating DSL script that imports them (and holds the composition
@@ -298,10 +324,9 @@ def compose_notebooks_as_subpipelines(
             "module": _module_name(name),
         }
 
-    # Story 2 (KEP-0812): the composition notebook may carry its own `step:`
-    # cells around the `notebook:` references. Each such step is a unit of its
-    # own in the inference below (one unit for the whole parent would deadlock:
-    # a step can run before one referenced notebook and after another).
+    # Each `step:` cell of the root notebook is its own unit below: a single
+    # unit for the whole notebook would deadlock, since one of its steps can
+    # run before a referenced notebook and another after it.
     parent_steps = {}
     parent_compiler = None
     parent_edges = []
@@ -315,7 +340,7 @@ def compose_notebooks_as_subpipelines(
         for step in parent_pipeline.steps:
             if step.name in notebooks:
                 raise ValueError(
-                    f"Step '{step.name}' in the composition notebook has the same "
+                    f"Step '{step.name}' in the root notebook has the same "
                     f"name as a referenced notebook. Rename one of them."
                 )
             code = "\n".join(step.source)
@@ -337,7 +362,7 @@ def compose_notebooks_as_subpipelines(
     units = {**notebooks, **parent_steps}
 
     # Reading-order barriers: a parent step waits for every unit above it in
-    # the composition notebook and blocks every unit below it, so a mixed
+    # the root notebook and blocks every unit below it, so a mixed
     # composition runs the way it reads. Reference-only pairs get no edge,
     # which keeps Story 1's parallelism between independent notebooks intact.
     barrier_edges = []

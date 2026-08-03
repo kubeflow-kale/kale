@@ -310,11 +310,10 @@ class NotebookProcessor:
         prev_step_name = None
 
         # A `notebook:` cell is a reference, not code, so it breaks the merge
-        # chain (KEP-0812 caveat #5): untagged cells that follow it are held
-        # here and attached to the NEXT explicit `step:` cell, never merged
-        # backwards into a previous step.
+        # chain: untagged cells that follow it are held here and attached to
+        # the next `step:` cell, never merged backwards into a previous step.
         pending_sources = []
-        merge_forward = False
+        awaiting_step = False
 
         # All the code cells that have to be pre-pended to every pipeline step
         # (i.e., imports and functions) are merged here
@@ -325,6 +324,17 @@ class NotebookProcessor:
         pipeline_parameters = []
         # Variables that will become pipeline metrics
         pipeline_metrics = []
+
+        # Tags whose cell absorbs the untagged cells that follow it, and the
+        # block each one appends to. A `step:` cell absorbs into the step
+        # itself, `skip` is transparent, and a `notebook:` reference absorbs
+        # nothing (it hands the cells forward instead).
+        merge_targets = {
+            "imports": imports_block,
+            "functions": functions_block,
+            "pipeline-parameters": pipeline_parameters,
+            "pipeline-metrics": pipeline_metrics,
+        }
 
         for c in self.notebook.cells:
             if c.cell_type != "code":
@@ -353,8 +363,7 @@ class NotebookProcessor:
                         "references inside referenced notebooks are not supported "
                         "yet.)"
                     )
-                # a `notebook:` reference: reset the merge target so following
-                # untagged cells cannot merge into a previous step
+                # the reference breaks the merge chain
                 if pending_sources:
                     raise ValueError(
                         "Untagged code after a `notebook:` cell must be followed by"
@@ -362,32 +371,17 @@ class NotebookProcessor:
                         " cell first)."
                     )
                 prev_step_name = None
-                merge_forward = True
+                awaiting_step = True
                 continue
 
             if step_name == "skip":
                 # when the cell is skipped, don't store `skip` as the previous
                 # active cell
                 continue
-            if step_name == "pipeline-parameters":
-                pipeline_parameters.append(c.source)
+            if step_name in merge_targets:
+                merge_targets[step_name].append(c.source)
                 prev_step_name = step_name
-                merge_forward = False
-                continue
-            if step_name == "imports":
-                imports_block.append(c.source)
-                prev_step_name = step_name
-                merge_forward = False
-                continue
-            if step_name == "functions":
-                functions_block.append(c.source)
-                prev_step_name = step_name
-                merge_forward = False
-                continue
-            if step_name == "pipeline-metrics":
-                pipeline_metrics.append(c.source)
-                prev_step_name = step_name
-                merge_forward = False
+                awaiting_step = False
                 continue
 
             # if none of the above apply, then we are parsing a code cell with
@@ -396,18 +390,12 @@ class NotebookProcessor:
             # if the cell was not tagged with a step name,
             # add the code to the previous cell
             if not step_name:
-                if merge_forward:
-                    # held until the next `step:` cell (see KEP-0812 caveat #5)
+                if awaiting_step:
+                    # held for the next `step:` cell
                     pending_sources.append(c.source)
-                elif prev_step_name == "imports":
-                    imports_block.append(c.source)
-                elif prev_step_name == "functions":
-                    functions_block.append(c.source)
-                elif prev_step_name == "pipeline-parameters":
-                    pipeline_parameters.append(c.source)
-                elif prev_step_name == "pipeline-metrics":
-                    pipeline_metrics.append(c.source)
-                # current_block might be None in case the first cells of the
+                elif prev_step_name in merge_targets:
+                    merge_targets[prev_step_name].append(c.source)
+                # prev_step_name might be None in case the first cells of the
                 # notebooks have not been tagged.
                 elif prev_step_name:
                     # this notebook cell will be merged to a previous one that
@@ -424,8 +412,8 @@ class NotebookProcessor:
                         " as a result of the pipeline execution"
                         " and not of single steps."
                     )
-                # add node to DAG, adding tags and source code of notebook cell
-                # (prepending any cells held since the last `notebook:` cell)
+                # add node to DAG, adding tags and source code of notebook cell,
+                # prepending any cells held since the last `notebook:` cell
                 if step_name not in self.pipeline.nodes:
                     step = Step(
                         name=step_name,
@@ -455,7 +443,7 @@ class NotebookProcessor:
                     self.pipeline.get_step(step_name).merge_code(c.source)
 
                 pending_sources = []
-                merge_forward = False
+                awaiting_step = False
                 prev_step_name = step_name
 
         if pending_sources:
