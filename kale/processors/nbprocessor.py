@@ -49,6 +49,7 @@ from kale.processors.constants import (
     METRICS_TEMPLATE,
     NOTEBOOK_NAMES,
     NOTEBOOK_PATH,
+    PARAMETERS,
     PIPELINE_METRICS_TAG,
     PIPELINE_PARAMETERS_TAG,
     PREV_STEPS,
@@ -56,6 +57,7 @@ from kale.processors.constants import (
     STEP_NAMES,
     STEPS_DEFAULTS,
     STEPS_DEFAULTS_LANGUAGE,
+    TAG_SEPARATOR,
     TAGS_LANGUAGE,
 )
 from kale.step import PipelineParam, Step, SubPipeline
@@ -123,7 +125,7 @@ class NotebookConfig(PipelineConfig):
             if any(re.match(_c, c) for _c in STEPS_DEFAULTS_LANGUAGE) is False:
                 raise ValueError(f"Unrecognized common step configuration: {c}")
 
-            parts = c.split(":")
+            parts = c.split(TAG_SEPARATOR)
 
             conf_type = parts.pop(0)
             if conf_type in ["annotation", "label"]:
@@ -141,7 +143,7 @@ class NotebookConfig(PipelineConfig):
 
             if conf_type == "image":
                 # Image tag value is the rest after 'image:'
-                result[BASE_IMAGE] = ":".join(parts)
+                result[BASE_IMAGE] = TAG_SEPARATOR.join(parts)
 
             if conf_type == "cache":
                 # Cache value is 'enabled' or 'disabled'
@@ -670,7 +672,7 @@ class NotebookProcessor:
                 return parsed_tags
 
             # now only `step` and `prev` tags remain to be parsed.
-            tag_parts = t.split(":")
+            tag_parts = t.split(TAG_SEPARATOR)
             tag_name = tag_parts.pop(0)
 
             if tag_name == "annotation":
@@ -687,7 +689,7 @@ class NotebookProcessor:
 
             if tag_name == "image":
                 # Image value is the rest after 'image:'
-                cell_base_image = ":".join(tag_parts)
+                cell_base_image = TAG_SEPARATOR.join(tag_parts)
 
             if tag_name == "cache":
                 # Cache value is 'enabled' or 'disabled'
@@ -856,7 +858,7 @@ class NotebookProcessor:
             # in case the previous cell was a `search_tag` cell and this
             # cell is not any other tag of the tag language:
             if detected and (
-                ("tags" not in c.metadata or len(c.metadata[CELL_METADATA_TAGS]) == 0)
+                (CELL_METADATA_TAGS not in c.metadata or len(c.metadata[CELL_METADATA_TAGS]) == 0)
                 or all(
                     not any(re.match(tag, t) for t in c.metadata[CELL_METADATA_TAGS])
                     for tag in language
@@ -1148,10 +1150,10 @@ class NotebookProcessor:
                     # Propagate pipeline parameters from the ancestor step
                     # whenever we call a function it provides (directly or via
                     # marshal candidates).
-                    if getattr(anc_step, "parameters", None) and (
+                    if getattr(anc_step, PARAMETERS, None) and (
                         fn_call in anc_fns_free_vars or fn_call in marshal_candidates
                     ):
-                        if not hasattr(step, "parameters") or step.parameters is None:
+                        if not hasattr(step, PARAMETERS) or step.parameters is None:
                             step.parameters = {}
                         for _pname, _pval in anc_step.parameters.items():
                             if _pname not in step.parameters:
