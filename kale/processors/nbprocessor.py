@@ -26,9 +26,15 @@ from typing import Any
 import nbformat as nb
 
 from kale.common import astutils, flakeutils, graphutils, kfutils, utils
-from kale.config import Field
+from kale.config import Field, validators
 from kale.pipeline import Pipeline, PipelineConfig
 from kale.step import PipelineParam, Step
+
+
+def _regex_body(pattern: str) -> str:
+    """Strip the `^`/`$` anchors so a validator regex can be nested inside a larger one."""
+    return pattern.removeprefix("^").removesuffix("$")
+
 
 log = logging.getLogger(__name__)
 
@@ -51,9 +57,15 @@ LABEL_TAG = rf"^label:{K8S_ANNOTATION_KEY}:(.*)$"
 # E.g.: limit:nvidia.com/gpu:2
 LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
 # Secrets map a K8s Secret's key to an env var, injected via
-# kfp.kubernetes.use_secret_as_env
+# kfp.kubernetes.use_secret_as_env. Built from the same validators applied to
+# StepConfig.secrets (see K8sSecretsValidator) so the two can't drift apart.
 # E.g.: secret:db-credentials:password:DB_PASSWORD
-SECRET_TAG = r"^secret:([a-z]([a-z0-9-]*[a-z0-9])?):([-._a-zA-Z0-9]+):([a-zA-Z_][a-zA-Z0-9_]*)$"
+SECRET_TAG = (
+    r"^secret:"
+    rf"({_regex_body(validators.K8sSecretNameValidator.regex)}):"
+    rf"({_regex_body(validators.K8sSecretKeyValidator.regex)}):"
+    rf"({_regex_body(validators.EnvVarNameValidator.regex)})$"
+)
 # Image tag for per-step Base image selection
 # E.g.: image:python:3.11-slim
 IMAGE_TAG = r"^image:(.+)$"
@@ -203,8 +215,8 @@ class NotebookConfig(PipelineConfig):
                     result["secrets"] = {}
                 secret_name, secret_key, env_name = get_secret_from_tag(parts)
                 result["secrets"][env_name] = {
-                    "secret_name": secret_name,
-                    "secret_key": secret_key,
+                    validators.SECRET_NAME_KEY: secret_name,
+                    validators.SECRET_KEY_KEY: secret_key,
                 }
 
             if conf_type == "image":
@@ -531,7 +543,10 @@ class NotebookProcessor:
 
             if tag_name == "secret":
                 secret_name, secret_key, env_name = get_secret_from_tag(tag_parts)
-                cell_secrets[env_name] = {"secret_name": secret_name, "secret_key": secret_key}
+                cell_secrets[env_name] = {
+                    validators.SECRET_NAME_KEY: secret_name,
+                    validators.SECRET_KEY_KEY: secret_key,
+                }
 
             if tag_name == "image":
                 # Image value is the rest after 'image:'

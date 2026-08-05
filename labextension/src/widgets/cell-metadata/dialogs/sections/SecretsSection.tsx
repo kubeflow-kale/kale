@@ -19,6 +19,21 @@ import AddIcon from '@mui/icons-material/Add';
 import { Input } from '../../../../components/Input';
 import { ISecretRef } from '../../../../lib/TagsUtils';
 
+// Core patterns, defined once and shared between the live per-field `regex`
+// (which additionally allows an empty string, since a row isn't done until
+// every field is filled in) and the strict `isRowComplete` check used to
+// gate what gets committed and whether another row can be added. Keeps this
+// in sync with K8sSecretNameValidator / K8sSecretKeyValidator /
+// EnvVarNameValidator in kale/config/validators.py.
+const SECRET_NAME_PATTERN =
+  '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*';
+const SECRET_KEY_PATTERN = '[-._a-zA-Z0-9]+';
+const ENV_NAME_PATTERN = '[a-zA-Z_][a-zA-Z0-9_]*';
+
+const SECRET_NAME_REGEX = new RegExp(`^${SECRET_NAME_PATTERN}$`);
+const SECRET_KEY_REGEX = new RegExp(`^${SECRET_KEY_PATTERN}$`);
+const ENV_NAME_REGEX = new RegExp(`^${ENV_NAME_PATTERN}$`);
+
 // A single secret mapping, as edited in this section. `envName` is kept
 // apart from the rest since it's the key of the outer `secrets` map:
 // renaming it means replacing the map entry rather than mutating a value.
@@ -28,6 +43,11 @@ interface ISecretRow {
   secretName: string;
   secretKey: string;
 }
+
+const isRowComplete = (row: ISecretRow): boolean =>
+  SECRET_NAME_REGEX.test(row.secretName) &&
+  SECRET_KEY_REGEX.test(row.secretKey) &&
+  ENV_NAME_REGEX.test(row.envName);
 
 // Stable per-row id for React's `key`, since `envName` can be blank or
 // duplicated mid-edit and array index shifts whenever a row is deleted.
@@ -42,12 +62,16 @@ const secretsToRows = (secrets: {
     ...secrets[envName],
   }));
 
+// Only rows that pass every field's validation are written to the notebook's
+// tags - an incomplete or malformed row (e.g. a blank Secret Key, or a Secret
+// Name that doesn't match K8sSecretNameValidator) is silently dropped here
+// rather than surfacing as a confusing backend error at compile time.
 const rowsToSecrets = (
   rows: ISecretRow[],
 ): { [envName: string]: ISecretRef } => {
   const secrets: { [envName: string]: ISecretRef } = {};
   rows.forEach(row => {
-    if (row.envName) {
+    if (isRowComplete(row)) {
       secrets[row.envName] = {
         secretName: row.secretName,
         secretKey: row.secretKey,
@@ -97,6 +121,11 @@ export const SecretsSection: React.FC<ISecretsSectionProps> = ({
     ]);
   };
 
+  // Block piling up more empty/malformed rows before the last one is
+  // actually usable.
+  const lastRow = rows[rows.length - 1];
+  const canAddRow = !lastRow || isRowComplete(lastRow);
+
   return (
     <>
       <p style={{ margin: '0 0 8px' }}>
@@ -115,7 +144,7 @@ export const SecretsSection: React.FC<ISecretsSectionProps> = ({
               variant="standard"
               label="Secret Name"
               value={row.secretName}
-              regex={'^([a-z]([a-z0-9-]*[a-z0-9])?)?$'}
+              regex={`^(${SECRET_NAME_PATTERN})?$`}
               regexErrorMsg="Must be a valid Kubernetes Secret name."
               updateValue={(v: string) => updateRow(index, { secretName: v })}
             />
@@ -125,7 +154,7 @@ export const SecretsSection: React.FC<ISecretsSectionProps> = ({
               variant="standard"
               label="Secret Key"
               value={row.secretKey}
-              regex={'^([-._a-zA-Z0-9]+)?$'}
+              regex={`^(${SECRET_KEY_PATTERN})?$`}
               regexErrorMsg="Must be a valid Secret data key."
               updateValue={(v: string) => updateRow(index, { secretKey: v })}
             />
@@ -135,7 +164,7 @@ export const SecretsSection: React.FC<ISecretsSectionProps> = ({
               variant="standard"
               label="Env Var Name"
               value={row.envName}
-              regex={'^([a-zA-Z_][a-zA-Z0-9_]*)?$'}
+              regex={`^(${ENV_NAME_PATTERN})?$`}
               regexErrorMsg="Must be a valid environment variable name."
               updateValue={(v: string) => updateRow(index, { envName: v })}
             />
@@ -158,6 +187,12 @@ export const SecretsSection: React.FC<ISecretsSectionProps> = ({
         size="small"
         startIcon={<AddIcon />}
         onClick={addRow}
+        disabled={!canAddRow}
+        title={
+          canAddRow
+            ? undefined
+            : 'Finish the current secret (all fields, valid format) before adding another.'
+        }
         style={{ marginTop: '8px' }}
       >
         Add Secret

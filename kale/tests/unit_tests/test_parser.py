@@ -100,6 +100,17 @@ def test_parse_metadata_secret_tag(notebook_processor):
     }
 
 
+def test_parse_metadata_dotted_secret_name(notebook_processor):
+    """Test that a Secret name with dots (a valid DNS subdomain) is accepted."""
+    tags = notebook_processor.parse_cell_metadata(
+        {"tags": ["step:test", "secret:my.db-credentials:password:DB_PASSWORD"]}
+    )
+
+    assert tags["secrets"] == {
+        "DB_PASSWORD": {"secret_name": "my.db-credentials", "secret_key": "password"}
+    }
+
+
 def test_parse_metadata_multiple_secret_tags(notebook_processor):
     """Test that multiple secret tags on the same cell are all captured."""
     tags = notebook_processor.parse_cell_metadata(

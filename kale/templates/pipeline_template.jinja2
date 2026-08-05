@@ -80,6 +80,9 @@ def auto_generated_pipeline(
 
     {%- if step.config.secrets %}
     {%- for env_name, secret in step.config.secrets.items() %}
+    {#- secret_name/secret_key/env_name land inside string literals below, so it's
+       K8sSecretsValidator's regexes (kale/config/validators.py) that keep quote
+       characters out of them. Don't loosen those without checking this template. #}
     use_secret_as_env(task={{ step.name }}_task, secret_name="{{ secret.secret_name }}", secret_key_to_env={"{{ secret.secret_key }}": "{{ env_name }}"})
     {%- endfor %}
     {%- endif %}

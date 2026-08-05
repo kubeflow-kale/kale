@@ -187,9 +187,16 @@ class EnvVarNameValidator(RegexValidator):
     error_message = "Not a valid environment variable name"
 
 
-class K8sSecretNameValidator(K8sNameValidator):
-    """Validates the name of a K8s Secret."""
+class K8sSecretNameValidator(RegexValidator):
+    """Validates the name of a K8s Secret.
 
+    Secret names are DNS *subdomain* names (dot-separated DNS labels), unlike
+    most other K8s resource names validated by `K8sNameValidator`, which are
+    plain DNS *labels* and so reject dots.
+    """
+
+    _label = r"[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+    regex = rf"^{_label}(\.{_label})*$"
     error_message = "Not a valid K8s Secret name"
 
 
@@ -200,16 +207,26 @@ class K8sSecretKeyValidator(RegexValidator):
     error_message = "Not a valid K8s Secret key"
 
 
+# Keys of a `{secret_name, secret_key}` mapping (see K8sSecretRefValidator),
+# shared with nbprocessor.py so the two can't disagree on the dict shape.
+SECRET_NAME_KEY = "secret_name"
+SECRET_KEY_KEY = "secret_key"
+
+
 class K8sSecretRefValidator(Validator):
     """Validates a single `{secret_name, secret_key}` mapping."""
 
     def _validate(self, value: dict):
-        if not isinstance(value, dict) or set(value) != {"secret_name", "secret_key"}:
+        if not isinstance(value, dict) or set(value) != {
+            SECRET_NAME_KEY,
+            SECRET_KEY_KEY,
+        }:
             raise ValueError(
-                "Secret reference must be a dict with 'secret_name' and 'secret_key' keys"
+                f"Secret reference must be a dict with '{SECRET_NAME_KEY}' and "
+                f"'{SECRET_KEY_KEY}' keys"
             )
-        K8sSecretNameValidator()(value["secret_name"])
-        K8sSecretKeyValidator()(value["secret_key"])
+        K8sSecretNameValidator()(value[SECRET_NAME_KEY])
+        K8sSecretKeyValidator()(value[SECRET_KEY_KEY])
 
 
 class K8sSecretsValidator(DictValidator):

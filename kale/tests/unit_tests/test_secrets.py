@@ -46,6 +46,12 @@ class TestK8sSecretsValidator:
                 {"DB_PASSWORD": {"secret_name": "DB-Credentials", "secret_key": "password"}}
             )
 
+    def test_dotted_secret_name(self):
+        """Secret names are DNS subdomains, so dots are allowed."""
+        K8sSecretsValidator()(
+            {"DB_PASSWORD": {"secret_name": "my.db-credentials", "secret_key": "password"}}
+        )
+
     def test_invalid_secret_key(self):
         """Secret keys must match the allowed key charset."""
         with pytest.raises(ValueError):
