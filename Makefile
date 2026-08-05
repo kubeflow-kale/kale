@@ -292,13 +292,30 @@ release: ## Set release version (usage: make release VERSION=X.Y.Z)
 	@NPM_VERSION=$$(echo "$(VERSION)" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)(a)([0-9]+)/\1-alpha.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(b)([0-9]+)/\1-beta.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(rc)([0-9]+)/\1-rc.\3/'); \
 	cd labextension && npm version "$$NPM_VERSION" --no-git-tag-version --allow-same-version; \
 	printf "$(GREEN)Version set to $(VERSION) (npm: $$NPM_VERSION)\n$(NC)"
-	@# Generate changelog if git-cliff is available
-	@command -v git-cliff >/dev/null 2>&1 && { \
+	@# Generate changelog if git-cliff is available.
+	@# Scope it to the X.Y line this version belongs to: start from the newest
+	@# reachable tag outside that line, so CHANGELOG-X.Y.md accumulates every
+	@# X.Y release and nothing older. --merged HEAD keeps tags cut on other
+	@# release branches out of the range. Without a range git-cliff emits the
+	@# whole project history, and without --tag the new entries land under an
+	@# "[unreleased]" heading - both end up verbatim in the GitHub release body
+	@# (see the github-release job in .github/workflows/release.yml).
+	@if ! command -v git-cliff >/dev/null 2>&1; then \
+		printf "$(YELLOW)git-cliff not found, skipping changelog generation\n$(NC)"; \
+	else \
 		MAJOR=$$(echo "$(VERSION)" | cut -d. -f1); \
 		MINOR=$$(echo "$(VERSION)" | cut -d. -f2); \
-		git-cliff --output CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md; \
-		printf "$(GREEN)Changelog generated: CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md\n$(NC)"; \
-	} || printf "$(YELLOW)git-cliff not found, skipping changelog generation\n$(NC)"
+		OUT=CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md; \
+		BASE=$$(git tag --list 'v[0-9]*' --merged HEAD --sort=-v:refname \
+			| grep -v "^v$$MAJOR\.$$MINOR\." | head -1); \
+		if [ -n "$$BASE" ]; then \
+			git-cliff "$$BASE..HEAD" --tag v$(VERSION) --output $$OUT; \
+			printf "$(GREEN)Changelog generated: $$OUT ($$BASE..HEAD, tagged v$(VERSION))\n$(NC)"; \
+		else \
+			git-cliff --tag v$(VERSION) --output $$OUT; \
+			printf "$(GREEN)Changelog generated: $$OUT (full history, tagged v$(VERSION))\n$(NC)"; \
+		fi; \
+	fi
 
 ##@ Docker
 
