@@ -45,6 +45,9 @@ def auto_generated_pipeline(
 {%- for volume in volumes %}
 {%- if volume.type == 'pvc' %}
     kubernetes.mount_pvc({{ step.name }}_task, pvc_name="{{ volume.name }}", mount_path="{{ volume.mount_point }}")
+{%- if volume.expose_as_env_var %}
+    {{ step.name }}_task.set_env_variable(name="{{ volume.name | to_kale_env_var_name }}", value="{{ volume.mount_point }}")
+{%- endif %}
 {%- endif %}
 {%- endfor %}
 
