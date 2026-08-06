@@ -28,7 +28,7 @@ import { BaseImageSection } from './sections/BaseImageSection';
 import { GpuSection, ILimitAction } from './sections/GpuSection';
 import { CacheSection } from './sections/CacheSection';
 import { ReportSection } from './sections/ReportSection';
-import { SecretsSection } from './sections/SecretsSection';
+import { ISecretRow, SecretsSection } from './sections/SecretsSection';
 
 interface IStepConfigDialogProps {
   open: boolean;
@@ -62,10 +62,18 @@ interface IStepConfigDialogProps {
 export const StepConfigDialog: React.FC<IStepConfigDialogProps> = props => {
   const [activeTab, setActiveTab] = React.useState(0);
 
+  // Holds an in-progress Secrets row across tab switches (see SecretsSection's
+  // draftRowsRef doc). The dialog is modal, so it's never possible to jump to
+  // a different step while it's open - closing is the only point where a
+  // leftover draft needs to be thrown away.
+  const draftSecretRowsRef = React.useRef<ISecretRow[] | null>(null);
+
   // Always open on the first tab rather than whichever tab was last viewed.
   React.useEffect(() => {
     if (props.open) {
       setActiveTab(0);
+    } else {
+      draftSecretRowsRef.current = null;
     }
   }, [props.open]);
 
@@ -114,6 +122,7 @@ export const StepConfigDialog: React.FC<IStepConfigDialogProps> = props => {
         <SecretsSection
           secrets={props.secrets}
           updateSecrets={props.updateSecrets}
+          draftRowsRef={draftSecretRowsRef}
         />
       ),
     },

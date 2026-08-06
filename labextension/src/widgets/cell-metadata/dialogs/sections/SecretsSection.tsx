@@ -37,7 +37,7 @@ const ENV_NAME_REGEX = new RegExp(`^${ENV_NAME_PATTERN}$`);
 // A single secret mapping, as edited in this section. `envName` is kept
 // apart from the rest since it's the key of the outer `secrets` map:
 // renaming it means replacing the map entry rather than mutating a value.
-interface ISecretRow {
+export interface ISecretRow {
   id: number;
   envName: string;
   secretName: string;
@@ -84,11 +84,19 @@ const rowsToSecrets = (
 interface ISecretsSectionProps {
   secrets: { [envName: string]: ISecretRef };
   updateSecrets: (secrets: { [envName: string]: ISecretRef }) => void;
+  // Keeps an in-progress (not yet valid) row alive across tab switches: this
+  // section unmounts whenever the user leaves the Secrets tab (StepConfigDialog
+  // only renders the active tab's content), which would otherwise silently
+  // drop anything the user was in the middle of typing. Owned by
+  // StepConfigDialog, which outlives this section's mount/unmount cycles and
+  // clears it when the whole dialog closes.
+  draftRowsRef: React.MutableRefObject<ISecretRow[] | null>;
 }
 
 export const SecretsSection: React.FC<ISecretsSectionProps> = ({
   secrets,
   updateSecrets,
+  draftRowsRef,
 }) => {
   // Local state is the source of truth while this section is mounted: an
   // in-progress row (e.g. envName not filled in yet) is excluded from what
@@ -96,13 +104,16 @@ export const SecretsSection: React.FC<ISecretsSectionProps> = ({
   // rows straight from the secrets prop on every render would make that row
   // vanish as soon as the user typed into Secret Name/Key before Env Var
   // Name. The lazy initializer resyncs from the committed tags each time
-  // this section (re)mounts, i.e. each time the Secrets tab is (re)selected.
-  const [rows, setRows] = React.useState<ISecretRow[]>(() =>
-    secretsToRows(secrets),
+  // this section (re)mounts, i.e. each time the Secrets tab is (re)selected -
+  // unless a draft was left behind by a previous mount, in which case that
+  // takes precedence over re-deriving from the (necessarily narrower) tags.
+  const [rows, setRows] = React.useState<ISecretRow[]>(
+    () => draftRowsRef.current ?? secretsToRows(secrets),
   );
 
   const commit = (newRows: ISecretRow[]) => {
     setRows(newRows);
+    draftRowsRef.current = newRows;
     updateSecrets(rowsToSecrets(newRows));
   };
 
