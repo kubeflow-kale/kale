@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 import nbformat
 import pytest
 
+from kale.common import k8sutils
 from kale.rpc import nb
 
 
@@ -128,6 +129,31 @@ def test_list_pvcs_empty_namespace(_rpc_request):
         patch("kale.rpc.nb.k8sutils.get_v1_client", return_value=mock_v1),
     ):
         result = nb.list_pvcs(_rpc_request)
+
+    assert result == []
+
+
+def test_get_pvc_access_modes_returns_modes():
+    """get_pvc_access_modes returns the PVC's access modes from the cluster."""
+    mock_pvc = MagicMock()
+    mock_pvc.spec.access_modes = ["ReadWriteOnce"]
+    mock_v1 = MagicMock()
+    mock_v1.read_namespaced_persistent_volume_claim.return_value = mock_pvc
+
+    with patch("kale.common.k8sutils.get_v1_client", return_value=mock_v1):
+        result = k8sutils.get_pvc_access_modes("raw-data", "test-ns")
+
+    assert result == ["ReadWriteOnce"]
+    mock_v1.read_namespaced_persistent_volume_claim.assert_called_once_with("raw-data", "test-ns")
+
+
+def test_get_pvc_access_modes_returns_empty_list_on_error():
+    """get_pvc_access_modes returns [] on any exception (best-effort)."""
+    mock_v1 = MagicMock()
+    mock_v1.read_namespaced_persistent_volume_claim.side_effect = Exception("forbidden")
+
+    with patch("kale.common.k8sutils.get_v1_client", return_value=mock_v1):
+        result = k8sutils.get_pvc_access_modes("raw-data", "test-ns")
 
     assert result == []
 
