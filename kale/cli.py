@@ -44,61 +44,6 @@ Override the arguments of the source Notebook's Kale metadata section
 """
 
 
-def _compile_composition(args):
-    """Compile a notebook that references others through ``notebook:`` cells.
-
-    Returns True if the notebook is a composition and was compiled here, False
-    if it has no ``notebook:`` cells and should take the single-notebook path.
-    """
-    import nbformat
-
-    from kale.processors.workflow import (
-        compose_notebooks_as_subpipelines,
-        extract_notebook_references,
-    )
-
-    # A ValueError here is a problem in how the user tagged or wired the
-    # notebooks (missing notebook path, code in a reference cell, orphaned code,
-    # name collision, cycle), so show the message alone instead of a traceback.
-    try:
-        notebook_refs = extract_notebook_references(args.nb)
-        if not notebook_refs:
-            return False
-
-        nb_meta = nbformat.read(args.nb, 4).metadata.get("kubeflow_notebook", {})
-        pipeline_name = nb_meta.get("pipeline_name") or args.pipeline_name
-        dsl_script_path, order = compose_notebooks_as_subpipelines(
-            [path for _, path in notebook_refs],
-            pipeline_name=pipeline_name,
-            experiment_name=args.experiment_name,
-            base_image=args.docker_image or "",
-            pipeline_description=args.pipeline_description,
-            parent_path=args.nb,
-        )
-    except ValueError as err:
-        raise SystemExit(f"Error: {err}") from err
-    print("Composed notebooks (sub-pipelines), order:", " -> ".join(order))
-    print(f"dsl_script_path: {dsl_script_path}")
-
-    pipeline_package_path = kfputils.compile_pipeline(dsl_script_path, pipeline_name)
-    if args.upload_pipeline or args.run_pipeline:
-        pipeline_id, version_id = kfputils.upload_pipeline(
-            pipeline_package_path=pipeline_package_path,
-            pipeline_name=pipeline_name,
-            host=args.kfp_host,
-        )
-        print(f"pipeline_id: {pipeline_id}, version_id: {version_id}")
-        if args.run_pipeline:
-            kfputils.run_pipeline(
-                experiment_name=args.experiment_name,
-                pipeline_id=pipeline_id,
-                version_id=version_id,
-                host=args.kfp_host,
-                pipeline_package_path=pipeline_package_path,
-            )
-    return True
-
-
 def main():
     """Command line interface."""
     parser = argparse.ArgumentParser(description=ARGS_DESC, formatter_class=RawTextHelpFormatter)
@@ -177,11 +122,6 @@ def main():
         os.environ["KALE_DEV_MODE"] = "1"
         if args.devpi_simple_url:
             os.environ["KALE_DEVPI_SIMPLE_URL"] = args.devpi_simple_url
-
-    # Notebooks with `notebook:` cells compose sub-pipelines; otherwise fall
-    # through to the single-notebook path below.
-    if _compile_composition(args):
-        return
 
     # get the notebook metadata args group
     mt_overrides_group = next(

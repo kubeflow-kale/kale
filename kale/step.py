@@ -221,12 +221,18 @@ class SubPipeline(Step):
         ins: list[Any] = None,
         outs: list[Any] = None,
         display_name: str = None,
+        imports_and_functions: str = "",
         **kwargs,
     ):
         super().__init__(source=source or [], ins=ins, outs=outs, **kwargs)
         self.pipeline = pipeline
         self.notebook_path = notebook_path
         self._display_name = display_name
+        # the referenced notebook's own imports and functions, which its steps
+        # are generated with
+        self.imports_and_functions = imports_and_functions
+        # boundary variable -> name of the inner step that provides it
+        self.produced_by: dict[str, str] = {}
 
     @property
     def display_name(self):

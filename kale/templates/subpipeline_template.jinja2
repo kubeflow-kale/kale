@@ -8,7 +8,7 @@ from kfp.kubernetes import security_context
 
 
 @kfp_dsl.pipeline(name='{{ sp.display }}')
-def {{ sp.module }}_pipeline({% for p in sp.params %}{{ p.name }}: Input[{{ p.type }}]{% if not loop.last %}, {% endif %}{% endfor %}){% if sp.outputs|length == 1 %} -> {{ sp.outputs[0].type }}{% elif sp.outputs|length > 1 %} -> NamedTuple('Outputs', [{% for o in sp.outputs %}('{{ o.var }}', {{ o.type }}){% if not loop.last %}, {% endif %}{% endfor %}]){% endif %}:
+def {{ sp.module }}_pipeline({{ sp.signature }}){% if sp.outputs|length == 1 %} -> {{ sp.outputs[0].type }}{% elif sp.outputs|length > 1 %} -> NamedTuple('Outputs', [{% for o in sp.outputs %}('{{ o.var }}', {{ o.type }}){% if not loop.last %}, {% endif %}{% endfor %}]){% endif %}:
     """Sub-pipeline compiled from notebook '{{ sp.display }}'."""
 {% for t in sp.tasks %}
     {{ t.task_var }} = {{ t.fn }}({% for inp in t.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})

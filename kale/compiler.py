@@ -31,11 +31,18 @@ from kale import __version__ as KALE_VERSION
 from kale.common import graphutils, kfputils, utils
 from kale.common.imports import get_packages_to_install
 from kale.pipeline import DEFAULT_BASE_IMAGE, Pipeline, PipelineParam, Step
+from kale.step import SubPipeline
 
 log = logging.getLogger(__name__)
 
 NB_FN_TEMPLATE = "nb_function_template.jinja2"
 PIPELINE_TEMPLATE = "pipeline_template.jinja2"
+SUBPIPELINE_TEMPLATE = "subpipeline_template.jinja2"
+COMPOSITION_TEMPLATE = "composition_template.jinja2"
+
+# Generated DSL modules are named after their notebook, behind this prefix, so
+# that a notebook called `json.ipynb` cannot shadow a module the DSL imports.
+MODULE_PREFIX = "kale_notebook_"
 
 KFP_DSL_ARTIFACT_IMPORTS = [
     "Dataset",
@@ -55,6 +62,39 @@ class Artifact(NamedTuple):
     is_input: bool = False
 
 
+def _artifact_type(var_name: str) -> str:
+    """KFP artifact type inferred from a variable's name."""
+    return "Model" if "model" in var_name else "Dataset"
+
+
+def _clean_param_name(param_name: str) -> str:
+    """Name a pipeline parameter is passed to a component under."""
+    return f"{param_name.lower()}_param" if param_name.isupper() else param_name
+
+
+# Step configuration the composition templates do not carry over yet. A step
+# that sets any of it still runs, so this is reported rather than raised.
+UNSUPPORTED_IN_COMPOSITION = ("limits", "annotations", "labels", "retry_count", "timeout")
+
+
+def _warn_dropped_step_config(owner: str, steps) -> None:
+    """Report step configuration a composition drops."""
+    dropped = sorted(
+        {
+            f"{step.name}: {field}"
+            for step in steps
+            for field in UNSUPPORTED_IN_COMPOSITION
+            if getattr(step.config, field, None)
+        }
+    )
+    if dropped:
+        log.warning(
+            "Composing '%s' drops step configuration that is not carried over yet (%s).",
+            owner,
+            ", ".join(dropped),
+        )
+
+
 class Compiler:
     """Converts a Pipeline object into a KFP executable.
 
@@ -72,6 +112,8 @@ class Compiler:
         self.dsl_source = ""
         self.dsl_script_path = None
         self.imports_and_functions = imports_and_functions
+        # module name -> source, for the notebooks this pipeline references
+        self.modules: dict[str, str] = {}
 
     @staticmethod
     def _get_args():
@@ -112,12 +154,202 @@ class Compiler:
         if not hasattr(self.pipeline, "steps") or not self.pipeline.steps:
             raise ValueError("Task is missing from pipeline.")
 
+        nodes = list(self.pipeline.steps)
+        if any(isinstance(node, SubPipeline) for node in nodes):
+            return self.generate_composition(nodes)
+
         # List of lightweight components generated code
-        lightweight_components = [
-            self.generate_lightweight_component(step) for step in self.pipeline.steps
-        ]
+        lightweight_components = [self.generate_lightweight_component(step) for step in nodes]
         pipeline_code = self.generate_pipeline(lightweight_components)
         return pipeline_code
+
+    def generate_composition(self, nodes):
+        """Generate the DSL for a pipeline that references other notebooks.
+
+        Every referenced notebook becomes an importable module of its own,
+        holding its components and a nested pipeline, and this notebook's DSL
+        imports them and wires them together with its own steps. The modules
+        are written next to it by :meth:`_save_compiled_code`.
+        """
+        for node in nodes:
+            if isinstance(node, SubPipeline):
+                self.modules[MODULE_PREFIX + node.name] = autopep8.fix_code(
+                    self._get_templating_env()
+                    .get_template(SUBPIPELINE_TEMPLATE)
+                    .render(sp=self._subpipeline_context(node))
+                )
+
+        _warn_dropped_step_config(
+            self.pipeline.config.pipeline_name,
+            [node for node in nodes if not isinstance(node, SubPipeline)],
+        )
+
+        components, calls = [], []
+        for node in nodes:
+            after = [
+                self._task_var(self.pipeline.get_step(p))
+                for p in self.pipeline.predecessors(node.name)
+            ]
+            inputs = [
+                {"arg": f"{var}_input_artifact", "ref": self._boundary_ref(node, var)}
+                for var in sorted(node.ins)
+            ]
+            is_subpipeline = isinstance(node, SubPipeline)
+            calls.append(
+                {
+                    "kind": "pipeline" if is_subpipeline else "step",
+                    "task_var": self._task_var(node),
+                    "fn": f"{MODULE_PREFIX}{node.name}_pipeline"
+                    if is_subpipeline
+                    else f"{node.name}_step",
+                    "inputs": inputs,
+                    "after": sorted(set(after)),
+                    "display": node.display_name if is_subpipeline else node.name,
+                }
+            )
+            if not is_subpipeline:
+                # after the call is recorded: generating the component rewrites
+                # step.source
+                components.append(autopep8.fix_code(self.generate_lightweight_component(node)))
+
+        return (
+            self._get_templating_env()
+            .get_template(COMPOSITION_TEMPLATE)
+            .render(
+                modules=[MODULE_PREFIX + n.name for n in nodes if isinstance(n, SubPipeline)],
+                components=components,
+                toplevel_calls=calls,
+                pipeline_name=self.pipeline.config.pipeline_name,
+                pipeline_description=self.pipeline.config.pipeline_description
+                or "Composed from: " + ", ".join(n.name for n in nodes),
+            )
+        )
+
+    def _parameter_context(self):
+        """The pipeline's parameters, as they appear in the generated code.
+
+        ``name`` is the variable a pipeline function declares, ``arg`` the
+        keyword a component receives it under.
+        """
+        parameters = []
+        for param_name, param in getattr(self.pipeline, "pipeline_parameters", {}).items():
+            if isinstance(param, PipelineParam):
+                parameters.append(
+                    {
+                        "name": param_name.lower(),
+                        "arg": _clean_param_name(param_name),
+                        "type": param.param_type or "str",
+                        "default": repr(param.param_value),
+                    }
+                )
+        return parameters
+
+    def _subpipeline_context(self, node):
+        """Template context for one referenced notebook's module.
+
+        The components are generated by a compiler bound to the referenced
+        notebook's own pipeline, so its pipeline parameters and its imports are
+        the ones its steps are built with, exactly as when it is compiled on its
+        own.
+        """
+        inner = list(node.pipeline.steps)
+        owner = Compiler(node.pipeline, node.imports_and_functions)
+        parameters = owner._parameter_context()
+        _warn_dropped_step_config(node.name, inner)
+        tasks = []
+        components = []
+        for step in inner:
+            after, inputs = [], []
+            for var in sorted(step.ins):
+                if var in node.ins:
+                    ref = f"{var}_input_artifact"
+                else:
+                    producer = self._inner_producer(node, inner, step, var)
+                    ref = f'{producer}_task.outputs["{var}_output_artifact"]'
+                    after.append(f"{producer}_task")
+                inputs.append({"arg": f"{var}_input_artifact", "ref": ref})
+            # every component takes the whole parameter set, as it does when the
+            # notebook is compiled on its own
+            inputs.extend({"arg": p["arg"], "ref": p["name"]} for p in parameters)
+            tasks.append(
+                {
+                    "task_var": f"{step.name}_task",
+                    "fn": f"{step.name}_step",
+                    "inputs": inputs,
+                    "after": sorted(set(after)),
+                    "display": step.name,
+                }
+            )
+            # after the task is recorded: generating the component rewrites
+            # step.source
+            components.append(owner.generate_lightweight_component(step))
+        artifact_params = [
+            f"{var}_input_artifact: Input[{_artifact_type(var)}]" for var in sorted(node.ins)
+        ]
+        return {
+            "name": node.name,
+            "module": MODULE_PREFIX + node.name,
+            "display": node.display_name,
+            "signature": ", ".join(
+                artifact_params + [f"{p['name']}: {p['type']} = {p['default']}" for p in parameters]
+            ),
+            "outputs": [
+                {
+                    "var": var,
+                    "type": _artifact_type(var),
+                    "ref": f'{node.produced_by[var]}_task.outputs["{var}_output_artifact"]',
+                }
+                for var in sorted(node.outs)
+            ],
+            "tasks": tasks,
+            "components": components,
+        }
+
+    @staticmethod
+    def _inner_producer(node, inner, consumer, var):
+        """Step of the same notebook that produces ``var`` for ``consumer``."""
+        producer = None
+        for step in inner:
+            if step.name == consumer.name:
+                break
+            if var in step.outs:
+                producer = step.name
+        if producer is None:
+            raise ValueError(
+                f"Step '{consumer.name}' of '{node.name}' requires '{var}', but no earlier "
+                f"step of that notebook produces it."
+            )
+        return producer
+
+    @staticmethod
+    def _task_var(node):
+        """Task variable of a node in the generated pipeline.
+
+        A referenced notebook uses its module name, so a notebook whose file
+        name is not a valid Python identifier still yields valid code.
+        """
+        if isinstance(node, SubPipeline):
+            return f"{MODULE_PREFIX}{node.name}_task"
+        return f"{node.name}_task"
+
+    def _boundary_ref(self, node, var):
+        """Reference to the task output that satisfies ``var`` for ``node``."""
+        for name in self.pipeline.predecessors(node.name):
+            producer = self.pipeline.get_step(name)
+            if var not in producer.outs:
+                continue
+            task = self._task_var(producer)
+            if not isinstance(producer, SubPipeline):
+                # a component exposes each output artifact by parameter name
+                return f'{task}.outputs["{var}_output_artifact"]'
+            # one nested output is reachable as `.output`; several become a
+            # NamedTuple addressed by field name
+            if len(producer.outs) > 1:
+                return f'{task}.outputs["{var}"]'
+            return f"{task}.output"
+        raise ValueError(
+            f"'{node.name}' requires '{var}', but none of the units above it produces it."
+        )
 
     def generate_lightweight_component(self, step: Step):
         """Generate Python code using the notebook function template."""
@@ -151,8 +383,7 @@ class Compiler:
         if hasattr(step, "ins") and step.ins:
             step_inputs_list = sorted(step.ins)
             for var_name in step_inputs_list:
-                # Determine the correct input type based on variable name
-                input_type = "Model" if "model" in var_name else "Dataset"
+                input_type = _artifact_type(var_name)
                 params_without_defaults.append(f"{var_name}_input_artifact: Input[{input_type}]")
 
         step_outputs_list = []
@@ -160,7 +391,7 @@ class Compiler:
         if hasattr(step, "outs") and step.outs:
             step_outputs_list = sorted(step.outs)
             for var_name in step_outputs_list:
-                output_type = "Model" if "model" in var_name else "Dataset"
+                output_type = _artifact_type(var_name)
                 params_without_defaults.append(f"{var_name}_output_artifact: Output[{output_type}]")
 
         if hasattr(self.pipeline, "pipeline_parameters") and self.pipeline.pipeline_parameters:  # noqa: E501
@@ -168,9 +399,7 @@ class Compiler:
                 if isinstance(param, PipelineParam):
                     param_type = param.param_type or "str"
                     param_value_str = repr(param.param_value)
-                    clean_param_name = (
-                        f"{param_name.lower()}_param" if param_name.isupper() else param_name
-                    )
+                    clean_param_name = _clean_param_name(param_name)
                     params_with_defaults.append(
                         f"{clean_param_name}: {param_type} = {param_value_str}"
                     )
@@ -183,9 +412,7 @@ class Compiler:
         if hasattr(self.pipeline, "pipeline_parameters") and self.pipeline.pipeline_parameters:  # noqa: E501
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
-                    clean_param_name = (
-                        f"{param_name.lower()}_param" if param_name.isupper() else param_name
-                    )
+                    clean_param_name = _clean_param_name(param_name)
                     param = {clean_param_name: param.param_value}
                     pipeline_params[param_name] = param
 
@@ -194,11 +421,11 @@ class Compiler:
         step_outputs = []
 
         for var_name in step_inputs_list:
-            input_type = "Model" if "model" in var_name else "Dataset"
+            input_type = _artifact_type(var_name)
             step_inputs.append(Artifact(name=f"{var_name}", type=input_type, is_input=True))
 
         for var_name in step_outputs_list:
-            output_type = "Model" if "model" in var_name else "Dataset"
+            output_type = _artifact_type(var_name)
             step_outputs.append(Artifact(name=f"{var_name}", type=output_type, is_input=False))
 
         packages_list = self._get_package_list_from_imports()
@@ -248,9 +475,7 @@ class Compiler:
         if hasattr(self.pipeline, "pipeline_parameters") and self.pipeline.pipeline_parameters:  # noqa: E501
             for param_name, param in self.pipeline.pipeline_parameters.items():
                 if isinstance(param, PipelineParam):
-                    clean_param_name = (
-                        f"{param_name.lower()}_param" if param_name.isupper() else param_name
-                    )
+                    clean_param_name = _clean_param_name(param_name)
                     pipeline_param_info[param_name] = {
                         "clean_name": clean_param_name,
                         "type": param.param_type,
@@ -327,6 +552,11 @@ class Compiler:
                 path = os.path.join(os.getcwd(), ".kale")
         os.makedirs(path, exist_ok=True)
         log.info("Saving generated code in %s", path)
+        # a referenced notebook is an importable module of its own, written
+        # next to the pipeline that imports it
+        for module_name, source in self.modules.items():
+            with open(os.path.join(path, f"{module_name}.py"), "w") as f:
+                f.write(source)
         filename = f"{self.pipeline.config.pipeline_name}.kale.py"
         output_path = os.path.abspath(os.path.join(path, filename))
         with open(output_path, "w") as f:

@@ -22,7 +22,7 @@ if _here not in sys.path:
 @kfp_dsl.pipeline(name='{{ pipeline_name }}', description='{{ pipeline_description }}')
 def auto_generated_pipeline():
     """Composed pipeline: each referenced notebook is its own sub-pipeline
-    (sub-DAG); the composition notebook's own steps are top-level components."""
+    (sub-DAG); the root notebook's own steps are top-level components."""
 {% for c in toplevel_calls %}
     {{ c.task_var }} = {{ c.fn }}({% for inp in c.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
 {% if c.kind == 'step' %}    security_context.set_security_context(task={{ c.task_var }}, run_as_user=65534, run_as_group=0, run_as_non_root=True)
