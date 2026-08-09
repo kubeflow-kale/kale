@@ -11,8 +11,28 @@
         release verify check-versions
 
 UV := uv
+ifeq ($(OS),Windows_NT)
+    # Windows PATH updates from a fresh uv install don't reach the current
+    # terminal session, so fall back to the default install location.
+    UV_IN_PATH := $(shell where uv 2>nul)
+    ifeq ($(UV_IN_PATH),)
+        UV_DEFAULT := $(wildcard $(subst \,/,$(USERPROFILE))/.local/bin/uv.exe)
+        ifneq ($(UV_DEFAULT),)
+            UV := $(UV_DEFAULT)
+        endif
+    endif
+endif
 # jlpm is a yarn wrapper provided by JupyterLab - use it for extension development
 JLPM := $(UV) run jlpm
+# Location of the uv-managed virtualenv (override if using a non-default path)
+VENV_DIR ?= .venv
+# `python` on macOS/Debian may not exist (or be Python 2); `python3` on Windows
+# may resolve to the Microsoft Store app-execution alias instead of a real
+# interpreter. Pick the name that actually works per platform.
+PYTHON := python3
+ifeq ($(OS),Windows_NT)
+    PYTHON := python
+endif
 
 # Colors for output
 BLUE := \033[0;34m
@@ -29,31 +49,40 @@ help: ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\n$(BLUE)Kale Development Commands$(NC)\n\nUsage:\n  make $(GREEN)<target>$(NC)\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 check-uv: ## Verify uv is installed
-	@command -v $(UV) >/dev/null 2>&1 || { \
-		printf "$(YELLOW)uv not found. Installing...\n$(NC)"; \
-		curl -LsSf https://astral.sh/uv/install.sh | sh; \
-	}
+	@$(if $(filter Windows_NT,$(OS)), \
+		where uv >nul 2>nul || (echo uv not found. Installing... && powershell -NoProfile -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex"), \
+		command -v $(UV) >/dev/null 2>&1 || { \
+			printf "$(YELLOW)uv not found. Installing...\n$(NC)"; \
+			curl -LsSf https://astral.sh/uv/install.sh | sh; \
+		} \
+	)
 
 ##@ Installation
 
+# Step 1: Install package to get jlpm available (skip the hatch jupyter-builder
+# hook — we build the labextension explicitly below)
+# Step 2: Build labextension (requires jlpm from step 1); tsbuildinfo cache is
+# cleaned first to avoid incremental build issues after make clean
+# Step 3: Link extension for development
+# Step 4: Set up pre-commit hooks (Python + TypeScript/JavaScript linting)
 dev: check-uv ## Set up development environment
-	@printf "$(BLUE)Setting up Kale development environment...\n$(NC)"
-	@# Step 1: Install package to get jlpm available
-	@# Skip the hatch jupyter-builder hook — we build the labextension explicitly below
-	SKIP_JUPYTER_BUILDER=1 $(UV) sync --all-extras
-	@# Step 2: Build labextension (requires jlpm from step 1)
+	@$(if $(filter Windows_NT,$(OS)),echo Setting up Kale development environment...,printf "$(BLUE)Setting up Kale development environment...\n$(NC)")
+	@$(if $(filter Windows_NT,$(OS)),set SKIP_JUPYTER_BUILDER=1&& $(UV) sync --all-extras,SKIP_JUPYTER_BUILDER=1 $(UV) sync --all-extras)
 	cd labextension && $(JLPM) install
-	@# Clean tsbuildinfo cache before build (fixes incremental build issues after make clean)
 	cd labextension && $(JLPM) clean:lib
 	cd labextension && $(JLPM) build
-	@# Step 3: Link extension for development
-	$(UV) run jupyter labextension develop --overwrite .
-	@# Step 4: Set up pre-commit hooks (Python + TypeScript/JavaScript linting)
-	@$(UV) run pre-commit install 2>/dev/null || { \
-		printf "$(YELLOW)Note: pre-commit hooks not installed (core.hooksPath is set globally).\n$(NC)"; \
-		printf "$(YELLOW)To enable pre-commit hooks, run: git config --unset core.hooksPath\n$(NC)"; \
-	}
-	@printf "$(GREEN)Setup complete! Run 'make jupyter' to start JupyterLab\n$(NC)"
+	@$(if $(filter Windows_NT,$(OS)), \
+		powershell -NoProfile -Command "New-Item -ItemType Directory -Path $(VENV_DIR)\share\jupyter\labextensions -Force | Out-Null; Remove-Item -Path $(VENV_DIR)\share\jupyter\labextensions\jupyterlab-kubeflow-kale -Recurse -Force -ErrorAction SilentlyContinue; cmd /c mklink /J $(VENV_DIR)\share\jupyter\labextensions\jupyterlab-kubeflow-kale jupyterlab_kubeflow_kale\labextension", \
+		$(UV) run jupyter labextension develop --overwrite . \
+	)
+	@$(if $(filter Windows_NT,$(OS)), \
+		$(UV) run pre-commit install 2>nul || echo Note: pre-commit hooks not installed (core.hooksPath is set globally). To enable run: git config --unset core.hooksPath, \
+		$(UV) run pre-commit install 2>/dev/null || { \
+			printf "$(YELLOW)Note: pre-commit hooks not installed (core.hooksPath is set globally).\n$(NC)"; \
+			printf "$(YELLOW)To enable pre-commit hooks, run: git config --unset core.hooksPath\n$(NC)"; \
+		} \
+	)
+	@$(if $(filter Windows_NT,$(OS)),echo Setup complete! Run 'make jupyter' to start JupyterLab,printf "$(GREEN)Setup complete! Run 'make jupyter' to start JupyterLab\n$(NC)")
 
 install: dev ## Alias for dev
 
@@ -158,54 +187,22 @@ KFP_LOCAL_PORT ?= 8080
 KFP_PID_FILE := $(CURDIR)/.kfp-dev-pf.pid
 
 kfp-dev-setup: ## Create k3d cluster + install KFP standalone (~5 min, first time only)
-	@bash scripts/kfp-dev-setup.sh setup "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py setup "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-upgrade: ## Upgrade KFP on existing cluster (usage: make kfp-dev-upgrade KFP_PIPELINE_VERSION=2.17.0)
-	@bash scripts/kfp-dev-setup.sh upgrade "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
+	@$(PYTHON) scripts/kfp-dev-setup.py upgrade "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-start: ## Start existing cluster and port-forward KFP UI to localhost:8080
-	@printf "$(BLUE)Starting k3d cluster '$(KFP_CLUSTER_NAME)'...\n$(NC)"
-	@k3d cluster start $(KFP_CLUSTER_NAME) 2>/dev/null || { \
-		printf "$(YELLOW)Cluster '$(KFP_CLUSTER_NAME)' not found. Run 'make kfp-dev-setup' first.\n$(NC)"; exit 1; \
-	}
-	@printf "$(BLUE)Switching kubectl context to k3d-$(KFP_CLUSTER_NAME)...\n$(NC)"
-	@kubectl config use-context k3d-$(KFP_CLUSTER_NAME)
-	@if [ -f $(KFP_PID_FILE) ]; then \
-		kill $$(cat $(KFP_PID_FILE)) 2>/dev/null || true; \
-		rm -f $(KFP_PID_FILE); \
-	fi
-	@printf "$(BLUE)Waiting for KFP pods to be ready...\n$(NC)"
-	@kubectl wait pods -l "application-crd-id=kubeflow-pipelines" \
-		--for condition=Ready --timeout=180s -n kubeflow 2>/dev/null || \
-		printf "$(YELLOW)Some pods may still be starting — check with: make kfp-dev-status\n$(NC)"
-	@kubectl port-forward -n kubeflow svc/ml-pipeline-ui $(KFP_LOCAL_PORT):80 >/dev/null 2>&1 & echo $$! > $(KFP_PID_FILE)
-	@sleep 2
-	@printf "$(GREEN)KFP UI:  http://localhost:$(KFP_LOCAL_PORT)\n$(NC)"
-	@printf "$(GREEN)Run:     make kfp-run NB=... KFP_HOST=http://localhost:$(KFP_LOCAL_PORT)\n$(NC)"
+	@$(PYTHON) scripts/kfp-dev-setup.py start "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-stop: ## Stop port-forward and pause cluster (preserves all data)
-	@if [ -f $(KFP_PID_FILE) ]; then \
-		kill $$(cat $(KFP_PID_FILE)) 2>/dev/null || true; \
-		rm -f $(KFP_PID_FILE); \
-		printf "$(GREEN)Port-forward stopped\n$(NC)"; \
-	fi
-	@k3d cluster stop $(KFP_CLUSTER_NAME) 2>/dev/null || true
-	@printf "$(GREEN)Cluster paused. Run 'make kfp-dev-start' to resume.\n$(NC)"
+	@$(PYTHON) scripts/kfp-dev-setup.py stop "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-delete: ## Delete cluster and free all resources (irreversible)
-	@printf "$(YELLOW)Deleting cluster '$(KFP_CLUSTER_NAME)' and all KFP data...\n$(NC)"
-	@if [ -f $(KFP_PID_FILE) ]; then \
-		kill $$(cat $(KFP_PID_FILE)) 2>/dev/null || true; \
-		rm -f $(KFP_PID_FILE); \
-	fi
-	@k3d cluster delete $(KFP_CLUSTER_NAME) 2>/dev/null || true
-	@printf "$(GREEN)Cluster deleted. Run 'make kfp-dev-setup' to start fresh.\n$(NC)"
+	@$(PYTHON) scripts/kfp-dev-setup.py delete "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 kfp-dev-status: ## Show cluster and KFP pod status
-	@printf "$(BLUE)k3d clusters:\n$(NC)"
-	@k3d cluster list 2>/dev/null || printf "$(YELLOW)k3d not installed\n$(NC)"
-	@printf "\n$(BLUE)KFP pods (kubeflow namespace):\n$(NC)"
-	@kubectl get pods -n kubeflow 2>/dev/null || printf "$(YELLOW)Cluster not running or unreachable\n$(NC)"
+	@$(PYTHON) scripts/kfp-dev-setup.py status "$(KFP_CLUSTER_NAME)" "$(KFP_PIPELINE_VERSION)" "$(KFP_LOCAL_PORT)" "$(KFP_PID_FILE)"
 
 ##@ Cleanup
 

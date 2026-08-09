@@ -51,6 +51,8 @@ You only need to re-run `make dev` after pulling changes that touch
 | `make lint-labextension` | ESLint + Prettier on the TypeScript source.    |
 | `make format-backend`  | Auto-fix Ruff findings.                          |
 | `make build`           | Build a wheel.                                   |
+| `make kfp-dev-setup`   | Create a local k3d + KFP cluster (first time only). |
+| `make kfp-dev-start`   | Start it and port-forward the KFP UI to :8080.   |
 | `make docs`            | Build the docs site (this website).              |
 | `make docs-serve`      | Build and serve docs locally on port 8000.       |
 
