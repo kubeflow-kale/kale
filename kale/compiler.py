@@ -28,7 +28,7 @@ import autopep8
 from jinja2 import Environment, FileSystemLoader, PackageLoader
 
 from kale import __version__ as KALE_VERSION
-from kale.common import graphutils, kfputils, utils
+from kale.common import graphutils, k8sutils, kfputils, podutils, utils
 from kale.common.imports import get_packages_to_install
 from kale.pipeline import DEFAULT_BASE_IMAGE, Pipeline, PipelineParam, Step
 
@@ -90,8 +90,39 @@ class Compiler:
         Returns path to DSL script.
         """
         log.info("Compiling Pipeline into KFP DSL code")
+        self._warn_rwo_volumes()
         self.dsl_source = self.generate_dsl()
         return self._save_compiled_code()
+
+    def _warn_rwo_volumes(self):
+        """Emit a warning at compile time for any RWO PVC volumes.
+
+        RWO volumes can only be mounted on one node at a time.  If pipeline
+        steps are scheduled on different nodes they will fail to mount.  We
+        check at compile time (where we have cluster access) so the warning
+        appears immediately in the Kale output rather than buried in pod logs.
+        """
+        pvc_volumes = [
+            v for v in self.pipeline.config.volumes or [] if getattr(v, "type", None) == "pvc"
+        ]
+        if not pvc_volumes:
+            return
+        try:
+            namespace = podutils.get_namespace()
+        except Exception:
+            return
+        for vol in pvc_volumes:
+            try:
+                modes = k8sutils.get_pvc_access_modes(vol.name, namespace)
+            except Exception:
+                continue
+            if "ReadWriteOnce" in modes:
+                log.warning(
+                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
+                    "If pipeline steps run on different nodes, concurrent "
+                    "mounts will fail.",
+                    vol.name,
+                )
 
     def run(self):
         """Run the generated KFP script."""

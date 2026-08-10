@@ -251,6 +251,41 @@ def list_pvcs(request):
         return []
 
 
+def list_volumes(request):
+    """List PVCs currently mounted on the notebook pod.
+
+    Returns a sorted list of ``{"name": <pvc-name>, "mount_point": <path>}``
+    dicts — one entry per PVC mount found across all containers in the pod.
+    Returns an empty list on any error so the UI dialog degrades gracefully.
+    """
+    log = request.log if hasattr(request, "log") else logger
+    try:
+        namespace = podutils.get_namespace()
+        pod_name = podutils.get_pod_name()
+        pod = podutils.get_pod(pod_name, namespace)
+
+        pvc_by_vol_name = {}
+        for vol in pod.spec.volumes or []:
+            if vol.persistent_volume_claim:
+                pvc_by_vol_name[vol.name] = vol.persistent_volume_claim.claim_name
+
+        results = {}
+        for container in pod.spec.containers or []:
+            for mount in container.volume_mounts or []:
+                if mount.name in pvc_by_vol_name and mount.name not in results:
+                    results[mount.name] = {
+                        "name": pvc_by_vol_name[mount.name],
+                        "mount_point": mount.mount_path,
+                    }
+
+        volumes = sorted(results.values(), key=lambda v: v["name"])
+        log.info("Found %d PVC mount(s) on pod '%s'", len(volumes), pod_name)
+        return volumes
+    except Exception as e:
+        log.warning("Could not list notebook pod volumes. Reason: %s", e)
+        return []
+
+
 def get_security_context_defaults(request):
     """Get security context defaults from environment variables.
 

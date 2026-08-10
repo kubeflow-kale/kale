@@ -27,6 +27,7 @@ import { FormControlLabel, Link, Switch } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { theme } from '../Theme';
 import { Input } from '../components/Input';
+import { VolumesPanel } from '../components/VolumesPanel';
 import { KaleEmptyState } from './KaleEmptyState';
 import { KFPStatusBadge } from '../components/KFPStatusBadge';
 import kaleLogo from '../../style/icons/kale.svg';
@@ -44,8 +45,9 @@ import {
   DefaultState,
   NEW_EXPERIMENT,
   PIPELINE_NAME_MAX_LENGTH,
+  IVolumeConfig,
 } from './LeftPanelTypes';
-export type { DeployType, IExperiment, IKaleNotebookMetadata };
+export type { DeployType, IExperiment, IKaleNotebookMetadata, IVolumeConfig };
 export { DefaultState, NEW_EXPERIMENT };
 
 interface IProps {
@@ -319,7 +321,22 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
               (notebookMeta.isEnabled && activeNotebook ? '' : 'hidden')
             }
           >
-            {' '}
+            <div>
+              <p
+                className="kale-header"
+                style={{ color: theme.kale.headers.main }}
+              >
+                Volumes
+              </p>
+            </div>
+            <div className={'input-container'}>
+              <VolumesPanel
+                volumes={notebookMeta.metadata.volumes ?? []}
+                updateVolumes={notebookMeta.updateVolumes}
+                notebook={activeNotebook}
+                kernel={kernel}
+              />
+            </div>
           </div>
         </div>
         <div

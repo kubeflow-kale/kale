@@ -22,16 +22,50 @@ NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
 
 def get_namespace():
-    """Get the current namespace."""
-    with open(NAMESPACE_PATH) as f:
-        return f.read()
+    """Get the current namespace.
+
+    Resolution order:
+    1. In-cluster service-account file (running inside a pod).
+    2. ``KALE_NAMESPACE`` environment variable (local dev / CI).
+    """
+    try:
+        with open(NAMESPACE_PATH) as f:
+            return f.read()
+    except OSError:
+        pass
+
+    # Intended for local development / testing only (e.g. `make jupyter`
+    # outside a pod).  Set to the namespace whose PVCs you want to browse
+    # in the Volumes panel, e.g. ``kubeflow-user-example-com``.
+    env_ns = os.getenv("KALE_NAMESPACE")
+    if env_ns:
+        return env_ns
+
+    raise RuntimeError(
+        "Cannot determine namespace: not running inside a pod and "
+        "KALE_NAMESPACE environment variable is not set."
+    )
 
 
 def get_pod_name():
-    """Get the current pod name."""
-    pod_name = os.getenv("HOSTNAME")
-    if pod_name is None:
-        raise RuntimeError("Env variable HOSTNAME not found.")
+    """Get the current pod name.
+
+    Resolution order:
+    1. ``HOSTNAME`` environment variable (set automatically inside a pod).
+    2. ``KALE_POD_NAME`` environment variable (local dev / testing only —
+       set to the notebook pod whose volumes you want to browse, e.g.
+       ``testingg-0``).
+    """
+    # KALE_POD_NAME is intended for local development / testing only (e.g.
+    # ``make jupyter`` outside a pod).  Set to the notebook pod whose mounted
+    # volumes you want to browse in the "Select from notebook" dialog, e.g.
+    # ``testingg-0``.
+    pod_name = os.getenv("KALE_POD_NAME") or os.getenv("HOSTNAME")
+    if not pod_name:
+        raise RuntimeError(
+            "Cannot determine pod name: HOSTNAME is not set and "
+            "KALE_POD_NAME environment variable is not set."
+        )
     return pod_name
 
 

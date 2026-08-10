@@ -5,23 +5,6 @@
     pip_trusted_hosts = {{ pip_trusted_hosts }}
 )
 def {{ step.name }}_step({{ component_signature_args }}):
-{%- set pvc_volumes = volumes | selectattr('type', 'equalto', 'pvc') | list %}
-{%- if pvc_volumes %}
-    try:
-        from kale.common import k8sutils as _kale_k8sutils
-        from kale.common import podutils as _kale_podutils
-        _kale_ns = _kale_podutils.get_namespace()
-        for _kale_pvc_name in [{{ pvc_volumes | map(attribute='name') | map('tojson') | join(', ') }}]:
-            if "ReadWriteOnce" in _kale_k8sutils.get_pvc_access_modes(_kale_pvc_name, _kale_ns):
-                import logging as _kale_logging
-                _kale_logging.warning(
-                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
-                    "If pipeline steps run on different nodes, concurrent mounts will fail.",
-                    _kale_pvc_name,
-                )
-    except Exception:
-        pass
-{%- endif %}
     _kale_pipeline_parameters_block = f'''
 {%- for param_name, param_var in pipeline_params.items() %}
     {%- for key in param_var.keys() %}

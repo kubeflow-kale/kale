@@ -12,20 +12,6 @@ from kfp import kubernetes
     pip_trusted_hosts=[]
 )
 def load_step(load_html_report: Output[HTML]):
-    try:
-        from kale.common import k8sutils as _kale_k8sutils
-        from kale.common import podutils as _kale_podutils
-        _kale_ns = _kale_podutils.get_namespace()
-        for _kale_pvc_name in ["raw-data"]:
-            if "ReadWriteOnce" in _kale_k8sutils.get_pvc_access_modes(_kale_pvc_name, _kale_ns):
-                import logging as _kale_logging
-                _kale_logging.warning(
-                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
-                    "If pipeline steps run on different nodes, concurrent mounts will fail.",
-                    _kale_pvc_name,
-                )
-    except Exception:
-        pass
     _kale_pipeline_parameters_block = f'''
     '''
 
@@ -75,20 +61,6 @@ def load_step(load_html_report: Output[HTML]):
     pip_trusted_hosts=[]
 )
 def train_step(train_html_report: Output[HTML]):
-    try:
-        from kale.common import k8sutils as _kale_k8sutils
-        from kale.common import podutils as _kale_podutils
-        _kale_ns = _kale_podutils.get_namespace()
-        for _kale_pvc_name in ["raw-data"]:
-            if "ReadWriteOnce" in _kale_k8sutils.get_pvc_access_modes(_kale_pvc_name, _kale_ns):
-                import logging as _kale_logging
-                _kale_logging.warning(
-                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
-                    "If pipeline steps run on different nodes, concurrent mounts will fail.",
-                    _kale_pvc_name,
-                )
-    except Exception:
-        pass
     _kale_pipeline_parameters_block = f'''
     '''
 

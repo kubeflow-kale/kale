@@ -394,4 +394,32 @@ export default class Commands {
       return '';
     }
   };
+
+  listPvcs = async (): Promise<string[]> => {
+    try {
+      const result = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.list_pvcs',
+      );
+      return result || [];
+    } catch (error) {
+      console.warn('Could not list PVCs — combobox will show no suggestions.', error);
+      return [];
+    }
+  };
+
+  listNotebookVolumes = async (): Promise<Array<{ name: string; mount_point: string }>> => {
+    try {
+      const result = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.list_volumes',
+      );
+      return result || [];
+    } catch {
+      // nb.list_volumes may not be implemented yet; degrade gracefully.
+      return [];
+    }
+  };
 }
