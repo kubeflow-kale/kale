@@ -22,6 +22,7 @@
 
 Latest News 🔥
 
+- [2026/08] Kubeflow Kale v2.2 is released!
 - [2026/06] Kubeflow Kale v2.1 is released!
 - [2026/04] Kubeflow Kale v2.0 is officially released with support for Kubeflow Pipelines 2.16.0!
 - [2026/04] The new Kubeflow Kale [docs](./docs) is now available!
