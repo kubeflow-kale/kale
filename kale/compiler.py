@@ -72,29 +72,6 @@ def _clean_param_name(param_name: str) -> str:
     return f"{param_name.lower()}_param" if param_name.isupper() else param_name
 
 
-# Step configuration the composition templates do not carry over yet. A step
-# that sets any of it still runs, so this is reported rather than raised.
-UNSUPPORTED_IN_COMPOSITION = ("limits", "annotations", "labels", "retry_count", "timeout")
-
-
-def _warn_dropped_step_config(owner: str, steps) -> None:
-    """Report step configuration a composition drops."""
-    dropped = sorted(
-        {
-            f"{step.name}: {field}"
-            for step in steps
-            for field in UNSUPPORTED_IN_COMPOSITION
-            if getattr(step.config, field, None)
-        }
-    )
-    if dropped:
-        log.warning(
-            "Composing '%s' drops step configuration that is not carried over yet (%s).",
-            owner,
-            ", ".join(dropped),
-        )
-
-
 class Compiler:
     """Converts a Pipeline object into a KFP executable.
 
@@ -179,11 +156,6 @@ class Compiler:
                     .render(sp=self._subpipeline_context(node))
                 )
 
-        _warn_dropped_step_config(
-            self.pipeline.config.pipeline_name,
-            [node for node in nodes if not isinstance(node, SubPipeline)],
-        )
-
         components, calls = [], []
         for node in nodes:
             after = [
@@ -205,6 +177,9 @@ class Compiler:
                     "inputs": inputs,
                     "after": sorted(set(after)),
                     "display": node.display_name if is_subpipeline else node.name,
+                    # a referenced notebook carries its config inside its own
+                    # module, on the steps it applies to
+                    "step": None if is_subpipeline else node,
                 }
             )
             if not is_subpipeline:
@@ -222,6 +197,8 @@ class Compiler:
                 pipeline_name=self.pipeline.config.pipeline_name,
                 pipeline_description=self.pipeline.config.pipeline_description
                 or "Composed from: " + ", ".join(n.name for n in nodes),
+                enable_caching=self.pipeline.config.enable_caching,
+                security_context=self.pipeline.config.security_context,
             )
         )
 
@@ -255,7 +232,6 @@ class Compiler:
         inner = list(node.pipeline.steps)
         owner = Compiler(node.pipeline, node.imports_and_functions)
         parameters = owner._parameter_context()
-        _warn_dropped_step_config(node.name, inner)
         tasks = []
         components = []
         for step in inner:
@@ -278,6 +254,7 @@ class Compiler:
                     "inputs": inputs,
                     "after": sorted(set(after)),
                     "display": step.name,
+                    "step": step,
                 }
             )
             # after the task is recorded: generating the component rewrites
@@ -303,6 +280,10 @@ class Compiler:
             ],
             "tasks": tasks,
             "components": components,
+            # the referenced notebook's own caching default, applied to its
+            # steps unless a step overrides it
+            "enable_caching": node.pipeline.config.enable_caching,
+            "security_context": node.pipeline.config.security_context,
         }
 
     @staticmethod

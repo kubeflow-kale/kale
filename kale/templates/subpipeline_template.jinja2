@@ -1,8 +1,9 @@
+{% import '_step_config.jinja2' as step_config -%}
 import json
 from typing import NamedTuple
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
-from kfp.kubernetes import security_context
+from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
 
 {{ sp.components | join('\n\n') }}
 
@@ -12,10 +13,9 @@ def {{ sp.module }}_pipeline({{ sp.signature }}){% if sp.outputs|length == 1 %} 
     """Sub-pipeline compiled from notebook '{{ sp.display }}'."""
 {% for t in sp.tasks %}
     {{ t.task_var }} = {{ t.fn }}({% for inp in t.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
-    security_context.set_security_context(task={{ t.task_var }}, run_as_user=65534, run_as_group=0, run_as_non_root=True)
-    {{ t.task_var }}.set_env_variable(name="HOME", value="/tmp")
+{{- step_config.security(t.task_var, sp.security_context) }}
     {{ t.task_var }}.set_display_name("{{ t.display }}")
-    {{ t.task_var }}.set_caching_options(enable_caching=False)
+{{- step_config.render(t.step, t.task_var, sp.enable_caching) }}
 {% for a in t.after %}    {{ t.task_var }}.after({{ a }})
 {% endfor %}
 {% endfor %}

@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for notebooks that reference other notebooks."""
 
-import logging
-
 import nbformat as nbf
 import pytest
 import yaml
@@ -322,28 +320,48 @@ def test_referenced_notebook_keeps_its_pipeline_parameters(tmp_path, monkeypatch
     assert "scale_step(factor=factor)" in module
 
 
-def test_step_config_a_composition_drops_is_reported(tmp_path, monkeypatch, caplog):
-    """Step configuration a composition does not carry over yet is reported,
-    so it is never dropped without a trace."""
+def test_step_config_survives_composition(tmp_path, monkeypatch):
+    """A step's `limit:`, `label:`, `annotation:` and `cache:` tags have the
+    same effect whether the notebook is composed or compiled on its own."""
     _write_nb(
         tmp_path / "child.ipynb",
         "child",
-        [(["step:work", "limit:nvidia.com/gpu:2"], "dataset = [1, 2, 3]")],
+        [
+            (
+                [
+                    "step:work",
+                    "limit:nvidia.com/gpu:2",
+                    "label:team:ml",
+                    "annotation:owner:yash",
+                    "cache:enabled",
+                ],
+                "dataset = [1, 2, 3]",
+            )
+        ],
     )
     root = tmp_path / "root.ipynb"
-    _write_nb(root, "root", [_ref("child", "./child.ipynb")])
+    _write_nb(
+        root,
+        "root",
+        [
+            _ref("child", "./child.ipynb"),
+            (["step:show", "label:tier:root"], "print(dataset)"),
+        ],
+    )
 
     monkeypatch.chdir(tmp_path)
-    # Kale's logger does not propagate, so capture on it directly
-    logger = logging.getLogger("kale.compiler")
-    logger.addHandler(caplog.handler)
-    try:
-        _compile(root)
-    finally:
-        logger.removeHandler(caplog.handler)
+    _, dsl_path = _compile(root)
 
-    assert "drops step configuration" in caplog.text
-    assert "work: limits" in caplog.text
+    # config of a referenced notebook's step lands in that notebook's module
+    module = _module(tmp_path, "child")
+    assert 'work_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit(2)' in module
+    assert 'add_pod_label(task=work_task, label_key="team", label_value="ml")' in module
+    assert 'add_pod_annotation(task=work_task, annotation_key="owner"' in module
+    assert "work_task.set_caching_options(enable_caching=True)" in module
+
+    # config of the root's own step lands in the orchestrator
+    dsl = open(dsl_path).read()
+    assert 'add_pod_label(task=show_task, label_key="tier", label_value="root")' in dsl
 
 
 def test_reference_inside_a_referenced_notebook_raises(tmp_path, monkeypatch):

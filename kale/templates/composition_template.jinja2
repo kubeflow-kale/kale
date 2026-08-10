@@ -1,3 +1,4 @@
+{% import '_step_config.jinja2' as step_config -%}
 import os
 import sys
 
@@ -5,7 +6,7 @@ import kfp.dsl as kfp_dsl
 {% if components %}import json
 from typing import NamedTuple
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
-from kfp.kubernetes import security_context
+from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
 {% endif %}
 # The sub-notebook DSL modules are generated next to this file; make them
 # importable regardless of where this script is executed from. kfp is imported
@@ -25,10 +26,9 @@ def auto_generated_pipeline():
     (sub-DAG); the root notebook's own steps are top-level components."""
 {% for c in toplevel_calls %}
     {{ c.task_var }} = {{ c.fn }}({% for inp in c.inputs %}{{ inp.arg }}={{ inp.ref }}{% if not loop.last %}, {% endif %}{% endfor %})
-{% if c.kind == 'step' %}    security_context.set_security_context(task={{ c.task_var }}, run_as_user=65534, run_as_group=0, run_as_non_root=True)
-    {{ c.task_var }}.set_env_variable(name="HOME", value="/tmp")
-    {{ c.task_var }}.set_caching_options(enable_caching=False)
-{% endif %}    {{ c.task_var }}.set_display_name("{{ c.display }}")
+{%- if c.kind == 'step' %}{{ step_config.security(c.task_var, security_context) }}{% endif %}
+    {{ c.task_var }}.set_display_name("{{ c.display }}")
+{%- if c.kind == 'step' %}{{ step_config.render(c.step, c.task_var, enable_caching) }}{% endif %}
 {% for a in c.after %}    {{ c.task_var }}.after({{ a }})
 {% endfor %}
 {% endfor %}
