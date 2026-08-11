@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "JupyterLab jupyterlab-kubeflow-kale Integration Tests",
   "private": true,
+  "packageManager": "yarn@3.5.0",
   "scripts": {
     "start": "cd ../.. && uv run jupyter lab --config labextension/ui-tests/jupyter_server_test_config.py",
     "test": "jlpm playwright test",
