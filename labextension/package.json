@@ -15,6 +15,7 @@
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "yarn@3.5.0",
   "author": {
     "name": "Stefano Fioravanzo",
     "email": "stefano.fioravanzo@gmail.com"
