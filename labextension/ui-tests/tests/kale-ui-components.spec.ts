@@ -122,8 +122,6 @@ test.describe('Open a Notebook and Enable Kale', () => {
     await expect(page.locator('label:has-text("Cell type")')).toBeVisible();
     await expect(page.locator('label:has-text("Step name")')).toBeVisible();
     await expect(page.locator('label:has-text("Depends on")')).toBeVisible();
-    await expect(page.locator('[title="Base Image"]')).toBeVisible();
-    await expect(page.locator('[title="GPU"]')).toBeVisible();
-    await expect(page.locator('[title="Caching"]')).toBeVisible();
+    await expect(page.locator('[aria-label="Configure step"]')).toBeVisible();
   });
 });

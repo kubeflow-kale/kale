@@ -27,7 +27,7 @@ EXAMPLES_DIR = os.path.join(THIS_DIR, "../../../examples/")
     "notebook_path,dsl_path",
     [
         (
-            os.path.join(EXAMPLES_DIR, "serving/sklearn/iris.ipynb"),
+            os.path.join(EXAMPLES_DIR, "iris/sklearn/iris.ipynb"),
             os.path.join(THIS_DIR, "../assets/kfp_dsl/", "iris.py"),
         ),
         (

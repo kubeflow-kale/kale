@@ -19,7 +19,7 @@ import {
   _legacy_executeRpcAndShowRPCError,
 } from './RPCUtils';
 
-import { DeployProgressState, RunPipeline } from '../widgets/deploys-progress/DeploysProgress';
+import { DeployProgressState, RunPipeline } from '../widgets/deploys-progress/DeployProgress';
 
 type OnUpdateCallbak = (params: Partial<DeployProgressState>) => void;
 

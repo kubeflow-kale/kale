@@ -28,6 +28,19 @@ export const RESERVED_CELL_NAMES = [
   'pipeline-metrics',
   'skip',
 ];
+export const KALE_TAG_PREFIXES = [
+  'step:',
+  'prev:',
+  'limit:',
+  'image:',
+  'cache:',
+  'report:',
+  'skip',
+  'imports',
+  'functions',
+  'pipeline-parameters',
+  'pipeline-metrics',
+];
 
 export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {
   imports:

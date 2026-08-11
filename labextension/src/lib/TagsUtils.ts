@@ -15,10 +15,13 @@
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
+import { KALE_TAG_PREFIXES } from '../widgets/cell-metadata/constants';
 
 const IMAGE_TAG = 'image:';
 const CACHE_TAG = 'cache:';
 const CACHE_ENABLED_VALUE = 'enabled';
+const REPORT_TAG = 'report:';
+const REPORT_ENABLED_VALUE = 'enabled';
 
 interface IKaleCellTags {
   stepName: string;
@@ -26,6 +29,7 @@ interface IKaleCellTags {
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  generateHtmlReport?: boolean;
 }
 
 /** Contains utility functions for manipulating/handling Kale cell tags. */
@@ -128,12 +132,21 @@ export default class TagsUtils {
         enableCaching = cacheValue === CACHE_ENABLED_VALUE ? true : false;
       }
 
+      // Parse report tag
+      let generateHtmlReport: boolean | undefined;
+      const reportTag = tags.find(v => v.startsWith(REPORT_TAG));
+      if (reportTag) {
+        const reportValue = reportTag.substring(REPORT_TAG.length);
+        generateHtmlReport = reportValue === REPORT_ENABLED_VALUE ? true : false;
+      }
+
       return {
         stepName: b_name[0] || '',
         prevStepNames: prevs,
         limits: limits,
         baseImage: baseImage,
         enableCaching: enableCaching,
+        generateHtmlReport: generateHtmlReport,
       };
     }
     return null;
@@ -174,6 +187,11 @@ export default class TagsUtils {
     // Add cache tag if specified
     if (metadata.enableCaching !== undefined) {
       tags.push(CACHE_TAG + (metadata.enableCaching ? 'enabled' : 'disabled'));
+    }
+
+    // Add report tag if specified
+    if (metadata.generateHtmlReport !== undefined) {
+      tags.push(REPORT_TAG + (metadata.generateHtmlReport ? 'enabled' : 'disabled'));
     }
 
     return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags);
@@ -247,6 +265,39 @@ export default class TagsUtils {
       cellMetadata
     ).then(oldValue => {
       TagsUtils.updateKaleCellsTags(notebook, oldStepName, value);
+    });
+  }
+  public static removeAllKaleTags(
+    notebook: NotebookPanel,
+    activeCellIndex: number,
+  ) {
+    const currentTags: string[] =
+      CellUtils.getCellMetaData(
+        notebook.content,
+        activeCellIndex,
+        'tags',
+      ) || [];
+
+    // Extract the step name from 'step:<name>' tag before wiping
+    const stepTag = currentTags.find(tag => tag.startsWith('step:'));
+    const clearedStepName = stepTag ? stepTag.replace('step:', '') : null;
+
+    // Clear all Kale tags from the active cell
+    const filteredTags = currentTags.filter(
+      tag => !KALE_TAG_PREFIXES.some(prefix => tag.startsWith(prefix)),
+    );
+
+    CellUtils.setCellMetaData(
+      notebook,
+      activeCellIndex,
+      'tags',
+      filteredTags,
+    ).then(() => {
+      // If this cell had a step name, remove all prev:<stepName> refs
+      // from dependent cells using the existing updateKaleCellsTags
+      if (clearedStepName) {
+        TagsUtils.updateKaleCellsTags(notebook, clearedStepName, '');
+      }
     });
   }
 
