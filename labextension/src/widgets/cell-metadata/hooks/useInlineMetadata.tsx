@@ -153,6 +153,7 @@ export function useInlineMetadata(
             baseImage={tags.baseImage}
             enableCaching={tags.enableCaching}
             generateHtmlReport={tags.generateHtmlReport}
+            secrets={tags.secrets || {}}
             previousStepName={previousStepName}
             cellIndex={index}
             resolvedDefaultBaseImage={
