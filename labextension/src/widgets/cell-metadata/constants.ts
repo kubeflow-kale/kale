@@ -65,4 +65,6 @@ export const RESERVED_CELL_NAMES_CHIP_COLOR: { [id: string]: string } = {
 };
 
 export const STEP_NAME_ERROR_MSG =
-  "Step name must consist of lower case alphanumeric characters or '_', and can not start with a digit.";
+  "Step name must consist of lower case alphanumeric characters or '_', and can not start with a digit. " +
+  'Unlike pipeline names, hyphens are not allowed here because step names become Python ' +
+  'identifiers in the generated pipeline code.';
