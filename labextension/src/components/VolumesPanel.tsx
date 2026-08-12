@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import * as React from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import Button from '@mui/material/Button';
@@ -39,6 +39,14 @@ export const VolumesPanel: React.FC<IVolumesPanelProps> = ({
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [copiedEnvVar, setCopiedEnvVar] = useState<string | null>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const duplicateMountPaths = (() => {
     const seen = new Set<string>();
@@ -103,7 +111,7 @@ export const VolumesPanel: React.FC<IVolumesPanelProps> = ({
         <div className="kale-volumes-list">
           {volumes.map((vol, idx) => (
             <VolumeRow
-              key={idx}
+              key={`${vol.name}:${vol.mount_point}`}
               vol={vol}
               isDupMount={duplicateMountPaths.has(vol.mount_point)}
               copiedEnvVar={copiedEnvVar}

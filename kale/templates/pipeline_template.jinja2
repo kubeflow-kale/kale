@@ -2,7 +2,7 @@ import json
 import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
 from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
-{%- if volumes | selectattr('type', 'equalto', 'pvc') | list %}
+{%- if volumes | default([]) | selectattr('type', 'equalto', 'pvc') | list %}
 from kfp import kubernetes
 {%- endif %}
 
@@ -42,7 +42,7 @@ def auto_generated_pipeline(
     )
 {%- endif %}
     {{ step.name }}_task.set_env_variable(name="HOME", value="/tmp")
-{%- for volume in volumes %}
+{%- for volume in volumes | default([]) %}
 {%- if volume.type == 'pvc' %}
     kubernetes.mount_pvc({{ step.name }}_task, pvc_name="{{ volume.name }}", mount_path="{{ volume.mount_point }}")
 {%- if volume.expose_as_env_var %}
