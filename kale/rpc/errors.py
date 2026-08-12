@@ -13,21 +13,29 @@
 # limitations under the License.
 
 import enum
+import json
+import pathlib
 
 from kale.rpc.log import KALE_LOG_FILE
 from kale.rpc.utils import serialize
+
+# Shared with the frontend, which imports this same file directly (see
+# labextension/src/lib/RPCUtils.tsx), so the two sides can't drift apart.
+_ERROR_CODES_PATH = pathlib.Path(__file__).parent / "error_codes.json"
+with open(_ERROR_CODES_PATH) as f:
+    _ERROR_CODES = json.load(f)
 
 
 class Code(enum.Enum):
     """Error codes."""
 
-    OK = 0
-    IMPORT_ERROR = 1
-    ENCODING_ERROR = 2
-    NOT_FOUND = 3
-    INTERNAL_ERROR = 4
-    SERVICE_UNAVAILABLE = 5
-    UNHANDLED_ERROR = 6
+    OK = _ERROR_CODES["OK"]
+    IMPORT_ERROR = _ERROR_CODES["IMPORT_ERROR"]
+    ENCODING_ERROR = _ERROR_CODES["ENCODING_ERROR"]
+    NOT_FOUND = _ERROR_CODES["NOT_FOUND"]
+    INTERNAL_ERROR = _ERROR_CODES["INTERNAL_ERROR"]
+    SERVICE_UNAVAILABLE = _ERROR_CODES["SERVICE_UNAVAILABLE"]
+    UNHANDLED_ERROR = _ERROR_CODES["UNHANDLED_ERROR"]
 
 
 class _RPCError(Exception):

@@ -20,6 +20,9 @@ import NotebookUtils from './NotebookUtils';
 import SanitizedHTML from 'react-sanitized-html';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
 import { Notification } from '@jupyterlab/apputils';
+// Shared with the backend, which reads this same file directly (see
+// kale/rpc/errors.py), so the two sides can't drift apart.
+import errorCodes from '../../../kale/rpc/error_codes.json';
 
 export const globalUnhandledRejection = async (event: any) => {
   console.error(event.reason);
@@ -86,13 +89,13 @@ export interface IRPCError {
 }
 
 export enum RPC_CALL_STATUS {
-  OK = 0,
-  ImportError = 1,
-  EncodingError = 2,
-  NotFound = 3,
-  InternalError = 4,
-  ServiceUnavailable = 5,
-  UnhandledError = 6
+  OK = errorCodes.OK,
+  ImportError = errorCodes.IMPORT_ERROR,
+  EncodingError = errorCodes.ENCODING_ERROR,
+  NotFound = errorCodes.NOT_FOUND,
+  InternalError = errorCodes.INTERNAL_ERROR,
+  ServiceUnavailable = errorCodes.SERVICE_UNAVAILABLE,
+  UnhandledError = errorCodes.UNHANDLED_ERROR
 }
 
 const getRpcCodeName = (code: number) => {
