@@ -69,6 +69,9 @@ def _get_client(host=None):
 
 
 def ping(request):
+    # Intentionally not decorated with `_handle_unreachable_kfp`: this is the
+    # reachability probe itself, and it already reports an unreachable server
+    # by returning False rather than by raising.
     try:
         c = _get_client()
         c.get_kfp_healthz()

@@ -62,6 +62,22 @@ def test_list_experiments_kfp_unreachable(_rpc_request, connection_error):
     assert err.trans_id == _rpc_request.trans_id
 
 
+def test_list_experiments_kfp_unreachable_on_api_call(_rpc_request):
+    """The common case: the client builds fine and the API call is what fails.
+
+    `kfp.Client.__init__` only contacts the server when no namespace is set, and
+    Kale normally has one, so `_get_client()` succeeds and the connection error
+    surfaces from the API call inside the decorated function body.
+    """
+    client = mock.MagicMock()
+    client.list_experiments.side_effect = _max_retry_error()
+    with (
+        mock.patch("kale.rpc.kfp._get_client", return_value=client),
+        pytest.raises(RPCServiceUnavailableError),
+    ):
+        kfp.list_experiments(_rpc_request)
+
+
 def test_get_run_kfp_unreachable(_rpc_request):
     with (
         mock.patch("kale.rpc.kfp._get_client", side_effect=_max_retry_error()),
@@ -70,10 +86,43 @@ def test_get_run_kfp_unreachable(_rpc_request):
         kfp.get_run(_rpc_request, "run-id")
 
 
-def test_create_experiment_kfp_unreachable(_rpc_request):
-    """Connection errors raised while checking for an existing experiment propagate."""
+def test_get_run_kfp_unreachable_on_api_call(_rpc_request):
+    client = mock.MagicMock()
+    client.get_run.side_effect = _max_retry_error()
     with (
-        mock.patch("kale.rpc.kfp._get_client", side_effect=_max_retry_error()),
+        mock.patch("kale.rpc.kfp._get_client", return_value=client),
+        pytest.raises(RPCServiceUnavailableError),
+    ):
+        kfp.get_run(_rpc_request, "run-id")
+
+
+def test_create_experiment_kfp_unreachable(_rpc_request):
+    """Connection errors raised while checking for an existing experiment propagate.
+
+    The first `_get_client()` succeeds so that execution actually reaches the
+    nested `get_experiment(request, ...)` call, which is where the failure is
+    raised. This pins the `request` (not `None`) argument to that nested call:
+    `get_experiment` is decorated, so passing `None` would dereference
+    `None.log` and turn the connection error into an `AttributeError`.
+    """
+    outer_client = mock.MagicMock()
+    with (
+        mock.patch(
+            "kale.rpc.kfp._get_client",
+            side_effect=[outer_client, _max_retry_error()],
+        ),
+        pytest.raises(RPCServiceUnavailableError),
+    ):
+        kfp.create_experiment(_rpc_request, "my-experiment")
+
+
+def test_create_experiment_kfp_unreachable_on_api_call(_rpc_request):
+    """The existence check succeeds, then creating the experiment hits the network."""
+    client = mock.MagicMock()
+    client.get_experiment.side_effect = ValueError("No experiment is found with name my-experiment")
+    client.create_experiment.side_effect = _max_retry_error()
+    with (
+        mock.patch("kale.rpc.kfp._get_client", return_value=client),
         pytest.raises(RPCServiceUnavailableError),
     ):
         kfp.create_experiment(_rpc_request, "my-experiment")
