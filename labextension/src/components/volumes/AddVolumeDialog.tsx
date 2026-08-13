@@ -113,6 +113,20 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
       (v, i) => v.mount_point === form.mount_point.trim() && i !== editingIdx,
     );
 
+  const derivedEnvVar =
+    form.expose_as_env_var && form.name.trim()
+      ? deriveEnvVarName(form.name.trim())
+      : null;
+
+  const envVarDuplicate =
+    !!derivedEnvVar &&
+    volumes.some(
+      (v, i) =>
+        i !== editingIdx &&
+        v.expose_as_env_var &&
+        deriveEnvVarName(v.name) === derivedEnvVar,
+    );
+
   const pvcUnknown =
     form.name.trim() !== '' &&
     pvcSuggestions.length > 0 &&
@@ -121,7 +135,8 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
   const canSubmit =
     form.name.trim() !== '' &&
     form.mount_point.trim() !== '' &&
-    !mountDuplicate;
+    !mountDuplicate &&
+    !envVarDuplicate;
 
   const handleCommit = () => {
     if (!canSubmit) {
@@ -181,7 +196,7 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
             </Button>
 
             {/* PVC combobox — freeSolo lets users type any name;
-                forcePopupIcon shows the ▼ arrow so it looks like a selectbox */}
+                forcePopupIcon shows the arrow so it looks like a selectbox */}
             <Autocomplete
               freeSolo
               forcePopupIcon
@@ -257,15 +272,20 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
               label={
                 <Typography variant="body2">
                   Expose mount path as env var
-                  {form.expose_as_env_var && form.name.trim() && (
+                  {derivedEnvVar && (
                     <span className="kale-envvar-preview">
                       {' '}
-                      → {deriveEnvVarName(form.name.trim())}
+                      → {derivedEnvVar}
                     </span>
                   )}
                 </Typography>
               }
             />
+            {envVarDuplicate && derivedEnvVar && (
+              <Typography variant="caption" className="kale-volume-warning">
+                Env var "{derivedEnvVar}" already used by another volume
+              </Typography>
+            )}
           </div>
         </DialogContent>
 

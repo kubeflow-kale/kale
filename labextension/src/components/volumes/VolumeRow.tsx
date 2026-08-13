@@ -26,6 +26,7 @@ import { deriveEnvVarName } from './volumeUtils';
 interface IVolumeRowProps {
   vol: IVolumeConfig;
   isDupMount: boolean;
+  isDupEnvVar: boolean;
   copiedEnvVar: string | null;
   onEdit: () => void;
   onRemove: () => void;
@@ -35,6 +36,7 @@ interface IVolumeRowProps {
 export const VolumeRow: React.FC<IVolumeRowProps> = ({
   vol,
   isDupMount,
+  isDupEnvVar,
   copiedEnvVar,
   onEdit,
   onRemove,
@@ -77,6 +79,11 @@ export const VolumeRow: React.FC<IVolumeRowProps> = ({
       {isDupMount && (
         <Typography variant="caption" className="kale-volume-warning">
           Duplicate mount path "{vol.mount_point}"
+        </Typography>
+      )}
+      {isDupEnvVar && (
+        <Typography variant="caption" className="kale-volume-warning">
+          Duplicate env var "{envVarName}"
         </Typography>
       )}
       {vol.expose_as_env_var && (

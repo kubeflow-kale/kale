@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from types import SimpleNamespace
+
 import pytest
 
-from kale.compiler import Compiler
+from kale.compiler import Compiler, to_kale_env_var_name
 
 
 def _get_env_var_name_filter():
@@ -38,5 +40,47 @@ def _get_env_var_name_filter():
 )
 def test_to_kale_env_var_name(pvc_name, expected):
     """to_kale_env_var_name converts PVC names to KALE_VOLUME_<NAME> env var names."""
-    fn = _get_env_var_name_filter()
-    assert fn(pvc_name) == expected
+    assert to_kale_env_var_name(pvc_name) == expected
+    assert _get_env_var_name_filter()(pvc_name) == expected
+
+
+def _compiler_with_volumes(volumes):
+    """Build a bare Compiler whose pipeline.config.volumes is the given list."""
+    compiler = Compiler.__new__(Compiler)
+    compiler.pipeline = SimpleNamespace(config=SimpleNamespace(volumes=volumes))
+    return compiler
+
+
+def test_check_unique_volume_env_vars_allows_distinct_names():
+    """Distinct derived env var names pass the uniqueness check."""
+    compiler = _compiler_with_volumes(
+        [
+            SimpleNamespace(name="raw-data", expose_as_env_var=True),
+            SimpleNamespace(name="model-store", expose_as_env_var=True),
+            SimpleNamespace(name="raw.data", expose_as_env_var=False),
+        ]
+    )
+    compiler._check_unique_volume_env_vars()
+
+
+def test_check_unique_volume_env_vars_raises_on_collision():
+    """Colliding derived env var names raise ValueError at compile time."""
+    compiler = _compiler_with_volumes(
+        [
+            SimpleNamespace(name="my-data", expose_as_env_var=True),
+            SimpleNamespace(name="my.data", expose_as_env_var=True),
+        ]
+    )
+    with pytest.raises(ValueError, match=r"my-data.*my\.data.*KALE_VOLUME_MY_DATA"):
+        compiler._check_unique_volume_env_vars()
+
+
+def test_check_unique_volume_env_vars_ignores_unexposed_volumes():
+    """Volumes without expose_as_env_var do not participate in the collision check."""
+    compiler = _compiler_with_volumes(
+        [
+            SimpleNamespace(name="my-data", expose_as_env_var=True),
+            SimpleNamespace(name="my.data", expose_as_env_var=False),
+        ]
+    )
+    compiler._check_unique_volume_env_vars()

@@ -21,6 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { IVolumeConfig } from '../widgets/LeftPanelTypes';
 import { VolumeRow } from './volumes/VolumeRow';
 import { AddVolumeDialog } from './volumes/AddVolumeDialog';
+import { deriveEnvVarName } from './volumes/volumeUtils';
 
 interface IVolumesPanelProps {
   volumes: IVolumeConfig[];
@@ -56,6 +57,23 @@ export const VolumesPanel: React.FC<IVolumesPanelProps> = ({
         dups.add(v.mount_point);
       }
       seen.add(v.mount_point);
+    }
+    return dups;
+  })();
+
+  const duplicateEnvVars = (() => {
+    const seen = new Map<string, string>();
+    const dups = new Set<string>();
+    for (const v of volumes) {
+      if (!v.expose_as_env_var) {
+        continue;
+      }
+      const envName = deriveEnvVarName(v.name);
+      if (seen.has(envName)) {
+        dups.add(envName);
+      } else {
+        seen.set(envName, v.name);
+      }
     }
     return dups;
   })();
@@ -114,6 +132,10 @@ export const VolumesPanel: React.FC<IVolumesPanelProps> = ({
               key={`${vol.name}:${vol.mount_point}`}
               vol={vol}
               isDupMount={duplicateMountPaths.has(vol.mount_point)}
+              isDupEnvVar={
+                !!vol.expose_as_env_var &&
+                duplicateEnvVars.has(deriveEnvVarName(vol.name))
+              }
               copiedEnvVar={copiedEnvVar}
               onEdit={() => openEditDialog(idx)}
               onRemove={() =>
