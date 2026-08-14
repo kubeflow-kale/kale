@@ -43,7 +43,7 @@ def auto_generated_pipeline(
     {%- endif %}
     {% endif %}
 
-    {{ step.name }}_task.set_display_name("{{ component_names[step.name] }}-step")
+    {{ step.name }}_task.set_display_name("{{ component_names[step.name] }}")
 {{- step_config.render(step, step.name ~ "_task", enable_caching) }}
 {% endfor %}
 

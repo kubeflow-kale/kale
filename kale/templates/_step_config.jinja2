@@ -16,12 +16,16 @@
     {{ task_var }}.set_env_variable(name="HOME", value="/tmp")
 {%- endmacro %}
 
-{%- macro render(step, task_var, enable_caching=none) %}
+{%- macro caching(step, task_var, enable_caching=none) %}
     {%- if step.config.enable_caching is not none %}
     {{ task_var }}.set_caching_options(enable_caching={{ step.config.enable_caching }})
     {%- elif enable_caching is not none and not enable_caching %}
     {{ task_var }}.set_caching_options(enable_caching={{ enable_caching }})
     {%- endif %}
+{%- endmacro %}
+
+{%- macro render(step, task_var, enable_caching=none) %}
+{{- caching(step, task_var, enable_caching) }}
 
     {%- if step.config.limits %}
     {%- for limit_key, limit_value in step.config.limits.items() %}

@@ -18,7 +18,7 @@ import pytest
 import yaml
 
 from kale.common import kfputils
-from kale.compiler import MODULE_PREFIX, Compiler
+from kale.compiler import Compiler, _module_name
 from kale.processors import NotebookProcessor
 from kale.step import SubPipeline
 
@@ -57,9 +57,9 @@ def _compile(path, name="root"):
     return pipeline, Compiler(pipeline, processor.get_imports_and_functions()).compile()
 
 
-def _module(tmp_path, name):
+def _module(tmp_path, name, root="root"):
     """Source of the DSL module generated for a referenced notebook."""
-    return open(tmp_path / ".kale" / f"{MODULE_PREFIX}{name}.py").read()
+    return open(tmp_path / ".kale" / f"{_module_name(root, name)}.py").read()
 
 
 def _producer_consumer(tmp_path):
@@ -198,6 +198,38 @@ def test_untagged_cell_after_a_reference_belongs_to_the_next_step(tmp_path, monk
     assert 'note = "held"' in "\n".join(pipeline.get_step("second").source)
 
 
+def test_code_in_a_reference_cell_raises_but_comments_do_not(tmp_path, monkeypatch):
+    """A reference cell holds no code, so code in one raises rather than being
+    dropped. Comments are fine: the panel puts an explanatory one there."""
+    _write_nb(tmp_path / "sub.ipynb", "sub", [(["step:work"], "dataset = [1, 2, 3]")])
+
+    commented = tmp_path / "commented.ipynb"
+    _write_nb(
+        commented,
+        "root",
+        [
+            (
+                ["notebook:sub"],
+                "# references a notebook\n# no code here",
+                {"notebook_path": "./sub.ipynb"},
+            ),
+            (["step:use"], "print(dataset)"),
+        ],
+    )
+    monkeypatch.chdir(tmp_path)
+    _, pipeline = _process(commented)
+    assert pipeline.steps_names == ["sub", "use"]
+
+    with_code = tmp_path / "with_code.ipynb"
+    _write_nb(
+        with_code,
+        "root",
+        [(["notebook:sub"], "important = 42", {"notebook_path": "./sub.ipynb"})],
+    )
+    with pytest.raises(ValueError, match="contains code"):
+        _process(with_code)
+
+
 def test_orphan_code_after_a_reference_raises(tmp_path, monkeypatch):
     """Untagged code with no step to own it would be dropped, so it raises."""
     _write_nb(tmp_path / "sub.ipynb", "sub", [(["step:work"], "result = 42")])
@@ -281,14 +313,15 @@ def test_each_referenced_notebook_becomes_its_own_module(tmp_path, monkeypatch):
     _, dsl_path = _compile(root)
 
     producer_module = _module(tmp_path, "producer")
-    assert f"def {MODULE_PREFIX}producer_pipeline(" in producer_module
+    assert f"def {_module_name('root', 'producer')}_pipeline(" in producer_module
     assert "@kfp_dsl.component(" in producer_module
     consumer_module = _module(tmp_path, "consumer")
     assert "dataset_input_artifact: Input[Dataset]" in consumer_module
 
     dsl = open(dsl_path).read()
-    assert f"from {MODULE_PREFIX}producer import {MODULE_PREFIX}producer_pipeline" in dsl
-    assert f"dataset_input_artifact={MODULE_PREFIX}producer_task.output" in dsl
+    producer_module_name = _module_name("root", "producer")
+    assert f"from {producer_module_name} import {producer_module_name}_pipeline" in dsl
+    assert f"dataset_input_artifact={producer_module_name}_task.output" in dsl
 
 
 def test_referenced_notebook_keeps_its_pipeline_parameters(tmp_path, monkeypatch):
@@ -316,7 +349,7 @@ def test_referenced_notebook_keeps_its_pipeline_parameters(tmp_path, monkeypatch
     module = _module(tmp_path, "child")
     assert "def scale_step(" in module and "factor: int = 3" in module
     assert "factor = {factor}" in module
-    assert f"def {MODULE_PREFIX}child_pipeline(factor: int = 3)" in module
+    assert f"def {_module_name('root', 'child')}_pipeline(factor: int = 3)" in module
     assert "scale_step(factor=factor)" in module
 
 
@@ -391,8 +424,8 @@ def test_notebook_named_like_a_module_is_safe(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _, dsl_path = _compile(root)
 
-    assert (tmp_path / ".kale" / f"{MODULE_PREFIX}json.py").exists()
-    assert f"from {MODULE_PREFIX}json import" in open(dsl_path).read()
+    assert (tmp_path / ".kale" / f"{_module_name('root', 'json')}.py").exists()
+    assert f"from {_module_name('root', 'json')} import" in open(dsl_path).read()
 
 
 def test_ui_compile_path_composes(tmp_path, monkeypatch):

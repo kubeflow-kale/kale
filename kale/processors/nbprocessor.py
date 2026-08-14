@@ -225,6 +225,9 @@ class NotebookProcessor:
                 child for a ``notebook:`` cell.
         """
         self.skip_validation = skip_validation
+        # number of leading `source` entries every step shares (imports and
+        # functions), set once the notebook is parsed
+        self._shared_block_count = 0
         self.nb_path = os.path.expanduser(nb_path)
         self._referencing = _referencing + (os.path.abspath(self.nb_path),)
         self.notebook = self._read_notebook()
@@ -271,9 +274,17 @@ class NotebookProcessor:
         }
 
     def _apply_steps_defaults(self):
-        """Apply default configuration to all pipeline steps."""
+        """Apply default configuration to all pipeline steps.
+
+        A composition's defaults are global, so a referenced notebook's own
+        steps take them too. A step that sets the same key itself keeps its
+        own value.
+        """
         for step in self.pipeline.steps:
             step.config.update(self.pipeline.config.steps_defaults)
+            if isinstance(step, SubPipeline):
+                for inner in step.pipeline.steps:
+                    inner.config.update(self.pipeline.config.steps_defaults)
 
     def to_pipeline(self):
         """Convert an annotated Notebook to a Pipeline object."""
@@ -357,6 +368,18 @@ class NotebookProcessor:
             step_name = tags["step_names"][0] if len(tags["step_names"]) > 0 else None
 
             if tags["notebook_names"]:
+                # a reference cell holds no code of its own, and dropping it
+                # silently is how you lose work when a code cell is switched to
+                # the Notebook type. Comments are fine, the UI writes one.
+                if any(
+                    line.strip() and not line.strip().startswith("#")
+                    for line in c.source.splitlines()
+                ):
+                    raise ValueError(
+                        f"`notebook:{tags['notebook_names'][0]}` cell contains code."
+                        " A cell that references a notebook holds no code of its own."
+                        " Move the code to its own `step:` cell."
+                    )
                 # the reference breaks the merge chain
                 if pending_sources:
                     raise ValueError(
@@ -448,8 +471,12 @@ class NotebookProcessor:
             )
 
         # Prepend any `imports` and `functions` cells to every Pipeline step
+        shared_blocks = imports_block + functions_block
         for step in self.pipeline.steps:
-            step.source = imports_block + functions_block + step.source
+            step.source = shared_blocks + step.source
+        # a referencing notebook scans this notebook's steps for boundary
+        # variables, and these blocks belong to every step, not to its interface
+        self._shared_block_count = len(shared_blocks)
 
         # merge together pipeline parameters
         pipeline_parameters = "\n".join(pipeline_parameters)
@@ -607,10 +634,14 @@ class NotebookProcessor:
             SubPipeline(
                 pipeline=pipeline,
                 notebook_path=path,
-                # only code that runs as a step counts: untagged cells never
-                # become one, so scanning raw cells would invent variables that
-                # no step produces
-                source=["\n".join("\n".join(s.source) for s in pipeline.steps)],
+                # only what runs as a step, minus the blocks every step
+                # shares: neither untagged cells nor imports are values this
+                # notebook offers across the boundary
+                source=[
+                    "\n".join(
+                        "\n".join(s.source[processor._shared_block_count :]) for s in pipeline.steps
+                    )
+                ],
                 imports_and_functions=processor.get_imports_and_functions(),
                 name=name,
                 base_image=pipeline.config.base_image,
@@ -925,18 +956,43 @@ class NotebookProcessor:
             metrics_left.difference_update(assigned_metrics)
             # Generate code to produce the metrics artifact in the current step
             if assigned_metrics:
-                code = METRICS_TEMPLATE % (
-                    "    "
-                    + ",\n    ".join(
-                        [f'"{rev_pipeline_metrics[x]}": {x}' for x in sorted(assigned_metrics)]
+                for target, names in self._metrics_targets(anc_step, assigned_metrics).items():
+                    code = METRICS_TEMPLATE % (
+                        "    "
+                        + ",\n    ".join(
+                            [f'"{rev_pipeline_metrics[x]}": {x}' for x in sorted(names)]
+                        )
                     )
-                )
-                anc_step.source.append(code)
-                # need to have a `metrics` flag set to true in order to set the
-                # metrics output artifact in the pipeline template
+                    target.source.append(code)
+                    # need to have a `metrics` flag set to true in order to set
+                    # the metrics output artifact in the pipeline template
+                    target.metrics = True
                 anc_step.metrics = True
 
         self.pipeline.remove_node(tmp_step_name)
+
+    @staticmethod
+    def _metrics_targets(step: Step, metrics: set) -> dict:
+        """Map each step that reports a metric to the metrics it reports.
+
+        A :class:`~kale.step.SubPipeline` emits no component of its own, so a
+        metric it provides is reported by the step inside it that computes the
+        value. Later steps win, matching the reverse topological order the
+        caller walks the graph in.
+        """
+        if not isinstance(step, SubPipeline):
+            return {step: set(metrics)}
+
+        provider = {}
+        for inner in step.pipeline.steps:
+            provided = set(astutils.get_marshal_candidates("\n".join(inner.source)))
+            for name in provided & set(metrics):
+                provider[name] = inner
+
+        targets = {}
+        for name, inner in provider.items():
+            targets.setdefault(inner, set()).add(name)
+        return targets
 
     def _ensure_fns_free_variables(self, anc_step, anc_source: str, imports_and_functions: str):
         """Lazily compute ancestor functions' free vars if missing."""
@@ -1081,6 +1137,10 @@ class NotebookProcessor:
                 # get all the marshal candidates from father's source and
                 # intersect with the required names of the current node
                 marshal_candidates = astutils.get_marshal_candidates(anc_source)
+                if isinstance(anc_step, SubPipeline):
+                    # a notebook offers what its steps define, not every name
+                    # they mention: one it is missing too is not one it can give
+                    marshal_candidates -= set(flakeutils.pyflakes_report(code=anc_source))
                 outs = ins_left.intersection(marshal_candidates)
                 for out_name in outs:
                     # Heuristic for type inference:
