@@ -37,6 +37,7 @@ interface IProps {
   notebook: NotebookPanel;
   onMetadataEnable: (isEnabled: boolean) => void;
   resolvedDefaultBaseImage: string;
+  composableNotebooks: boolean;
   initialChecked?: boolean;
 }
 
@@ -44,6 +45,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
   notebook,
   onMetadataEnable,
   resolvedDefaultBaseImage,
+  composableNotebooks,
   initialChecked,
 }) => {
   const [checked, setChecked] = useState(false);
@@ -173,6 +175,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
             activeCellIndex,
             isEditorVisible,
             onEditorVisibilityChange,
+            composableNotebooks,
           }}
         >
           {cellMetadataEditor}

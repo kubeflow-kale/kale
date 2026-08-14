@@ -69,8 +69,18 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     resolvedDefaultBaseImage,
   } = props;
 
-  const { activeCellIndex, isEditorVisible, onEditorVisibilityChange } =
-    useContext(CellMetadataContext);
+  const {
+    activeCellIndex,
+    isEditorVisible,
+    onEditorVisibilityChange,
+    composableNotebooks,
+  } = useContext(CellMetadataContext);
+
+  // multi-notebook composition is still in development, so the cell type is
+  // offered only where it has been switched on
+  const cellTypes = composableNotebooks
+    ? CELL_TYPES
+    : CELL_TYPES.filter(t => t.value !== 'notebook');
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -165,7 +175,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
           >
             <Select
               updateValue={updateCellTags.updateCellType}
-              values={CELL_TYPES}
+              values={cellTypes}
               value={cellType || 'step'}
               label={'Cell type'}
               index={0}

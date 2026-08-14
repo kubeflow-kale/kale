@@ -22,6 +22,12 @@ export const CELL_TYPES = [
   { value: 'skip', label: 'Skip Cell' },
 ];
 
+// Placed in a cell when it becomes a notebook reference: the cell names
+// another notebook and holds no code of its own.
+export const NOTEBOOK_REF_CELL_HINT =
+  '# This cell references another notebook, so it does not run code of its own.\n' +
+  '# Put the path in the Kale panel, and keep your code in a Pipeline Step cell.';
+
 export const RESERVED_CELL_NAMES = [
   'imports',
   'functions',

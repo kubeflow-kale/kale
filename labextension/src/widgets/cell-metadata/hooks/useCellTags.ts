@@ -16,7 +16,8 @@ import { useCallback, useContext } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import TagsUtils from '../../../lib/TagsUtils';
 import { CellMetadataContext } from '../../../lib/CellMetadataContext';
-import { RESERVED_CELL_NAMES } from '../constants';
+import { RESERVED_CELL_NAMES, NOTEBOOK_REF_CELL_HINT } from '../constants';
+import CellUtils from '../../../lib/CellUtils';
 
 interface IUseCellTagsParams {
   notebook: NotebookPanel;
@@ -98,6 +99,17 @@ export function useUpdateCellTags({
       } else if (value === 'notebook') {
         // an empty reference; the name is derived once the path is entered
         updateStepName('notebook:');
+        // a reference cell holds no code of its own, so say so in the cell
+        // itself. Only when it is empty: existing code is the user's, and the
+        // compiler reports it rather than this quietly overwriting it.
+        const cell = CellUtils.getCell(notebook.content, activeCellIndex);
+        if (!(cell?.sharedModel?.getSource() ?? '').trim()) {
+          CellUtils.injectCodeAtIndex(
+            notebook.content,
+            activeCellIndex,
+            NOTEBOOK_REF_CELL_HINT,
+          );
+        }
       } else {
         TagsUtils.resetCell(notebook, activeCellIndex, stepName || '');
       }
