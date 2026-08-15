@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import * as React from 'react';
-import { Button } from '@mui/material';
-import { Input } from '../../../../components/Input';
+import { Autocomplete, Button, TextField } from '@mui/material';
+import { RUNTIME_IMAGES } from '../../../../lib/runtimeImages';
 
 interface IBaseImageSectionProps {
   baseImage?: string;
@@ -26,25 +26,53 @@ export const BaseImageSection: React.FC<IBaseImageSectionProps> = ({
   baseImage,
   resolvedDefaultBaseImage,
   onUpdateBaseImage,
-}) => (
-  <>
-    <p style={{ margin: '8px 0' }}>
-      Default: <strong>{resolvedDefaultBaseImage}</strong>
-    </p>
-    <Input
-      variant="outlined"
-      label="Custom Base Image"
-      value={baseImage || ''}
-      updateValue={(v: string) => onUpdateBaseImage(v)}
-      placeholder={resolvedDefaultBaseImage}
-      style={{ width: '100%', marginTop: '8px' }}
-    />
-    <Button
-      onClick={() => onUpdateBaseImage('')}
-      color="secondary"
-      style={{ marginTop: '8px' }}
-    >
-      Reset to Default
-    </Button>
-  </>
-);
+}) => {
+  const [inputValue, setInputValue] = React.useState(baseImage || '');
+
+  React.useEffect(() => {
+    setInputValue(baseImage || '');
+  }, [baseImage]);
+
+  return (
+    <>
+      <p style={{ margin: '8px 0' }}>
+        Default: <strong>{resolvedDefaultBaseImage}</strong>
+      </p>
+
+      <Autocomplete
+        freeSolo
+        fullWidth
+        options={RUNTIME_IMAGES}
+        value={baseImage || null}
+        inputValue={inputValue}
+        onInputChange={(_, value) => {
+          setInputValue(value);
+        }}
+        onChange={(_, value) => {
+          const image = value || '';
+          setInputValue(image);
+          onUpdateBaseImage(image);
+        }}
+        renderInput={params => (
+          <TextField
+            {...params}
+            label="Base Image"
+            placeholder={resolvedDefaultBaseImage}
+            variant="outlined"
+          />
+        )}
+      />
+
+      <Button
+        onClick={() => {
+          setInputValue('');
+          onUpdateBaseImage('');
+        }}
+        color="secondary"
+        style={{ marginTop: '8px' }}
+      >
+        Reset to Default
+      </Button>
+    </>
+  );
+};
