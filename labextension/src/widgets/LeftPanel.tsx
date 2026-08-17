@@ -57,6 +57,7 @@ interface IProps {
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
   defaultBaseImageSetting: string;
+  runtimeImages: string[];
   envDefaultBaseImage: string;
   securityContext: ISecurityContext;
   outputPath: string;
@@ -72,6 +73,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     enableKaleByDefault,
     autoSaveOnCompileOrRun,
     defaultBaseImageSetting,
+    runtimeImages,
     envDefaultBaseImage,
     securityContext,
     outputPath,
@@ -246,6 +248,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
                 onMetadataEnable={notebookMeta.setIsEnabled}
                 notebook={activeNotebook}
                 resolvedDefaultBaseImage={resolvedDefaultBaseImage}
+                runtimeImages={runtimeImages}
                 initialChecked={notebookMeta.isEnabled}
               />
             ) : (

@@ -59,6 +59,7 @@ const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
 const DEFAULT_BASE_IMAGE_KEY = 'defaultBaseImage';
+const RUNTIME_IMAGES_KEY = 'runtimeImages';
 const SECURITY_CONTEXT_KEY = 'securityContext';
 
 interface ISecurityContextSettings {
@@ -135,6 +136,7 @@ async function activate(
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
       defaultBaseImage: '',
+      runtimeImages: [] as string[],
       securityContext: {} as ISecurityContextSettings,
       outputPath: '',
     });
@@ -235,6 +237,10 @@ async function activate(
               (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
                 | string
                 | undefined) ?? '',
+            runtimeImages:
+              (loadedSetting.get(RUNTIME_IMAGES_KEY).composite as
+                | string[]
+                | undefined) ?? [],
             securityContext:
               (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
                 | ISecurityContextSettings
@@ -278,6 +284,7 @@ async function activate(
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
         defaultBaseImageSetting={kaleSettings.defaultBaseImage}
+        runtimeImages={kaleSettings.runtimeImages}
         envDefaultBaseImage={envOnlyBaseImage}
         securityContext={kaleSettings.securityContext}
         outputPath={kaleSettings.outputPath}

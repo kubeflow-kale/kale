@@ -37,6 +37,7 @@ interface IProps {
   notebook: NotebookPanel;
   onMetadataEnable: (isEnabled: boolean) => void;
   resolvedDefaultBaseImage: string;
+  runtimeImages: string[];
   initialChecked?: boolean;
 }
 
@@ -44,6 +45,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
   notebook,
   onMetadataEnable,
   resolvedDefaultBaseImage,
+  runtimeImages,
   initialChecked,
 }) => {
   const [checked, setChecked] = useState(false);
@@ -147,6 +149,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
       enableCaching={editorProps.enableCaching}
       generateHtmlReport={editorProps.generateHtmlReport}
       resolvedDefaultBaseImage={resolvedDefaultBaseImage}
+      runtimeImages={runtimeImages}
     />,
     document.body,
   );

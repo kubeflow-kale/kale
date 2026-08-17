@@ -14,17 +14,18 @@
 
 import * as React from 'react';
 import { Autocomplete, Button, TextField } from '@mui/material';
-import { RUNTIME_IMAGES } from '../../../../lib/runtimeImages';
 
 interface IBaseImageSectionProps {
   baseImage?: string;
   resolvedDefaultBaseImage: string;
+  runtimeImages: string[];
   onUpdateBaseImage: (value: string) => void;
 }
 
 export const BaseImageSection: React.FC<IBaseImageSectionProps> = ({
   baseImage,
   resolvedDefaultBaseImage,
+  runtimeImages,
   onUpdateBaseImage,
 }) => {
   const [inputValue, setInputValue] = React.useState(baseImage || '');
@@ -42,7 +43,7 @@ export const BaseImageSection: React.FC<IBaseImageSectionProps> = ({
       <Autocomplete
         freeSolo
         fullWidth
-        options={RUNTIME_IMAGES}
+        options={runtimeImages}
         value={baseImage || null}
         inputValue={inputValue}
         onInputChange={(_, value) => {
