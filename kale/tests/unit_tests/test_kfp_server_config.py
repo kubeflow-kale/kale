@@ -568,10 +568,7 @@ def test_k8s_sa_token_path_env_var_used_when_no_config(tmpdir):
 def test_get_default_namespace_unset_env():
     """With KALE_KFP_NAMESPACE unset, the canonical in-code default is used."""
     with mock.patch.dict(os.environ, {}, clear=True):
-        assert (
-            kfp_server_config.get_default_namespace()
-            == kfp_server_config.DEFAULT_NAMESPACE
-        )
+        assert kfp_server_config.get_default_namespace() == kfp_server_config.DEFAULT_NAMESPACE
 
 
 def test_get_default_namespace_env_override():
@@ -586,9 +583,7 @@ def test_load_config_no_file_uses_env_namespace(tmpdir):
 
     with (
         mock.patch.dict(os.environ, {"KALE_KFP_NAMESPACE": "ml-pipelines"}),
-        mock.patch(
-            "kale.config.kfp_server_config.get_config_path", return_value=config_path
-        ),
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
     ):
         config = kfp_server_config.load_config()
 
@@ -603,9 +598,7 @@ def test_load_config_file_namespace_wins_over_env(tmpdir):
 
     with (
         mock.patch.dict(os.environ, {"KALE_KFP_NAMESPACE": "from-env"}),
-        mock.patch(
-            "kale.config.kfp_server_config.get_config_path", return_value=config_path
-        ),
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
     ):
         config = kfp_server_config.load_config()
 
@@ -620,9 +613,7 @@ def test_load_config_file_without_namespace_falls_back_to_env(tmpdir):
 
     with (
         mock.patch.dict(os.environ, {"KALE_KFP_NAMESPACE": "from-env"}),
-        mock.patch(
-            "kale.config.kfp_server_config.get_config_path", return_value=config_path
-        ),
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
     ):
         config = kfp_server_config.load_config()
 
@@ -644,9 +635,7 @@ def test_get_kfp_client_uses_env_namespace(mock_get_auth, mock_client, tmpdir):
 
     with (
         mock.patch.dict(os.environ, {"KALE_KFP_NAMESPACE": "ml-pipelines"}),
-        mock.patch(
-            "kale.config.kfp_server_config.get_config_path", return_value=config_path
-        ),
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
     ):
         kfp_client_factory.get_kfp_client()
 
@@ -668,9 +657,7 @@ def test_get_kfp_client_param_overrides_env_namespace(mock_get_auth, mock_client
 
     with (
         mock.patch.dict(os.environ, {"KALE_KFP_NAMESPACE": "from-env"}),
-        mock.patch(
-            "kale.config.kfp_server_config.get_config_path", return_value=config_path
-        ),
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
     ):
         kfp_client_factory.get_kfp_client(namespace="explicit-namespace")
 
@@ -692,9 +679,7 @@ def test_get_kfp_client_default_namespace_when_env_unset(mock_get_auth, mock_cli
 
     with (
         mock.patch.dict(os.environ, {}, clear=True),
-        mock.patch(
-            "kale.config.kfp_server_config.get_config_path", return_value=config_path
-        ),
+        mock.patch("kale.config.kfp_server_config.get_config_path", return_value=config_path),
     ):
         kfp_client_factory.get_kfp_client()
 
