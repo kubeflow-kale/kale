@@ -17,6 +17,42 @@ export function deriveEnvVarName(pvcName: string): string {
   return 'KALE_VOLUME_' + pvcName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
 }
 
+// Portable Filename Character Set (POSIX.1-2017, 3.282): letters, digits,
+// '.', '_' and '-'. Applied per path segment below.
+const POSIX_PATH_SEGMENT_REGEX = /^[A-Za-z0-9._-]+$/;
+
+/**
+ * Validate a mount path against the POSIX portable path rules: must be an
+ * absolute path, contain no whitespace, and have no "." / ".." segments
+ * (which could be used for path traversal).
+ *
+ * Returns an error message if invalid, or `null` if the path is valid (an
+ * empty/blank path is treated as valid here — required-field checks are the
+ * caller's responsibility).
+ */
+export function getMountPathError(path: string): string | null {
+  const trimmed = path.trim();
+  if (trimmed === '') {
+    return null;
+  }
+  if (!trimmed.startsWith('/')) {
+    return 'Mount path must be an absolute path starting with "/"';
+  }
+  if (trimmed !== '/' && trimmed.endsWith('/')) {
+    return 'Mount path must not end with "/"';
+  }
+  const segments = trimmed.split('/').filter(s => s !== '');
+  for (const segment of segments) {
+    if (segment === '.' || segment === '..') {
+      return 'Mount path must not contain "." or ".." segments';
+    }
+    if (!POSIX_PATH_SEGMENT_REGEX.test(segment)) {
+      return 'Mount path may only contain letters, numbers, ".", "_" and "-" in each segment';
+    }
+  }
+  return null;
+}
+
 export interface IAddFormState {
   name: string;
   mount_point: string;

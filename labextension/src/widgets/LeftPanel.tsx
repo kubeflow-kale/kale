@@ -294,25 +294,6 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
               {pipeline_desc_input}
               {enable_caching_toggle}
             </div>
-
-            <div className="kale-settings-notice">
-              <SettingsOutlinedIcon
-                className="kale-settings-notice-icon"
-                fontSize="small"
-              />
-              <span>
-                Advanced Kale settings live in JupyterLab Settings.{' '}
-                <Link
-                  component="button"
-                  type="button"
-                  underline="hover"
-                  onClick={openKaleSettings}
-                  sx={{ color: theme.kale.headers.main }}
-                >
-                  Open settings
-                </Link>
-              </span>
-            </div>
           </div>
 
           <div
@@ -336,6 +317,29 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
                 notebook={activeNotebook}
                 kernel={kernel}
               />
+            </div>
+          </div>
+
+          <div
+            className={notebookMeta.isEnabled && activeNotebook ? '' : 'hidden'}
+          >
+            <div className="kale-settings-notice">
+              <SettingsOutlinedIcon
+                className="kale-settings-notice-icon"
+                fontSize="small"
+              />
+              <span>
+                Advanced Kale settings live in JupyterLab Settings.{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  underline="hover"
+                  onClick={openKaleSettings}
+                  sx={{ color: theme.kale.headers.main }}
+                >
+                  Open settings
+                </Link>
+              </span>
             </div>
           </div>
         </div>

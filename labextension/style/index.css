@@ -834,6 +834,7 @@ a {
 }
 
 .kale-select-from-notebook-btn {
+  align-self: flex-start;
   text-transform: none !important;
   font-size: var(--jp-ui-font-size0) !important;
 }

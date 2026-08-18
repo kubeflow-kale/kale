@@ -333,10 +333,7 @@ export default class Commands {
         this._notebook,
         exploration.step_name,
       );
-      message = [
-        `Resuming notebook ${exploration.final_snapshot ? 'after' : 'before'
-        } step: "${exploration.step_name}"`,
-      ];
+      message = [`Resuming notebook at step: "${exploration.step_name}"`];
       if (cell) {
         NotebookUtils.selectAndScrollToCell(this._notebook, cell);
       } else {
@@ -414,11 +411,11 @@ export default class Commands {
       const result = await _legacy_executeRpc(
         this._notebook,
         this._kernel,
-        'nb.list_volumes',
+        'nb.list_notebook_volumes',
       );
       return result || [];
     } catch {
-      // nb.list_volumes may not be implemented yet; degrade gracefully.
+      // nb.list_notebook_volumes may not be implemented yet; degrade gracefully.
       return [];
     }
   };

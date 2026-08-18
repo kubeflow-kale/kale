@@ -251,7 +251,7 @@ def list_pvcs(request):
         return []
 
 
-def list_volumes(request):
+def list_notebook_volumes(request):
     """List PVCs currently mounted on the notebook pod.
 
     Returns a sorted list of ``{"name": <pvc-name>, "mount_point": <path>}``

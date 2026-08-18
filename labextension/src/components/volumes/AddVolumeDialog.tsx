@@ -32,13 +32,22 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import { IVolumeConfig } from '../../widgets/LeftPanelTypes';
 import Commands from '../../lib/Commands';
-import { deriveEnvVarName, EMPTY_FORM, IAddFormState } from './volumeUtils';
+import {
+  deriveEnvVarName,
+  EMPTY_FORM,
+  getMountPathError,
+  IAddFormState,
+} from './volumeUtils';
 import { NotebookVolumesDialog } from './NotebookVolumesDialog';
 
 // Renders the Autocomplete dropdown above the Dialog backdrop (z-index 1300).
 function AboveDialogPopper(props: PopperProps) {
   return <Popper {...props} style={{ ...props.style, zIndex: 1400 }} />;
 }
+
+const helperTextSx = {
+  '& .MuiFormHelperText-root': { color: 'var(--jp-info-color0)' },
+};
 
 interface IAddVolumeDialogProps {
   open: boolean;
@@ -107,6 +116,12 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
   }, [open, getCommands]);
 
   // Validation
+  const nameDuplicate =
+    form.name.trim() !== '' &&
+    volumes.some((v, i) => v.name === form.name.trim() && i !== editingIdx);
+
+  const mountPathError = getMountPathError(form.mount_point);
+
   const mountDuplicate =
     form.mount_point.trim() !== '' &&
     volumes.some(
@@ -135,6 +150,8 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
   const canSubmit =
     form.name.trim() !== '' &&
     form.mount_point.trim() !== '' &&
+    !nameDuplicate &&
+    !mountPathError &&
     !mountDuplicate &&
     !envVarDuplicate;
 
@@ -187,7 +204,6 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
             <Button
               variant="outlined"
               size="small"
-              fullWidth
               onClick={() => setShowNotebookDialog(true)}
               className="kale-select-from-notebook-btn"
               disabled={!notebook}
@@ -215,11 +231,14 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
                   label="PVC name"
                   variant="outlined"
                   size="small"
-                  error={pvcUnknown}
+                  error={nameDuplicate || pvcUnknown}
+                  sx={nameDuplicate || pvcUnknown ? undefined : helperTextSx}
                   helperText={
-                    pvcUnknown
-                      ? 'PVC not found in cluster — it will still be mounted at runtime'
-                      : 'Type a name or pick from the list of available PVCs'
+                    nameDuplicate
+                      ? 'This volume name is already used by another volume'
+                      : pvcUnknown
+                        ? 'PVC not found in cluster — it will still be mounted at runtime'
+                        : 'Type a name or pick from the list of available PVCs'
                   }
                   slotProps={{
                     input: {
@@ -248,11 +267,14 @@ export const AddVolumeDialog: React.FC<IAddVolumeDialogProps> = ({
               onChange={e =>
                 setForm(prev => ({ ...prev, mount_point: e.target.value }))
               }
-              error={mountDuplicate}
+              error={!!mountPathError || mountDuplicate}
+              sx={mountPathError || mountDuplicate ? undefined : helperTextSx}
               helperText={
-                mountDuplicate
-                  ? 'Mount path already used by another volume'
-                  : 'Absolute path where the PVC will be mounted in each step pod'
+                mountPathError
+                  ? mountPathError
+                  : mountDuplicate
+                    ? 'Mount path already used by another volume'
+                    : 'Absolute path where the PVC will be mounted in each step pod'
               }
             />
 
