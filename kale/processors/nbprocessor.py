@@ -26,9 +26,15 @@ from typing import Any
 import nbformat as nb
 
 from kale.common import astutils, flakeutils, graphutils, kfutils, utils
-from kale.config import Field
+from kale.config import Field, validators
 from kale.pipeline import Pipeline, PipelineConfig
 from kale.step import PipelineParam, Step
+
+
+def _regex_body(pattern: str) -> str:
+    """Strip the `^`/`$` anchors so a validator regex can be nested inside a larger one."""
+    return pattern.removeprefix("^").removesuffix("$")
+
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +56,16 @@ LABEL_TAG = rf"^label:{K8S_ANNOTATION_KEY}:(.*)$"
 # Limits map to K8s limits, like CPU, Mem, GPU, ...
 # E.g.: limit:nvidia.com/gpu:2
 LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
+# Secrets map a K8s Secret's key to an env var, injected via
+# kfp.kubernetes.use_secret_as_env. Built from the same validators applied to
+# StepConfig.secrets (see K8sSecretsValidator) so the two can't drift apart.
+# E.g.: secret:db-credentials:password:DB_PASSWORD
+SECRET_TAG = (
+    r"^secret:"
+    rf"({_regex_body(validators.K8sSecretNameValidator.regex)}):"
+    rf"({_regex_body(validators.K8sSecretKeyValidator.regex)}):"
+    rf"({_regex_body(validators.EnvVarNameValidator.regex)})$"
+)
 # Image tag for per-step Base image selection
 # E.g.: image:python:3.11-slim
 IMAGE_TAG = r"^image:(.+)$"
@@ -75,12 +91,21 @@ _TAGS_LANGUAGE = [
     ANNOTATION_TAG,
     LABEL_TAG,
     LIMITS_TAG,
+    SECRET_TAG,
     IMAGE_TAG,
     CACHE_TAG,
     REPORT_TAG,
 ]
 # These tags are applied to every step of the pipeline
-_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG, CACHE_TAG, REPORT_TAG]
+_STEPS_DEFAULTS_LANGUAGE = [
+    ANNOTATION_TAG,
+    LABEL_TAG,
+    LIMITS_TAG,
+    SECRET_TAG,
+    IMAGE_TAG,
+    CACHE_TAG,
+    REPORT_TAG,
+]
 
 
 METRICS_TEMPLATE = """\
@@ -122,6 +147,17 @@ def get_limit_from_tag(tag_parts):
     Returns (tuple): key (limit name), values
     """
     return tag_parts.pop(0), tag_parts.pop(0)
+
+
+def get_secret_from_tag(tag_parts):
+    """Get the secret name, secret key, and env var name from a secret tag.
+
+    Args:
+        tag_parts: secret notebook tag, as [secret_name, secret_key, env_name]
+
+    Returns (tuple): secret name, secret key, env var name
+    """
+    return tag_parts.pop(0), tag_parts.pop(0), tag_parts.pop(0)
 
 
 class NotebookConfig(PipelineConfig):
@@ -173,6 +209,15 @@ class NotebookConfig(PipelineConfig):
                     result["limits"] = {}
                 key, value = get_limit_from_tag(parts)
                 result["limits"][key] = value
+
+            if conf_type == "secret":
+                if "secrets" not in result:
+                    result["secrets"] = {}
+                secret_name, secret_key, env_name = get_secret_from_tag(parts)
+                result["secrets"][env_name] = {
+                    validators.SECRET_NAME_KEY: secret_name,
+                    validators.SECRET_KEY_KEY: secret_key,
+                }
 
             if conf_type == "image":
                 # Image tag value is the rest after 'image:'
@@ -384,6 +429,7 @@ class NotebookProcessor:
                         ins=[],
                         outs=[],
                         limits=tags.get("limits", {}),
+                        secrets=tags.get("secrets", {}),
                         labels=tags.get("labels", {}),
                         annotations=tags.get("annotations", {}),
                         base_image=tags.get("base_image", ""),
@@ -440,6 +486,7 @@ class NotebookProcessor:
         cell_annotations = {}
         cell_labels = {}
         cell_limits = {}
+        cell_secrets = {}
         cell_base_image = None
         cell_enable_caching = None
         cell_generate_html_report = None
@@ -494,6 +541,13 @@ class NotebookProcessor:
                 key, value = get_limit_from_tag(tag_parts)
                 cell_limits.update({key: value})
 
+            if tag_name == "secret":
+                secret_name, secret_key, env_name = get_secret_from_tag(tag_parts)
+                cell_secrets[env_name] = {
+                    validators.SECRET_NAME_KEY: secret_name,
+                    validators.SECRET_KEY_KEY: secret_key,
+                }
+
             if tag_name == "image":
                 # Image value is the rest after 'image:'
                 cell_base_image = ":".join(tag_parts)
@@ -545,6 +599,14 @@ class NotebookProcessor:
                     " cell that does not declare a step name."
                 )
             parsed_tags["limits"] = cell_limits
+
+        if cell_secrets:
+            if missing_step_names:
+                raise ValueError(
+                    "A cell can not provide Secret env vars in a"
+                    " cell that does not declare a step name."
+                )
+            parsed_tags["secrets"] = cell_secrets
 
         if cell_base_image:
             if missing_step_names:

@@ -22,6 +22,7 @@ import {
 } from './CellMetadataEditor';
 import EditIcon from '@mui/icons-material/Edit';
 import { CellMetadataContext } from '../../lib/CellMetadataContext';
+import { ISecretRef } from '../../lib/TagsUtils';
 
 interface IProps {
   stepName: string;
@@ -31,6 +32,7 @@ interface IProps {
   baseImage?: string;
   enableCaching?: boolean;
   generateHtmlReport?: boolean;
+  secrets?: { [envName: string]: ISecretRef };
   cellElement: any;
   cellIndex: number;
   resolvedDefaultBaseImage: string;
@@ -61,6 +63,7 @@ export const InlineMetadata: React.FC<IProps> = ({
   baseImage,
   enableCaching,
   generateHtmlReport,
+  secrets,
   cellElement,
   cellIndex,
   resolvedDefaultBaseImage,
@@ -162,6 +165,14 @@ export const InlineMetadata: React.FC<IProps> = ({
       </p>
     ) : null;
 
+  const secretEnvNames = Object.keys(secrets || {});
+  const secretsText =
+    secretEnvNames.length > 0 ? (
+      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+        Secrets: {secretEnvNames.join(', ')}
+      </p>
+    ) : null;
+
   const details = isReserved ? null : (
     <>
       {dependencies.length > 0 ? (
@@ -172,6 +183,7 @@ export const InlineMetadata: React.FC<IProps> = ({
       {baseImageText}
       {cacheText}
       {reportText}
+      {secretsText}
     </>
   );
 

@@ -51,6 +51,7 @@ class StepConfig(Config):
     labels = Field(type=dict, default={}, validators=[validators.K8sLabelsValidator])
     annotations = Field(type=dict, default={}, validators=[validators.K8sAnnotationsValidator])
     limits = Field(type=dict, default={}, validators=[validators.K8sLimitsValidator])
+    secrets = Field(type=dict, default={}, validators=[validators.K8sSecretsValidator])
     base_image = Field(type=str, default="")
     enable_caching = Field(type=bool)
     generate_html_report = Field(type=bool)
