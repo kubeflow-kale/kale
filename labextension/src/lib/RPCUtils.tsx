@@ -20,9 +20,11 @@ import NotebookUtils from './NotebookUtils';
 import SanitizedHTML from 'react-sanitized-html';
 import { isError, IError, IOutput } from '@jupyterlab/nbformat';
 import { Notification } from '@jupyterlab/apputils';
-// Shared with the backend, which reads this same file directly (see
-// kale/rpc/errors.py), so the two sides can't drift apart.
-import errorCodes from '../../../kale/rpc/error_codes.json';
+import {
+  getRpcCodeName,
+  getRpcErrorExplanation,
+  RPC_ERROR_CODES,
+} from './sharedConstants';
 
 export const globalUnhandledRejection = async (event: any) => {
   console.error(event.reason);
@@ -89,35 +91,14 @@ export interface IRPCError {
 }
 
 export enum RPC_CALL_STATUS {
-  OK = errorCodes.OK,
-  ImportError = errorCodes.IMPORT_ERROR,
-  EncodingError = errorCodes.ENCODING_ERROR,
-  NotFound = errorCodes.NOT_FOUND,
-  InternalError = errorCodes.INTERNAL_ERROR,
-  ServiceUnavailable = errorCodes.SERVICE_UNAVAILABLE,
-  UnhandledError = errorCodes.UNHANDLED_ERROR
+  OK = RPC_ERROR_CODES.OK,
+  ImportError = RPC_ERROR_CODES.IMPORT_ERROR,
+  EncodingError = RPC_ERROR_CODES.ENCODING_ERROR,
+  NotFound = RPC_ERROR_CODES.NOT_FOUND,
+  InternalError = RPC_ERROR_CODES.INTERNAL_ERROR,
+  ServiceUnavailable = RPC_ERROR_CODES.SERVICE_UNAVAILABLE,
+  UnhandledError = RPC_ERROR_CODES.UNHANDLED_ERROR
 }
-
-const getRpcCodeName = (code: number) => {
-  switch (code) {
-    case RPC_CALL_STATUS.OK:
-      return 'OK';
-    case RPC_CALL_STATUS.ImportError:
-      return 'ImportError';
-    case RPC_CALL_STATUS.EncodingError:
-      return 'EncodingError';
-    case RPC_CALL_STATUS.NotFound:
-      return 'NotFound';
-    case RPC_CALL_STATUS.InternalError:
-      return 'InternalError';
-    case RPC_CALL_STATUS.ServiceUnavailable:
-      return 'ServiceUnavailable';
-    default:
-      return 'UnhandledError';
-  }
-};
-
-
 
 export const rokErrorTooltip = (rokError: IRPCError) => {
   return (
@@ -237,20 +218,25 @@ export const showError = async (
   code: number | null = null,
   trans_id: number | null = null
 ): Promise<void> => {
-  const msg: string[] = [
-    `Browser: ${navigator ? navigator.userAgent : 'other'}`,
-    `Type: ${type}`
-  ];
+  // Lead with what happened in plain language, then the backend's own message.
+  // The machine-readable bits stay, but below, where they are useful for a bug
+  // report instead of being the first thing the user has to decipher.
+  const msg: string[] = [];
+  const explanation = code === null ? undefined : getRpcErrorExplanation(code);
+  if (explanation) {
+    msg.push(explanation);
+  }
+  msg.push(`Message: ${message}`, `Details: ${details}`);
   if (method) {
     msg.push(`Method: ${method}()`);
   }
   if (code) {
-    msg.push(`Code: ${code} (${getRpcCodeName(code)})`);
+    msg.push(`Error code: ${code} (${getRpcCodeName(code)})`);
   }
   if (trans_id) {
     msg.push(`Transaction ID: ${trans_id}`);
   }
-  msg.push(`Message: ${message}`, `Details: ${details}`);
+  msg.push(`Type: ${type}`, `Browser: ${navigator ? navigator.userAgent : 'other'}`);
 
   if (refresh) {
     await NotebookUtils.showRefreshDialog(title, msg);

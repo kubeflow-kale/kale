@@ -31,8 +31,8 @@ import {
 import { useNotebookLoader } from './useNotebookLoader';
 import { useNotebookMetadataPersistence } from './useNotebookMetadataPersistence';
 import { useEnableByDefaultEffect } from './useEnableByDefaultEffect';
+import { NB_METADATA_KEY } from '../../lib/sharedConstants';
 
-const KALE_NOTEBOOK_METADATA_KEY = 'kubeflow_notebook';
 const defaultMetadata = DefaultState.metadata;
 
 export interface INotebookMetadataState {
@@ -139,7 +139,7 @@ export function useNotebookMetadata({
     backend,
     kernel,
     enableKaleByDefault,
-    metadataKey: KALE_NOTEBOOK_METADATA_KEY,
+    metadataKey: NB_METADATA_KEY,
     setters: {
       setMetadata,
       setExperiments,
@@ -163,7 +163,7 @@ export function useNotebookMetadata({
   useNotebookMetadataPersistence({
     tracker,
     metadata,
-    metadataKey: KALE_NOTEBOOK_METADATA_KEY,
+    metadataKey: NB_METADATA_KEY,
   });
 
   return {

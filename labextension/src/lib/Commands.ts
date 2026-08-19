@@ -36,6 +36,7 @@ import NotebookUtils from './NotebookUtils';
 // } from '../widgets/VolumesPanel';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import CellUtils from './CellUtils';
+import { DEFAULT_BASE_IMAGE } from './sharedConstants';
 
 enum RUN_CELL_STATUS {
   OK = 'ok',
@@ -100,7 +101,7 @@ export default class Commands {
       );
     } catch (error) {
       console.error('Failed to retrieve default base image', error);
-      return 'python:3.12';
+      return DEFAULT_BASE_IMAGE;
     }
   };
 

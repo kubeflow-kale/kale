@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export const FALLBACK_DEFAULT_BASE_IMAGE = 'python:3.12';
+import { DEFAULT_BASE_IMAGE } from './sharedConstants';
 
 /**
  * Resolve the default base image for pipeline steps.
  *
- * Precedence: JupyterLab setting > env (from backend RPC) > hardcoded fallback.
+ * Precedence: JupyterLab setting > env (from backend RPC) > the default the
+ * backend itself applies, shared through kale/shared_constants.json.
  */
 export function resolveDefaultBaseImage(
   setting: string | undefined,
@@ -31,5 +32,5 @@ export function resolveDefaultBaseImage(
   if (envTrimmed) {
     return envTrimmed;
   }
-  return FALLBACK_DEFAULT_BASE_IMAGE;
+  return DEFAULT_BASE_IMAGE;
 }
