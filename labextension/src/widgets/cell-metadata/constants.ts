@@ -12,6 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {
+  CELL_TAG_PREFIXES,
+  RESERVED_CELL_NAMES,
+} from '../../lib/sharedConstants';
+
+export {
+  RESERVED_CELL_NAMES,
+  STEP_NAME_REGEX,
+} from '../../lib/sharedConstants';
+
 export const CELL_TYPES = [
   { value: 'imports', label: 'Imports' },
   { value: 'functions', label: 'Functions' },
@@ -21,25 +31,13 @@ export const CELL_TYPES = [
   { value: 'skip', label: 'Skip Cell' },
 ];
 
-export const RESERVED_CELL_NAMES = [
-  'imports',
-  'functions',
-  'pipeline-parameters',
-  'pipeline-metrics',
-  'skip',
-];
+// Every tag Kale owns on a cell: the parameterized prefixes plus the reserved
+// names, which are tags in their own right. `annotation:` and `label:` are
+// deliberately absent - the backend only accepts those in the notebook-level
+// `steps_defaults`, never on a cell.
 export const KALE_TAG_PREFIXES = [
-  'step:',
-  'prev:',
-  'limit:',
-  'image:',
-  'cache:',
-  'report:',
-  'skip',
-  'imports',
-  'functions',
-  'pipeline-parameters',
-  'pipeline-metrics',
+  ...Object.values(CELL_TAG_PREFIXES),
+  ...RESERVED_CELL_NAMES,
 ];
 
 export const RESERVED_CELL_NAMES_HELP_TEXT: { [id: string]: string } = {

@@ -1,0 +1,48 @@
+{
+  "_comment": "Single source of truth for constants used by BOTH the Kale backend and the JupyterLab frontend. The backend reads this file through kale/shared_constants.py; the frontend imports it through labextension/src/lib/sharedConstants.ts. Change a value here only - never in a language-specific copy.",
+  "rpc": {
+    "error_codes": {
+      "OK": 0,
+      "IMPORT_ERROR": 1,
+      "ENCODING_ERROR": 2,
+      "NOT_FOUND": 3,
+      "INTERNAL_ERROR": 4,
+      "SERVICE_UNAVAILABLE": 5,
+      "UNHANDLED_ERROR": 6
+    },
+    "error_explanations": {
+      "IMPORT_ERROR": "Kale could not import a Python module it needs. The Kale backend may be missing from the kernel this notebook is running on.",
+      "ENCODING_ERROR": "Kale could not decode the data exchanged with the notebook kernel.",
+      "NOT_FOUND": "Kale could not find what it was looking for. It may have been renamed or deleted.",
+      "INTERNAL_ERROR": "Something went wrong inside Kale while handling this request.",
+      "SERVICE_UNAVAILABLE": "Kale cannot reach a service it needs, such as the Kubeflow Pipelines API server. You can keep editing and compiling notebooks, but uploading and running pipelines will not work until it is reachable again.",
+      "UNHANDLED_ERROR": "Kale hit an unexpected error and could not complete this request."
+    }
+  },
+  "cells": {
+    "reserved_names": [
+      "imports",
+      "functions",
+      "pipeline-parameters",
+      "pipeline-metrics",
+      "skip"
+    ],
+    "tag_prefixes": {
+      "step": "step:",
+      "prev": "prev:",
+      "limit": "limit:",
+      "image": "image:",
+      "cache": "cache:",
+      "report": "report:"
+    },
+    "step_name_pattern": "[_a-z]([_a-z0-9]*)?",
+    "tag_enabled_value": "enabled",
+    "tag_disabled_value": "disabled"
+  },
+  "notebook": {
+    "metadata_key": "kubeflow_notebook"
+  },
+  "pipeline": {
+    "default_base_image": "python:3.12"
+  }
+}

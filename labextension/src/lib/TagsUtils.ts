@@ -16,12 +16,18 @@ import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import CellUtils from './CellUtils';
 import { RESERVED_CELL_NAMES } from '../widgets/cell-metadata/CellMetadataEditor';
 import { KALE_TAG_PREFIXES } from '../widgets/cell-metadata/constants';
+import {
+  CELL_TAG_PREFIXES,
+  TAG_DISABLED_VALUE,
+  TAG_ENABLED_VALUE,
+} from './sharedConstants';
 
-const IMAGE_TAG = 'image:';
-const CACHE_TAG = 'cache:';
-const CACHE_ENABLED_VALUE = 'enabled';
-const REPORT_TAG = 'report:';
-const REPORT_ENABLED_VALUE = 'enabled';
+const STEP_TAG = CELL_TAG_PREFIXES.step;
+const PREV_TAG = CELL_TAG_PREFIXES.prev;
+const LIMIT_TAG = CELL_TAG_PREFIXES.limit;
+const IMAGE_TAG = CELL_TAG_PREFIXES.image;
+const CACHE_TAG = CELL_TAG_PREFIXES.cache;
+const REPORT_TAG = CELL_TAG_PREFIXES.report;
 
 interface IKaleCellTags {
   stepName: string;
@@ -94,22 +100,22 @@ export default class TagsUtils {
         if (RESERVED_CELL_NAMES.includes(v)) {
           return v;
         }
-        if (v.startsWith('step:')) {
-          return v.replace('step:', '');
+        if (v.startsWith(STEP_TAG)) {
+          return v.replace(STEP_TAG, '');
         }
       }).filter(v => v !== undefined);
 
       const prevs = tags
         .filter(v => {
-          return v.startsWith('prev:');
+          return v.startsWith(PREV_TAG);
         })
         .map(v => {
-          return v.replace('prev:', '');
+          return v.replace(PREV_TAG, '');
         });
 
       const limits: { [id: string]: string } = {};
       tags
-        .filter(v => v.startsWith('limit:'))
+        .filter(v => v.startsWith(LIMIT_TAG))
         .map(lim => {
           const values = lim.split(':');
           // get the limit key and value
@@ -129,7 +135,7 @@ export default class TagsUtils {
       const cacheTag = tags.find(v => v.startsWith(CACHE_TAG));
       if (cacheTag) {
         const cacheValue = cacheTag.substring(CACHE_TAG.length);
-        enableCaching = cacheValue === CACHE_ENABLED_VALUE ? true : false;
+        enableCaching = cacheValue === TAG_ENABLED_VALUE ? true : false;
       }
 
       // Parse report tag
@@ -137,7 +143,7 @@ export default class TagsUtils {
       const reportTag = tags.find(v => v.startsWith(REPORT_TAG));
       if (reportTag) {
         const reportValue = reportTag.substring(REPORT_TAG.length);
-        generateHtmlReport = reportValue === REPORT_ENABLED_VALUE ? true : false;
+        generateHtmlReport = reportValue === TAG_ENABLED_VALUE ? true : false;
       }
 
       return {
@@ -168,15 +174,15 @@ export default class TagsUtils {
     let nb = metadata.stepName;
     // not a reserved name
     if (!RESERVED_CELL_NAMES.includes(metadata.stepName)) {
-      nb = 'step:' + nb;
+      nb = STEP_TAG + nb;
     }
     const stepDependencies = metadata.prevStepNames || [];
     const limits = metadata.limits || {};
     const baseImage = metadata.baseImage;
     const tags = [nb]
-      .concat(stepDependencies.map(v => 'prev:' + v))
+      .concat(stepDependencies.map(v => PREV_TAG + v))
       .concat(
-        Object.keys(limits).map(lim => 'limit:' + lim + ':' + limits[lim]),
+        Object.keys(limits).map(lim => LIMIT_TAG + lim + ':' + limits[lim]),
       );
 
     // Add base image tag if specified
@@ -186,12 +192,20 @@ export default class TagsUtils {
 
     // Add cache tag if specified
     if (metadata.enableCaching !== undefined) {
-      tags.push(CACHE_TAG + (metadata.enableCaching ? 'enabled' : 'disabled'));
+      tags.push(
+        CACHE_TAG +
+          (metadata.enableCaching ? TAG_ENABLED_VALUE : TAG_DISABLED_VALUE),
+      );
     }
 
     // Add report tag if specified
     if (metadata.generateHtmlReport !== undefined) {
-      tags.push(REPORT_TAG + (metadata.generateHtmlReport ? 'enabled' : 'disabled'));
+      tags.push(
+        REPORT_TAG +
+          (metadata.generateHtmlReport
+            ? TAG_ENABLED_VALUE
+            : TAG_DISABLED_VALUE),
+      );
     }
 
     return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags);
@@ -223,15 +237,15 @@ export default class TagsUtils {
       // new one.
       const newTags: string[] = (tags || [])
         .map(t => {
-          if (t === 'prev:' + oldStepName) {
+          if (t === PREV_TAG + oldStepName) {
             return RESERVED_CELL_NAMES.includes(newStepName)
               ? ''
-              : 'prev:' + newStepName;
+              : PREV_TAG + newStepName;
           } else {
             return t;
           }
         })
-        .filter(t => t !== '' && t !== 'prev:');
+        .filter(t => t !== '' && t !== PREV_TAG);
       allPromises.push(
         CellUtils.setCellMetaData(notebookPanel, i, 'tags', newTags),
       );
@@ -279,8 +293,8 @@ export default class TagsUtils {
       ) || [];
 
     // Extract the step name from 'step:<name>' tag before wiping
-    const stepTag = currentTags.find(tag => tag.startsWith('step:'));
-    const clearedStepName = stepTag ? stepTag.replace('step:', '') : null;
+    const stepTag = currentTags.find(tag => tag.startsWith(STEP_TAG));
+    const clearedStepName = stepTag ? stepTag.replace(STEP_TAG, '') : null;
 
     // Clear all Kale tags from the active cell
     const filteredTags = currentTags.filter(

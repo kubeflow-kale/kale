@@ -86,6 +86,19 @@ uv run jlpm add -D <package-name>   # Dev dependency
 make lock-upgrade
 ```
 
+## Constants Shared by the Backend and the Frontend
+
+Some constants have to mean the same thing on both sides: the RPC error codes,
+the cell tags and their prefixes, the notebook metadata key, the default base
+image. They live in a single file, [`kale/shared_constants.json`](kale/shared_constants.json):
+
+- the backend reads it through `kale/shared_constants.py`
+- the labextension imports it through `labextension/src/lib/sharedConstants.ts`
+
+When you add or change one of those values, change it there and let both sides
+pick it up. Do not add a second copy in Python or in TypeScript: that is exactly
+the drift this file exists to prevent.
+
 ## Building Release Artifacts
 
 Build the production wheel:

@@ -25,6 +25,7 @@ from typing import Any
 
 import nbformat as nb
 
+from kale import shared_constants
 from kale.common import astutils, flakeutils, graphutils, kfutils, utils
 from kale.config import Field
 from kale.pipeline import Pipeline, PipelineConfig
@@ -33,15 +34,25 @@ from kale.step import PipelineParam, Step
 log = logging.getLogger(__name__)
 
 # fixme: Change the name of this key to `kale_metadata`
-KALE_NB_METADATA_KEY = "kubeflow_notebook"
+KALE_NB_METADATA_KEY = shared_constants.NB_METADATA_KEY
 
-SKIP_TAG = r"^skip$"
-IMPORT_TAG = r"^imports$"
-FUNCTIONS_TAG = r"^functions$"
-PREV_TAG = r"^prev:[_a-z]([_a-z0-9]*)?$"
-STEP_TAG = r"^step:([_a-z]([_a-z0-9]*)?)?$"
-PIPELINE_PARAMETERS_TAG = r"^pipeline-parameters$"
-PIPELINE_METRICS_TAG = r"^pipeline-metrics$"
+# The reserved cell names, the tag prefixes and the step name pattern below all
+# come from `kale/shared_constants.json`, which the labextension imports as well,
+# so a tag the backend understands is exactly a tag the frontend writes.
+_RESERVED_NAME_TAGS = {
+    name: rf"^{re.escape(name)}$" for name in shared_constants.RESERVED_CELL_NAMES
+}
+SKIP_TAG = _RESERVED_NAME_TAGS["skip"]
+IMPORT_TAG = _RESERVED_NAME_TAGS["imports"]
+FUNCTIONS_TAG = _RESERVED_NAME_TAGS["functions"]
+PIPELINE_PARAMETERS_TAG = _RESERVED_NAME_TAGS["pipeline-parameters"]
+PIPELINE_METRICS_TAG = _RESERVED_NAME_TAGS["pipeline-metrics"]
+
+_TAG_PREFIXES = shared_constants.CELL_TAG_PREFIXES
+_STEP_NAME = shared_constants.STEP_NAME_PATTERN
+PREV_TAG = rf"^{_TAG_PREFIXES['prev']}{_STEP_NAME}$"
+# A `step:` tag with no name yet is valid: the user is still typing it.
+STEP_TAG = rf"^{_TAG_PREFIXES['step']}({_STEP_NAME})?$"
 # Annotations map to actual pod annotations that can be set via KFP SDK
 _segment = "[a-zA-Z0-9]+([a-zA-Z0-9-_.]*[a-zA-Z0-9])?"
 K8S_ANNOTATION_KEY = f"{_segment}([/]{_segment})?"
@@ -49,20 +60,20 @@ ANNOTATION_TAG = rf"^annotation:{K8S_ANNOTATION_KEY}:(.*)$"
 LABEL_TAG = rf"^label:{K8S_ANNOTATION_KEY}:(.*)$"
 # Limits map to K8s limits, like CPU, Mem, GPU, ...
 # E.g.: limit:nvidia.com/gpu:2
-LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
+LIMITS_TAG = rf"^{_TAG_PREFIXES['limit']}([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
 # Image tag for per-step Base image selection
 # E.g.: image:python:3.11-slim
-IMAGE_TAG = r"^image:(.+)$"
+IMAGE_TAG = rf"^{_TAG_PREFIXES['image']}(.+)$"
 # Cache tag for per-step caching control
 # E.g.: cache:enabled or cache:disabled
-CACHE_ENABLED = "enabled"
-CACHE_DISABLED = "disabled"
-CACHE_TAG = rf"^cache:({CACHE_ENABLED}|{CACHE_DISABLED})$"
+CACHE_ENABLED = shared_constants.TAG_ENABLED_VALUE
+CACHE_DISABLED = shared_constants.TAG_DISABLED_VALUE
+CACHE_TAG = rf"^{_TAG_PREFIXES['cache']}({CACHE_ENABLED}|{CACHE_DISABLED})$"
 # Report tag for per-step HTML report generation control
 # E.g.: report:enabled or report:disabled
-REPORT_ENABLED = "enabled"
-REPORT_DISABLED = "disabled"
-REPORT_TAG = rf"^report:({REPORT_ENABLED}|{REPORT_DISABLED})$"
+REPORT_ENABLED = shared_constants.TAG_ENABLED_VALUE
+REPORT_DISABLED = shared_constants.TAG_DISABLED_VALUE
+REPORT_TAG = rf"^{_TAG_PREFIXES['report']}({REPORT_ENABLED}|{REPORT_DISABLED})$"
 
 _TAGS_LANGUAGE = [
     SKIP_TAG,

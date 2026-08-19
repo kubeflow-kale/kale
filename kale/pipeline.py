@@ -25,6 +25,7 @@ import os
 
 import networkx as nx
 
+from kale import shared_constants
 from kale.common import graphutils, podutils, utils
 from kale.config import Config, Field, validators
 from kale.step import PipelineParam, Step
@@ -38,7 +39,9 @@ VOLUME_ACCESS_MODE_MAP = {
     "rwm": ["ReadWriteMany"],
 }
 DEFAULT_VOLUME_ACCESS_MODE = VOLUME_ACCESS_MODE_MAP["rwm"]
-DEFAULT_BASE_IMAGE = "python:3.12"
+# Defined in `kale/shared_constants.json` so the labextension shows the same
+# default in its settings as the backend actually applies.
+DEFAULT_BASE_IMAGE = shared_constants.DEFAULT_BASE_IMAGE
 
 
 class VolumeConfig(Config):

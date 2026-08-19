@@ -32,6 +32,7 @@ import {
   CELL_TYPES,
   RESERVED_CELL_NAMES,
   STEP_NAME_ERROR_MSG,
+  STEP_NAME_REGEX,
 } from './constants';
 
 export {
@@ -170,7 +171,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
                   label={'Step name'}
                   updateValue={updateCellTags.updateStepName}
                   value={stepName}
-                  regex={'^([_a-z]([_a-z0-9]*)?)?$'}
+                  regex={STEP_NAME_REGEX}
                   regexErrorMsg={stepNameErrorMsg}
                   variant="outlined"
                   onBeforeUpdate={onBeforeUpdate}

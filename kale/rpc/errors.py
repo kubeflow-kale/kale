@@ -16,18 +16,23 @@ import enum
 
 from kale.rpc.log import KALE_LOG_FILE
 from kale.rpc.utils import serialize
+from kale.shared_constants import RPC_ERROR_CODES
 
 
 class Code(enum.Enum):
-    """Error codes."""
+    """Error codes.
 
-    OK = 0
-    IMPORT_ERROR = 1
-    ENCODING_ERROR = 2
-    NOT_FOUND = 3
-    INTERNAL_ERROR = 4
-    SERVICE_UNAVAILABLE = 5
-    UNHANDLED_ERROR = 6
+    Defined in ``kale/shared_constants.json``, which the frontend imports too,
+    so both sides always agree on what a code means.
+    """
+
+    OK = RPC_ERROR_CODES["OK"]
+    IMPORT_ERROR = RPC_ERROR_CODES["IMPORT_ERROR"]
+    ENCODING_ERROR = RPC_ERROR_CODES["ENCODING_ERROR"]
+    NOT_FOUND = RPC_ERROR_CODES["NOT_FOUND"]
+    INTERNAL_ERROR = RPC_ERROR_CODES["INTERNAL_ERROR"]
+    SERVICE_UNAVAILABLE = RPC_ERROR_CODES["SERVICE_UNAVAILABLE"]
+    UNHANDLED_ERROR = RPC_ERROR_CODES["UNHANDLED_ERROR"]
 
 
 class _RPCError(Exception):
