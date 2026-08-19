@@ -48,6 +48,7 @@ export const BaseImageSection: React.FC<IBaseImageSectionProps> = ({
         inputValue={inputValue}
         onInputChange={(_, value) => {
           setInputValue(value);
+          onUpdateBaseImage(value);
         }}
         onChange={(_, value) => {
           const image = value || '';
