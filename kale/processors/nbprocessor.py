@@ -141,7 +141,10 @@ class NotebookConfig(PipelineConfig):
     #  'experiment_name' and 'experiment', but the latter is not used in the
     #  backend.
     experiment = Field(type=dict)
-    # Used in the UI to keep per-notebook state of the volumes snapshot toggle
+
+    # Accepted for forward compatibility — snapshot support is not yet
+    # implemented in the KFP v2 path. The field is parsed and stored but
+    # has no effect on compilation. Will be wired up in a future iteration.
     snapshot_volumes = Field(type=bool, default=False)
 
     @property

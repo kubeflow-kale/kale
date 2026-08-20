@@ -4,7 +4,7 @@
         build \
         kfp-build kfp-serve kfp-compile kfp-run \
         kfp-dev-setup kfp-dev-start kfp-dev-stop kfp-dev-delete kfp-dev-status kfp-dev-upgrade \
-        clean clean-venv lock lock-upgrade check-uv \
+        clean clean-venv lock lock-upgrade check-uv check-yarn-version \
         jupyter jupyter-kfp watch-labextension \
         docker-build docker-run \
         docs docs-serve docs-clean \
@@ -34,6 +34,24 @@ check-uv: ## Verify uv is installed
 		curl -LsSf https://astral.sh/uv/install.sh | sh; \
 	}
 
+check-yarn-version: ## Verify jlpm's Yarn matches the packageManager pin
+	@pinned=$$(sed -n 's/.*"packageManager": *"yarn@\([^"]*\)".*/\1/p' labextension/package.json); \
+	actual=$$($(JLPM) --version 2>/dev/null | tail -1); \
+	if [ -z "$$pinned" ]; then \
+		printf "$(YELLOW)No packageManager pin found in labextension/package.json.\n$(NC)"; \
+		exit 1; \
+	fi; \
+	if [ "$$pinned" != "$$actual" ]; then \
+		printf "$(YELLOW)Yarn mismatch: package.json pins yarn@$$pinned, jlpm provides $$actual.\n$(NC)"; \
+		printf "$(YELLOW)Dependabot activates the pinned version via Corepack, so a mismatch makes its\n$(NC)"; \
+		printf "$(YELLOW)yarn.lock updates fail 'jlpm install --immutable' in CI.\n$(NC)"; \
+		printf "$(YELLOW)Fix: set packageManager to yarn@$$actual in labextension/package.json and\n$(NC)"; \
+		printf "$(YELLOW)labextension/ui-tests/package.json, then regenerate both lockfiles with\n$(NC)"; \
+		printf "$(YELLOW)'jlpm install --mode=update-lockfile'.\n$(NC)"; \
+		exit 1; \
+	fi; \
+	printf "$(GREEN)Yarn $$actual (jlpm) matches the packageManager pin\n$(NC)"
+
 ##@ Installation
 
 dev: check-uv ## Set up development environment
@@ -42,6 +60,8 @@ dev: check-uv ## Set up development environment
 	@# Skip the hatch jupyter-builder hook — we build the labextension explicitly below
 	SKIP_JUPYTER_BUILDER=1 $(UV) sync --all-extras
 	@# Step 2: Build labextension (requires jlpm from step 1)
+	@# Guard first: a jlpm/packageManager mismatch silently breaks Dependabot's lockfile updates
+	@$(MAKE) --no-print-directory check-yarn-version
 	cd labextension && $(JLPM) install
 	@# Clean tsbuildinfo cache before build (fixes incremental build issues after make clean)
 	cd labextension && $(JLPM) clean:lib
@@ -292,13 +312,30 @@ release: ## Set release version (usage: make release VERSION=X.Y.Z)
 	@NPM_VERSION=$$(echo "$(VERSION)" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)(a)([0-9]+)/\1-alpha.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(b)([0-9]+)/\1-beta.\3/; s/([0-9]+\.[0-9]+\.[0-9]+)(rc)([0-9]+)/\1-rc.\3/'); \
 	cd labextension && npm version "$$NPM_VERSION" --no-git-tag-version --allow-same-version; \
 	printf "$(GREEN)Version set to $(VERSION) (npm: $$NPM_VERSION)\n$(NC)"
-	@# Generate changelog if git-cliff is available
-	@command -v git-cliff >/dev/null 2>&1 && { \
+	@# Generate changelog if git-cliff is available.
+	@# Scope it to the X.Y line this version belongs to: start from the newest
+	@# reachable tag outside that line, so CHANGELOG-X.Y.md accumulates every
+	@# X.Y release and nothing older. --merged HEAD keeps tags cut on other
+	@# release branches out of the range. Without a range git-cliff emits the
+	@# whole project history, and without --tag the new entries land under an
+	@# "[unreleased]" heading - both end up verbatim in the GitHub release body
+	@# (see the github-release job in .github/workflows/release.yml).
+	@if ! command -v git-cliff >/dev/null 2>&1; then \
+		printf "$(YELLOW)git-cliff not found, skipping changelog generation\n$(NC)"; \
+	else \
 		MAJOR=$$(echo "$(VERSION)" | cut -d. -f1); \
 		MINOR=$$(echo "$(VERSION)" | cut -d. -f2); \
-		git-cliff --output CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md; \
-		printf "$(GREEN)Changelog generated: CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md\n$(NC)"; \
-	} || printf "$(YELLOW)git-cliff not found, skipping changelog generation\n$(NC)"
+		OUT=CHANGELOG/CHANGELOG-$$MAJOR.$$MINOR.md; \
+		BASE=$$(git tag --list 'v[0-9]*' --merged HEAD --sort=-v:refname \
+			| grep -v "^v$$MAJOR\.$$MINOR\." | head -1); \
+		if [ -n "$$BASE" ]; then \
+			git-cliff "$$BASE..HEAD" --tag v$(VERSION) --output $$OUT; \
+			printf "$(GREEN)Changelog generated: $$OUT ($$BASE..HEAD, tagged v$(VERSION))\n$(NC)"; \
+		else \
+			git-cliff --tag v$(VERSION) --output $$OUT; \
+			printf "$(GREEN)Changelog generated: $$OUT (full history, tagged v$(VERSION))\n$(NC)"; \
+		fi; \
+	fi
 
 ##@ Docker
 

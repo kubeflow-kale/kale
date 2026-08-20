@@ -30,10 +30,6 @@ import {
 } from '../widgets/LeftPanel';
 import { IDeployPanelCustomLinks } from '../widgets/LeftPanelTypes';
 import NotebookUtils from './NotebookUtils';
-// import {
-//   SELECT_VOLUME_SIZE_TYPES,
-//   SELECT_VOLUME_TYPES,
-// } from '../widgets/VolumesPanel';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import CellUtils from './CellUtils';
 
@@ -337,10 +333,7 @@ export default class Commands {
         this._notebook,
         exploration.step_name,
       );
-      message = [
-        `Resuming notebook ${exploration.final_snapshot ? 'after' : 'before'
-        } step: "${exploration.step_name}"`,
-      ];
+      message = [`Resuming notebook at step: "${exploration.step_name}"`];
       if (cell) {
         NotebookUtils.selectAndScrollToCell(this._notebook, cell);
       } else {
@@ -396,6 +389,34 @@ export default class Commands {
         'Pipeline and run links may not include the correct namespace parameter.'
       );
       return '';
+    }
+  };
+
+  listPvcs = async (): Promise<string[]> => {
+    try {
+      const result = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.list_pvcs',
+      );
+      return result || [];
+    } catch (error) {
+      console.warn('Could not list PVCs — combobox will show no suggestions.', error);
+      return [];
+    }
+  };
+
+  listNotebookVolumes = async (): Promise<Array<{ name: string; mount_point: string }>> => {
+    try {
+      const result = await _legacy_executeRpc(
+        this._notebook,
+        this._kernel,
+        'nb.list_notebook_volumes',
+      );
+      return result || [];
+    } catch {
+      // nb.list_notebook_volumes may not be implemented yet; degrade gracefully.
+      return [];
     }
   };
 }

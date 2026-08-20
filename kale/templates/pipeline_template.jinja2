@@ -7,6 +7,9 @@ import sys
 {% endif %}import kfp.dsl as kfp_dsl
 from kfp.dsl import Input, Output, Dataset, HTML, Metrics, Artifact, Model
 from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
+{%- if volumes | default([]) | selectattr('type', 'equalto', 'pvc') | list %}
+from kfp import kubernetes
+{%- endif %}
 {% if modules %}
 # The notebooks this one references are generated next to it; make them
 # importable regardless of where this script is executed from. kfp is imported
@@ -35,7 +38,7 @@ def {{ fn }}({{ signature }}){% if returns|length == 1 %} -> {{ returns[0].type 
 {% for a in t.after %}    {{ t.task_var }}.after({{ a }})
 {% endfor %}
     {{ t.task_var }}.set_display_name("{{ t.display }}")
-{% if t.is_component %}{{- step_config.render(t.node, t.task_var, enable_caching) }}
+{% if t.is_component %}{{- step_config.render(t.node, t.task_var, enable_caching, volumes) }}
 {%- else %}{{- step_config.caching(t.node, t.task_var, enable_caching) }}{% endif %}
 {% endfor %}
 {% if returns|length == 1 %}    return {{ returns[0].ref }}

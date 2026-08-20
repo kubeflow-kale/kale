@@ -11,7 +11,7 @@ from kfp.kubernetes import add_pod_annotation, add_pod_label, security_context
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_trn_output_artifact: Output[Dataset], x_tst_output_artifact: Output[Dataset], y_trn_output_artifact: Output[Dataset], y_tst_output_artifact: Output[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
+def load_transform_data_step(x_trn_output_artifact: Output[Dataset], x_tst_output_artifact: Output[Dataset], y_trn_output_artifact: Output[Dataset], y_tst_output_artifact: Output[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = {n_estimators_param}
         MAX_DEPTH = {max_depth_param}
@@ -70,9 +70,7 @@ def load_transform_data_step(load_transform_data_html_report: Output[HTML], x_tr
         _kale_data_saving_block
     )
 
-    _kale_html_artifact = _kale_run_code(_kale_blocks)
-    with open(load_transform_data_html_report.path, "w") as f:
-        f.write(_kale_html_artifact)
+    _kale_run_code(_kale_blocks)
     # Prepare output artifacts to be retrieved during the pipeline execution
     from kale import marshal as _kale_marshal
     _kale_marshal.set_data_dir("/tmp/marshal")
@@ -187,7 +185,7 @@ def train_model_step(train_model_html_report: Output[HTML], x_trn_input_artifact
     pip_index_urls=['https://pypi.org/simple'],
     pip_trusted_hosts=[]
 )
-def evaluate_model_step(evaluate_model_html_report: Output[HTML], kale_metrics_artifact: Output[Metrics], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
+def evaluate_model_step(kale_metrics_artifact: Output[Metrics], model_input_artifact: Input[Model], x_tst_input_artifact: Input[Dataset], y_tst_input_artifact: Input[Dataset], n_estimators_param: int = 500, max_depth_param: int = 2):
     _kale_pipeline_parameters_block = f'''
         N_ESTIMATORS = {n_estimators_param}
         MAX_DEPTH = {max_depth_param}
@@ -272,9 +270,7 @@ def evaluate_model_step(evaluate_model_html_report: Output[HTML], kale_metrics_a
         _kale_data_saving_block
     )
 
-    _kale_html_artifact = _kale_run_code(_kale_blocks)
-    with open(evaluate_model_html_report.path, "w") as f:
-        f.write(_kale_html_artifact)
+    _kale_run_code(_kale_blocks)
     from kale.common.kfputils import load_mlpipeline_metrics
     load_mlpipeline_metrics(kale_metrics_artifact)
 

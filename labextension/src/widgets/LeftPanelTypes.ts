@@ -40,6 +40,13 @@ export interface ISecurityContext {
   run_as_non_root?: boolean;
 }
 
+export interface IVolumeConfig {
+  name: string;
+  mount_point: string;
+  type: 'pvc';
+  expose_as_env_var?: boolean;
+}
+
 // keep names with Python notation because they will be read
 // in python by Kale.
 export interface IKaleNotebookMetadata {
@@ -50,6 +57,7 @@ export interface IKaleNotebookMetadata {
   base_image: string;
   enable_caching?: boolean;
 
+  volumes?: IVolumeConfig[];
   steps_defaults?: string[];
   storage_class_name?: string;
   security_context?: ISecurityContext;
@@ -64,6 +72,7 @@ export const DefaultState = {
     pipeline_description: '',
     base_image: '',
     enable_caching: true,
+    volumes: [] as IVolumeConfig[],
     steps_defaults: [] as string[],
   } as IKaleNotebookMetadata,
 };

@@ -28,7 +28,7 @@ import autopep8
 from jinja2 import Environment, FileSystemLoader, PackageLoader
 
 from kale import __version__ as KALE_VERSION
-from kale.common import graphutils, kfputils, utils
+from kale.common import graphutils, k8sutils, kfputils, podutils, utils
 from kale.common.imports import get_packages_to_install
 from kale.pipeline import DEFAULT_BASE_IMAGE, Pipeline, PipelineParam, Step
 from kale.step import SubPipeline
@@ -41,6 +41,17 @@ PIPELINE_TEMPLATE = "pipeline_template.jinja2"
 # Generated DSL modules are named after their notebook, behind this prefix, so
 # that a notebook called `json.ipynb` cannot shadow a module the DSL imports.
 MODULE_PREFIX = "kale_notebook_"
+
+
+def to_kale_env_var_name(pvc_name: str) -> str:
+    """Derive a KALE_VOLUME_<NAME> env var name from a PVC name.
+
+    Non-alphanumeric characters are collapsed to ``_``. This mapping is lossy
+    for DNS subdomain names (both ``-`` and ``.`` become ``_``), so callers
+    that expose multiple volumes must ensure the derived names stay unique.
+    """
+    return "KALE_VOLUME_" + re.sub(r"[^A-Z0-9]", "_", pvc_name.upper())
+
 
 KFP_DSL_ARTIFACT_IMPORTS = [
     "Dataset",
@@ -122,8 +133,61 @@ class Compiler:
         Returns path to DSL script.
         """
         log.info("Compiling Pipeline into KFP DSL code")
+        self._check_unique_volume_env_vars()
+        self._warn_rwo_volumes()
         self.dsl_source = self.generate_dsl()
         return self._save_compiled_code()
+
+    def _check_unique_volume_env_vars(self):
+        """Fail compile if exposed volume env var names collide.
+
+        ``to_kale_env_var_name`` maps every non-alphanumeric character to ``_``,
+        so distinct PVC names (e.g. ``my-data`` / ``my.data``) can produce the
+        same ``KALE_VOLUME_*`` name. Detect that before emitting DSL so one
+        volume cannot silently overwrite another's env var at runtime.
+        """
+        seen = {}
+        for vol in self.pipeline.config.volumes or []:
+            if not getattr(vol, "expose_as_env_var", False):
+                continue
+            env_name = to_kale_env_var_name(vol.name)
+            if env_name in seen:
+                raise ValueError(
+                    f"Volumes '{seen[env_name]}' and '{vol.name}' both derive "
+                    f"env var '{env_name}'. Rename one of the PVCs or disable "
+                    "'Expose mount path as env var' on one of them."
+                )
+            seen[env_name] = vol.name
+
+    def _warn_rwo_volumes(self):
+        """Emit a warning at compile time for any RWO PVC volumes.
+
+        RWO volumes can only be mounted on one node at a time.  If pipeline
+        steps are scheduled on different nodes they will fail to mount.  We
+        check at compile time (where we have cluster access) so the warning
+        appears immediately in the Kale output rather than buried in pod logs.
+        """
+        pvc_volumes = [
+            v for v in self.pipeline.config.volumes or [] if getattr(v, "type", None) == "pvc"
+        ]
+        if not pvc_volumes:
+            return
+        try:
+            namespace = podutils.get_namespace()
+        except Exception:
+            return
+        for vol in pvc_volumes:
+            try:
+                modes = k8sutils.get_pvc_access_modes(vol.name, namespace)
+            except Exception:
+                continue
+            if "ReadWriteOnce" in modes:
+                log.warning(
+                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
+                    "If pipeline steps run on different nodes, concurrent "
+                    "mounts will fail.",
+                    vol.name,
+                )
 
     def run(self):
         """Run the generated KFP script."""
@@ -256,6 +320,7 @@ class Compiler:
                 returns=returns,
                 enable_caching=self.pipeline.config.enable_caching,
                 security_context=self.pipeline.config.security_context,
+                volumes=self.pipeline.config.volumes,
             )
         )
 
@@ -583,8 +648,9 @@ class Compiler:
         # add custom filters
         template_env.filters["add_suffix"] = lambda s, suffix: s + suffix
         template_env.filters["add_prefix"] = lambda s, prefix: prefix + s
-        # quote a string when it is materialized in the template
         template_env.filters["quote_if_not_none"] = lambda x: f'"{x}"' if x is not None else None
+        # Derive KALE_VOLUME_<NAME> env var name from a PVC name.
+        template_env.filters["to_kale_env_var_name"] = to_kale_env_var_name
         self.templating_env = template_env
         return template_env
 

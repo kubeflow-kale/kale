@@ -24,8 +24,17 @@
     {%- endif %}
 {%- endmacro %}
 
-{%- macro render(step, task_var, enable_caching=none) %}
+{%- macro render(step, task_var, enable_caching=none, volumes=()) %}
 {{- caching(step, task_var, enable_caching) }}
+
+    {%- for volume in volumes | default([]) %}
+    {%- if volume.type == 'pvc' %}
+    kubernetes.mount_pvc({{ task_var }}, pvc_name="{{ volume.name }}", mount_path="{{ volume.mount_point }}")
+    {%- if volume.expose_as_env_var %}
+    {{ task_var }}.set_env_variable(name="{{ volume.name | to_kale_env_var_name }}", value="{{ volume.mount_point }}")
+    {%- endif %}
+    {%- endif %}
+    {%- endfor %}
 
     {%- if step.config.limits %}
     {%- for limit_key, limit_value in step.config.limits.items() %}

@@ -11,7 +11,9 @@ on:
       - synchronize
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # pull_request_target sets github.ref to the base branch, so keying on it alone
+  # puts every open PR in one group and they cancel each other.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
