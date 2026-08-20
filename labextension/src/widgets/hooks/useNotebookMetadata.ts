@@ -27,6 +27,7 @@ import {
   IDeployPanelCustomLinks,
   IExperiment,
   IKaleNotebookMetadata,
+  IVolumeConfig,
 } from '../LeftPanelTypes';
 import { useNotebookLoader } from './useNotebookLoader';
 import { useNotebookMetadataPersistence } from './useNotebookMetadataPersistence';
@@ -47,6 +48,7 @@ export interface INotebookMetadataState {
   updatePipelineName: (name: string) => void;
   updatePipelineDescription: (desc: string) => void;
   updateEnableCaching: (enabled: boolean) => void;
+  updateVolumes: (volumes: IVolumeConfig[]) => void;
   setIsEnabled: (enabled: boolean) => void;
 }
 
@@ -122,6 +124,10 @@ export function useNotebookMetadata({
     setMetadata(prev => ({ ...prev, enable_caching: enabled }));
   }, []);
 
+  const updateVolumes = useCallback((volumes: IVolumeConfig[]) => {
+    setMetadata(prev => ({ ...prev, volumes }));
+  }, []);
+
   const resetForNoNotebook = useCallback(() => {
     setMetadata(defaultMetadata);
     setExperiments([]);
@@ -178,6 +184,7 @@ export function useNotebookMetadata({
     updatePipelineName,
     updatePipelineDescription,
     updateEnableCaching,
+    updateVolumes,
     setIsEnabled,
   };
 }

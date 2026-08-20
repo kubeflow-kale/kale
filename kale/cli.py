@@ -101,12 +101,6 @@ def main():
         "--kfp_host", type=str, help="KFP endpoint. Provide address as <host>:<port>."
     )
     metadata_group.add_argument(
-        "--storage-class-name", type=str, help="The storage class name for the created volumes"
-    )
-    metadata_group.add_argument(
-        "--volume-access-mode", type=str, help="The access mode for the created volumes"
-    )
-    metadata_group.add_argument(
         "--output_path",
         type=str,
         help=(

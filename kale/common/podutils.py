@@ -24,7 +24,7 @@ NAMESPACE_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 def get_namespace():
     """Get the current namespace."""
     with open(NAMESPACE_PATH) as f:
-        return f.read()
+        return f.read().strip()
 
 
 def get_pod_name():
