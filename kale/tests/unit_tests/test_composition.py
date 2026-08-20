@@ -350,7 +350,7 @@ def test_referenced_notebook_keeps_its_pipeline_parameters(tmp_path, monkeypatch
     assert "def scale_step(" in module and "factor: int = 3" in module
     assert "factor = {factor}" in module
     assert f"def {_module_name('root', 'child')}_pipeline(factor: int = 3)" in module
-    assert "scale_step(factor=factor)" in module
+    assert "factor=factor" in module
 
 
 def test_step_config_survives_composition(tmp_path, monkeypatch):

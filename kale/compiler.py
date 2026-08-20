@@ -37,8 +37,6 @@ log = logging.getLogger(__name__)
 
 NB_FN_TEMPLATE = "nb_function_template.jinja2"
 PIPELINE_TEMPLATE = "pipeline_template.jinja2"
-SUBPIPELINE_TEMPLATE = "subpipeline_template.jinja2"
-COMPOSITION_TEMPLATE = "composition_template.jinja2"
 
 # Generated DSL modules are named after their notebook, behind this prefix, so
 # that a notebook called `json.ipynb` cannot shadow a module the DSL imports.
@@ -166,9 +164,7 @@ class Compiler:
         for node in nodes:
             if isinstance(node, SubPipeline):
                 self.modules[self._module_name(node)] = autopep8.fix_code(
-                    self._get_templating_env()
-                    .get_template(SUBPIPELINE_TEMPLATE)
-                    .render(sp=self._subpipeline_context(node))
+                    self._render_pipeline(**self._subpipeline_context(node))
                 )
 
         parameters = self._parameter_context()
@@ -189,7 +185,6 @@ class Compiler:
                 inputs.extend({"arg": p["arg"], "ref": p["name"]} for p in parameters)
             calls.append(
                 {
-                    "kind": "pipeline" if is_subpipeline else "step",
                     "task_var": self._task_var(node),
                     "fn": f"{self._module_name(node)}_pipeline"
                     if is_subpipeline
@@ -199,7 +194,10 @@ class Compiler:
                     "display": node.display_name
                     if is_subpipeline
                     else _step_display_name(node.name),
-                    "step": node,
+                    "node": node,
+                    # a nested pipeline is not a pod, so it takes no security
+                    # context; its own steps get one inside their module
+                    "is_component": not is_subpipeline,
                 }
             )
             if not is_subpipeline:
@@ -207,26 +205,69 @@ class Compiler:
                 # step.source
                 components.append(autopep8.fix_code(self.generate_lightweight_component(node)))
 
+        return self._render_pipeline(
+            fn="auto_generated_pipeline",
+            pipeline_name=self.pipeline.config.pipeline_name,
+            pipeline_description=self.pipeline.config.pipeline_description
+            or "Composed from: " + ", ".join(n.name for n in nodes),
+            docstring=(
+                "Composed pipeline: each referenced notebook is its own "
+                "sub-pipeline (sub-DAG); this notebook's own steps are "
+                "top-level components."
+            ),
+            signature=self._signature(parameters),
+            tasks=calls,
+            components=components,
+            modules=[self._module_name(n) for n in nodes if isinstance(n, SubPipeline)],
+        )
+
+    def _render_pipeline(
+        self,
+        *,
+        fn,
+        pipeline_name,
+        pipeline_description,
+        docstring,
+        signature,
+        tasks,
+        components,
+        modules=(),
+        returns=(),
+    ):
+        """Render one pipeline function, whatever it is a pipeline of.
+
+        A root notebook, a referenced notebook and the notebook that composes
+        them are all the same shape: a signature, a list of tasks with their
+        wiring, and optionally some outputs. What differs between them is how
+        the wiring is worked out, which is the caller's job, not the template's.
+        """
         return (
             self._get_templating_env()
-            .get_template(COMPOSITION_TEMPLATE)
+            .get_template(PIPELINE_TEMPLATE)
             .render(
-                modules=[
-                    _module_name(self.pipeline.config.pipeline_name, n.name)
-                    for n in nodes
-                    if isinstance(n, SubPipeline)
-                ],
+                fn=fn,
+                pipeline_name=pipeline_name,
+                pipeline_description=pipeline_description,
+                docstring=docstring,
+                signature=signature,
+                tasks=tasks,
                 components=components,
-                toplevel_calls=calls,
-                signature=", ".join(
-                    f"{p['name']}: {p['type']} = {p['default']}" for p in parameters
-                ),
-                pipeline_name=self.pipeline.config.pipeline_name,
-                pipeline_description=self.pipeline.config.pipeline_description
-                or "Composed from: " + ", ".join(n.name for n in nodes),
+                modules=modules,
+                returns=returns,
                 enable_caching=self.pipeline.config.enable_caching,
                 security_context=self.pipeline.config.security_context,
             )
+        )
+
+    @staticmethod
+    def _signature(parameters, artifacts=()):
+        """Parameter list of a generated pipeline function.
+
+        Artifact inputs come first: they have no default, and a referenced
+        notebook's parameters do.
+        """
+        return ", ".join(
+            list(artifacts) + [f"{p['name']}: {p['type']} = {p['default']}" for p in parameters]
         )
 
     def _parameter_context(self):
@@ -282,7 +323,8 @@ class Compiler:
                     "inputs": inputs,
                     "after": sorted(set(after)),
                     "display": _step_display_name(step.name),
-                    "step": step,
+                    "node": step,
+                    "is_component": True,
                 }
             )
             # after the task is recorded: generating the component rewrites
@@ -292,13 +334,14 @@ class Compiler:
             f"{var}_input_artifact: Input[{_artifact_type(var)}]" for var in sorted(node.ins)
         ]
         return {
-            "name": node.name,
-            "module": self._module_name(node),
-            "display": node.display_name,
-            "signature": ", ".join(
-                artifact_params + [f"{p['name']}: {p['type']} = {p['default']}" for p in parameters]
-            ),
-            "outputs": [
+            "fn": f"{self._module_name(node)}_pipeline",
+            "pipeline_name": node.display_name,
+            "pipeline_description": f"Compiled from notebook {node.display_name}.",
+            "docstring": f"Sub-pipeline compiled from notebook '{node.display_name}'.",
+            "signature": self._signature(parameters, artifact_params),
+            "tasks": tasks,
+            "components": components,
+            "returns": [
                 {
                     "var": var,
                     "type": _artifact_type(var),
@@ -306,13 +349,6 @@ class Compiler:
                 }
                 for var in sorted(node.outs)
             ],
-            "tasks": tasks,
-            "components": components,
-            # caching and security context are global to a composition: they
-            # come from the notebook the user pressed Compile on, not from the
-            # referenced one. A step's own `cache:` tag still wins over both.
-            "enable_caching": self.pipeline.config.enable_caching,
-            "security_context": self.pipeline.config.security_context,
         }
 
     @staticmethod
@@ -461,57 +497,55 @@ class Compiler:
 
     def generate_pipeline(self, lightweight_components):
         """Generate Python code using the pipeline template."""
-        template = self._get_templating_env().get_template(PIPELINE_TEMPLATE)
-        step_outputs = {}
-        step_inputs = {}
-        step_inputs_sources = {}
-        for step in self.pipeline.steps:
-            if hasattr(step, "ins") and step.ins:
-                step_inputs[step.name] = sorted(step.ins)
+        parameters = self._parameter_context()
+        param_inputs = [{"arg": p["arg"], "ref": p["name"]} for p in parameters]
 
-                step_inputs_sources[step.name] = {}
-                ancestors = graphutils.get_ordered_ancestors(self.pipeline, step.name)
-                for input_var in step_inputs[step.name]:
-                    source_step_name = "UNKNOWN"
-                    for anc_name in ancestors:
-                        anc_step = self.pipeline.get_step(anc_name)
-                        if hasattr(anc_step, "outs") and input_var in anc_step.outs:
-                            source_step_name = anc_name
-                            break
-                    step_inputs_sources[step.name][input_var] = source_step_name
-
-            if hasattr(step, "outs") and step.outs:
-                step_outputs[step.name] = sorted(step.outs)
-
-        pipeline_param_info = {}
-
-        if hasattr(self.pipeline, "pipeline_parameters") and self.pipeline.pipeline_parameters:  # noqa: E501
-            for param_name, param in self.pipeline.pipeline_parameters.items():
-                if isinstance(param, PipelineParam):
-                    clean_param_name = _clean_param_name(param_name)
-                    pipeline_param_info[param_name] = {
-                        "clean_name": clean_param_name,
-                        "type": param.param_type,
-                        "default": param.param_value,
+        steps = list(self.pipeline.steps)
+        tasks = []
+        for position, step in enumerate(steps):
+            inputs, after = [], []
+            for var in sorted(getattr(step, "ins", []) or []):
+                producer = self._producer_of(step, var)
+                inputs.append(
+                    {
+                        "arg": f"{var}_input_artifact",
+                        "ref": f'{producer}_task.outputs["{var}_output_artifact"]',
                     }
-        if hasattr(self.pipeline, "steps") and self.pipeline.steps:
-            # Ensure that the first step is always the pipeline entry point
-            component_names = {}
-            for step in self.pipeline.steps:
-                component_names[step.name] = _step_display_name(step.name)
+                )
+                after.append(f"{producer}_task")
+            if not after and position > 0:
+                # nothing flows in, so the step runs after the one above it
+                after = [f"{steps[position - 1].name}_task"]
+            tasks.append(
+                {
+                    "task_var": f"{step.name}_task",
+                    "fn": f"{step.name}_step",
+                    "inputs": inputs + param_inputs,
+                    "after": sorted(set(after)),
+                    "display": _step_display_name(step.name),
+                    "node": step,
+                    "is_component": True,
+                }
+            )
 
-        pipeline_code = template.render(
-            pipeline=self.pipeline,
-            lightweight_components=lightweight_components,
-            step_outputs=step_outputs,
-            step_inputs=step_inputs,
-            step_inputs_sources=step_inputs_sources,
-            pipeline_param_info=pipeline_param_info,
-            component_names=component_names,
-            **self.pipeline.config.to_dict(),
+        pipeline_code = self._render_pipeline(
+            fn="auto_generated_pipeline",
+            pipeline_name=self.pipeline.config.pipeline_name,
+            pipeline_description=self.pipeline.config.pipeline_description,
+            docstring="Auto-generated pipeline function.",
+            signature=self._signature(parameters),
+            tasks=tasks,
+            components=lightweight_components,
         )
         # fix code style using pep8 guidelines
         return autopep8.fix_code(pipeline_code)
+
+    def _producer_of(self, step, var):
+        """Name of the ancestor step that provides ``var`` to ``step``."""
+        for name in graphutils.get_ordered_ancestors(self.pipeline, step.name):
+            if var in (getattr(self.pipeline.get_step(name), "outs", []) or []):
+                return name
+        return "UNKNOWN"
 
     def _get_package_list_from_imports(self):
         """Extract pip-installable package names from imports using AST.
