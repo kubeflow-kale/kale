@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import { styled } from '@mui/material/styles';
 
@@ -70,6 +70,13 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
   } = props;
 
   const [beforeUpdateError, setBeforeUpdateError] = useState(false);
+  // Tracks exactly what's in the text field, which may briefly diverge from
+  // `propsValue` while its content fails validation (see handleChange).
+  const [localValue, setLocalValue] = useState(String(propsValue));
+
+  useEffect(() => {
+    setLocalValue(String(propsValue));
+  }, [propsValue]);
 
   const getRegex = (): string | RegExp | undefined => {
     if (regex) {
@@ -97,14 +104,17 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
     return undefined;
   };
 
-  const value = String(propsValue);
+  const value = localValue;
   const regexPattern = getRegex();
-  const regexError =
-    regexPattern !== undefined && value !== ''
-      ? !new RegExp(regexPattern).test(value)
-      : false;
-  const maxLengthError =
-    maxLength !== undefined ? value.length > maxLength : false;
+  const isRegexValid = (candidate: string): boolean =>
+    regexPattern === undefined ||
+    candidate === '' ||
+    new RegExp(regexPattern).test(candidate);
+  const isMaxLengthValid = (candidate: string): boolean =>
+    maxLength === undefined || candidate.length <= maxLength;
+
+  const regexError = !isRegexValid(value);
+  const maxLengthError = !isMaxLengthValid(value);
   const error = regexError || maxLengthError || beforeUpdateError;
 
   const getErrorMessage = (): string | undefined => {
@@ -119,9 +129,24 @@ export const Input: React.FunctionComponent<IInputProps> = props => {
 
   const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = evt.target.value;
+    setLocalValue(newValue);
+
+    let hasBeforeUpdateError = false;
     if (onBeforeUpdate) {
-      const hasError = onBeforeUpdate(newValue);
-      setBeforeUpdateError(hasError);
+      hasBeforeUpdateError = onBeforeUpdate(newValue);
+      setBeforeUpdateError(hasBeforeUpdateError);
+    }
+
+    // Never persist a value that fails validation — otherwise it can be
+    // saved into the notebook (and wired up as a step dependency) only to
+    // break pipeline compilation later. The invalid text stays visible
+    // locally, with the error styling/message, so the user can fix it.
+    if (
+      !isRegexValid(newValue) ||
+      !isMaxLengthValid(newValue) ||
+      hasBeforeUpdateError
+    ) {
+      return;
     }
     updateValue(newValue, inputIndex || 0);
   };
