@@ -30,6 +30,7 @@ import { useUpdateCellTags } from './hooks/useCellTags';
 import { useEditorPosition } from './hooks/useEditorPosition';
 import {
   CELL_TYPES,
+  NOTEBOOK_PATH_ERROR_MSG,
   RESERVED_CELL_NAMES,
   STEP_NAME_ERROR_MSG,
 } from './constants';
@@ -47,6 +48,7 @@ export interface ICellEditorData {
   limits?: { [id: string]: string };
   baseImage?: string;
   enableCaching?: boolean;
+  notebookPath?: string;
   generateHtmlReport?: boolean;
 }
 
@@ -62,12 +64,23 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits = {},
     baseImage,
     enableCaching,
+    notebookPath,
     generateHtmlReport,
     resolvedDefaultBaseImage,
   } = props;
 
-  const { activeCellIndex, isEditorVisible, onEditorVisibilityChange } =
-    useContext(CellMetadataContext);
+  const {
+    activeCellIndex,
+    isEditorVisible,
+    onEditorVisibilityChange,
+    composableNotebooks,
+  } = useContext(CellMetadataContext);
+
+  // multi-notebook composition is still in development, so the cell type is
+  // offered only where it has been switched on
+  const cellTypes = composableNotebooks
+    ? CELL_TYPES
+    : CELL_TYPES.filter(t => t.value !== 'notebook');
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +91,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     limits,
     baseImage,
     enableCaching,
+    notebookPath,
     generateHtmlReport,
   });
 
@@ -101,7 +115,12 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     [notebook, activeCellIndex, stepName],
   );
 
-  const cellType = RESERVED_CELL_NAMES.includes(stepName) ? stepName : 'step';
+  const isNotebookRef = stepName.startsWith('notebook:');
+  const cellType = isNotebookRef
+    ? 'notebook'
+    : RESERVED_CELL_NAMES.includes(stepName)
+      ? stepName
+      : 'step';
   const cellColor = stepName
     ? `#${ColorUtils.getColor(stepName)}`
     : 'transparent';
@@ -156,13 +175,25 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
           >
             <Select
               updateValue={updateCellTags.updateCellType}
-              values={CELL_TYPES}
+              values={cellTypes}
               value={cellType || 'step'}
               label={'Cell type'}
               index={0}
               variant="outlined"
               style={{ width: '30%' }}
             />
+
+            {isNotebookRef && (
+              <Input
+                label={'Notebook path'}
+                updateValue={updateCellTags.updateNotebookPath}
+                value={notebookPath || ''}
+                regex={'^.*\\.ipynb$'}
+                regexErrorMsg={NOTEBOOK_PATH_ERROR_MSG}
+                variant="outlined"
+                style={{ width: '60%' }}
+              />
+            )}
 
             {isStep && (
               <>

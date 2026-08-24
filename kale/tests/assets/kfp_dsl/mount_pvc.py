@@ -107,8 +107,7 @@ def train_step(train_html_report: Output[HTML]):
     name='mount-pvc-test',
     description='Test PVC mounting'
 )
-def auto_generated_pipeline(
-):
+def auto_generated_pipeline():
     """Auto-generated pipeline function."""
 
     load_task = load_step(
@@ -121,9 +120,10 @@ def auto_generated_pipeline(
         run_as_non_root=True
     )
     load_task.set_env_variable(name="HOME", value="/tmp")
-    kubernetes.mount_pvc(load_task, pvc_name="raw-data", mount_path="/data")
 
     load_task.set_display_name("load-step")
+
+    kubernetes.mount_pvc(load_task, pvc_name="raw-data", mount_path="/data")
 
     train_task = train_step(
     )
@@ -135,18 +135,17 @@ def auto_generated_pipeline(
         run_as_non_root=True
     )
     train_task.set_env_variable(name="HOME", value="/tmp")
-    kubernetes.mount_pvc(train_task, pvc_name="raw-data", mount_path="/data")
-
     train_task.after(load_task)
 
     train_task.set_display_name("train-step")
+
+    kubernetes.mount_pvc(train_task, pvc_name="raw-data", mount_path="/data")
 
 
 if __name__ == "__main__":
     from kfp import compiler
 
-    pipeline_filename = auto_generated_pipeline.__name__ + '.yaml'
-    compiler.Compiler().compile(auto_generated_pipeline, pipeline_filename)
+    compiler.Compiler().compile(auto_generated_pipeline, "mount-pvc-test.yaml")
 
-    print(f"Pipeline compiled to {pipeline_filename}")
+    print("Pipeline compiled to mount-pvc-test.yaml")
     print("To run, upload this YAML to your KFP v2 instance or use kfp.Client().create_run_from_pipeline_func.")

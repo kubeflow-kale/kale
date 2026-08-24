@@ -199,6 +199,59 @@ class Step:
         return outputs
 
 
+class SubPipeline(Step):
+    """A referenced notebook, compiled as a nested pipeline.
+
+    A node of the same graph as :class:`Step`, carrying the same ``name``,
+    ``ins``, ``outs`` and ``config``, so dependency detection and code
+    generation treat a notebook reference and a plain step uniformly.
+
+    ``source`` is the referenced notebook's step code: the boundary scanner
+    reads it exactly as it reads a step's, which is what lets a variable cross
+    a notebook boundary the same way it crosses a step boundary. ``pipeline``
+    is the processed child :class:`~kale.pipeline.Pipeline` that becomes the
+    nested sub-DAG.
+    """
+
+    def __init__(
+        self,
+        pipeline,
+        notebook_path: str,
+        source: list[str] = None,
+        ins: list[Any] = None,
+        outs: list[Any] = None,
+        display_name: str = None,
+        imports_and_functions: str = "",
+        **kwargs,
+    ):
+        super().__init__(source=source or [], ins=ins, outs=outs, **kwargs)
+        self.pipeline = pipeline
+        self.notebook_path = notebook_path
+        self._display_name = display_name
+        # the referenced notebook's own imports and functions, which its steps
+        # are generated with
+        self.imports_and_functions = imports_and_functions
+        # boundary variable -> name of the inner step that provides it
+        self.produced_by: dict[str, str] = {}
+
+    @property
+    def display_name(self):
+        """Name shown for the nested pipeline, defaulting to a KFP-safe name."""
+        return self._display_name or self.name.replace("_", "-")
+
+    def merge_code(self, source_code: str):
+        """A notebook reference never absorbs the code of another cell."""
+        raise RuntimeError(
+            f"Cannot merge code into '{self.name}': it references a notebook rather "
+            f"than holding code. Move the code to its own `step:` cell."
+        )
+
+    def run(self, pipeline_parameters_values: dict[str, PipelineParam]):
+        """Run the referenced notebook's steps locally, in order."""
+        for step in self.pipeline.steps:
+            step.run(pipeline_parameters_values)
+
+
 def __default_execution_handler(step: Step, *args, **kwargs):
     log.info("No Pipeline registration handler is set.")
     if not callable(step.source):
