@@ -58,6 +58,7 @@ interface IProps {
   kernel: Kernel.IKernelConnection;
   enableKaleByDefault: boolean;
   autoSaveOnCompileOrRun: boolean;
+  enableComposableNotebooks: boolean;
   defaultBaseImageSetting: string;
   runtimeImages: string[];
   envDefaultBaseImage: string;
@@ -74,6 +75,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
     docManager,
     enableKaleByDefault,
     autoSaveOnCompileOrRun,
+    enableComposableNotebooks,
     defaultBaseImageSetting,
     runtimeImages,
     envDefaultBaseImage,
@@ -251,6 +253,7 @@ export const KubeflowKaleLeftPanel: React.FC<IProps> = props => {
                 notebook={activeNotebook}
                 resolvedDefaultBaseImage={resolvedDefaultBaseImage}
                 runtimeImages={runtimeImages}
+                composableNotebooks={enableComposableNotebooks}
                 initialChecked={notebookMeta.isEnabled}
               />
             ) : (

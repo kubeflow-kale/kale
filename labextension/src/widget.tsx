@@ -58,6 +58,7 @@ const id = 'jupyterlab-kubeflow-kale:deploymentPanel';
 const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
+const ENABLE_COMPOSABLE_NOTEBOOKS_KEY = 'enableComposableNotebooks';
 const DEFAULT_BASE_IMAGE_KEY = 'defaultBaseImage';
 const RUNTIME_IMAGES_KEY = 'runtimeImages';
 const SECURITY_CONTEXT_KEY = 'securityContext';
@@ -135,6 +136,7 @@ async function activate(
     const [kaleSettings, setKaleSettings] = React.useState({
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
+      enableComposableNotebooks: false,
       defaultBaseImage: '',
       runtimeImages: [] as string[],
       securityContext: {} as ISecurityContextSettings,
@@ -233,6 +235,10 @@ async function activate(
               (loadedSetting.get(AUTO_SAVE_ON_COMPILE_OR_RUN_KEY).composite as
                 | boolean
                 | undefined) ?? false,
+            enableComposableNotebooks:
+              (loadedSetting.get(ENABLE_COMPOSABLE_NOTEBOOKS_KEY).composite as
+                | boolean
+                | undefined) ?? false,
             defaultBaseImage:
               (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
                 | string
@@ -283,6 +289,7 @@ async function activate(
         kernel={kernel}
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
+        enableComposableNotebooks={kaleSettings.enableComposableNotebooks}
         defaultBaseImageSetting={kaleSettings.defaultBaseImage}
         runtimeImages={kaleSettings.runtimeImages}
         envDefaultBaseImage={envOnlyBaseImage}

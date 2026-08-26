@@ -16,6 +16,12 @@
       "description": "When enabled, Kale saves the notebook automatically before compile, run, or upload without prompting. When disabled, you are asked to save if there are unsaved changes.",
       "default": false
     },
+    "enableComposableNotebooks": {
+      "type": "boolean",
+      "title": "Enable composable notebooks (experimental)",
+      "description": "Show the 'Notebook' cell type, which references another notebook so it compiles as a nested sub-pipeline. Multi-notebook composition is still in development. Compiling a notebook that already contains a 'notebook:' cell works whether or not this is enabled.",
+      "default": false
+    },
     "defaultBaseImage": {
       "type": "string",
       "title": "Default base image",

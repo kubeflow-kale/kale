@@ -38,6 +38,7 @@ interface IProps {
   onMetadataEnable: (isEnabled: boolean) => void;
   resolvedDefaultBaseImage: string;
   runtimeImages: string[];
+  composableNotebooks: boolean;
   initialChecked?: boolean;
 }
 
@@ -46,6 +47,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
   onMetadataEnable,
   resolvedDefaultBaseImage,
   runtimeImages,
+  composableNotebooks,
   initialChecked,
 }) => {
   const [checked, setChecked] = useState(false);
@@ -127,6 +129,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
         limits: activeEditorData.limits || {},
         baseImage: activeEditorData.baseImage,
         enableCaching: activeEditorData.enableCaching,
+        notebookPath: activeEditorData.notebookPath,
         generateHtmlReport: activeEditorData.generateHtmlReport,
       }
     : {
@@ -136,6 +139,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
         limits: {},
         baseImage: undefined,
         enableCaching: undefined,
+        notebookPath: undefined,
         generateHtmlReport: undefined,
       };
 
@@ -147,6 +151,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
       limits={editorProps.limits}
       baseImage={editorProps.baseImage}
       enableCaching={editorProps.enableCaching}
+      notebookPath={editorProps.notebookPath}
       generateHtmlReport={editorProps.generateHtmlReport}
       resolvedDefaultBaseImage={resolvedDefaultBaseImage}
       runtimeImages={runtimeImages}
@@ -173,6 +178,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
             activeCellIndex,
             isEditorVisible,
             onEditorVisibilityChange,
+            composableNotebooks,
           }}
         >
           {cellMetadataEditor}
