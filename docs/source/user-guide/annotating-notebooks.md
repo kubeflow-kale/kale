@@ -104,9 +104,7 @@ customized in **JupyterLab Settings → Kale → Runtime images**.
 The default list includes:
 
 - `python:3.12`
-- `python:3.11`
 - `pytorch/pytorch:2.0`
-- `pytorch/pytorch:2.0-cuda12`
 - `tensorflow/tensorflow:latest`
 
 Users can add, remove, or reorder images in the JupyterLab settings. Custom
