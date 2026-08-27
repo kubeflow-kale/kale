@@ -37,6 +37,7 @@ interface IProps {
   notebook: NotebookPanel;
   onMetadataEnable: (isEnabled: boolean) => void;
   resolvedDefaultBaseImage: string;
+  runtimeImages: string[];
   composableNotebooks: boolean;
   initialChecked?: boolean;
 }
@@ -45,6 +46,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
   notebook,
   onMetadataEnable,
   resolvedDefaultBaseImage,
+  runtimeImages,
   composableNotebooks,
   initialChecked,
 }) => {
@@ -152,6 +154,7 @@ export const InlineCellsMetadata: React.FC<IProps> = ({
       notebookPath={editorProps.notebookPath}
       generateHtmlReport={editorProps.generateHtmlReport}
       resolvedDefaultBaseImage={resolvedDefaultBaseImage}
+      runtimeImages={runtimeImages}
     />,
     document.body,
   );

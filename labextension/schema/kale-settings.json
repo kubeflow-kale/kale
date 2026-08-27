@@ -71,6 +71,19 @@
       "description": "Relative path (from the notebook directory) where the compiled pipeline is saved. Leave empty to use the default '.kale/' directory.",
       "default": ".kale",
       "pattern": "^$|\\S"
+    },
+    "runtimeImages": {
+      "type": "array",
+      "title": "Runtime images",
+      "description": "Runtime container images available when configuring a pipeline step.",
+      "default": [
+        "python:3.12",
+        "pytorch/pytorch:2.0",
+        "tensorflow/tensorflow:latest"
+      ],
+      "items": {
+        "type": "string"
+      }
     }
   },
   "additionalProperties": false,

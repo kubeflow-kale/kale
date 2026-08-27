@@ -60,6 +60,7 @@ const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
 const ENABLE_COMPOSABLE_NOTEBOOKS_KEY = 'enableComposableNotebooks';
 const DEFAULT_BASE_IMAGE_KEY = 'defaultBaseImage';
+const RUNTIME_IMAGES_KEY = 'runtimeImages';
 const SECURITY_CONTEXT_KEY = 'securityContext';
 
 interface ISecurityContextSettings {
@@ -137,6 +138,7 @@ async function activate(
       autoSaveOnCompileOrRun: false,
       enableComposableNotebooks: false,
       defaultBaseImage: '',
+      runtimeImages: [] as string[],
       securityContext: {} as ISecurityContextSettings,
       outputPath: '',
     });
@@ -241,6 +243,10 @@ async function activate(
               (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
                 | string
                 | undefined) ?? '',
+            runtimeImages:
+              (loadedSetting.get(RUNTIME_IMAGES_KEY).composite as
+                | string[]
+                | undefined) ?? [],
             securityContext:
               (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
                 | ISecurityContextSettings
@@ -285,6 +291,7 @@ async function activate(
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
         enableComposableNotebooks={kaleSettings.enableComposableNotebooks}
         defaultBaseImageSetting={kaleSettings.defaultBaseImage}
+        runtimeImages={kaleSettings.runtimeImages}
         envDefaultBaseImage={envOnlyBaseImage}
         securityContext={kaleSettings.securityContext}
         outputPath={kaleSettings.outputPath}

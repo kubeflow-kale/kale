@@ -54,6 +54,7 @@ export interface ICellEditorData {
 
 export interface IProps extends ICellEditorData {
   resolvedDefaultBaseImage: string;
+  runtimeImages: string[];
 }
 
 export const CellMetadataEditor: React.FC<IProps> = props => {
@@ -67,6 +68,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
     notebookPath,
     generateHtmlReport,
     resolvedDefaultBaseImage,
+    runtimeImages,
   } = props;
 
   const {
@@ -284,6 +286,7 @@ export const CellMetadataEditor: React.FC<IProps> = props => {
         updateLimits={updateCellTags.updateLimits}
         baseImage={baseImage}
         resolvedDefaultBaseImage={resolvedDefaultBaseImage}
+        runtimeImages={runtimeImages}
         onUpdateBaseImage={updateCellTags.updateBaseImage}
         enableCaching={enableCaching}
         onUpdateCaching={updateCellTags.updateCaching}
