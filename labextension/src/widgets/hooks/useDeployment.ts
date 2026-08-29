@@ -25,6 +25,7 @@ import {
 } from '../LeftPanelTypes';
 import Commands from '../../lib/Commands';
 import NotebookUtils from '../../lib/NotebookUtils';
+import { isReadWriteOnce } from '../../components/volumes/volumeUtils';
 
 interface IUseDeploymentParams {
   tracker: INotebookTracker;
@@ -144,6 +145,40 @@ export function useDeployment({
     // outputPath comes from JupyterLab Settings; backend expects it as output_path.
     if (outputPath) {
       metadata.output_path = outputPath;
+    }
+
+    // Check for ReadWriteOnce volumes and warn the user
+    if (metadata.volumes && metadata.volumes.length > 0) {
+      try {
+        const pvcs = await commands.listPvcs();
+        const pvcModes = new Map(pvcs.map(p => [p.name, p.access_modes]));
+        const rwoVolumes = metadata.volumes.filter(v =>
+          isReadWriteOnce(pvcModes.get(v.name)),
+        );
+
+        if (rwoVolumes.length > 0) {
+          const confirmed = await NotebookUtils.showYesNoDialog(
+            'ReadWriteOnce Volume Warning',
+            [
+              'Pipeline has RWO mounted volumes.',
+              '',
+              'Parallel steps may fail if scheduled on different nodes. ' +
+                'Consider using ReadWriteMany volumes for parallel pipelines.',
+              '',
+              'Do you want to proceed anyway?',
+            ],
+            'Proceed',
+            'Cancel',
+          );
+
+          if (!confirmed) {
+            setRunDeployment(false);
+            return;
+          }
+        }
+      } catch {
+        // If we can't check PVC modes, proceed anyway (best effort)
+      }
     }
 
     const nbFilePath = getActiveNotebookPath();
