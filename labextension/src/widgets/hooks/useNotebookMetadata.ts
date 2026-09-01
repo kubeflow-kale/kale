@@ -63,6 +63,7 @@ export interface ILoaderSetters {
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
   resetForNoNotebook: () => void;
+  resetForNotebookSwitch: () => void;
 }
 
 interface IUseNotebookMetadataParams {
@@ -128,15 +129,39 @@ export function useNotebookMetadata({
     setMetadata(prev => ({ ...prev, volumes }));
   }, []);
 
+  // Build a fresh default metadata object so we never mutate (or hand out a
+  // reference to) the shared DefaultState.metadata.
+  const freshDefaultMetadata = useCallback(
+    (): IKaleNotebookMetadata => ({
+      ...defaultMetadata,
+      experiment: { ...defaultMetadata.experiment },
+    }),
+    [],
+  );
+
   const resetForNoNotebook = useCallback(() => {
-    setMetadata(defaultMetadata);
+    setMetadata(freshDefaultMetadata());
     setExperiments([]);
     setGettingExperiments(false);
     setIsEnabled(false);
     setNamespace('');
     setKfpUiHost('');
     setDeployPanelCustomLinks({ upload: '', run: '' });
-  }, []);
+  }, [freshDefaultMetadata]);
+
+  // Synchronously clear the panel to defaults at the start of a notebook
+  // switch, before the async loading RPCs resolve. Without this, the panel
+  // keeps rendering the previous notebook's metadata during the async gap.
+  // isEnabled is intentionally left untouched here: it is resolved once the
+  // new notebook finishes loading.
+  const resetForNotebookSwitch = useCallback(() => {
+    setMetadata(freshDefaultMetadata());
+    setExperiments([]);
+    setGettingExperiments(true);
+    setNamespace('');
+    setKfpUiHost('');
+    setDeployPanelCustomLinks({ upload: '', run: '' });
+  }, [freshDefaultMetadata]);
 
   // --- composed hooks ---
 
@@ -157,6 +182,7 @@ export function useNotebookMetadata({
       metadataRef,
       experimentsRef,
       resetForNoNotebook,
+      resetForNotebookSwitch,
     },
   });
 

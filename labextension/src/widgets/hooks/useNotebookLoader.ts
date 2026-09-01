@@ -87,6 +87,7 @@ export function useNotebookLoader({
     experimentsRef,
     setIsEnabled,
     resetForNoNotebook,
+    resetForNotebookSwitch,
   } = setters;
 
   const loadNotebookPanel = useCallback(
@@ -95,13 +96,24 @@ export function useNotebookLoader({
         return;
       }
 
+      // The load sequence is async and the user may switch notebooks again
+      // before it resolves. If that happens, a late-completing load must not
+      // clobber the metadata of the notebook that is now active.
+      const isStale = () => tracker.currentWidget !== notebook;
+
       const commands = new Commands(notebook, kernel);
       await notebook.sessionContext.ready;
+      if (isStale()) {
+        return;
+      }
 
       const [kfpUiHost, deployPanelCustomLinks] = await Promise.all([
         commands.getKfpUiHost(),
         commands.getDeployPanelCustomLinks(),
       ]);
+      if (isStale()) {
+        return;
+      }
       const resolvedKfpUiHost = kfpUiHost || DEFAULT_UI_URL;
       setKfpUiHost(resolvedKfpUiHost);
       setDeployPanelCustomLinks(deployPanelCustomLinks);
@@ -112,11 +124,18 @@ export function useNotebookLoader({
       let fetchedExperiments: IExperiment[] = [];
 
       if (backend) {
-        setNamespace(await commands.getNamespace());
+        const namespace = await commands.getNamespace();
+        if (isStale()) {
+          return;
+        }
+        setNamespace(namespace);
 
         const nbFilePath = getNotebookPath(notebook);
         if (nbFilePath) {
           await commands.resumeStateIfExploreNotebook(nbFilePath);
+          if (isStale()) {
+            return;
+          }
         }
 
         setGettingExperiments(true);
@@ -125,6 +144,9 @@ export function useNotebookLoader({
           currentMeta.experiment,
           currentMeta.experiment_name,
         );
+        if (isStale()) {
+          return;
+        }
         fetchedExperiments = expResult.experiments;
 
         setExperiments(expResult.experiments);
@@ -215,6 +237,11 @@ export function useNotebookLoader({
           base_image: DefaultState.metadata.base_image,
         }));
       }
+
+      // Loading has finished for this notebook: clear the loading flag that
+      // resetForNotebookSwitch set at the start of the switch. Covers the
+      // non-backend path too, where nothing else resets it.
+      setGettingExperiments(false);
     },
     [
       tracker,
@@ -238,6 +265,9 @@ export function useNotebookLoader({
       notebook: NotebookPanel | null,
     ) => {
       if (notebook) {
+        // Clear the previous notebook's metadata synchronously so the panel
+        // does not display stale values while the async load below runs.
+        resetForNotebookSwitch();
         await loadNotebookPanel(notebook);
         setIsEnabled(prev => enableKaleByDefault || prev);
       } else {
@@ -260,5 +290,6 @@ export function useNotebookLoader({
     enableKaleByDefault,
     setIsEnabled,
     resetForNoNotebook,
+    resetForNotebookSwitch,
   ]);
 }
