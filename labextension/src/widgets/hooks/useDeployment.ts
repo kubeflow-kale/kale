@@ -25,7 +25,7 @@ import {
 } from '../LeftPanelTypes';
 import Commands from '../../lib/Commands';
 import NotebookUtils from '../../lib/NotebookUtils';
-import { isReadWriteOnce } from '../../components/volumes/volumeUtils';
+import { isRestrictedAccessMode } from '../../components/volumes/volumeUtils';
 
 interface IUseDeploymentParams {
   tracker: INotebookTracker;
@@ -152,18 +152,21 @@ export function useDeployment({
       try {
         const pvcs = await commands.listPvcs();
         const pvcModes = new Map(pvcs.map(p => [p.name, p.access_modes]));
-        const rwoVolumes = metadata.volumes.filter(v =>
-          isReadWriteOnce(pvcModes.get(v.name)),
+        const restrictedVolumes = metadata.volumes.filter(v =>
+          isRestrictedAccessMode(pvcModes.get(v.name)),
         );
 
-        if (rwoVolumes.length > 0) {
+        if (restrictedVolumes.length > 0) {
           const confirmed = await NotebookUtils.showYesNoDialog(
-            'ReadWriteOnce Volume Warning',
+            'Volume Access Mode Warning',
             [
-              'Pipeline has RWO mounted volumes.',
+              'Pipeline has RWO/RWOP mounted volumes.',
               '',
-              'Parallel steps may fail if scheduled on different nodes. ' +
-                'Consider using ReadWriteMany volumes for parallel pipelines.',
+              'ReadWriteOnce (RWO) volumes can only be mounted on one node. ' +
+                'ReadWriteOncePod (RWOP) volumes can only be mounted by one pod. ' +
+                'Parallel steps may fail if scheduled on different nodes or run concurrently.',
+              '',
+              'Consider using ReadWriteMany (RWX) volumes for parallel pipelines.',
               '',
               'Do you want to proceed anyway?',
             ],

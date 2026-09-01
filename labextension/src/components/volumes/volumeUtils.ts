@@ -91,13 +91,17 @@ export function formatAccessModes(modes: string[] | undefined): string {
 }
 
 /**
- * Check if access modes indicate a ReadWriteOnce volume.
- * RWO volumes can only be mounted by pods on the same node, which can cause
- * issues when pipeline steps run in parallel on different nodes.
+ * Check if access modes indicate a restricted volume (RWO or RWOP).
+ * - ReadWriteOnce (RWO): can only be mounted by pods on the same node
+ * - ReadWriteOncePod (RWOP): can only be mounted by a single pod
+ * Both can cause issues when pipeline steps run in parallel.
  */
-export function isReadWriteOnce(modes: string[] | undefined): boolean {
+export function isRestrictedAccessMode(modes: string[] | undefined): boolean {
   if (!modes || modes.length === 0) {
     return false;
   }
   return modes.some(m => m === 'ReadWriteOnce' || m === 'ReadWriteOncePod');
 }
+
+/** @deprecated Use isRestrictedAccessMode instead */
+export const isReadWriteOnce = isRestrictedAccessMode;
