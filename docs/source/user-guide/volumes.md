@@ -117,24 +117,6 @@ If your pipeline has parallel steps (steps that don't depend on each other):
    pipeline pods on the same node (advanced, not recommended for most cases).
    Note: This only helps with RWO, not RWOP.
 
-## CLI Options
-
-When using the `kale` CLI, you can specify volume-related options:
-
-```bash
-kale --nb my_notebook.ipynb \
-     --storage-class-name standard \
-     --volume-access-mode readwritemany
-```
-
-| Option                  | Description                                        |
-|-------------------------|----------------------------------------------------|
-| `--storage-class-name`  | Storage class for any volumes Kale creates         |
-| `--volume-access-mode`  | Access mode for Kale-created volumes               |
-
-These options apply to volumes that Kale creates automatically (e.g., for
-pipeline artifacts), not to PVCs you explicitly mount.
-
 ## Best Practices
 
 1. **Use RWX for parallel pipelines** — If your pipeline has any parallel
