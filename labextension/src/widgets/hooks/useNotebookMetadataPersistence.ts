@@ -16,6 +16,7 @@ import { MutableRefObject, useEffect, useRef } from 'react';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import NotebookUtils from '../../lib/NotebookUtils';
 import { IKaleNotebookMetadata } from '../LeftPanelTypes';
+import { resolveMetadataPersistence } from './metadataPersistenceDecision';
 
 interface IUseNotebookMetadataPersistenceParams {
   metadata: IKaleNotebookMetadata;
@@ -47,26 +48,24 @@ export function useNotebookMetadataPersistence({
 
   useEffect(() => {
     const json = JSON.stringify(metadata);
-    if (json === prevMetadataJsonRef.current) {
-      return;
-    }
-    // Always track the latest metadata we have seen so that, once loading
-    // finishes, the next genuine user edit is detected as a change.
+    const decision = resolveMetadataPersistence({
+      json,
+      prevJson: prevMetadataJsonRef.current,
+      isLoading: isLoadingRef.current,
+      loadedNotebook: loadedNotebookRef.current,
+    });
+    // Always track the latest metadata we have seen (even when we skip the
+    // write) so that, once loading finishes, the next genuine user edit is
+    // detected as a change.
     prevMetadataJsonRef.current = json;
-    // Skip write-back while the loader is populating state: those changes
-    // reflect what was just read from the notebook, and persisting them can
-    // clobber the freshly-activated notebook's saved metadata.
-    if (isLoadingRef.current) {
-      return;
-    }
-    // Persist to the notebook this metadata belongs to, not whatever tab is
-    // active now: this effect runs after a paint, and the user may have
-    // switched notebooks in the meantime.
-    const notebook = loadedNotebookRef.current;
-    if (notebook && !notebook.isDisposed) {
+    if (decision.shouldWrite && decision.target) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { base_image: _baseImage, ...metadataToPersist } = metadata;
-      NotebookUtils.setMetaData(notebook, metadataKey, metadataToPersist);
+      NotebookUtils.setMetaData(
+        decision.target,
+        metadataKey,
+        metadataToPersist,
+      );
     }
   }, [metadata, metadataKey, isLoadingRef, loadedNotebookRef]);
 }
