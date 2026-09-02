@@ -20,7 +20,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { INotebookTracker } from '@jupyterlab/notebook';
+import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 import { Kernel } from '@jupyterlab/services';
 import {
   DefaultState,
@@ -62,8 +62,9 @@ export interface ILoaderSetters {
   setDeployPanelCustomLinks: Dispatch<SetStateAction<IDeployPanelCustomLinks>>;
   metadataRef: MutableRefObject<IKaleNotebookMetadata>;
   experimentsRef: MutableRefObject<IExperiment[]>;
+  isLoadingRef: MutableRefObject<boolean>;
+  loadedNotebookRef: MutableRefObject<NotebookPanel | null>;
   resetForNoNotebook: () => void;
-  resetForNotebookSwitch: () => void;
 }
 
 interface IUseNotebookMetadataParams {
@@ -103,6 +104,18 @@ export function useNotebookMetadata({
   const experimentsRef = useRef(experiments);
   experimentsRef.current = experiments;
 
+  // True while a notebook is being loaded/switched. The metadata state changes
+  // the loader makes during a load are programmatic (they reflect what was read
+  // from the notebook), not user edits, so persistence must not write them back
+  // to the notebook file while this is set.
+  const isLoadingRef = useRef(false);
+
+  // The notebook the current metadata state belongs to. Persistence writes to
+  // this notebook rather than to tracker.currentWidget, so a metadata edit is
+  // always saved to the notebook it was made against, even if the active tab
+  // has since changed.
+  const loadedNotebookRef = useRef<NotebookPanel | null>(null);
+
   // --- updaters (exposed to LeftPanel form inputs) ---
 
   const updateExperiment = useCallback((experiment: IExperiment) => {
@@ -140,24 +153,11 @@ export function useNotebookMetadata({
   );
 
   const resetForNoNotebook = useCallback(() => {
+    loadedNotebookRef.current = null;
     setMetadata(freshDefaultMetadata());
     setExperiments([]);
     setGettingExperiments(false);
     setIsEnabled(false);
-    setNamespace('');
-    setKfpUiHost('');
-    setDeployPanelCustomLinks({ upload: '', run: '' });
-  }, [freshDefaultMetadata]);
-
-  // Synchronously clear the panel to defaults at the start of a notebook
-  // switch, before the async loading RPCs resolve. Without this, the panel
-  // keeps rendering the previous notebook's metadata during the async gap.
-  // isEnabled is intentionally left untouched here: it is resolved once the
-  // new notebook finishes loading.
-  const resetForNotebookSwitch = useCallback(() => {
-    setMetadata(freshDefaultMetadata());
-    setExperiments([]);
-    setGettingExperiments(true);
     setNamespace('');
     setKfpUiHost('');
     setDeployPanelCustomLinks({ upload: '', run: '' });
@@ -181,8 +181,9 @@ export function useNotebookMetadata({
       setDeployPanelCustomLinks,
       metadataRef,
       experimentsRef,
+      isLoadingRef,
+      loadedNotebookRef,
       resetForNoNotebook,
-      resetForNotebookSwitch,
     },
   });
 
@@ -193,9 +194,10 @@ export function useNotebookMetadata({
   });
 
   useNotebookMetadataPersistence({
-    tracker,
     metadata,
     metadataKey: KALE_NOTEBOOK_METADATA_KEY,
+    isLoadingRef,
+    loadedNotebookRef,
   });
 
   return {
