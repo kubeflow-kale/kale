@@ -24,11 +24,12 @@ import re
 from typing import Any
 
 import nbformat as nb
+import networkx as nx
 
 from kale.common import astutils, flakeutils, graphutils, kfutils, utils
 from kale.config import Field
 from kale.pipeline import Pipeline, PipelineConfig
-from kale.step import PipelineParam, Step
+from kale.step import PipelineParam, Step, SubPipeline
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +41,9 @@ IMPORT_TAG = r"^imports$"
 FUNCTIONS_TAG = r"^functions$"
 PREV_TAG = r"^prev:[_a-z]([_a-z0-9]*)?$"
 STEP_TAG = r"^step:([_a-z]([_a-z0-9]*)?)?$"
+# A `notebook:<name>` cell references another notebook as a sub-pipeline. The
+# referenced path is carried in the cell metadata (`notebook_path`), not the tag.
+NOTEBOOK_TAG = r"^notebook:([_a-z]([_a-z0-9]*)?)?$"
 PIPELINE_PARAMETERS_TAG = r"^pipeline-parameters$"
 PIPELINE_METRICS_TAG = r"^pipeline-metrics$"
 # Annotations map to actual pod annotations that can be set via KFP SDK
@@ -70,6 +74,7 @@ _TAGS_LANGUAGE = [
     FUNCTIONS_TAG,
     PREV_TAG,
     STEP_TAG,
+    NOTEBOOK_TAG,
     PIPELINE_PARAMETERS_TAG,
     PIPELINE_METRICS_TAG,
     ANNOTATION_TAG,
@@ -136,7 +141,10 @@ class NotebookConfig(PipelineConfig):
     #  'experiment_name' and 'experiment', but the latter is not used in the
     #  backend.
     experiment = Field(type=dict)
-    # Used in the UI to keep per-notebook state of the volumes snapshot toggle
+
+    # Accepted for forward compatibility — snapshot support is not yet
+    # implemented in the KFP v2 path. The field is parsed and stored but
+    # has no effect on compilation. Will be wired up in a future iteration.
     snapshot_volumes = Field(type=bool, default=False)
 
     @property
@@ -201,6 +209,7 @@ class NotebookProcessor:
         nb_metadata_overrides: dict[str, Any] | None = None,
         config: NotebookConfig | None = None,
         skip_validation: bool = False,
+        _referencing: tuple[str, ...] = (),
         **kwargs,
     ):
         """Instantiate a new NotebookProcessor.
@@ -214,8 +223,16 @@ class NotebookProcessor:
                 NotebookProcessor is used to parse a part of the notebook
                 (e.g., retrieve pipeline metrics) and the notebook config (for
                 pipeline generation) might still be invalid.
+            _referencing: Notebooks already being processed up the reference
+                chain, used to detect a cycle. Set when a processor spawns a
+                child for a ``notebook:`` cell.
         """
+        self.skip_validation = skip_validation
+        # number of leading `source` entries every step shares (imports and
+        # functions), set once the notebook is parsed
+        self._shared_block_count = 0
         self.nb_path = os.path.expanduser(nb_path)
+        self._referencing = _referencing + (os.path.abspath(self.nb_path),)
         self.notebook = self._read_notebook()
 
         nb_metadata = self.notebook.metadata.get(KALE_NB_METADATA_KEY, {})
@@ -260,9 +277,17 @@ class NotebookProcessor:
         }
 
     def _apply_steps_defaults(self):
-        """Apply default configuration to all pipeline steps."""
+        """Apply default configuration to all pipeline steps.
+
+        A composition's defaults are global, so a referenced notebook's own
+        steps take them too. A step that sets the same key itself keeps its
+        own value.
+        """
         for step in self.pipeline.steps:
             step.config.update(self.pipeline.config.steps_defaults)
+            if isinstance(step, SubPipeline):
+                for inner in step.pipeline.steps:
+                    inner.config.update(self.pipeline.config.steps_defaults)
 
     def to_pipeline(self):
         """Convert an annotated Notebook to a Pipeline object."""
@@ -274,8 +299,12 @@ class NotebookProcessor:
         # get a list of variables that need to be logged as pipeline metrics
         pipeline_metrics = astutils.parse_metrics_print_statements(pipeline_metrics_source)
 
+        # a composition has no `prev:` tags between its units, so its edges are
+        # inferred before the graph is resolved
+        self.link_composition_units()
         # run static analysis over the source code
         self.dependencies_detection(imports_and_functions)
+        self.propagate_subpipeline_boundaries()
         self.assign_metrics(pipeline_metrics)
 
         # TODO: Additional action required:
@@ -297,6 +326,12 @@ class NotebookProcessor:
         # will be assigned at the end of each for loop
         prev_step_name = None
 
+        # A `notebook:` cell is a reference, not code, so it breaks the merge
+        # chain: untagged cells that follow it are held here and attached to
+        # the next `step:` cell, never merged backwards into a previous step.
+        pending_sources = []
+        awaiting_step = False
+
         # All the code cells that have to be pre-pended to every pipeline step
         # (i.e., imports and functions) are merged here
         imports_block = []
@@ -306,6 +341,17 @@ class NotebookProcessor:
         pipeline_parameters = []
         # Variables that will become pipeline metrics
         pipeline_metrics = []
+
+        # Tags whose cell absorbs the untagged cells that follow it, and the
+        # block each one appends to. A `step:` cell absorbs into the step
+        # itself, `skip` is transparent, and a `notebook:` reference absorbs
+        # nothing (it hands the cells forward instead).
+        merge_targets = {
+            "imports": imports_block,
+            "functions": functions_block,
+            "pipeline-parameters": pipeline_parameters,
+            "pipeline-metrics": pipeline_metrics,
+        }
 
         for c in self.notebook.cells:
             if c.cell_type != "code":
@@ -324,25 +370,39 @@ class NotebookProcessor:
             # get the step name from the tags
             step_name = tags["step_names"][0] if len(tags["step_names"]) > 0 else None
 
+            if tags["notebook_names"]:
+                # a reference cell holds no code of its own, and dropping it
+                # silently is how you lose work when a code cell is switched to
+                # the Notebook type. Comments are fine, the UI writes one.
+                if any(
+                    line.strip() and not line.strip().startswith("#")
+                    for line in c.source.splitlines()
+                ):
+                    raise ValueError(
+                        f"`notebook:{tags['notebook_names'][0]}` cell contains code."
+                        " A cell that references a notebook holds no code of its own."
+                        " Move the code to its own `step:` cell."
+                    )
+                # the reference breaks the merge chain
+                if pending_sources:
+                    raise ValueError(
+                        "Untagged code after a `notebook:` cell must be followed by"
+                        " a `step:` cell that owns it (found another `notebook:`"
+                        " cell first)."
+                    )
+                self._add_notebook_reference(tags["notebook_names"][0], tags.get("notebook_path"))
+                prev_step_name = None
+                awaiting_step = True
+                continue
+
             if step_name == "skip":
                 # when the cell is skipped, don't store `skip` as the previous
                 # active cell
                 continue
-            if step_name == "pipeline-parameters":
-                pipeline_parameters.append(c.source)
+            if step_name in merge_targets:
+                merge_targets[step_name].append(c.source)
                 prev_step_name = step_name
-                continue
-            if step_name == "imports":
-                imports_block.append(c.source)
-                prev_step_name = step_name
-                continue
-            if step_name == "functions":
-                functions_block.append(c.source)
-                prev_step_name = step_name
-                continue
-            if step_name == "pipeline-metrics":
-                pipeline_metrics.append(c.source)
-                prev_step_name = step_name
+                awaiting_step = False
                 continue
 
             # if none of the above apply, then we are parsing a code cell with
@@ -351,15 +411,12 @@ class NotebookProcessor:
             # if the cell was not tagged with a step name,
             # add the code to the previous cell
             if not step_name:
-                if prev_step_name == "imports":
-                    imports_block.append(c.source)
-                elif prev_step_name == "functions":
-                    functions_block.append(c.source)
-                elif prev_step_name == "pipeline-parameters":
-                    pipeline_parameters.append(c.source)
-                elif prev_step_name == "pipeline-metrics":
-                    pipeline_metrics.append(c.source)
-                # current_block might be None in case the first cells of the
+                if awaiting_step:
+                    # held for the next `step:` cell
+                    pending_sources.append(c.source)
+                elif prev_step_name in merge_targets:
+                    merge_targets[prev_step_name].append(c.source)
+                # prev_step_name might be None in case the first cells of the
                 # notebooks have not been tagged.
                 elif prev_step_name:
                     # this notebook cell will be merged to a previous one that
@@ -376,11 +433,12 @@ class NotebookProcessor:
                         " as a result of the pipeline execution"
                         " and not of single steps."
                     )
-                # add node to DAG, adding tags and source code of notebook cell
+                # add node to DAG, adding tags and source code of notebook cell,
+                # prepending any cells held since the last `notebook:` cell
                 if step_name not in self.pipeline.nodes:
                     step = Step(
                         name=step_name,
-                        source=[c.source],
+                        source=pending_sources + [c.source],
                         ins=[],
                         outs=[],
                         limits=tags.get("limits", {}),
@@ -401,13 +459,27 @@ class NotebookProcessor:
                             )
                         self.pipeline.add_edge(_prev_step, step_name)
                 else:
+                    for pending in pending_sources:
+                        self.pipeline.get_step(step_name).merge_code(pending)
                     self.pipeline.get_step(step_name).merge_code(c.source)
 
+                pending_sources = []
+                awaiting_step = False
                 prev_step_name = step_name
 
+        if pending_sources:
+            raise ValueError(
+                "Untagged code after a `notebook:` cell must be followed by a"
+                " `step:` cell that owns it (reached the end of the notebook)."
+            )
+
         # Prepend any `imports` and `functions` cells to every Pipeline step
+        shared_blocks = imports_block + functions_block
         for step in self.pipeline.steps:
-            step.source = imports_block + functions_block + step.source
+            step.source = shared_blocks + step.source
+        # a referencing notebook scans this notebook's steps for boundary
+        # variables, and these blocks belong to every step, not to its interface
+        self._shared_block_count = len(shared_blocks)
 
         # merge together pipeline parameters
         pipeline_parameters = "\n".join(pipeline_parameters)
@@ -416,6 +488,168 @@ class NotebookProcessor:
 
         imports_and_functions = "\n".join(imports_block + functions_block)
         return pipeline_parameters, pipeline_metrics, imports_and_functions
+
+    def link_composition_units(self):
+        """Infer the edges between the units of a composition.
+
+        A notebook that references others has no ``prev:`` tags to order its
+        units, so the edges are inferred here, before the graph is resolved:
+
+        - data flow: a unit that provides a variable another one is missing
+          becomes its ancestor. This is the detection Kale already runs between
+          cells, applied one level up.
+        - reading order: a ``step:`` cell of this notebook runs after every unit
+          above it and before every unit below it, so a notebook that mixes
+          steps and references runs the way it reads. Two references with
+          nothing between them get no edge, so independent notebooks still run
+          in parallel.
+
+        A notebook with no references keeps Kale's explicit ``prev:`` semantics
+        and is left untouched.
+        """
+        spine = [self.pipeline.get_step(name) for name in self.pipeline.nodes()]
+        if not any(isinstance(unit, SubPipeline) for unit in spine):
+            return
+
+        missing, provided = {}, {}
+        for unit in spine:
+            code = "\n".join(unit.source)
+            missing[unit.name] = set(flakeutils.pyflakes_report(code=code))
+            # a variable a unit consumes is not one it provides: the
+            # subtraction is what orients the edge
+            provided[unit.name] = set(astutils.get_marshal_candidates(code)) - missing[unit.name]
+
+        producers = {}
+        for unit in spine:
+            for var in provided[unit.name]:
+                producers.setdefault(var, []).append(unit.name)
+
+        for unit in spine:
+            for var in sorted(missing[unit.name]):
+                sources = [s for s in producers.get(var, []) if s != unit.name]
+                if not sources:
+                    continue
+                if len(sources) > 1:
+                    raise ValueError(
+                        f"'{unit.name}' consumes '{var}', but it is defined in multiple "
+                        f"notebooks/steps ({', '.join(sorted(sources))}). Rename it so a "
+                        f"single one produces the value."
+                    )
+                self.pipeline.add_edge(sources[0], unit.name)
+
+        for i, unit in enumerate(spine):
+            for other in spine[i + 1 :]:
+                if isinstance(unit, SubPipeline) and isinstance(other, SubPipeline):
+                    continue
+                self.pipeline.add_edge(unit.name, other.name)
+
+        if not nx.is_directed_acyclic_graph(self.pipeline):
+            raise ValueError(
+                "Cycle detected in the composition graph. Each cell must appear below "
+                "the cells that produce the variables it uses."
+            )
+
+    def propagate_subpipeline_boundaries(self):
+        """Push a referenced notebook's boundary variables onto its own steps.
+
+        Resolution marks the variables that cross into and out of a
+        :class:`~kale.step.SubPipeline`, but the artifacts are produced and
+        consumed by the steps inside it. This hands each variable to the step
+        that actually provides or needs it, so the component generator exposes
+        it exactly as it does for a variable crossing two cells.
+        """
+        for unit in self.pipeline.steps:
+            if not isinstance(unit, SubPipeline):
+                continue
+            inner = list(unit.pipeline.steps)
+            for var in unit.outs:
+                provider = None
+                for step in inner:
+                    code = "\n".join(step.source)
+                    missing = set(flakeutils.pyflakes_report(code=code))
+                    if var in set(astutils.get_marshal_candidates(code)) - missing:
+                        provider = step
+                if provider is None:
+                    raise ValueError(
+                        f"'{unit.name}' is expected to produce '{var}', but none of its "
+                        f"steps provides it. This is a bug in Kale's boundary detection."
+                    )
+                if var not in provider.outs:
+                    provider.outs.append(var)
+                unit.produced_by[var] = provider.name
+            for var in unit.ins:
+                consumers = [
+                    step
+                    for step in inner
+                    if var in flakeutils.pyflakes_report(code="\n".join(step.source))
+                ]
+                if not consumers:
+                    raise ValueError(
+                        f"'{unit.name}' is expected to consume '{var}', but none of its "
+                        f"steps requires it. This is a bug in Kale's boundary detection."
+                    )
+                for step in consumers:
+                    if var not in step.ins:
+                        step.ins.append(var)
+
+    def _add_notebook_reference(self, name: str, rel_path: str):
+        """Process a referenced notebook and attach it as a graph node.
+
+        The reference is compiled by a processor of its own, so a notebook is
+        parsed the same way whether it is compiled directly or composed. The
+        resulting :class:`~kale.step.SubPipeline` sits in the graph next to the
+        steps of this notebook, and its source is the referenced notebook's step
+        code, which is what dependency detection reads to resolve variables
+        across the boundary.
+        """
+        if not rel_path:
+            raise ValueError(
+                f"`notebook:{name}` cell is missing a 'notebook_path' in its cell metadata."
+            )
+        if len(self._referencing) > 1:
+            raise ValueError(
+                f"`notebook:{name}` is nested inside "
+                f"'{os.path.basename(self.nb_path)}', which is itself referenced by "
+                f"another notebook. Nested references are not supported yet: reference "
+                f"every notebook from the root notebook instead."
+            )
+        path = os.path.normpath(
+            os.path.join(os.path.dirname(os.path.abspath(self.nb_path)), rel_path)
+        )
+        if os.path.abspath(path) in self._referencing:
+            chain = " -> ".join(os.path.basename(p) for p in self._referencing)
+            raise ValueError(
+                f"`notebook:{name}` creates a reference cycle ({chain} -> "
+                f"{os.path.basename(path)}). A notebook cannot reference itself, "
+                f"directly or through another notebook."
+            )
+
+        processor = NotebookProcessor(
+            path,
+            {
+                "pipeline_name": name.replace("_", "-"),
+                "experiment_name": self.pipeline.config.experiment_name,
+            },
+            _referencing=self._referencing,
+        )
+        pipeline = processor.run()
+        self.pipeline.add_step(
+            SubPipeline(
+                pipeline=pipeline,
+                notebook_path=path,
+                # only what runs as a step, minus the blocks every step
+                # shares: neither untagged cells nor imports are values this
+                # notebook offers across the boundary
+                source=[
+                    "\n".join(
+                        "\n".join(s.source[processor._shared_block_count :]) for s in pipeline.steps
+                    )
+                ],
+                imports_and_functions=processor.get_imports_and_functions(),
+                name=name,
+                base_image=pipeline.config.base_image,
+            )
+        )
 
     def parse_cell_metadata(self, metadata):
         """Parse a notebook's cell's metadata field.
@@ -435,6 +669,8 @@ class NotebookProcessor:
         # more than one Pipeline step.
         parsed_tags["step_names"] = []
         parsed_tags["prev_steps"] = []
+        # names of notebooks referenced by `notebook:` cells (sub-pipelines)
+        parsed_tags["notebook_names"] = []
         # define intermediate variables so that dicts are not added to a steps
         # when they are empty
         cell_annotations = {}
@@ -507,6 +743,12 @@ class NotebookProcessor:
                 # Report value is 'enabled' or 'disabled'
                 report_value = tag_parts.pop(0)
                 cell_generate_html_report = report_value == REPORT_ENABLED
+
+            # name of the referenced notebook, compiled as a sub-pipeline. Its
+            # path comes from the cell metadata, not from the tag.
+            if tag_name == "notebook":
+                parsed_tags["notebook_names"].append(tag_parts.pop(0))
+                parsed_tags["notebook_path"] = metadata.get("notebook_path")
 
             # name of the future Pipeline step
             if tag_name in ["step"]:
@@ -717,18 +959,43 @@ class NotebookProcessor:
             metrics_left.difference_update(assigned_metrics)
             # Generate code to produce the metrics artifact in the current step
             if assigned_metrics:
-                code = METRICS_TEMPLATE % (
-                    "    "
-                    + ",\n    ".join(
-                        [f'"{rev_pipeline_metrics[x]}": {x}' for x in sorted(assigned_metrics)]
+                for target, names in self._metrics_targets(anc_step, assigned_metrics).items():
+                    code = METRICS_TEMPLATE % (
+                        "    "
+                        + ",\n    ".join(
+                            [f'"{rev_pipeline_metrics[x]}": {x}' for x in sorted(names)]
+                        )
                     )
-                )
-                anc_step.source.append(code)
-                # need to have a `metrics` flag set to true in order to set the
-                # metrics output artifact in the pipeline template
+                    target.source.append(code)
+                    # need to have a `metrics` flag set to true in order to set
+                    # the metrics output artifact in the pipeline template
+                    target.metrics = True
                 anc_step.metrics = True
 
         self.pipeline.remove_node(tmp_step_name)
+
+    @staticmethod
+    def _metrics_targets(step: Step, metrics: set) -> dict:
+        """Map each step that reports a metric to the metrics it reports.
+
+        A :class:`~kale.step.SubPipeline` emits no component of its own, so a
+        metric it provides is reported by the step inside it that computes the
+        value. Later steps win, matching the reverse topological order the
+        caller walks the graph in.
+        """
+        if not isinstance(step, SubPipeline):
+            return {step: set(metrics)}
+
+        provider = {}
+        for inner in step.pipeline.steps:
+            provided = set(astutils.get_marshal_candidates("\n".join(inner.source)))
+            for name in provided & set(metrics):
+                provider[name] = inner
+
+        targets = {}
+        for name, inner in provider.items():
+            targets.setdefault(inner, set()).add(name)
+        return targets
 
     def _ensure_fns_free_variables(self, anc_step, anc_source: str, imports_and_functions: str):
         """Lazily compute ancestor functions' free vars if missing."""
@@ -873,6 +1140,10 @@ class NotebookProcessor:
                 # get all the marshal candidates from father's source and
                 # intersect with the required names of the current node
                 marshal_candidates = astutils.get_marshal_candidates(anc_source)
+                if isinstance(anc_step, SubPipeline):
+                    # a notebook offers what its steps define, not every name
+                    # they mention: one it is missing too is not one it can give
+                    marshal_candidates -= set(flakeutils.pyflakes_report(code=anc_source))
                 outs = ins_left.intersection(marshal_candidates)
                 for out_name in outs:
                     # Heuristic for type inference:

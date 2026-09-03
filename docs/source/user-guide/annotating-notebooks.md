@@ -95,6 +95,21 @@ Pipeline-level Kale settings live on the notebook (not on a cell) under the
 `metadata.kubeflow_notebook` key — these are the same fields the side panel
 exposes.
 
+### Runtime images
+
+The `runtimeImages` setting controls the container images available in the
+**Base Image** selector when configuring a pipeline step. The list can be
+customized in **JupyterLab Settings → Kale → Runtime images**.
+
+The default list includes:
+
+- `python:3.12`
+- `pytorch/pytorch:2.0`
+- `tensorflow/tensorflow:latest`
+
+Users can add, remove, or reorder images in the JupyterLab settings. Custom
+images can also be entered directly in the Base Image field.
+
 ## Output artifacts
 
 Kale passes a variable from one step to the next only when a later step
