@@ -68,4 +68,40 @@ export const EMPTY_FORM: IAddFormState = {
 export interface INotebookVolume {
   name: string;
   mount_point: string;
+  access_modes?: string[];
 }
+
+export interface IPvcInfo {
+  name: string;
+  access_modes: string[];
+}
+
+/** Format access modes for display (e.g., "RWO" for ReadWriteOnce). */
+export function formatAccessModes(modes: string[] | undefined): string {
+  if (!modes || modes.length === 0) {
+    return '';
+  }
+  const abbrevMap: Record<string, string> = {
+    ReadWriteOnce: 'RWO',
+    ReadOnlyMany: 'ROX',
+    ReadWriteMany: 'RWX',
+    ReadWriteOncePod: 'RWOP',
+  };
+  return modes.map(m => abbrevMap[m] || m).join(', ');
+}
+
+/**
+ * Check if access modes indicate a restricted volume (RWO or RWOP).
+ * - ReadWriteOnce (RWO): can only be mounted by pods on the same node
+ * - ReadWriteOncePod (RWOP): can only be mounted by a single pod
+ * Both can cause issues when pipeline steps run in parallel.
+ */
+export function isRestrictedAccessMode(modes: string[] | undefined): boolean {
+  if (!modes || modes.length === 0) {
+    return false;
+  }
+  return modes.some(m => m === 'ReadWriteOnce' || m === 'ReadWriteOncePod');
+}
+
+/** @deprecated Use isRestrictedAccessMode instead */
+export const isReadWriteOnce = isRestrictedAccessMode;

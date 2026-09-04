@@ -160,12 +160,17 @@ class Compiler:
             seen[env_name] = vol.name
 
     def _warn_rwo_volumes(self):
-        """Emit a warning at compile time for any RWO PVC volumes.
+        """Emit a warning at compile time for any RWO/RWOP PVC volumes.
 
-        RWO volumes can only be mounted on one node at a time.  If pipeline
-        steps are scheduled on different nodes they will fail to mount.  We
-        check at compile time (where we have cluster access) so the warning
-        appears immediately in the Kale output rather than buried in pod logs.
+        RWO (ReadWriteOnce) and RWOP (ReadWriteOncePod) volumes have mounting
+        restrictions that can cause pipeline failures:
+        - RWO: can only be mounted on one node at a time
+        - RWOP: can only be mounted by one pod at a time
+
+        If pipeline steps are scheduled on different nodes (RWO) or run in
+        parallel (RWOP), they will fail to mount. We check at compile time
+        (where we have cluster access) so the warning appears immediately in
+        the Kale output rather than buried in pod logs.
         """
         pvc_volumes = [
             v for v in self.pipeline.config.volumes or [] if getattr(v, "type", None) == "pvc"
@@ -176,17 +181,22 @@ class Compiler:
             namespace = podutils.get_namespace()
         except Exception:
             return
+
+        rwo_modes = {"ReadWriteOnce", "ReadWriteOncePod"}
         for vol in pvc_volumes:
             try:
                 modes = k8sutils.get_pvc_access_modes(vol.name, namespace)
             except Exception:
                 continue
-            if "ReadWriteOnce" in modes:
+            problematic = rwo_modes.intersection(modes)
+            if problematic:
+                mode_str = ", ".join(sorted(problematic))
                 log.warning(
-                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
-                    "If pipeline steps run on different nodes, concurrent "
-                    "mounts will fail.",
+                    "[KALE WARNING] PVC '%s' has accessMode %s. "
+                    "If pipeline steps run on different nodes or in parallel, "
+                    "concurrent mounts may fail.",
                     vol.name,
+                    mode_str,
                 )
 
     def run(self):
