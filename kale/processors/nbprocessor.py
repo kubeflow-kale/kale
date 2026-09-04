@@ -29,81 +29,40 @@ import networkx as nx
 from kale.common import astutils, flakeutils, graphutils, kfutils, utils
 from kale.config import Field
 from kale.pipeline import Pipeline, PipelineConfig
+from kale.processors.constants import (
+    ANNOTATIONS,
+    BASE_IMAGE,
+    CACHE_ENABLED,
+    CELL_METADATA_TAGS,
+    CELL_TYPE_CODE,
+    DEFAULT_ARTIFACT_TYPE,
+    DEFAULT_VARIABLE_TYPE,
+    ENABLE_CACHING,
+    FNS_FREE_VARIABLES,
+    FUNCTIONS_TAG,
+    GENERATE_HTML_REPORT,
+    IMPORT_TAG,
+    KALE_NB_METADATA_KEY,
+    KFP_ARTIFACT_TYPE_MAP,
+    LABELS,
+    LIMITS,
+    METRICS_TEMPLATE,
+    NOTEBOOK_NAMES,
+    NOTEBOOK_PATH,
+    PARAMETERS,
+    PIPELINE_METRICS_TAG,
+    PIPELINE_PARAMETERS_TAG,
+    PREV_STEPS,
+    REPORT_ENABLED,
+    STEP_NAMES,
+    STEPS_DEFAULTS,
+    STEPS_DEFAULTS_LANGUAGE,
+    TAG_SEPARATOR,
+    TAGS_LANGUAGE,
+)
 from kale.step import PipelineParam, Step, SubPipeline
 
 log = logging.getLogger(__name__)
-
-# fixme: Change the name of this key to `kale_metadata`
-KALE_NB_METADATA_KEY = "kubeflow_notebook"
-
-SKIP_TAG = r"^skip$"
-IMPORT_TAG = r"^imports$"
-FUNCTIONS_TAG = r"^functions$"
-PREV_TAG = r"^prev:[_a-z]([_a-z0-9]*)?$"
-STEP_TAG = r"^step:([_a-z]([_a-z0-9]*)?)?$"
-# A `notebook:<name>` cell references another notebook as a sub-pipeline. The
-# referenced path is carried in the cell metadata (`notebook_path`), not the tag.
-NOTEBOOK_TAG = r"^notebook:([_a-z]([_a-z0-9]*)?)?$"
-PIPELINE_PARAMETERS_TAG = r"^pipeline-parameters$"
-PIPELINE_METRICS_TAG = r"^pipeline-metrics$"
-# Annotations map to actual pod annotations that can be set via KFP SDK
-_segment = "[a-zA-Z0-9]+([a-zA-Z0-9-_.]*[a-zA-Z0-9])?"
-K8S_ANNOTATION_KEY = f"{_segment}([/]{_segment})?"
-ANNOTATION_TAG = rf"^annotation:{K8S_ANNOTATION_KEY}:(.*)$"
-LABEL_TAG = rf"^label:{K8S_ANNOTATION_KEY}:(.*)$"
-# Limits map to K8s limits, like CPU, Mem, GPU, ...
-# E.g.: limit:nvidia.com/gpu:2
-LIMITS_TAG = r"^limit:([_a-z-\.\/]+):([_a-zA-Z0-9\.]+)$"
-# Image tag for per-step Base image selection
-# E.g.: image:python:3.11-slim
-IMAGE_TAG = r"^image:(.+)$"
-# Cache tag for per-step caching control
-# E.g.: cache:enabled or cache:disabled
-CACHE_ENABLED = "enabled"
-CACHE_DISABLED = "disabled"
-CACHE_TAG = rf"^cache:({CACHE_ENABLED}|{CACHE_DISABLED})$"
-# Report tag for per-step HTML report generation control
-# E.g.: report:enabled or report:disabled
-REPORT_ENABLED = "enabled"
-REPORT_DISABLED = "disabled"
-REPORT_TAG = rf"^report:({REPORT_ENABLED}|{REPORT_DISABLED})$"
-
-_TAGS_LANGUAGE = [
-    SKIP_TAG,
-    IMPORT_TAG,
-    FUNCTIONS_TAG,
-    PREV_TAG,
-    STEP_TAG,
-    NOTEBOOK_TAG,
-    PIPELINE_PARAMETERS_TAG,
-    PIPELINE_METRICS_TAG,
-    ANNOTATION_TAG,
-    LABEL_TAG,
-    LIMITS_TAG,
-    IMAGE_TAG,
-    CACHE_TAG,
-    REPORT_TAG,
-]
-# These tags are applied to every step of the pipeline
-_STEPS_DEFAULTS_LANGUAGE = [ANNOTATION_TAG, LABEL_TAG, LIMITS_TAG, IMAGE_TAG, CACHE_TAG, REPORT_TAG]
-
-
-METRICS_TEMPLATE = """\
-from kale.common import kfputils as _kale_kfputils
-_kale_kfp_metrics = {
-%s
-}
-_kale_kfputils.generate_mlpipeline_metrics(_kale_kfp_metrics)\
-"""
-
-KFP_ARTIFACT_TYPE_MAP = {
-    "model": "Model",  # if "model" in var_name.lower()-> kfp.dsl.Model
-    "dataset": "Dataset",  # if "dataset" in var_name.lower()-> kfp.dsl.Dataset
-    "data": "Dataset",  # if "data" in var_name.lower()-> kfp.dsl.Dataset
-    "metrics": "Metrics",  # if "metrics" in var_name.lower()-> kfp.dsl.Metrics
-    "classification": "ClassificationMetrics",
-    r"a-zA-Z0-9_": "Artifact",  # default for any other variable
-}
 
 
 def get_annotation_or_label_from_tag(tag_parts):
@@ -153,7 +112,7 @@ class NotebookConfig(PipelineConfig):
         return self.notebook_path
 
     def _preprocess(self, kwargs):
-        kwargs["steps_defaults"] = self._parse_steps_defaults(kwargs.get("steps_defaults"))
+        kwargs[STEPS_DEFAULTS] = self._parse_steps_defaults(kwargs.get(STEPS_DEFAULTS))
 
     def _parse_steps_defaults(self, steps_defaults):
         """Parse common step configuration defined in the metadata."""
@@ -163,10 +122,10 @@ class NotebookConfig(PipelineConfig):
             return steps_defaults
 
         for c in steps_defaults:
-            if any(re.match(_c, c) for _c in _STEPS_DEFAULTS_LANGUAGE) is False:
+            if any(re.match(_c, c) for _c in STEPS_DEFAULTS_LANGUAGE) is False:
                 raise ValueError(f"Unrecognized common step configuration: {c}")
 
-            parts = c.split(":")
+            parts = c.split(TAG_SEPARATOR)
 
             conf_type = parts.pop(0)
             if conf_type in ["annotation", "label"]:
@@ -177,24 +136,24 @@ class NotebookConfig(PipelineConfig):
                 result[result_key][key] = value
 
             if conf_type == "limit":
-                if "limits" not in result:
-                    result["limits"] = {}
+                if LIMITS not in result:
+                    result[LIMITS] = {}
                 key, value = get_limit_from_tag(parts)
-                result["limits"][key] = value
+                result[LIMITS][key] = value
 
             if conf_type == "image":
                 # Image tag value is the rest after 'image:'
-                result["base_image"] = ":".join(parts)
+                result[BASE_IMAGE] = TAG_SEPARATOR.join(parts)
 
             if conf_type == "cache":
                 # Cache value is 'enabled' or 'disabled'
                 cache_value = parts.pop(0)
-                result["enable_caching"] = cache_value == CACHE_ENABLED
+                result[ENABLE_CACHING] = cache_value == CACHE_ENABLED
 
             if conf_type == "report":
                 # Report value is 'enabled' or 'disabled'
                 report_value = parts.pop(0)
-                result["generate_html_report"] = report_value == REPORT_ENABLED
+                result[GENERATE_HTML_REPORT] = report_value == REPORT_ENABLED
         return result
 
 
@@ -236,7 +195,7 @@ class NotebookProcessor:
         self.notebook = self._read_notebook()
 
         nb_metadata = self.notebook.metadata.get(KALE_NB_METADATA_KEY, {})
-        nb_metadata.update({"notebook_path": nb_path})
+        nb_metadata.update({NOTEBOOK_PATH: nb_path})
         if nb_metadata_overrides:
             nb_metadata.update(nb_metadata_overrides)
 
@@ -271,8 +230,8 @@ class NotebookProcessor:
             _pod_defaults_labels = kfutils.find_poddefault_labels()
         except Exception as e:
             log.warning("Could not retrieve PodDefaults. Reason: %s", e)
-        self.pipeline.config.steps_defaults["labels"] = {
-            **self.pipeline.config.steps_defaults.get("labels", {}),
+        self.pipeline.config.steps_defaults[LABELS] = {
+            **self.pipeline.config.steps_defaults.get(LABELS, {}),
             **_pod_defaults_labels,
         }
 
@@ -354,23 +313,23 @@ class NotebookProcessor:
         }
 
         for c in self.notebook.cells:
-            if c.cell_type != "code":
+            if c.cell_type != CELL_TYPE_CODE:
                 continue
 
             tags = self.parse_cell_metadata(c.metadata)
 
-            if len(tags["step_names"]) > 1:
+            if len(tags[STEP_NAMES]) > 1:
                 raise NotImplementedError(
                     "Kale does not yet support multiple"
                     " step names in a single notebook"
                     " cell. One notebook cell was found"
-                    " with {}  step names".format(tags["step_names"])
+                    f" with {tags[STEP_NAMES]}  step names"
                 )
 
             # get the step name from the tags
-            step_name = tags["step_names"][0] if len(tags["step_names"]) > 0 else None
+            step_name = tags[STEP_NAMES][0] if len(tags[STEP_NAMES]) > 0 else None
 
-            if tags["notebook_names"]:
+            if tags[NOTEBOOK_NAMES]:
                 # a reference cell holds no code of its own, and dropping it
                 # silently is how you lose work when a code cell is switched to
                 # the Notebook type. Comments are fine, the UI writes one.
@@ -390,7 +349,7 @@ class NotebookProcessor:
                         " a `step:` cell that owns it (found another `notebook:`"
                         " cell first)."
                     )
-                self._add_notebook_reference(tags["notebook_names"][0], tags.get("notebook_path"))
+                self._add_notebook_reference(tags[NOTEBOOK_NAMES][0], tags.get(NOTEBOOK_PATH))
                 prev_step_name = None
                 awaiting_step = True
                 continue
@@ -441,21 +400,19 @@ class NotebookProcessor:
                         source=pending_sources + [c.source],
                         ins=[],
                         outs=[],
-                        limits=tags.get("limits", {}),
-                        labels=tags.get("labels", {}),
-                        annotations=tags.get("annotations", {}),
-                        base_image=tags.get("base_image", ""),
-                        enable_caching=tags.get("enable_caching"),
-                        generate_html_report=tags.get("generate_html_report"),
+                        limits=tags.get(LIMITS, {}),
+                        labels=tags.get(LABELS, {}),
+                        annotations=tags.get(ANNOTATIONS, {}),
+                        base_image=tags.get(BASE_IMAGE, ""),
+                        enable_caching=tags.get(ENABLE_CACHING),
+                        generate_html_report=tags.get(GENERATE_HTML_REPORT),
                     )
                     self.pipeline.add_step(step)
-                    for _prev_step in tags["prev_steps"]:
+                    for _prev_step in tags[PREV_STEPS]:
                         if _prev_step not in self.pipeline.nodes:
                             raise ValueError(
-                                "Step {} does not exist. It was "
-                                "defined as previous step of {}".format(
-                                    _prev_step, tags["step_names"]
-                                )
+                                f"Step {_prev_step} does not exist. It was "
+                                f"defined as previous step of {tags[STEP_NAMES]}"
                             )
                         self.pipeline.add_edge(_prev_step, step_name)
                 else:
@@ -655,7 +612,7 @@ class NotebookProcessor:
         """Parse a notebook's cell's metadata field.
 
         The Kale UI writes specific tags inside the 'tags' field, as a list
-        of string tags. Supported tags are defined by _TAGS_LANGUAGE.
+        of string tags. Supported tags are defined by TAGS_LANGUAGE.
 
         Args:
             metadata (dict): a dict containing a notebook's cell's metadata
@@ -667,10 +624,10 @@ class NotebookProcessor:
 
         # `step_names` is a list because a notebook cell might be assigned to
         # more than one Pipeline step.
-        parsed_tags["step_names"] = []
-        parsed_tags["prev_steps"] = []
+        parsed_tags[STEP_NAMES] = []
+        parsed_tags[PREV_STEPS] = []
         # names of notebooks referenced by `notebook:` cells (sub-pipelines)
-        parsed_tags["notebook_names"] = []
+        parsed_tags[NOTEBOOK_NAMES] = []
         # define intermediate variables so that dicts are not added to a steps
         # when they are empty
         cell_annotations = {}
@@ -681,14 +638,14 @@ class NotebookProcessor:
         cell_generate_html_report = None
 
         # the notebook cell was not tagged
-        if "tags" not in metadata or len(metadata["tags"]) == 0:
+        if CELL_METADATA_TAGS not in metadata or len(metadata[CELL_METADATA_TAGS]) == 0:
             return parsed_tags
 
-        for t in metadata["tags"]:
+        for t in metadata[CELL_METADATA_TAGS]:
             if not isinstance(t, str):
                 raise ValueError(f"Tags must be string. Found tag {t} of type {type(t)}")
             # Check that the tag is defined by the Kale tagging language
-            if any(re.match(_t, t) for _t in _TAGS_LANGUAGE) is False:
+            if any(re.match(_t, t) for _t in TAGS_LANGUAGE) is False:
                 raise ValueError(f"Unrecognized tag: {t}")
 
             # Special tags have a specific effect on the cell they belong to.
@@ -711,11 +668,11 @@ class NotebookProcessor:
                 "functions",
             ]
             if t in special_tags:
-                parsed_tags["step_names"] = [t]
+                parsed_tags[STEP_NAMES] = [t]
                 return parsed_tags
 
             # now only `step` and `prev` tags remain to be parsed.
-            tag_parts = t.split(":")
+            tag_parts = t.split(TAG_SEPARATOR)
             tag_name = tag_parts.pop(0)
 
             if tag_name == "annotation":
@@ -732,7 +689,7 @@ class NotebookProcessor:
 
             if tag_name == "image":
                 # Image value is the rest after 'image:'
-                cell_base_image = ":".join(tag_parts)
+                cell_base_image = TAG_SEPARATOR.join(tag_parts)
 
             if tag_name == "cache":
                 # Cache value is 'enabled' or 'disabled'
@@ -747,38 +704,38 @@ class NotebookProcessor:
             # name of the referenced notebook, compiled as a sub-pipeline. Its
             # path comes from the cell metadata, not from the tag.
             if tag_name == "notebook":
-                parsed_tags["notebook_names"].append(tag_parts.pop(0))
-                parsed_tags["notebook_path"] = metadata.get("notebook_path")
+                parsed_tags[NOTEBOOK_NAMES].append(tag_parts.pop(0))
+                parsed_tags[NOTEBOOK_PATH] = metadata.get(NOTEBOOK_PATH)
 
             # name of the future Pipeline step
             if tag_name in ["step"]:
                 step_name = tag_parts.pop(0)
-                parsed_tags["step_names"].append(step_name)
+                parsed_tags[STEP_NAMES].append(step_name)
             # name(s) of the father Pipeline step(s)
             if tag_name == "prev":
                 prev_step_name = tag_parts.pop(0)
-                parsed_tags["prev_steps"].append(prev_step_name)
+                parsed_tags[PREV_STEPS].append(prev_step_name)
 
-        if not parsed_tags["step_names"] and parsed_tags["prev_steps"]:
+        if not parsed_tags[STEP_NAMES] and parsed_tags[PREV_STEPS]:
             raise ValueError(
                 "A cell can not provide `prev` annotations without "
                 "providing a `step` annotation as well"
             )
-        missing_step_names = not parsed_tags["step_names"]
+        missing_step_names = not parsed_tags[STEP_NAMES]
         if cell_annotations:
             if missing_step_names:
                 raise ValueError(
                     "A cell can not provide Pod annotations in a cell"
                     " that does not declare a step name."
                 )
-            parsed_tags["annotations"] = cell_annotations
+            parsed_tags[ANNOTATIONS] = cell_annotations
 
         if cell_labels:
             if missing_step_names:
                 raise ValueError(
                     "A cell can not provide Pod labels in a cell that does not declare a step name."
                 )
-            parsed_tags["labels"] = cell_labels
+            parsed_tags[LABELS] = cell_labels
 
         if cell_limits:
             if missing_step_names:
@@ -786,7 +743,7 @@ class NotebookProcessor:
                     "A cell can not provide Pod resource limits in a"
                     " cell that does not declare a step name."
                 )
-            parsed_tags["limits"] = cell_limits
+            parsed_tags[LIMITS] = cell_limits
 
         if cell_base_image:
             if missing_step_names:
@@ -794,7 +751,7 @@ class NotebookProcessor:
                     "A cell can not provide a base image in a"
                     " cell that does not declare a step name."
                 )
-            parsed_tags["base_image"] = cell_base_image
+            parsed_tags[BASE_IMAGE] = cell_base_image
 
         if cell_enable_caching is not None:
             if missing_step_names:
@@ -802,7 +759,7 @@ class NotebookProcessor:
                     "A cell can not provide caching control in a"
                     " cell that does not declare a step name."
                 )
-            parsed_tags["enable_caching"] = cell_enable_caching
+            parsed_tags[ENABLE_CACHING] = cell_enable_caching
 
         if cell_generate_html_report is not None:
             if missing_step_names:
@@ -810,7 +767,7 @@ class NotebookProcessor:
                     "A cell can not provide HTML report control in a"
                     " cell that does not declare a step name."
                 )
-            parsed_tags["generate_html_report"] = cell_generate_html_report
+            parsed_tags[GENERATE_HTML_REPORT] = cell_generate_html_report
         return parsed_tags
 
     def get_pipeline_parameters_source(self):
@@ -828,19 +785,19 @@ class NotebookProcessor:
         # check that the pipeline metrics tag is only assigned to cells at
         # the end of the notebook
         detected = False
-        tags = _TAGS_LANGUAGE[:]
+        tags = TAGS_LANGUAGE[:]
         tags.remove(PIPELINE_METRICS_TAG)
 
         for c in self.notebook.cells:
             # parse only source code cells
-            if c.cell_type != "code":
+            if c.cell_type != CELL_TYPE_CODE:
                 continue
 
             # if we see a pipeline-metrics tag, set the flag
             if (
-                "tags" in c.metadata
-                and len(c.metadata["tags"]) > 0
-                and any(re.match(PIPELINE_METRICS_TAG, t) for t in c.metadata["tags"])
+                CELL_METADATA_TAGS in c.metadata
+                and len(c.metadata[CELL_METADATA_TAGS]) > 0
+                and any(re.match(PIPELINE_METRICS_TAG, t) for t in c.metadata[CELL_METADATA_TAGS])
             ):
                 detected = True
                 continue
@@ -849,9 +806,11 @@ class NotebookProcessor:
             # language, then raise error
             if (
                 detected
-                and "tags" in c.metadata
-                and len(c.metadata["tags"]) > 0
-                and any(any(re.match(tag, t) for t in c.metadata["tags"]) for tag in tags)
+                and CELL_METADATA_TAGS in c.metadata
+                and len(c.metadata[CELL_METADATA_TAGS]) > 0
+                and any(
+                    any(re.match(tag, t) for t in c.metadata[CELL_METADATA_TAGS]) for tag in tags
+                )
             ):
                 raise ValueError(
                     "Tag pipeline-metrics tag must be placed on a "
@@ -889,24 +848,27 @@ class NotebookProcessor:
         detected = False
         source = ""
 
-        language = _TAGS_LANGUAGE[:]
+        language = TAGS_LANGUAGE[:]
         language.remove(search_tag)
 
         for c in self.notebook.cells:
             # parse only source code cells
-            if c.cell_type != "code":
+            if c.cell_type != CELL_TYPE_CODE:
                 continue
             # in case the previous cell was a `search_tag` cell and this
             # cell is not any other tag of the tag language:
             if detected and (
-                ("tags" not in c.metadata or len(c.metadata["tags"]) == 0)
-                or all(not any(re.match(tag, t) for t in c.metadata["tags"]) for tag in language)
+                (CELL_METADATA_TAGS not in c.metadata or len(c.metadata[CELL_METADATA_TAGS]) == 0)
+                or all(
+                    not any(re.match(tag, t) for t in c.metadata[CELL_METADATA_TAGS])
+                    for tag in language
+                )
             ):
                 source += "\n" + c.source
             elif (
-                "tags" in c.metadata
-                and len(c.metadata["tags"]) > 0
-                and any(re.match(search_tag, t) for t in c.metadata["tags"])
+                CELL_METADATA_TAGS in c.metadata
+                and len(c.metadata[CELL_METADATA_TAGS]) > 0
+                and any(re.match(search_tag, t) for t in c.metadata[CELL_METADATA_TAGS])
             ):
                 source += "\n" + c.source
                 detected = True
@@ -999,7 +961,7 @@ class NotebookProcessor:
 
     def _ensure_fns_free_variables(self, anc_step, anc_source: str, imports_and_functions: str):
         """Lazily compute ancestor functions' free vars if missing."""
-        if not getattr(anc_step, "fns_free_variables", None):
+        if not getattr(anc_step, FNS_FREE_VARIABLES, None):
             anc_step.fns_free_variables = self._detect_fns_free_variables(
                 anc_source, imports_and_functions, self.pipeline.pipeline_parameters
             )
@@ -1013,7 +975,7 @@ class NotebookProcessor:
         Additionally, propagate transitive free variables via earlier ancestors
         of anc_step.
         """
-        anc_fns_free_vars = getattr(anc_step, "fns_free_variables", {})
+        anc_fns_free_vars = getattr(anc_step, FNS_FREE_VARIABLES, {})
         if fn_name not in anc_fns_free_vars:
             return
         fn_free_vars, _ = anc_fns_free_vars[fn_name]
@@ -1038,7 +1000,7 @@ class NotebookProcessor:
             ea_source = "\n".join(ea_step.source)
             # Ensure their fns_free_variables are computed
             self._ensure_fns_free_variables(ea_step, ea_source, self.get_imports_and_functions())
-            ea_fns_free_vars = getattr(ea_step, "fns_free_variables", {})
+            ea_fns_free_vars = getattr(ea_step, FNS_FREE_VARIABLES, {})
             # We iterate over a snapshot of aggregated to allow growth
             # during the loop
             to_check = list(aggregated)
@@ -1058,7 +1020,7 @@ class NotebookProcessor:
         for fv_name in aggregated:
             if fv_name not in step.ins:
                 step.ins.append(fv_name)
-            inferred_type = "str"
+            inferred_type = DEFAULT_VARIABLE_TYPE
             is_artifact = False
             for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
                 if key in fv_name.lower():
@@ -1147,7 +1109,7 @@ class NotebookProcessor:
                 outs = ins_left.intersection(marshal_candidates)
                 for out_name in outs:
                     # Heuristic for type inference:
-                    inferred_type = "str"  # Default
+                    inferred_type = DEFAULT_VARIABLE_TYPE  # Default
                     is_artifact = False
                     for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
                         if key in out_name.lower():
@@ -1188,10 +1150,10 @@ class NotebookProcessor:
                     # Propagate pipeline parameters from the ancestor step
                     # whenever we call a function it provides (directly or via
                     # marshal candidates).
-                    if getattr(anc_step, "parameters", None) and (
+                    if getattr(anc_step, PARAMETERS, None) and (
                         fn_call in anc_fns_free_vars or fn_call in marshal_candidates
                     ):
-                        if not hasattr(step, "parameters") or step.parameters is None:
+                        if not hasattr(step, PARAMETERS) or step.parameters is None:
                             step.parameters = {}
                         for _pname, _pval in anc_step.parameters.items():
                             if _pname not in step.parameters:
@@ -1214,7 +1176,7 @@ class NotebookProcessor:
                 and trailing_var in astutils.get_marshal_candidates(step_source)
                 and trailing_var not in self.pipeline.pipeline_parameters
             ):
-                inferred_type = "Artifact"
+                inferred_type = DEFAULT_ARTIFACT_TYPE
                 for key, kfp_type in KFP_ARTIFACT_TYPE_MAP.items():
                     if key in trailing_var.lower():
                         inferred_type = kfp_type
