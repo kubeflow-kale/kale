@@ -15,6 +15,7 @@
 import { CodeCellModel } from '@jupyterlab/cells';
 import { NotebookPanel } from '@jupyterlab/notebook';
 
+import CellUtils from '../CellUtils';
 import TagsUtils from '../TagsUtils';
 import {
   CELL_TYPES,
@@ -86,5 +87,23 @@ describe('KALE_TAG_PREFIXES', () => {
         ),
     );
     expect(uncovered).toEqual([]);
+  });
+});
+
+describe('CellUtils.deleteCellMetaData', () => {
+  it('does nothing when the notebook or the cell is not there', () => {
+    const cell = referenceCell();
+    const notebook = notebookWith([cell]);
+
+    expect(() => {
+      CellUtils.deleteCellMetaData(notebook, 5, 'notebook_path');
+      CellUtils.deleteCellMetaData(notebook, -1, 'notebook_path');
+      CellUtils.deleteCellMetaData(
+        null as unknown as NotebookPanel,
+        0,
+        'notebook_path',
+      );
+    }).not.toThrow();
+    expect(cell.getMetadata('notebook_path')).toBeDefined();
   });
 });
