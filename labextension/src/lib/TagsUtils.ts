@@ -272,7 +272,23 @@ export default class TagsUtils {
       );
     }
 
-    return CellUtils.setCellMetaData(notebookPanel, index, 'tags', tags);
+    // Keep the tags this editor does not manage (e.g. `annotation:`, `label:`
+    // or tags from other tools), as `removeAllKaleTags` does: the write below
+    // replaces the cell's whole tag list.
+    const currentTags: string[] =
+      CellUtils.getCellMetaData(notebookPanel.content, index, 'tags') || [];
+    const otherTags = currentTags.filter(
+      tag =>
+        !KALE_TAG_PREFIXES.some(prefix => tag.startsWith(prefix)) &&
+        !tag.startsWith(NOTEBOOK_PREFIX),
+    );
+
+    return CellUtils.setCellMetaData(
+      notebookPanel,
+      index,
+      'tags',
+      tags.concat(otherTags),
+    );
   }
 
   /**
