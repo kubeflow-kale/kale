@@ -202,18 +202,41 @@ export default class TagsUtils {
   }
 
   /**
-   * Set the provided Kale metadata into the specified notebook cell
+   * Set the provided Kale metadata into the specified notebook cell.
+   *
+   * This works in two phases:
+   * 1. For a notebook reference, store the referenced notebook's path in the
+   *    cell metadata (`notebook_path`).
+   * 2. Rebuild the cell's Kale tags from `metadata` and write them to the
+   *    cell's `tags`.
+   *
+   * Tags the Kale editor does not manage (e.g. `annotation:`, `label:` or
+   * tags from other tools) are kept on the cell.
    * @param notebookPanel NotebookPanel object
    * @param index index of the target cell
    * @param metadata Kale metadata
-   * @param save True to save the notebook after the operation
    */
   public static setKaleCellTags(
     notebookPanel: NotebookPanel,
     index: number,
     metadata: IKaleCellTags
   ): Promise<any> {
-    // make the dict to save to tags
+    // Phase 1: a notebook reference carries its target's path in the cell
+    // metadata (`notebook_path`), which the backend resolves relative to this
+    // notebook.
+    if (
+      metadata.stepName.startsWith(NOTEBOOK_PREFIX) &&
+      metadata.notebookPath !== undefined
+    ) {
+      CellUtils.setCellMetaData(
+        notebookPanel,
+        index,
+        'notebook_path',
+        metadata.notebookPath,
+      );
+    }
+
+    // Phase 2: rebuild the Kale tags and write them to the cell.
     let nb = metadata.stepName;
     // not a reserved name or a notebook reference (written as-is)
     if (
@@ -256,20 +279,6 @@ export default class TagsUtils {
     // Add report tag if specified
     if (metadata.generateHtmlReport !== undefined) {
       tags.push(REPORT_TAG + (metadata.generateHtmlReport ? 'enabled' : 'disabled'));
-    }
-
-    // A notebook reference carries its target's path in the cell metadata
-    // (`notebook_path`), which the backend resolves relative to this notebook.
-    if (
-      metadata.stepName.startsWith(NOTEBOOK_PREFIX) &&
-      metadata.notebookPath !== undefined
-    ) {
-      CellUtils.setCellMetaData(
-        notebookPanel,
-        index,
-        'notebook_path',
-        metadata.notebookPath,
-      );
     }
 
     // Keep the tags this editor does not manage (e.g. `annotation:`, `label:`
