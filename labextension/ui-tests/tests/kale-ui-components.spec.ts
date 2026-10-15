@@ -112,6 +112,17 @@ async function getActiveCellTags(page: Page): Promise<string[]> {
   });
 }
 
+/** Writes the active cell's notebook tags directly, as the Property Inspector does. */
+async function setActiveCellTags(page: Page, tags: string[]): Promise<void> {
+  await page.evaluate(newTags => {
+    const lab = (window as any).jupyterapp;
+    lab.shell.currentWidget.content.activeCell.model.setMetadata(
+      'tags',
+      newTags,
+    );
+  }, tags);
+}
+
 function getAddVolumeDialog(page: Page): Locator {
   return page.getByRole('dialog', { name: 'Add Volume' });
 }
@@ -364,6 +375,34 @@ test.describe('Step base image', () => {
     await expect
       .poll(() => getActiveCellTags(page))
       .not.toContain('image:python:3.12');
+  });
+});
+
+test.describe('Cell tags', () => {
+  test('editing a step keeps the tags the Kale editor does not manage', async ({
+    page,
+  }) => {
+    await openKaleEnabledNotebook(page);
+    await page
+      .locator('.jp-NotebookPanel:visible .kale-editor-toggle')
+      .evaluate((button: HTMLButtonElement) => button.click());
+    const editor = page.locator('.kale-metadata-editor-wrapper.opened:visible');
+    const stepName = editor.getByRole('textbox', { name: 'Step name' });
+    await stepName.fill('train');
+    await expect.poll(() => getActiveCellTags(page)).toContain('step:train');
+
+    // Tags added outside the Kale editor, e.g. in the Property Inspector
+    const otherTags = ['annotation:team:ml', 'label:env:prod', 'parameters'];
+    await setActiveCellTags(page, ['step:train', ...otherTags]);
+
+    await stepName.fill('train_model');
+
+    await expect
+      .poll(() => getActiveCellTags(page))
+      .toContain('step:train_model');
+    const tags = await getActiveCellTags(page);
+    expect(tags).toEqual(expect.arrayContaining(otherTags));
+    expect(tags).not.toContain('step:train');
   });
 });
 
