@@ -41,6 +41,10 @@ import { Kernel } from '@jupyterlab/services';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import { registerKaleCommands } from './commands/kaleToolbar';
+import {
+  migrateRuntimeImageSettingsRaw,
+  RuntimeImages,
+} from './lib/runtimeImages';
 
 /* tslint:disable */
 export const IKubeflowKale = new Token<IKubeflowKale>(
@@ -59,6 +63,7 @@ const KALE_SETTINGS_PLUGIN_ID = 'jupyterlab-kubeflow-kale:kale-settings';
 const ENABLE_KALE_BY_DEFAULT_KEY = 'enableKaleByDefault';
 const AUTO_SAVE_ON_COMPILE_OR_RUN_KEY = 'autoSaveOnCompileOrRun';
 const ENABLE_COMPOSABLE_NOTEBOOKS_KEY = 'enableComposableNotebooks';
+const ENABLE_VOLUMES_KEY = 'enableVolumes';
 const DEFAULT_BASE_IMAGE_KEY = 'defaultBaseImage';
 const RUNTIME_IMAGES_KEY = 'runtimeImages';
 const SECURITY_CONTEXT_KEY = 'securityContext';
@@ -100,6 +105,18 @@ async function activate(
   docManager: IDocumentManager,
   settingRegistry: ISettingRegistry,
 ): Promise<IKubeflowKale> {
+  let pendingRuntimeImagesMigration: RuntimeImages | null = null;
+  settingRegistry.transform(KALE_SETTINGS_PLUGIN_ID, {
+    fetch: plugin => {
+      const migrated = migrateRuntimeImageSettingsRaw(plugin.raw);
+      if (migrated !== null) {
+        plugin.raw = migrated.raw;
+        pendingRuntimeImagesMigration = migrated.images;
+      }
+      return plugin;
+    },
+  });
+
   const kernel: Kernel.IKernelConnection =
     await NotebookUtils.createNewKernel();
   window.addEventListener('beforeunload', () => kernel.shutdown());
@@ -137,8 +154,9 @@ async function activate(
       enableKaleByDefault: false,
       autoSaveOnCompileOrRun: false,
       enableComposableNotebooks: false,
+      enableVolumes: true,
       defaultBaseImage: '',
-      runtimeImages: [] as string[],
+      runtimeImages: {} as RuntimeImages,
       securityContext: {} as ISecurityContextSettings,
       outputPath: '',
     });
@@ -188,6 +206,17 @@ async function activate(
         .load(KALE_SETTINGS_PLUGIN_ID)
         .then(async loadedSetting => {
           setting = loadedSetting;
+
+          if (pendingRuntimeImagesMigration !== null) {
+            const migrated = pendingRuntimeImagesMigration;
+            pendingRuntimeImagesMigration = null;
+            try {
+              await loadedSetting.set(RUNTIME_IMAGES_KEY, migrated);
+            } catch (error) {
+              pendingRuntimeImagesMigration = migrated;
+              throw error;
+            }
+          }
 
           const jlDefaultBaseImageSetting = loadedSetting.get(
             DEFAULT_BASE_IMAGE_KEY,
@@ -239,14 +268,18 @@ async function activate(
               (loadedSetting.get(ENABLE_COMPOSABLE_NOTEBOOKS_KEY).composite as
                 | boolean
                 | undefined) ?? false,
+            enableVolumes:
+              (loadedSetting.get(ENABLE_VOLUMES_KEY).composite as
+                | boolean
+                | undefined) ?? true,
             defaultBaseImage:
               (loadedSetting.get(DEFAULT_BASE_IMAGE_KEY).composite as
                 | string
                 | undefined) ?? '',
             runtimeImages:
               (loadedSetting.get(RUNTIME_IMAGES_KEY).composite as
-                | string[]
-                | undefined) ?? [],
+                | RuntimeImages
+                | undefined) ?? {},
             securityContext:
               (loadedSetting.get(SECURITY_CONTEXT_KEY).composite as
                 | ISecurityContextSettings
@@ -290,6 +323,7 @@ async function activate(
         enableKaleByDefault={kaleSettings.enableKaleByDefault}
         autoSaveOnCompileOrRun={kaleSettings.autoSaveOnCompileOrRun}
         enableComposableNotebooks={kaleSettings.enableComposableNotebooks}
+        enableVolumes={kaleSettings.enableVolumes}
         defaultBaseImageSetting={kaleSettings.defaultBaseImage}
         runtimeImages={kaleSettings.runtimeImages}
         envDefaultBaseImage={envOnlyBaseImage}

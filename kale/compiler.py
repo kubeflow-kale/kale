@@ -38,6 +38,11 @@ log = logging.getLogger(__name__)
 NB_FN_TEMPLATE = "nb_function_template.jinja2"
 PIPELINE_TEMPLATE = "pipeline_template.jinja2"
 
+# NOTE: These strings are duplicated in the frontend (volumeUtils.ts).
+# In the future, both sides should use a shared JSON
+PVC_ACCESS_MODE_RWO = "ReadWriteOnce"
+PVC_ACCESS_MODE_RWOP = "ReadWriteOncePod"
+
 # Generated DSL modules are named after their notebook, behind this prefix, so
 # that a notebook called `json.ipynb` cannot shadow a module the DSL imports.
 MODULE_PREFIX = "kale_notebook_"
@@ -84,6 +89,26 @@ def _clean_param_name(param_name: str) -> str:
 def _step_display_name(step_name: str) -> str:
     """Name a step is shown under, the same whether or not it is composed."""
     return f"{step_name.replace('_', '-')}-step"
+
+
+def _parameters_of(pipeline) -> list[dict]:
+    """A pipeline's parameters, as they appear in the generated code.
+
+    ``name`` is the variable a pipeline function declares, ``arg`` the keyword
+    a component receives it under.
+    """
+    parameters = []
+    for param_name, param in getattr(pipeline, "pipeline_parameters", {}).items():
+        if isinstance(param, PipelineParam):
+            parameters.append(
+                {
+                    "name": param_name.lower(),
+                    "arg": _clean_param_name(param_name),
+                    "type": param.param_type or "str",
+                    "default": repr(param.param_value),
+                }
+            )
+    return parameters
 
 
 def _module_name(root_name: str, reference_name: str) -> str:
@@ -160,12 +185,17 @@ class Compiler:
             seen[env_name] = vol.name
 
     def _warn_rwo_volumes(self):
-        """Emit a warning at compile time for any RWO PVC volumes.
+        """Emit a warning at compile time for any RWO/RWOP PVC volumes.
 
-        RWO volumes can only be mounted on one node at a time.  If pipeline
-        steps are scheduled on different nodes they will fail to mount.  We
-        check at compile time (where we have cluster access) so the warning
-        appears immediately in the Kale output rather than buried in pod logs.
+        RWO (ReadWriteOnce) and RWOP (ReadWriteOncePod) volumes have mounting
+        restrictions that can cause pipeline failures:
+        - RWO: can only be mounted on one node at a time
+        - RWOP: can only be mounted by one pod at a time
+
+        If pipeline steps are scheduled on different nodes (RWO) or run in
+        parallel (RWOP), they will fail to mount. We check at compile time
+        (where we have cluster access) so the warning appears immediately in
+        the Kale output rather than buried in pod logs.
         """
         pvc_volumes = [
             v for v in self.pipeline.config.volumes or [] if getattr(v, "type", None) == "pvc"
@@ -176,17 +206,22 @@ class Compiler:
             namespace = podutils.get_namespace()
         except Exception:
             return
+
+        rwo_modes = {PVC_ACCESS_MODE_RWO, PVC_ACCESS_MODE_RWOP}
         for vol in pvc_volumes:
             try:
                 modes = k8sutils.get_pvc_access_modes(vol.name, namespace)
             except Exception:
                 continue
-            if "ReadWriteOnce" in modes:
+            problematic = rwo_modes.intersection(modes)
+            if problematic:
+                mode_str = ", ".join(sorted(problematic))
                 log.warning(
-                    "[KALE WARNING] PVC '%s' has accessMode ReadWriteOnce. "
-                    "If pipeline steps run on different nodes, concurrent "
-                    "mounts will fail.",
+                    "[KALE WARNING] PVC '%s' has accessMode %s. "
+                    "If pipeline steps run on different nodes or in parallel, "
+                    "concurrent mounts may fail.",
                     vol.name,
+                    mode_str,
                 )
 
     def run(self):
@@ -243,9 +278,16 @@ class Compiler:
                 for var in sorted(node.ins)
             ]
             is_subpipeline = isinstance(node, SubPipeline)
-            if not is_subpipeline:
-                # a referenced notebook declares its own parameters; these are
-                # this notebook's, so they go to its own steps
+            if is_subpipeline:
+                # a referenced notebook takes this notebook's parameters under
+                # the names its own pipeline function declares
+                declared = {p["name"] for p in _parameters_of(node.pipeline)}
+                inputs.extend(
+                    {"arg": p["name"], "ref": p["name"]}
+                    for p in parameters
+                    if p["name"] in declared
+                )
+            else:
                 inputs.extend({"arg": p["arg"], "ref": p["name"]} for p in parameters)
             calls.append(
                 {
@@ -336,23 +378,8 @@ class Compiler:
         )
 
     def _parameter_context(self):
-        """The pipeline's parameters, as they appear in the generated code.
-
-        ``name`` is the variable a pipeline function declares, ``arg`` the
-        keyword a component receives it under.
-        """
-        parameters = []
-        for param_name, param in getattr(self.pipeline, "pipeline_parameters", {}).items():
-            if isinstance(param, PipelineParam):
-                parameters.append(
-                    {
-                        "name": param_name.lower(),
-                        "arg": _clean_param_name(param_name),
-                        "type": param.param_type or "str",
-                        "default": repr(param.param_value),
-                    }
-                )
-        return parameters
+        """This pipeline's parameters, as they appear in the generated code."""
+        return _parameters_of(self.pipeline)
 
     def _subpipeline_context(self, node):
         """Template context for one referenced notebook's module.

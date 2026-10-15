@@ -16,7 +16,9 @@ import { test, expect, Locator, Page } from '@playwright/test';
 
 /** Opens JupyterLab and clicks the Kale sidebar tab. */
 async function openKaleTab(page: Page): Promise<void> {
-  await page.goto('http://localhost:8889/lab', { waitUntil: 'load' });
+  // `?reset` starts from an empty workspace, so notebooks left open by earlier
+  // tests are not restored (and do not pop up a "Select Kernel" dialog).
+  await page.goto('http://localhost:8889/lab?reset', { waitUntil: 'load' });
 
   await page.waitForTimeout(3000);
 
@@ -44,15 +46,70 @@ async function openKaleEnabledNotebook(page: Page): Promise<void> {
       '.jp-LauncherCard:has(.jp-LauncherCard-label[title="Python 3 (ipykernel)"])',
     )
     .first();
+  if (!(await pythonNotebook.isVisible())) {
+    await page.getByRole('button', { name: 'New Launcher' }).click();
+  }
   await pythonNotebook.click();
 
-  const notebookPanel = page.locator('.jp-NotebookPanel');
+  const notebookPanel = page.locator('.jp-NotebookPanel:visible');
   await expect(notebookPanel).toBeVisible({ timeout: 5000 });
-
   // Enable Kale
   const enableSwitch = page.locator('input[name="enableKale"]');
-  await enableSwitch.click();
+  await enableSwitch.check();
   await expect(enableSwitch).toBeChecked();
+}
+
+/** Kale rewrites metadata on every change - accept unsaved changes. */
+async function acceptUnsavedChangesPrompt(page: Page): Promise<void> {
+  const prompt = page
+    .locator('.jp-Dialog')
+    .filter({ hasText: 'Unsaved Changes' });
+  await page.addLocatorHandler(prompt, async dialog => {
+    await dialog.getByRole('button', { name: 'YES' }).click();
+  });
+}
+
+/** Dismiss Kale's error dialog to unblock other actions. */
+async function dismissKaleErrorDialogs(page: Page): Promise<void> {
+  const errorDialog = page.locator('.jp-Dialog').filter({ hasText: 'Error' });
+  await page.addLocatorHandler(errorDialog, async dialog => {
+    await dialog.getByRole('button', { name: 'Close' }).click();
+  });
+}
+
+function getDeployButtonGroup(page: Page): Locator {
+  return page.locator('[aria-label="split button"]');
+}
+
+/** Creates a named step and opens its Base Image configuration. */
+async function openBaseImageDialog(page: Page): Promise<Locator> {
+  await openKaleEnabledNotebook(page);
+  await page
+    .locator('.jp-NotebookPanel:visible .kale-editor-toggle')
+    .evaluate((button: HTMLButtonElement) => button.click());
+  const editor = page.locator('.kale-metadata-editor-wrapper.opened:visible');
+  await editor.getByRole('textbox', { name: 'Step name' }).fill('train');
+  await expect.poll(() => getActiveCellTags(page)).toContain('step:train');
+
+  const configureStep = editor.getByRole('button', { name: 'Configure step' });
+  await expect(configureStep).toBeEnabled();
+  await configureStep.click();
+
+  const dialog = page.getByRole('dialog', { name: 'Configure Step' });
+  await expect(
+    dialog.getByRole('combobox', { name: 'Base Image' }),
+  ).toBeVisible();
+  return dialog;
+}
+
+/** Reads the active cell's actual notebook tags, not just the displayed label. */
+async function getActiveCellTags(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const lab = (window as any).jupyterapp;
+    return (
+      lab.shell.currentWidget.content.activeCell.model.getMetadata('tags') ?? []
+    );
+  });
 }
 
 function getAddVolumeDialog(page: Page): Locator {
@@ -73,16 +130,24 @@ async function fillAndSubmitVolume(
   { name, mountPoint }: { name: string; mountPoint: string },
 ): Promise<void> {
   await dialog.getByLabel('PVC name').fill(name);
-  await dialog.getByLabel('Mount path').fill(mountPoint);
+  await dialog.getByRole('textbox', { name: 'Mount path' }).fill(mountPoint);
   await dialog.getByRole('button', { name: 'Add volume', exact: true }).click();
   await expect(dialog).not.toBeVisible({ timeout: 5000 });
 }
+
+// Without a KFP cluster, Kale's KFP calls pop up an error dialog at an
+// unpredictable moment after a notebook opens. Handle it (and the unsaved
+// changes prompt) in every test so it can never block a click.
+test.beforeEach(async ({ page }) => {
+  await dismissKaleErrorDialogs(page);
+  await acceptUnsavedChangesPrompt(page);
+});
 
 test.describe('Kale Empty State', () => {
   test('should open the Kale panel and verify the empty-state components', async ({
     page,
   }) => {
-    await page.goto('http://localhost:8889/lab', { waitUntil: 'load' });
+    await page.goto('http://localhost:8889/lab?reset', { waitUntil: 'load' });
 
     await page.waitForTimeout(3000);
 
@@ -135,7 +200,7 @@ test.describe('Open a Notebook and Enable Kale', () => {
   test('should open a JupyterNotebook, enable Kale with the toggle, and verify UI components', async ({
     page,
   }) => {
-    await page.goto('http://localhost:8889/lab', { waitUntil: 'load' });
+    await page.goto('http://localhost:8889/lab?reset', { waitUntil: 'load' });
 
     await page.waitForTimeout(3000);
 
@@ -186,7 +251,119 @@ test.describe('Open a Notebook and Enable Kale', () => {
     await expect(page.locator('label:has-text("Cell type")')).toBeVisible();
     await expect(page.locator('label:has-text("Step name")')).toBeVisible();
     await expect(page.locator('label:has-text("Depends on")')).toBeVisible();
-    await expect(page.locator('[aria-label="Configure step"]')).toBeVisible();
+    // The Tooltip wrapper carries the same aria-label, so match the button only
+    await expect(
+      page.getByRole('button', { name: 'Configure step' }),
+    ).toBeVisible();
+  });
+});
+
+test.describe('Trigger a Pipeline Compilation', () => {
+  test(' should choose an option, deploy the action, and update the button', async ({
+    page,
+  }) => {
+    await openKaleEnabledNotebook(page);
+
+    // Wait for pipeline metadata to load so the deploy button is enabled
+    const experimentName = page.getByLabel('Experiment Name');
+    await expect(experimentName).toBeVisible({ timeout: 60000 });
+    await experimentName.fill('test-experiment');
+    await page.getByLabel('Pipeline Name').fill('test-pipeline');
+
+    // The deploy button defaults to "Compile and Run"
+    const deployButtonGroup = getDeployButtonGroup(page);
+    const mainDeployButton = deployButtonGroup.locator('button').first();
+    await expect(mainDeployButton).toBeEnabled({ timeout: 10000 });
+    await expect(mainDeployButton).toHaveText('Compile and Run');
+
+    // Open the three-dots menu
+    await deployButtonGroup.locator('button').last().click();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible({ timeout: 5000 });
+
+    // Pick a new 'Compile' action
+    await menu.getByRole('menuitem', { name: 'Compile and Save' }).click();
+
+    // The deploy must start without a second click on the main button
+    const deployProgress = page.locator('.deploy-progress');
+    await expect(deployProgress).toBeVisible({ timeout: 10000 });
+    await expect(
+      deployProgress.locator('.deploy-progress-label', {
+        hasText: 'Validating notebook...',
+      }),
+    ).toBeVisible();
+
+    // The button must keep the newly chosen action as its new name
+    await expect(mainDeployButton).toBeEnabled({ timeout: 60000 });
+    await expect(mainDeployButton).toHaveText('Compile and Save');
+  });
+});
+
+test.describe('Step base image', () => {
+  test('saves a custom image when the dialog closes without pressing Enter', async ({
+    page,
+  }) => {
+    const dialog = await openBaseImageDialog(page);
+    const imageInput = dialog.getByRole('combobox', { name: 'Base Image' });
+
+    await imageInput.fill('registry.example.com/team/image:v1');
+    await imageInput.press('Escape');
+    await dialog.getByRole('button', { name: 'Ok' }).click();
+
+    await expect
+      .poll(() => getActiveCellTags(page))
+      .toContain('image:registry.example.com/team/image:v1');
+    await page.getByRole('button', { name: 'Configure step' }).click();
+    await expect(imageInput).toHaveValue('registry.example.com/team/image:v1');
+  });
+
+  test('stores the image reference when a named runtime image is selected', async ({
+    page,
+  }) => {
+    const dialog = await openBaseImageDialog(page);
+    const imageInput = dialog.getByRole('combobox', { name: 'Base Image' });
+
+    await imageInput.click();
+    await page.getByRole('option', { name: /Python 3\.12/ }).click();
+
+    await expect(imageInput).toHaveValue('Python 3.12');
+    await expect(
+      dialog.getByRole('region', { name: 'Selected image reference' }),
+    ).toHaveText('python:3.12');
+    await expect
+      .poll(() => getActiveCellTags(page))
+      .toContain('image:python:3.12');
+
+    await dialog.getByRole('button', { name: 'Ok' }).click();
+    await expect(page.locator('.kale-inline-base-image-name')).toHaveText(
+      'Python 3.12',
+    );
+    await page.getByRole('button', { name: 'Configure step' }).click();
+    await expect(imageInput).toHaveValue('Python 3.12');
+    await expect(
+      dialog.getByRole('region', { name: 'Selected image reference' }),
+    ).toHaveText('python:3.12');
+  });
+
+  test('reset to default removes the cell image override', async ({ page }) => {
+    const dialog = await openBaseImageDialog(page);
+    const imageInput = dialog.getByRole('combobox', { name: 'Base Image' });
+
+    await imageInput.click();
+    await page.getByRole('option', { name: /Python 3\.12/ }).click();
+    await expect
+      .poll(() => getActiveCellTags(page))
+      .toContain('image:python:3.12');
+
+    await dialog.getByRole('button', { name: 'Reset to Default' }).click();
+
+    await expect(imageInput).toHaveValue('');
+    await expect(
+      dialog.getByRole('region', { name: 'Selected image reference' }),
+    ).toHaveCount(0);
+    await expect
+      .poll(() => getActiveCellTags(page))
+      .not.toContain('image:python:3.12');
   });
 });
 
@@ -223,7 +400,7 @@ test.describe('Volumes panel — validation', () => {
 
     const dialog = await openAddVolumeDialog(page);
     await dialog.getByLabel('PVC name').fill('raw-data');
-    await dialog.getByLabel('Mount path').fill('/other');
+    await dialog.getByRole('textbox', { name: 'Mount path' }).fill('/other');
 
     await expect(
       dialog.getByText('This volume name is already used by another volume'),
@@ -244,7 +421,7 @@ test.describe('Volumes panel — validation', () => {
 
     const dialog = await openAddVolumeDialog(page);
     await dialog.getByLabel('PVC name').fill('other-data');
-    await dialog.getByLabel('Mount path').fill('/data');
+    await dialog.getByRole('textbox', { name: 'Mount path' }).fill('/data');
 
     await expect(
       dialog.getByText('Mount path already used by another volume'),
@@ -259,7 +436,9 @@ test.describe('Volumes panel — validation', () => {
 
     const dialog = await openAddVolumeDialog(page);
     await dialog.getByLabel('PVC name').fill('raw-data');
-    await dialog.getByLabel('Mount path').fill('relative/path');
+    await dialog
+      .getByRole('textbox', { name: 'Mount path' })
+      .fill('relative/path');
 
     await expect(
       dialog.getByText('Mount path must be an absolute path starting with "/"'),
@@ -276,7 +455,9 @@ test.describe('Volumes panel — validation', () => {
 
     const dialog = await openAddVolumeDialog(page);
     await dialog.getByLabel('PVC name').fill('raw-data');
-    await dialog.getByLabel('Mount path').fill('/data/../secret');
+    await dialog
+      .getByRole('textbox', { name: 'Mount path' })
+      .fill('/data/../secret');
 
     await expect(
       dialog.getByText('Mount path must not contain "." or ".." segments'),
@@ -291,7 +472,7 @@ test.describe('Volumes panel — validation', () => {
 
     const dialog = await openAddVolumeDialog(page);
     await dialog.getByLabel('PVC name').fill('raw-data');
-    await dialog.getByLabel('Mount path').fill('/my data');
+    await dialog.getByRole('textbox', { name: 'Mount path' }).fill('/my data');
 
     await expect(
       dialog.getByText(
