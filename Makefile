@@ -135,8 +135,14 @@ build: ## Build wheel
 
 KFP_WHEEL_DIR ?= $(CURDIR)/.kfp-wheels
 KFP_PORT ?= 8765
-# Host address for KFP to reach the wheel server (Linux users: override with your host IP)
-KFP_HOST_ADDR ?= host.docker.internal
+# Host address KFP uses to reach the local wheel server; override if needed.
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Linux)
+  KFP_HOST_ADDR ?= host.k3d.internal
+else
+  KFP_HOST_ADDR ?= host.docker.internal
+endif
 
 kfp-build: ## Build wheel for KFP cluster testing (fixed version for reproducibility)
 	@printf "$(BLUE)Building wheel...\n$(NC)"
@@ -170,8 +176,18 @@ kfp-run: ## Compile and run on KFP with local wheel (usage: make kfp-run NB=... 
 	KALE_PIP_TRUSTED_HOSTS="$(KFP_HOST_ADDR)" \
 	$(UV) run kale --nb $(NB) --kfp_host $(KFP_HOST) --run_pipeline
 
+
+
 kfp-dev: ## Start KFP, build wheel, start wheel server, and run a notebook
 	@test -n "$(NB)" || { echo "Usage: make kfp-dev NB=path/to/notebook.ipynb"; exit 1; }
+
+	@echo "Checking wheel server before changing the environment..."
+	@bash scripts/kfp-wheel-server.sh check "$(KFP_WHEEL_DIR)" "$(KFP_PORT)"
+
+	@echo "Stopping managed wheel server before rebuilding..."
+	@bash scripts/kfp-wheel-server.sh stop "$(KFP_WHEEL_DIR)" "$(KFP_PORT)"
+
+	@$(MAKE) kfp-build
 
 	@echo "Ensuring KFP development environment is running..."
 	@$(MAKE) kfp-dev-setup \
@@ -180,18 +196,7 @@ kfp-dev: ## Start KFP, build wheel, start wheel server, and run a notebook
 		KFP_LOCAL_PORT="$(KFP_LOCAL_PORT)" \
 		KFP_PID_FILE="$(KFP_PID_FILE)"
 
-	@$(MAKE) kfp-build
-
-	@echo "Checking wheel server on port $(KFP_PORT)..."
-	@if ! curl -sf "http://localhost:$(KFP_PORT)/kubeflow-kale/" >/dev/null; then \
-		echo "Starting wheel server on port $(KFP_PORT)..."; \
-		(cd "$(KFP_WHEEL_DIR)" && nohup python3 -m http.server "$(KFP_PORT)" \
-			>/tmp/kale-kfp-wheel-server.log 2>&1 & \
-			echo $$! > /tmp/kale-kfp-wheel-server.pid); \
-		sleep 2; \
-	else \
-		echo "Reusing existing wheel server on port $(KFP_PORT)"; \
-	fi
+	@bash scripts/kfp-wheel-server.sh start "$(KFP_WHEEL_DIR)" "$(KFP_PORT)"
 
 	@$(MAKE) kfp-run \
 		NB="$(NB)" \
