@@ -107,3 +107,21 @@ describe('CellUtils.deleteCellMetaData', () => {
     expect(cell.getMetadata('notebook_path')).toBeDefined();
   });
 });
+
+describe('TagsUtils.setKaleCellTags', () => {
+  it('drops notebook_path when a reference cell becomes a step, keeping other tags', async () => {
+    const cell = referenceCell();
+    cell.setMetadata('tags', ['notebook:other', 'my-own-tag']);
+
+    await TagsUtils.setKaleCellTags(notebookWith([cell]), 0, {
+      stepName: 'train',
+      prevStepNames: [],
+      limits: {},
+      baseImage: undefined,
+      enableCaching: undefined,
+    });
+
+    expect(cell.getMetadata('notebook_path')).toBeUndefined();
+    expect(cell.getMetadata('tags')).toEqual(['step:train', 'my-own-tag']);
+  });
+});
