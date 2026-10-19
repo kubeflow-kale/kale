@@ -44,6 +44,10 @@ const GPU_TYPES = [
   { value: 'amd.com/gpu', label: 'AMD' },
 ];
 const DEFAULT_GPU_TYPE = GPU_TYPES[0].value;
+const DEFAULT_GPU_COUNT = '1';
+const GPU_COUNT_PATTERN = '^[1-9][0-9]*$';
+const isValidGpuCount = (value: string): boolean =>
+  new RegExp(GPU_COUNT_PATTERN).test(value);
 
 /** The GPU type requested in `limits`, if any. Assumes there is at most one. */
 export const getGpuType = (limits: {
@@ -70,6 +74,16 @@ export const GpuSection: React.FC<IGpuSectionProps> = ({
 
   const gpuType = getGpuType(limits);
   const gpuCount = gpuType && limits[gpuType];
+
+  // What the user is typing. Only valid counts are written to the cell tags,
+  // so the field can be cleared and retyped without turning the GPU off.
+  const [countValue, setCountValue] = React.useState(
+    gpuCount || DEFAULT_GPU_COUNT,
+  );
+  // Follow the tags when they change outside the field (e.g. the toggle).
+  React.useEffect(() => {
+    setCountValue(gpuCount || DEFAULT_GPU_COUNT);
+  }, [gpuCount]);
 
   return (
     <>
@@ -116,7 +130,9 @@ export const GpuSection: React.FC<IGpuSectionProps> = ({
               onChange={c => {
                 if (c.target.checked) {
                   // default value
-                  updateLimits([limitAction('update', DEFAULT_GPU_TYPE, '1')]);
+                  updateLimits([
+                    limitAction('update', DEFAULT_GPU_TYPE, DEFAULT_GPU_COUNT),
+                  ]);
                 } else if (gpuType) {
                   updateLimits([limitAction('delete', gpuType)]);
                 }
@@ -144,9 +160,17 @@ export const GpuSection: React.FC<IGpuSectionProps> = ({
             variant="outlined"
             label="GPU Count"
             sx={disabledFieldSx}
-            value={gpuCount || 1}
+            value={countValue}
+            regex={GPU_COUNT_PATTERN}
+            regexErrorMsg="Enter a whole number of GPUs, e.g. 1."
+            helperText={
+              gpuType && countValue === ''
+                ? 'Enter the number of GPUs, e.g. 1.'
+                : undefined
+            }
             updateValue={(v: string) => {
-              if (gpuType) {
+              setCountValue(v);
+              if (gpuType && isValidGpuCount(v)) {
                 updateLimits([limitAction('update', gpuType, v)]);
               }
             }}

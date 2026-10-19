@@ -34,6 +34,13 @@ const disabledFieldSx = {
 };
 
 const DEFAULT_MEMORY_LIMIT = '2Gi';
+// The memory quantities KFP accepts in `set_memory_limit()`.
+const MEMORY_LIMIT_PATTERN = '^[0-9]+(E|Ei|P|Pi|T|Ti|G|Gi|M|Mi|K|Ki)?$';
+const MEMORY_LIMIT_ERROR_MSG =
+  'Use a whole number with an optional unit, e.g. 512Mi or 2Gi.';
+
+export const isValidMemoryLimit = (value: string): boolean =>
+  new RegExp(MEMORY_LIMIT_PATTERN).test(value);
 
 interface IMemorySectionProps {
   stepName: string;
@@ -55,16 +62,14 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
   const memoryLimit = limits['memory'];
   const hasMemoryLimit = memoryLimit !== undefined;
 
+  // What the user is typing. Only valid values are written to the cell tags,
+  // so the field can be cleared and retyped without turning the limit off.
   const [inputValue, setInputValue] = React.useState(
-    memoryLimit !== undefined ? memoryLimit : DEFAULT_MEMORY_LIMIT,
+    memoryLimit ?? DEFAULT_MEMORY_LIMIT,
   );
-
+  // Follow the tags when they change outside the field (e.g. the toggle).
   React.useEffect(() => {
-    if (memoryLimit !== undefined) {
-      setInputValue(memoryLimit);
-    } else {
-      setInputValue(DEFAULT_MEMORY_LIMIT);
-    }
+    setInputValue(memoryLimit ?? DEFAULT_MEMORY_LIMIT);
   }, [memoryLimit]);
 
   return (
@@ -111,10 +116,8 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
               checked={hasMemoryLimit}
               onChange={c => {
                 if (c.target.checked) {
-                  const val = inputValue.trim() || DEFAULT_MEMORY_LIMIT;
-                  setInputValue(val);
                   updateLimits([
-                    limitAction('update', 'memory', val),
+                    limitAction('update', 'memory', DEFAULT_MEMORY_LIMIT),
                   ]);
                 } else {
                   updateLimits([limitAction('delete', 'memory')]);
@@ -144,9 +147,16 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
             label="Memory Limit (e.g., 2Gi)"
             sx={disabledFieldSx}
             value={inputValue}
+            regex={MEMORY_LIMIT_PATTERN}
+            regexErrorMsg={MEMORY_LIMIT_ERROR_MSG}
+            helperText={
+              hasMemoryLimit && inputValue === ''
+                ? 'Enter a memory limit, e.g. 2Gi.'
+                : undefined
+            }
             updateValue={(v: string) => {
               setInputValue(v);
-              if (hasMemoryLimit) {
+              if (hasMemoryLimit && isValidMemoryLimit(v)) {
                 updateLimits([limitAction('update', 'memory', v)]);
               }
             }}
