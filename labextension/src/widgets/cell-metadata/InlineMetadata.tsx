@@ -154,6 +154,12 @@ export const InlineMetadata: React.FC<IProps> = ({
     </p>
   ) : null;
 
+  const memoryLimitText = limits['memory'] ? (
+    <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+      Memory limit: {limits['memory']}
+    </p>
+  ) : null;
+
   const baseImageName = baseImage
     ? getRuntimeImageName(runtimeImages, baseImage)
     : undefined;
@@ -212,6 +218,7 @@ export const InlineMetadata: React.FC<IProps> = ({
         ) : null}
         {dependencies}
         {limitsText}
+        {memoryLimitText}
         {baseImageText}
         {cacheText}
         {reportText}

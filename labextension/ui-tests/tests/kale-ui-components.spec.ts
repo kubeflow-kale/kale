@@ -432,6 +432,7 @@ test.describe('Inline GPU label', () => {
     const cells = page.locator('.jp-NotebookPanel:visible .jp-Cell');
     await expect(cells.nth(1)).toContainText('GPU request: nvidia.com/gpu - 1');
     await expect(cells.nth(0)).toContainText('prepare');
+    await expect(cells.nth(0)).toContainText('Memory limit: 8Gi');
     await expect(cells.nth(0)).not.toContainText('GPU request');
   });
 });
