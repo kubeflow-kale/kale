@@ -55,6 +55,18 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
   const memoryLimit = limits['memory'];
   const hasMemoryLimit = memoryLimit !== undefined;
 
+  const [inputValue, setInputValue] = React.useState(
+    memoryLimit !== undefined ? memoryLimit : DEFAULT_MEMORY_LIMIT,
+  );
+
+  React.useEffect(() => {
+    if (memoryLimit !== undefined) {
+      setInputValue(memoryLimit);
+    } else {
+      setInputValue(DEFAULT_MEMORY_LIMIT);
+    }
+  }, [memoryLimit]);
+
   return (
     <>
       <Grid
@@ -99,8 +111,10 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
               checked={hasMemoryLimit}
               onChange={c => {
                 if (c.target.checked) {
+                  const val = inputValue.trim() || DEFAULT_MEMORY_LIMIT;
+                  setInputValue(val);
                   updateLimits([
-                    limitAction('update', 'memory', DEFAULT_MEMORY_LIMIT),
+                    limitAction('update', 'memory', val),
                   ]);
                 } else {
                   updateLimits([limitAction('delete', 'memory')]);
@@ -129,8 +143,9 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
             variant="outlined"
             label="Memory Limit (e.g., 2Gi)"
             sx={disabledFieldSx}
-            value={memoryLimit || DEFAULT_MEMORY_LIMIT}
+            value={inputValue}
             updateValue={(v: string) => {
+              setInputValue(v);
               if (hasMemoryLimit) {
                 updateLimits([limitAction('update', 'memory', v)]);
               }
