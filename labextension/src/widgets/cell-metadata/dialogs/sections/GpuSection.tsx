@@ -17,27 +17,7 @@ import { Box, Chip, Grid, Switch } from '@mui/material';
 import ColorUtils from '../../../../lib/ColorUtils';
 import { Input } from '../../../../components/Input';
 import { Select } from '../../../../components/Select';
-
-export interface ILimitAction {
-  action: 'update' | 'delete';
-  limitKey: string;
-  limitValue?: string;
-}
-
-// Scoped to this section: the shared Input/Select components don't have a
-// dark-mode-aware disabled style, so override it here rather than in the
-// shared components (which are used well beyond this dialog).
-const disabledFieldSx = {
-  '& .MuiInputBase-input.Mui-disabled': {
-    WebkitTextFillColor: 'var(--jp-ui-font-color2)',
-  },
-  '& .MuiInputLabel-root': {
-    color: 'var(--jp-ui-font-color2)',
-  },
-  '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'var(--jp-input-border-color)',
-  },
-};
+import { disabledFieldSx, ILimitAction, limitAction } from './limits';
 
 const GPU_TYPES = [
   { value: 'nvidia.com/gpu', label: 'Nvidia' },
@@ -66,12 +46,6 @@ export const GpuSection: React.FC<IGpuSectionProps> = ({
   limits,
   updateLimits,
 }) => {
-  const limitAction = (
-    action: ILimitAction['action'],
-    limitKey: ILimitAction['limitKey'],
-    limitValue: ILimitAction['limitValue'] = undefined,
-  ) => ({ action, limitKey, limitValue });
-
   const gpuType = getGpuType(limits);
   const gpuCount = gpuType && limits[gpuType];
 

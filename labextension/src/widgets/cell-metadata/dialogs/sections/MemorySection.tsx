@@ -16,22 +16,7 @@ import * as React from 'react';
 import { Box, Chip, Grid, Switch } from '@mui/material';
 import ColorUtils from '../../../../lib/ColorUtils';
 import { Input } from '../../../../components/Input';
-import { ILimitAction } from './GpuSection';
-
-// Scoped to this section: the shared Input/Select components don't have a
-// dark-mode-aware disabled style, so override it here rather than in the
-// shared components (which are used well beyond this dialog).
-const disabledFieldSx = {
-  '& .MuiInputBase-input.Mui-disabled': {
-    WebkitTextFillColor: 'var(--jp-ui-font-color2)',
-  },
-  '& .MuiInputLabel-root': {
-    color: 'var(--jp-ui-font-color2)',
-  },
-  '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: 'var(--jp-input-border-color)',
-  },
-};
+import { disabledFieldSx, ILimitAction, limitAction } from './limits';
 
 const DEFAULT_MEMORY_LIMIT = '2Gi';
 // The memory quantities KFP accepts in `set_memory_limit()`.
@@ -53,12 +38,6 @@ export const MemorySection: React.FC<IMemorySectionProps> = ({
   limits,
   updateLimits,
 }) => {
-  const limitAction = (
-    action: ILimitAction['action'],
-    limitKey: ILimitAction['limitKey'],
-    limitValue: ILimitAction['limitValue'] = undefined,
-  ) => ({ action, limitKey, limitValue });
-
   const memoryLimit = limits['memory'];
   const hasMemoryLimit = memoryLimit !== undefined;
 
