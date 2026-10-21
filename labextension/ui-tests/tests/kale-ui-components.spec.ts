@@ -406,6 +406,37 @@ test.describe('Cell tags', () => {
   });
 });
 
+test.describe('Step name', () => {
+  test('does not save an invalid or duplicate name', async ({ page }) => {
+    await openKaleEnabledNotebook(page);
+    // A second step the first cell's name must not clash with
+    await page.evaluate(() => {
+      const lab = (window as any).jupyterapp;
+      lab.shell.currentWidget.content.model.sharedModel.insertCells(1, [
+        { cell_type: 'code', source: '', metadata: { tags: ['step:load'] } },
+      ]);
+    });
+    await page
+      .locator('.jp-NotebookPanel:visible .kale-editor-toggle')
+      .first()
+      .evaluate((button: HTMLButtonElement) => button.click());
+    const editor = page.locator('.kale-metadata-editor-wrapper.opened:visible');
+    const stepName = editor.getByRole('textbox', { name: 'Step name' });
+
+    await stepName.fill('train');
+    await expect.poll(() => getActiveCellTags(page)).toContain('step:train');
+
+    await stepName.fill('Train Model');
+    await expect(editor.getByText('Step name must consist of')).toBeVisible();
+    expect(await getActiveCellTags(page)).toContain('step:train');
+
+    await stepName.fill('load');
+    await expect(editor.getByText('This name already exists.')).toBeVisible();
+    expect(await getActiveCellTags(page)).toContain('step:train');
+    expect(await getActiveCellTags(page)).not.toContain('step:load');
+  });
+});
+
 test.describe('Experiment name', () => {
   test('accepts any non-empty name up to 128 characters, as KFP does', async ({
     page,
