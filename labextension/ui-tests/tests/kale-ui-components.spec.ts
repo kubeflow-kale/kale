@@ -112,6 +112,17 @@ async function getActiveCellTags(page: Page): Promise<string[]> {
   });
 }
 
+/** Writes the active cell's notebook tags directly, as the Property Inspector does. */
+async function setActiveCellTags(page: Page, tags: string[]): Promise<void> {
+  await page.evaluate(newTags => {
+    const lab = (window as any).jupyterapp;
+    lab.shell.currentWidget.content.activeCell.model.setMetadata(
+      'tags',
+      newTags,
+    );
+  }, tags);
+}
+
 function getAddVolumeDialog(page: Page): Locator {
   return page.getByRole('dialog', { name: 'Add Volume' });
 }
@@ -364,6 +375,62 @@ test.describe('Step base image', () => {
     await expect
       .poll(() => getActiveCellTags(page))
       .not.toContain('image:python:3.12');
+  });
+});
+
+test.describe('Cell tags', () => {
+  test('editing a step keeps the tags the Kale editor does not manage', async ({
+    page,
+  }) => {
+    await openKaleEnabledNotebook(page);
+    await page
+      .locator('.jp-NotebookPanel:visible .kale-editor-toggle')
+      .evaluate((button: HTMLButtonElement) => button.click());
+    const editor = page.locator('.kale-metadata-editor-wrapper.opened:visible');
+    const stepName = editor.getByRole('textbox', { name: 'Step name' });
+    await stepName.fill('train');
+    await expect.poll(() => getActiveCellTags(page)).toContain('step:train');
+
+    // Tags added outside the Kale editor, e.g. in the Property Inspector
+    const otherTags = ['annotation:team:ml', 'label:env:prod', 'parameters'];
+    await setActiveCellTags(page, ['step:train', ...otherTags]);
+
+    await stepName.fill('train_model');
+
+    await expect
+      .poll(() => getActiveCellTags(page))
+      .toContain('step:train_model');
+    const tags = await getActiveCellTags(page);
+    expect(tags).toEqual(expect.arrayContaining(otherTags));
+    expect(tags).not.toContain('step:train');
+  });
+});
+
+test.describe('Experiment name', () => {
+  test('accepts any non-empty name up to 128 characters, as KFP does', async ({
+    page,
+  }) => {
+    await openKaleEnabledNotebook(page);
+    const experimentName = page.getByLabel('Experiment Name');
+    await expect(experimentName).toBeVisible({ timeout: 60000 });
+    await page.getByLabel('Pipeline Name').fill('test-pipeline');
+    const deployButton = getDeployButtonGroup(page).locator('button').first();
+
+    // Uppercase letters and spaces are valid in KFP (e.g. its "Default")
+    await experimentName.fill('Taxicab Experiment');
+    await expect(deployButton).toBeEnabled({ timeout: 10000 });
+
+    await experimentName.fill('   ');
+    await expect(
+      page.getByText('Experiment name cannot be only spaces.'),
+    ).toBeVisible();
+    await expect(deployButton).toBeDisabled();
+
+    await experimentName.fill('a'.repeat(129));
+    await expect(
+      page.getByText('Experiment name must be 128 characters or fewer.'),
+    ).toBeVisible();
+    await expect(deployButton).toBeDisabled();
   });
 });
 
