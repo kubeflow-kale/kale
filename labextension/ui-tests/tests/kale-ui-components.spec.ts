@@ -154,6 +154,18 @@ test.beforeEach(async ({ page }) => {
   await acceptUnsavedChangesPrompt(page);
 });
 
+// Every test opens a new notebook, and with it a kernel. Shut them down so they
+// don't pile up on the shared server and slow JupyterLab down for later tests.
+test.afterEach(async ({ page }) => {
+  await page
+    .evaluate(async () => {
+      const lab = (window as any).jupyterapp;
+      await lab?.serviceManager.sessions.shutdownAll();
+      await lab?.serviceManager.kernels.shutdownAll();
+    })
+    .catch(() => undefined);
+});
+
 test.describe('Kale Empty State', () => {
   test('should open the Kale panel and verify the empty-state components', async ({
     page,
